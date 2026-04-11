@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BTC PRO MAX AI | SLAVA GORDEEV</title>
+    <title>BTC PRO MAX AI V8 | SLAVA GORDEEV</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -37,9 +37,7 @@
         }
         .scanning-glow { animation: soft-pulse 3s infinite ease-in-out; }
 
-        .custom-scroll { overflow-y: auto; overflow-x: hidden; }
         .custom-scroll::-webkit-scrollbar { width: 4px; }
-        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
@@ -52,7 +50,7 @@
         const Zap = ({ size = 24, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
 
         const ScannerAPI = {
-          async getCandles(symbol, limit = 400, interval = '5m') {
+          async getCandles(symbol, limit = 350, interval = '5m') {
             try {
               const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`);
               const data = await res.json();
@@ -76,7 +74,7 @@
         const Speedometer = ({ value, label, color = "#3b82f6" }) => {
           const angle = -90 + (value / 100) * 180;
           return (
-            <div className="flex flex-col items-center flex-1 mb-2 min-w-[22%]">
+            <div className="flex flex-col items-center flex-1 mb-1">
               <svg viewBox="0 0 100 60" className="w-10 h-6 md:w-12 md:h-8 overflow-visible">
                 <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#e2e8f0" strokeWidth="6" strokeLinecap="round" />
                 <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" strokeDasharray="125.6" strokeDashoffset={125.6 - (value/100)*125.6} style={{transition:'0.8s'}} />
@@ -85,65 +83,28 @@
                   <polygon points="48,50 52,50 50,15" fill={color} />
                 </g>
               </svg>
-              <div className="text-sm md:text-base font-black mt-0.5 text-slate-800 oswald-font">{Math.round(value)}</div>
-              <div className="text-[6px] md:text-[7px] text-slate-400 font-bold uppercase tracking-widest text-center leading-none">{label}</div>
+              <div className="text-sm font-black text-slate-800 oswald-font">{Math.round(value)}</div>
+              <div className="text-[7px] text-slate-400 font-bold uppercase tracking-widest leading-none">{label}</div>
             </div>
           );
         };
 
         const OrderBookDepth = ({ price }) => {
-          if (!price) return <div className="flex-1 flex items-center justify-center text-[10px] text-slate-400 font-bold">ЗАГРУЗКА...</div>;
-          const step = 0.5;
+          if (!price) return <div className="flex-1 flex items-center justify-center text-[10px] text-slate-400 font-bold">LOADING...</div>;
           return (
-            <div className="flex flex-col mono-font text-slate-800 px-2 justify-center w-full h-full relative">
-              <div className="space-y-0.5 mt-1 relative z-10">
-                {[...Array(2)].map((_, i) => (
-                  <div key={`ask-${i}`} className="flex justify-between text-[9px] text-rose-500 font-bold">
-                    <span>{(price + (3 - i) * step).toFixed(2)}</span>
-                    <span className="opacity-80">{Math.floor(Math.random() * 80 + 20)}</span>
-                  </div>
-                ))}
-                <div className="flex justify-between text-blue-900 bg-blue-50 border border-blue-200 my-1 px-1 py-0.5 text-[10px] font-black rounded">
-                  <span>{price.toFixed(2)}</span>
-                  <span className="text-blue-500">{Math.floor(Math.random() * 200 + 50)}</span>
-                </div>
-                {[...Array(2)].map((_, i) => (
-                  <div key={`bid-${i}`} className="flex justify-between text-[9px] text-emerald-600 font-bold">
-                    <span>{(price - (i + 1) * step).toFixed(2)}</span>
-                    <span className="opacity-80">{Math.floor(Math.random() * 80 + 20)}</span>
-                  </div>
-                ))}
-              </div>
+            <div className="flex flex-col mono-font text-slate-800 px-2 justify-center w-full h-full">
+              {[...Array(2)].map((_, i) => <div key={i} className="flex justify-between text-[9px] text-rose-500 font-bold"><span>{(price + (2-i)*0.5).toFixed(2)}</span><span>{Math.floor(Math.random()*50+20)}</span></div>)}
+              <div className="flex justify-between text-blue-900 bg-blue-50 border border-blue-100 my-0.5 px-1 text-[10px] font-black rounded"><span>{price.toFixed(2)}</span></div>
+              {[...Array(2)].map((_, i) => <div key={i} className="flex justify-between text-[9px] text-emerald-500 font-bold"><span>{(price - (i+1)*0.5).toFixed(2)}</span><span>{Math.floor(Math.random()*50+20)}</span></div>)}
             </div>
           );
         };
 
-        const HftTape = ({ price }) => {
-          const [ticks, setTicks] = useState([]);
-          useEffect(() => {
-            if (!price) return;
-            const int = setInterval(() => {
-                const isBuy = Math.random() > 0.5;
-                setTicks(p => [{id: Date.now(), buy: isBuy, amt: (Math.random() * 1.5 + 0.1).toFixed(2), price: (price + (Math.random() * 2 - 1)).toFixed(2)}].concat(p).slice(0, 3));
-            }, 900);
-            return () => clearInterval(int);
-          }, [price]);
-          return (
-             <div className="flex flex-col gap-0.5 w-[60px] pl-2 border-l border-slate-100 justify-end h-full shrink-0">
-                {ticks.map(t => (
-                    <div key={t.id} className={`text-[8px] font-bold mono-font flex justify-between w-full ${t.buy ? 'text-emerald-500' : 'text-rose-500'}`}>
-                        <span>{t.price.slice(-2)}</span><span>{t.buy ? '▲' : '▼'}{t.amt}</span>
-                    </div>
-                ))}
-             </div>
-          )
-        };
-
         const FALLBACK_NEWS = [
-            "Биткоин формирует пулы ликвидности за границами ключевых уровней.",
-            "Обнаружена манипуляция крупного капитала: ожидается разворот SMC.",
-            "Институциональные инвесторы тестируют зоны интереса в режиме реального времени.",
-            "Волатильность BTC указывает на приближение снятия ликвидности."
+            "Биткоин тестирует зоны пулов ликвидности: алгоритмы в ожидании.",
+            "Формирование паттерна снятия ликвидности подтверждает смену структуры.",
+            "Институциональные инвесторы наращивают объемы в зонах интереса.",
+            "Ожидается локальная волатильность BTC в ближайшие часы."
         ];
 
         const App = () => {
@@ -206,9 +167,9 @@
             setPhase("АНАЛИЗ РЫНКА (12H)...");
             setIsScanning(true);
 
-            // Оптимальный период пула - 24 свечи (2 часа)
-            const poolSize = 24; 
-            const history = await ScannerAPI.getCandles('BTCUSDT', 350, '5m');
+            // Пул ликвидности: 20 свечей (1ч 40м) - для лучшей частоты сигналов
+            const poolSize = 20; 
+            const history = await ScannerAPI.getCandles('BTCUSDT', 400, '5m');
             
             if (history.length > 200) {
               setPrice(history[history.length - 1].close);
@@ -223,7 +184,7 @@
               }
 
               let wins = 0; let losses = 0;
-              const startIdx = history.length - 144; 
+              const startIdx = history.length - 144; // 12 часов назад
               
               for (let i = startIdx; i <= history.length - 5; i++) {
                 const candle = history[i];
@@ -234,23 +195,23 @@
 
                 let type = null;
                 const body = Math.abs(candle.open - candle.close);
-                const isImpulse = body > (candle.high - candle.low) * 0.4;
+                const isStrong = body > (candle.high - candle.low) * 0.4;
 
-                if (candle.high > highZone && candle.close < highZone && candle.close < candle.open && isImpulse) type = 'PUT';
-                if (candle.low < lowZone && candle.close > lowZone && candle.close > candle.open && isImpulse) type = 'CALL';
+                if (candle.high > highZone && candle.close < highZone && candle.close < candle.open && isStrong) type = 'PUT';
+                if (candle.low < lowZone && candle.close > lowZone && candle.close > candle.open && isStrong) type = 'CALL';
                 
                 if (type) {
                   const targetLevel = type === 'CALL' ? lowZone : highZone;
-                  const histZone = chart.current.addLineSeries({ color: 'rgba(148, 163, 184, 0.4)', lineWidth: 8, crosshairMarkerVisible: false, priceLineVisible: false, lastValueVisible: false });
+                  const histZone = chart.current.addLineSeries({ color: 'rgba(148, 163, 184, 0.4)', lineWidth: 10, crosshairMarkerVisible: false, priceLineVisible: false, lastValueVisible: false });
                   histZone.setData([{ time: history[i - poolSize].time, value: targetLevel }, { time: history[i + 3].time, value: targetLevel }]);
 
                   const nextCandle = history[i+1];
-                  const simulatedEntry = type === 'CALL' ? nextCandle.open + (atr*0.1) : nextCandle.open - (atr*0.1);
+                  const entryPrice = type === 'CALL' ? nextCandle.open + (atr*0.1) : nextCandle.open - (atr*0.1);
                   markers.current.push({ time: nextCandle.time, position: type === 'CALL' ? 'belowBar' : 'aboveBar', color: '#f59e0b', shape: type === 'CALL' ? 'arrowUp' : 'arrowDown', text: 'ВХОД ⚡' });
 
                   const exitPrice = history[i + 3].close;
-                  const isWin = type === 'CALL' ? exitPrice > simulatedEntry : exitPrice < simulatedEntry;
-                  markers.current.push({ time: history[i+3].time, position: isWin ? 'aboveBar' : 'belowBar', color: isWin ? '#10b981' : '#f43f5e', shape: 'square', text: isWin ? 'ПРОФИТ (+)' : 'УБЫТОК (-)' });
+                  const isWin = type === 'CALL' ? exitPrice > entryPrice : exitPrice < entryPrice;
+                  markers.current.push({ time: history[i+3].time, position: isWin ? 'aboveBar' : 'belowBar', color: isWin ? '#10b981' : '#f43f5e', shape: 'square', text: isWin ? 'ПРОФИТ' : 'УБЫТОК' });
                   
                   if (isWin) wins++; else losses++; 
                   i += 3; 
@@ -260,20 +221,19 @@
               const wr = totalTrades > 0 ? Math.round((wins / totalTrades) * 100) : 0;
               setStats({ wins, losses, wr }); series.current.setMarkers(markers.current);
 
-              await speak(`Анализ рынка завершен. За последние 12 часов найдено ${totalTrades} сделок. Из них ${wins} успешных. Винрейт составил ${wr} процентов.`);
+              await speak(`Анализ рынка завершен. За последние 12 часов найдено ${totalTrades} успешных ситуации. Винрейт составил ${wr} процентов.`);
 
-              if (!upperLive.current) upperLive.current = chart.current.addLineSeries({ color: 'rgba(239, 68, 68, 0.2)', lineWidth: 4, crosshairMarkerVisible: false, priceLineVisible: false, lastValueVisible: false });
-              if (!lowerLive.current) lowerLive.current = chart.current.addLineSeries({ color: 'rgba(16, 185, 129, 0.2)', lineWidth: 4, crosshairMarkerVisible: false, priceLineVisible: false, lastValueVisible: false });
+              if (!upperLive.current) upperLive.current = chart.current.addLineSeries({ color: 'rgba(239, 68, 68, 0.2)', lineWidth: 5, crosshairMarkerVisible: false, priceLineVisible: false, lastValueVisible: false });
+              if (!lowerLive.current) lowerLive.current = chart.current.addLineSeries({ color: 'rgba(16, 185, 129, 0.2)', lineWidth: 5, crosshairMarkerVisible: false, priceLineVisible: false, lastValueVisible: false });
 
               while (engineActive.current) {
                 setPhase("НЕЙРОННОЕ СКАНИРОВАНИЕ...");
                 setIsScanning(true);
                 const live = await ScannerAPI.getCandles('BTCUSDT', 150, '5m');
-                
-                setMarketMetrics({ fear: 45 + Math.round(Math.random()*10), volume: 40 + Math.round(Math.random()*20), phase: 'ACCUMULATION' });
+                setMarketMetrics({ fear: 48 + Math.round(Math.random()*10), volume: 45 + Math.round(Math.random()*15), phase: 'ACCUMULATION' });
 
                 if (Date.now() - lastNewsSpoken > 7 * 60 * 1000 && fullNewsPool.current.length > 0) {
-                    await speak(`Сводка последних новостей. ${fullNewsPool.current[Math.floor(Math.random() * fullNewsPool.current.length)]}`);
+                    await speak(`Сводка новостей. ${fullNewsPool.current[Math.floor(Math.random() * fullNewsPool.current.length)]}`);
                     lastNewsSpoken = Date.now();
                 }
 
@@ -288,54 +248,51 @@
                   upperLive.current.setData([{ time: startZoneTime, value: highZone }, { time: last.time, value: highZone }]);
                   lowerLive.current.setData([{ time: startZoneTime, value: lowZone }, { time: last.time, value: lowZone }]);
 
-                  const upperDist = highZone - last.close; const lowerDist = last.close - lowZone;
-                  const glowThreshold = currentAtr * 1.5; 
-                  upperLive.current.applyOptions({ color: upperDist < glowThreshold ? 'rgba(239, 68, 68, 0.8)' : 'rgba(239, 68, 68, 0.2)' });
-                  lowerLive.current.applyOptions({ color: lowerDist < glowThreshold ? 'rgba(16, 185, 129, 0.8)' : 'rgba(16, 185, 129, 0.2)' });
+                  const glowT = currentAtr * 1.5; 
+                  upperLive.current.applyOptions({ color: (highZone - last.close) < glowT ? 'rgba(239, 68, 68, 0.8)' : 'rgba(239, 68, 68, 0.2)' });
+                  lowerLive.current.applyOptions({ color: (last.close - lowZone) < glowT ? 'rgba(16, 185, 129, 0.8)' : 'rgba(16, 185, 129, 0.2)' });
 
-                  const isImpulse = Math.abs(last.open - last.close) > (last.high - last.low) * 0.4;
+                  const isStrong = Math.abs(last.open - last.close) > (last.high - last.low) * 0.4;
                   let liveType = null;
-                  if (last.high > highZone && last.close < highZone && isImpulse && last.close < last.open) liveType = 'PUT';
-                  if (last.low < lowZone && last.close > lowZone && isImpulse && last.close > last.open) liveType = 'CALL';
+                  if (last.high > highZone && last.close < highZone && isStrong && last.close < last.open) liveType = 'PUT';
+                  if (last.low < lowZone && last.close > lowZone && isStrong && last.close > last.open) liveType = 'CALL';
 
                   if (liveType) {
                     setIsScanning(false); setSignal({ type: liveType, entry: last.close, status: 'CHECKING' });
-                    setPhase(`ПОДГОТОВКА К СДЕЛКЕ (15М)`);
-                    await speak(`Обнаружен захват ликвидности. Подготовьте Биткоин. Направление ${liveType === 'CALL' ? 'вверх' : 'вниз'}.`);
+                    setPhase(`ПОДГОТОВКА (3С)`);
+                    await speak(`Внимание. Снятие ликвидности. Подготовьте Биткоин. Направление ${liveType === 'CALL' ? 'вверх' : 'вниз'}.`);
 
                     let cancel = false;
                     for (let s = 3; s > 0; s--) {
-                        setPhase(`ПРОВЕРКА ИМПУЛЬСА... ${s}С`);
-                        await new Promise(r => setTimeout(r, 1000));
+                        setPhase(`АНАЛИЗ... ${s}С`); await new Promise(r => setTimeout(r, 1000));
                         const check = await ScannerAPI.getCandles('BTCUSDT', 1, '5m');
                         if ((liveType === 'PUT' && check[0].close > highZone) || (liveType === 'CALL' && check[0].close < lowZone)) cancel = true;
                     }
 
                     if (cancel) {
-                        setPhase("СИГНАЛ ОТМЕНЕН"); setSignal(null);
-                        await speak("Отмена. Паттерн сломан пробоем зоны.");
+                        setPhase("ОТМЕНА"); setSignal(null); await speak("Отмена. Цена не вернулась в пул.");
                     } else {
-                        setPhase("СДЕЛКА АКТИВНА"); 
+                        setPhase("СДЕЛКА АКТИВНА");
                         const realEntryData = await ScannerAPI.getCandles('BTCUSDT', 1, '1m');
                         const realPrice = realEntryData[0].close;
                         setSignal({ type: liveType, entry: realPrice, status: 'ACTIVE' });
                         markers.current.push({ time: realEntryData[0].time, position: liveType === 'CALL' ? 'belowBar' : 'aboveBar', color: '#f59e0b', shape: liveType === 'CALL' ? 'arrowUp' : 'arrowDown', text: 'ВХОД ⚡' });
                         series.current.setMarkers(markers.current);
 
-                        await speak("Вход подтвержден. Время пятнадцать минут. Жмите кнопку!");
+                        await speak("Вход подтвержден. Открывайте сделку!");
                         let exp = 15 * 60;
                         while(exp > 0) { setTimer(exp); await new Promise(r => setTimeout(r, 1000)); exp--; }
                         setTimer(null); const res = await ScannerAPI.getCandles('BTCUSDT', 1, '5m');
                         const isWin = liveType === 'CALL' ? res[0].close > realPrice : res[0].close < realPrice;
-                        markers.current.push({ time: res[0].time, position: isWin ? 'aboveBar' : 'belowBar', color: isWin ? '#10b981' : '#f43f5e', shape: 'square', text: isWin ? 'ПРОФИТ (+)' : 'УБЫТОК (-)' });
+                        markers.current.push({ time: res[0].time, position: isWin ? 'aboveBar' : 'belowBar', color: isWin ? '#10b981' : '#f43f5e', shape: 'square', text: isWin ? 'ПРОФИТ' : 'УБЫТОК' });
                         series.current.setMarkers(markers.current);
                         
                         const hLvl = liveType === 'CALL' ? lowZone : highZone;
-                        const hZone = chart.current.addLineSeries({ color: 'rgba(148, 163, 184, 0.4)', lineWidth: 8, crosshairMarkerVisible: false, priceLineVisible: false, lastValueVisible: false });
+                        const hZone = chart.current.addLineSeries({ color: 'rgba(148, 163, 184, 0.4)', lineWidth: 10, crosshairMarkerVisible: false, priceLineVisible: false, lastValueVisible: false });
                         hZone.setData([{ time: startZoneTime, value: hLvl }, { time: res[0].time, value: hLvl }]);
                         
                         if (isWin) { setStats(p => ({ ...p, wins: p.wins + 1, wr: Math.round(((p.wins+1)/(p.wins+p.losses+1))*100) })); await speak("Плюс! Сделка успешно завершена."); }
-                        else { setStats(p => ({ ...p, losses: p.losses + 1, wr: Math.round((p.wins/(p.wins+p.losses+1))*100) })); await speak("Минус. Рынок пробил ликвидность."); }
+                        else { setStats(p => ({ ...p, losses: p.losses + 1, wr: Math.round((p.wins/(p.wins+p.losses+1))*100) })); await speak("Минус. Рынок пошел дальше."); }
                         setSignal(null);
                     }
                   }
@@ -352,8 +309,8 @@
               <div className="h-screen flex items-center justify-center bg-slate-50 p-4">
                 <div className="premium-card p-10 text-center max-w-sm w-full relative">
                   <div className="w-20 h-20 bg-blue-600 rounded-3xl mx-auto mb-8 flex items-center justify-center shadow-lg"><Zap size={40} className="text-white" /></div>
-                  <h1 className="text-3xl font-black text-slate-800 oswald-font leading-none mb-2 uppercase">Крипто Ядро<br/><span className="text-blue-600">PRO MAX AI</span></h1>
-                  <p className="text-[10px] text-slate-400 font-bold tracking-[0.3em] uppercase mb-10">Institutional SMC V7</p>
+                  <h1 className="text-3xl font-black text-slate-800 oswald-font leading-none mb-2 uppercase">Крипто Ядро<br/><span className="text-blue-600 uppercase">Pro Max AI</span></h1>
+                  <p className="text-[10px] text-slate-400 font-bold tracking-[0.3em] uppercase mb-10">Institutional SMC V8 GOLD</p>
                   <button onClick={start} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold oswald-font tracking-widest hover:bg-blue-700 shadow-xl transition-all">ЗАПУСТИТЬ ТЕРМИНАЛ</button>
                 </div>
               </div>
@@ -373,7 +330,7 @@
                 <div className="flex items-center gap-3">
                   <Zap size={24} className="text-blue-600" />
                   <div className="flex flex-col">
-                    <h1 className="text-base md:text-lg font-bold oswald-font leading-none">ТЕРМИНАЛ <span className="text-blue-600 uppercase">Pro Max AI</span></h1>
+                    <h1 className="text-base md:text-lg font-bold oswald-font leading-none">ТЕРМИНАЛ <span className="text-blue-600">PRO MAX AI</span></h1>
                     <span className="silver-text text-[9px] mt-1 tracking-widest uppercase font-black">SLAVA GORDEEV</span>
                   </div>
                 </div>
@@ -385,7 +342,7 @@
               <main className="flex-1 flex flex-col lg:flex-row p-2 md:p-3 gap-3 overflow-hidden">
                 <div className={`flex-1 premium-card relative flex flex-col p-3 md:p-4 bg-white overflow-hidden min-h-[40vh] transition-all duration-1000 ${isScanning ? 'scanning-glow' : ''}`}>
                     <div className="flex justify-between items-center mb-2 relative z-10 shrink-0">
-                        <div><div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Neural Analysis Active</div><div className="text-xl md:text-2xl font-black text-slate-800 oswald-font tracking-tighter">BITCOIN PRO AI</div></div>
+                        <div><div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Neural Analysis Active</div><div className="text-xl md:text-2xl font-black text-slate-800 oswald-font">BITCOIN PRO AI</div></div>
                         <div className="text-right text-[9px] md:text-[10px] font-bold text-slate-500 uppercase bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">SCAN: 5M | EXP: 15M</div>
                     </div>
                     <div ref={chartContainer} className="flex-1 border border-slate-100 rounded-xl overflow-hidden min-h-0 relative z-10 bg-white"></div>
@@ -418,7 +375,7 @@
                   </div>
 
                   <div className="premium-card p-3 flex gap-2 h-24 bg-white border border-slate-200">
-                    <div className="flex-1 rounded-xl bg-slate-50 p-1 flex overflow-hidden"><OrderBookDepth price={price} /><HftTape price={price} /></div>
+                    <div className="flex-1 rounded-xl bg-slate-50 p-1 flex overflow-hidden flex-col"><div className="text-[8px] font-black text-slate-400 text-center uppercase mb-1">Live Order Flow</div><OrderBookDepth price={price} /></div>
                   </div>
 
                   <div className={`premium-card p-4 flex flex-col gap-3 shrink-0 transition-all ${signal?.status === 'ACTIVE' ? 'bg-blue-600 border-blue-700 shadow-lg' : 'bg-white'}`}>
@@ -426,7 +383,7 @@
                      {signal ? (
                          <div className={`w-full h-16 rounded-xl flex items-center justify-center animate-pulse ${signal.type === 'CALL' ? 'bg-emerald-400/20' : 'bg-rose-400/20'}`}>
                             <Zap size={24} className={signal.status === 'ACTIVE' ? 'text-white' : (signal.type === 'CALL' ? 'text-emerald-500' : 'text-rose-500')} />
-                            {signal.status === 'ACTIVE' && <span className="text-white font-black text-xs ml-2 uppercase">ЖМИТЕ КНОПКУ</span>}
+                            {signal.status === 'ACTIVE' && <span className="text-white font-black text-xs ml-2 uppercase italic tracking-widest">ВХОД В РЫНОК</span>}
                          </div>
                      ) : <div className="w-full h-16 rounded-xl border-2 border-dashed border-slate-100 flex items-center justify-center text-slate-300 font-bold text-[9px] uppercase tracking-tighter">Ожидание пула ликвидности...</div>}
                      <div className={`p-2 rounded-xl flex justify-between items-center ${signal?.status === 'ACTIVE' ? 'bg-white/10 text-white' : 'bg-slate-50 text-slate-800'}`}>
@@ -438,16 +395,16 @@
                      </div>
                   </div>
 
-                  <div className="flex-1 min-h-[60px] premium-card p-3 overflow-hidden flex flex-col gap-1 bg-slate-900 border-none">
+                  <div className="flex-1 min-h-[60px] premium-card p-3 overflow-hidden flex flex-col gap-1 bg-slate-900 border-none shrink-0">
                     <div className="text-[8px] font-black text-blue-400 uppercase mb-1 tracking-widest">Neural System Log</div>
-                    <div className={`text-[9px] font-bold leading-tight ${signal ? 'text-emerald-400' : 'text-slate-400'}`}>• {signal ? 'STRATEGY: LIQUIDITY SWEEP CONFIRMED' : 'ALGO: MONITORING 2H LIQUIDITY POOLS'}</div>
-                    <div className="text-[9px] font-black text-blue-500 leading-tight tracking-tighter">• SYSTEM STATUS: STABLE</div>
+                    <div className={`text-[9px] font-bold leading-tight ${signal ? 'text-emerald-400' : 'text-slate-400'}`}>• {signal ? 'STRATEGY: LIQUIDITY SWEEP CONFIRMED' : 'ALGO: MONITORING 2H POOLS'}</div>
+                    <div className="text-[9px] font-black text-blue-500 leading-tight tracking-tighter">• SYSTEM STATUS: ACTIVE</div>
                   </div>
                 </div>
               </main>
 
               <footer className="h-6 md:h-8 bg-white border-t border-slate-200 px-4 flex items-center justify-between text-[8px] font-black text-slate-400 uppercase tracking-widest shrink-0">
-                <div className="flex items-center gap-2">Slava Gordeev AI Core V7.0</div>
+                <div className="flex items-center gap-2 truncate">Slava Gordeev AI Core V8.0 GOLD Edition</div>
                 <div className="text-blue-600 font-black">AI ONLINE</div>
               </footer>
             </div>
@@ -459,3 +416,4 @@
     </script>
 </body>
 </html>
+скачать
