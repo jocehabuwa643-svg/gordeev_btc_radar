@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Крипто Терминал Гордеева - PRO MAX (SMC)</title>
+    <title>BTC PRO MAX | SLAVA GORDEEV</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -12,137 +12,43 @@
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Oswald:wght@300;400;500;600;700&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&family=Oswald:wght@300;500;700&display=swap');
         
         body { 
             margin: 0; padding: 0; 
-            background: #eef2f6;
-            color: #0f172a; 
+            background: #f0f2f5;
+            color: #1e293b; 
             overflow: hidden; 
-            touch-action: manipulation;
-            -webkit-font-smoothing: antialiased;
             font-family: 'Montserrat', sans-serif;
         }
-        
+
         .oswald-font { font-family: 'Oswald', sans-serif; letter-spacing: 0.05em; text-transform: uppercase; }
-        .mono-font { font-family: 'JetBrains Mono', monospace; }
-
-        .bg-grid-pattern {
-            background-image: 
-                linear-gradient(to right, rgba(14, 165, 233, 0.05) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(14, 165, 233, 0.05) 1px, transparent 1px);
-            background-size: 30px 30px;
-            mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
-            -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
-        }
-
-        .bg-orb-1 {
-            position: absolute; top: -10%; left: -5%; width: 50vw; height: 50vw;
-            background: radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, rgba(37, 99, 235, 0.05) 50%, transparent 70%);
-            border-radius: 50%; filter: blur(60px); animation: float 12s ease-in-out infinite alternate;
-        }
-        .bg-orb-2 {
-            position: absolute; bottom: -15%; right: -10%; width: 60vw; height: 60vw;
-            background: radial-gradient(circle, rgba(6, 182, 212, 0.2) 0%, rgba(14, 165, 233, 0.05) 50%, transparent 70%);
-            border-radius: 50%; filter: blur(80px); animation: float 15s ease-in-out infinite alternate-reverse;
-        }
-
-        @keyframes float {
-            0% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(2%, 4%) scale(1.05); }
-            100% { transform: translate(-2%, -3%) scale(0.95); }
-        }
-
-        .card-3d-wrapper { perspective: 2000px; }
-        .card-3d {
-            transform-style: preserve-3d;
-            animation: float-3d 12s ease-in-out infinite;
-            box-shadow: 
-                0 30px 60px -15px rgba(15, 23, 42, 0.15), 
-                0 15px 30px -10px rgba(14, 165, 233, 0.2),
-                inset 0 1px 3px rgba(255, 255, 255, 1);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 249, 255, 0.8) 100%);
-            backdrop-filter: blur(20px);
-            position: relative;
-        }
-        .card-3d::before {
-            content: ''; position: absolute; inset: 0;
-            background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.6) 25%, transparent 30%);
-            border-radius: inherit; pointer-events: none; z-index: 50; animation: glare 6s infinite linear;
-        }
-
-        @keyframes glare {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-
-        @keyframes float-3d {
-            0% { transform: translateY(0px) rotateX(2deg) rotateY(-2deg); }
-            50% { transform: translateY(-10px) rotateX(-1deg) rotateY(3deg); }
-            100% { transform: translateY(0px) rotateX(2deg) rotateY(-2deg); }
-        }
-
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-        .ticker-wrapper { display: flex; width: max-content; animation: ticker 40s linear infinite; }
         
-        @keyframes scanline { 
-            0% { transform: translateY(-100%); opacity: 0; } 
-            15% { opacity: 1; }
-            85% { opacity: 1; }
-            100% { transform: translateY(500%); opacity: 0; } 
-        }
-        .scanline-anim { 
-            animation: scanline 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; 
-            background: linear-gradient(to bottom, transparent, rgba(14, 165, 233, 0.4), rgba(59, 130, 246, 0.6), transparent); 
-        }
-        
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
-            z-index: 40;
-        }
-        
-        .glass-panel-heavy {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(241, 245, 249, 0.8) 100%);
-            backdrop-filter: blur(35px);
-            -webkit-backdrop-filter: blur(35px);
-            border: 1px solid rgba(255, 255, 255, 0.9);
-            box-shadow: 0 15px 35px -10px rgba(15, 23, 42, 0.08), inset 0 2px 10px rgba(255, 255, 255, 0.6);
+        /* СЕРЕБРИСТОЕ ИМЯ РАЗРАБОТЧИКА */
+        .silver-text {
+            background: linear-gradient(180deg, #f8fafc 0%, #94a3b8 50%, #475569 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 900;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.1));
         }
 
         .glass-card {
-            background: linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.6) 100%);
-            border: 1px solid rgba(226, 232, 240, 0.9);
-            box-shadow: 0 4px 15px -5px rgba(15, 23, 42, 0.03), inset 0 1px 1px rgba(255, 255, 255, 1);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,1);
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,1);
+        }
+
+        .ticker-wrapper { display: flex; width: max-content; animation: ticker 40s linear infinite; }
+        @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+        .premium-btn {
+            background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+            box-shadow: 0 15px 30px rgba(59, 130, 246, 0.3);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .glass-card:hover {
-            border-color: rgba(186, 230, 253, 0.8);
-            background: linear-gradient(145deg, rgba(255, 255, 255, 1) 0%, rgba(248, 250, 252, 0.9) 100%);
-            box-shadow: 0 8px 25px -5px rgba(14, 165, 233, 0.15), inset 0 1px 2px rgba(255, 255, 255, 1);
-        }
-
-        .text-gradient {
-            background: linear-gradient(135deg, #2563eb, #06b6d4);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        @keyframes slideUpFade {
-            0% { transform: translateY(10px); opacity: 0; }
-            20% { transform: translateY(0); opacity: 1; }
-            80% { transform: translateY(0); opacity: 1; }
-            100% { transform: translateY(-10px); opacity: 0; }
-        }
-        .hft-tick { animation: slideUpFade 1.5s ease-out forwards; }
+        .premium-btn:active { transform: scale(0.95); opacity: 0.9; }
     </style>
 </head>
 <body>
@@ -151,592 +57,314 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        const Shield = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 4.81 17 6 19 6a1 1 0 0 1 1 1z"/></svg>;
-        const Cpu = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>;
-        const Globe = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>;
-        const Clock = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
-        const TrendingUp = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>;
-        const Radar = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 5.49A10 10 0 0 0 5.3 19.38"/><path d="M20 8.74A10 10 0 0 1 17.38 20"/><path d="M16 8a6 6 0 0 0-8.5-1.5"/><path d="M7.5 16.5a6 6 0 0 0 9.2-.5"/><path d="M12 12v.01"/></svg>;
-        const Zap = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
-
-        const ASSETS = [{ pair: 'BTC/USDT', symbol: 'BTCUSDT', name: 'Bitcoin', voiceName: 'биткоин' }];
-
-        const FALLBACK_BTC_NEWS = [
-          "Крупный капитал формирует пулы ликвидности за локальными экстремумами.",
-          "Паттерн снятия ликвидности (SMC) подтверждает смену структуры рынка.",
-          "Зафиксирован ложный пробой диапазона с последующим CHoCH.",
-          "Маркетмейкер собирает стопы розничных трейдеров перед разворотом."
-        ];
+        // Иконки
+        const Zap = ({ size = 24, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
+        const Globe = ({ size = 24 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>;
 
         const ScannerAPI = {
-          async getCandles(symbol, count = 250, interval = '1m') { 
-            const urls = [
-                `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`
-            ];
-            for (let url of urls) {
-                try {
-                    let response = await fetch(url);
-                    if (response.ok) {
-                        const data = await response.json();
-                        return data.map(d => ({
-                            time: d[0] / 1000, open: parseFloat(d[1]), high: parseFloat(d[2]),
-                            low: parseFloat(d[3]), close: parseFloat(d[4]), volume: parseFloat(d[5])
-                        }));
-                    }
-                } catch(e) { continue; }
-            }
-            return [];
+          async getCandles(symbol, limit = 200) {
+            try {
+              const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1m&limit=${limit}`);
+              const data = await res.json();
+              return data.map(d => ({
+                time: d[0] / 1000, open: parseFloat(d[1]), high: parseFloat(d[2]),
+                low: parseFloat(d[3]), close: parseFloat(d[4]), volume: parseFloat(d[5])
+              }));
+            } catch(e) { return []; }
           }
         };
 
-        const formatPrice = (p) => {
-            if (!p && p !== 0) return '0.00';
-            if (p >= 1000) return p.toFixed(2);
-            if (p >= 10) return p.toFixed(3);
-            if (p >= 1) return p.toFixed(4);
-            return p.toFixed(5);
-        };
-
-        function calcLiquidityZones(data, period = 30) {
-            let res = [];
-            for (let i = 0; i < data.length; i++) {
-                if (i < period) { res.push({ time: data[i].time, upper: data[i].high, lower: data[i].low }); continue; }
-                let high = -Infinity; let low = Infinity;
-                for (let j = 1; j <= period; j++) {
-                    high = Math.max(high, data[i - j].high); low = Math.min(low, data[i - j].low);
-                }
-                res.push({ time: data[i].time, upper: high, lower: low });
-            }
-            return res;
-        }
-
-        function calcATRSeries(data, period = 14) {
-            let res = [];
-            for (let i = 0; i < data.length; i++) {
-                if (i === 0) { res.push({time: data[i].time, value: data[i].high - data[i].low}); continue; }
-                let sumTR = 0; let count = 0;
-                for(let j = 0; j < period && (i - j) > 0; j++) {
-                    const c = data[i - j]; const prevC = data[i - j - 1];
-                    let tr = Math.max(c.high - c.low, Math.abs(c.high - prevC.close), Math.abs(c.low - prevC.close));
-                    sumTR += tr; count++;
-                }
-                res.push({time: data[i].time, value: count > 0 ? sumTR / count : 0});
-            }
-            return res;
-        }
-
-        const LiveClock = () => {
-          const [t, setT] = useState(new Date());
-          useEffect(() => { const i = setInterval(() => setT(new Date()), 1000); return () => clearInterval(i); }, []);
-          return <span className="text-slate-800 text-sm md:text-base mono-font font-bold">{t.toLocaleTimeString('ru-RU')}</span>;
-        };
-
-        const MiniChart = ({ data }) => {
-          if (!data || data.length < 2) return <div className="w-full h-full flex items-center justify-center opacity-60 text-lg tracking-widest text-slate-500 font-bold animate-pulse oswald-font">ЗАГРУЗКА КЛАСТЕРОВ...</div>;
-          const chartData = data.slice(-40); 
-          const min = Math.min(...chartData.map(d => d.low)); const max = Math.max(...chartData.map(d => d.high));
-          const maxVol = Math.max(...chartData.map(d => d.volume || 1)); const range = (max - min) || 1;
-          const width = 200, height = 80; const candleWidth = width / chartData.length;
-
+        const Speedometer = ({ value, label, color = "#3b82f6" }) => {
+          const angle = -90 + (value / 100) * 180;
           return (
-            <svg className="w-full h-full opacity-90" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-              {chartData.map((c, i) => {
-                const isUp = c.close >= c.open; const x = i * candleWidth; const w = candleWidth * 0.7;
-                const oY = height - ((c.open - min) / range) * height; const cY = height - ((c.close - min) / range) * height;
-                const hY = height - ((c.high - min) / range) * height; const lY = height - ((c.low - min) / range) * height;
-                const volH = ((c.volume || 0) / maxVol) * 15; const volY = height - volH;
-                return (
-                  <g key={i}>
-                    <line x1={x + w / 2} y1={hY} x2={x + w / 2} y2={lY} stroke={isUp ? "#0ea5e9" : "#94a3b8"} strokeWidth="1" />
-                    <rect x={x} y={isUp ? cY : oY} width={w} height={Math.max(Math.abs(cY - oY), 1.2)} fill={isUp ? "#0ea5e9" : "transparent"} stroke={isUp ? "none" : "#94a3b8"} strokeWidth="1" rx="0.5" />
-                    <rect x={x} y={volY} width={w} height={volH} fill={isUp ? "rgba(14, 165, 233, 0.2)" : "rgba(148, 163, 184, 0.2)"} />
-                  </g>
-                );
-              })}
-            </svg>
-          );
-        };
-
-        const Speedometer = ({ value, label, colorHex = "#0284c7", glow = false }) => {
-          const safeValue = isNaN(value) ? 50 : Math.max(0, Math.min(100, value));
-          const angle = -90 + (safeValue / 100) * 180;
-          const radius = 40; const circumference = Math.PI * radius;
-          const strokeDashoffset = circumference - (safeValue / 100) * circumference;
-          return (
-            <div className="flex flex-col items-center flex-1 relative px-0.5 group pt-1">
-              <svg viewBox="0 0 100 55" className="w-10 h-6 md:w-12 md:h-7 overflow-visible mt-1">
-                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="rgba(226, 232, 240, 1)" strokeWidth="5" strokeLinecap="round" />
-                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke={colorHex} strokeWidth="5" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} style={{ transition: 'stroke-dashoffset 0.8s' }} />
-                <g style={{ transform: `rotate(${angle}deg)`, transformOrigin: '50px 50px', transition: 'transform 0.8s' }}>
-                  <polygon points="48,50 52,50 50,12" fill={colorHex} />
-                  <circle cx="50" cy="50" r="6" fill={colorHex} />
-                  <circle cx="50" cy="50" r="2.5" fill="#ffffff" />
-                </g>
+            <div className="flex flex-col items-center flex-1">
+              <svg viewBox="0 0 100 60" className="w-12 h-8 overflow-visible">
+                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#e2e8f0" strokeWidth="6" strokeLinecap="round" />
+                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" strokeDasharray="125.6" strokeDashoffset={125.6 - (value/100)*125.6} style={{transition:'0.8s'}} />
+                <circle cx="50" cy="50" r="4" fill={color} />
+                <line x1="50" y1="50" x2={50 + 35 * Math.cos((angle * Math.PI)/180)} y2={50 + 35 * Math.sin((angle * Math.PI)/180)} stroke={color} strokeWidth="2" />
               </svg>
-              <div className={`text-base md:text-lg mt-1.5 font-black leading-none oswald-font ${glow ? 'text-cyan-600' : 'text-slate-800'}`}>{Math.round(safeValue)}</div>
-              <div className="text-[8px] md:text-[9px] text-slate-500 tracking-widest leading-none text-center font-bold mt-1 uppercase whitespace-nowrap">{label}</div>
+              <div className="text-lg font-black mt-1 text-slate-800">{Math.round(value)}</div>
+              <div className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">{label}</div>
             </div>
           );
-        };
-        
-        const VolumetricArrow = ({ type }) => {
-          const isUp = type === 'CALL';
-          return (
-            <div className="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center animate-arrow-premium">
-               <svg viewBox="0 0 24 24" className={`w-full h-full fill-current ${isUp ? 'text-[#0ea5e9]' : 'text-[#f43f5e]'}`}>
-                  <path d={isUp ? "M12 2l-10 11h7v9h6v-9h7z" : "M12 22l10-11h-7v-9h-6v9h-7z"} />
-               </svg>
-            </div>
-          );
-        };
-
-        const OrderBookDepth = ({ price }) => {
-          if (!price) return <div className="flex-1 text-center text-xs opacity-50 mt-10">СИНХРОНИЗАЦИЯ...</div>;
-          return (
-            <div className="flex flex-col mono-font text-slate-800 border-l border-slate-300/50 px-3 justify-center h-full w-full">
-              <div className="space-y-0.5 mt-1 relative z-10">
-                <div className="flex justify-between text-blue-900 bg-blue-100 border border-blue-400 my-1.5 px-2 py-0.5 text-xs font-black shadow-sm rounded-md relative overflow-hidden">
-                  <span className="relative z-10">{formatPrice(price)}</span>
-                </div>
-              </div>
-            </div>
-          );
-        };
-
-        const HftTape = ({ price }) => {
-          const [ticks, setTicks] = useState([]);
-          useEffect(() => {
-            if (!price) return;
-            const int = setInterval(() => {
-                setTicks(p => [{id: Date.now(), buy: Math.random() > 0.5, amt: (Math.random() * 2).toFixed(2), price: formatPrice(price + (Math.random() * 2 - 1))}].concat(p).slice(0, 4));
-            }, 600);
-            return () => clearInterval(int);
-          }, [price]);
-          return (
-             <div className="flex flex-col gap-1 w-[85px] md:w-[95px] pl-2 border-l border-slate-200/50 overflow-hidden justify-end pb-1 h-full shrink-0">
-                {ticks.map(t => (
-                    <div key={t.id} className={`text-[9px] md:text-[10px] font-bold mono-font flex justify-between w-full ${t.buy ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        <span className="opacity-80">{t.price.slice(-2)}</span><span>{t.buy ? '▲' : '▼'}{t.amt}</span>
-                    </div>
-                ))}
-             </div>
-          )
         };
 
         const App = () => {
           const [isStarted, setIsStarted] = useState(false);
-          const [appPhase, setAppPhase] = useState('СИНХРОНИЗАЦИЯ...');
-          const [viewMode, setViewMode] = useState('SCREENER'); 
-          const [asset, setAsset] = useState(ASSETS[0]);
-          const [sparklines, setSparklines] = useState({});
+          const [phase, setPhase] = useState("ИНИЦИАЛИЗАЦИЯ...");
+          const [view, setView] = useState("SCREENER"); // SCREENER или DETAIL
+          const [news, setNews] = useState(["ОБНОВЛЕНИЕ ДАННЫХ BTC..."]);
+          const [stats, setStats] = useState({ wins: 0, losses: 0, wr: 0 });
           const [signal, setSignal] = useState(null);
-          const [countdown, setCountdown] = useState(null);
-          const [logs, setLogs] = useState([]);
-          const [currentTF, setCurrentTF] = useState('15M'); // Изменили отображение на 15M
-          
-          const [metrics, setMetrics] = useState({ structure: 50, liquidity: 50, filterLevel: 1.0, smartMoney: 0, buyPressure: 50 });
-          const [newsHeadlines, setNewsHeadlines] = useState(["ОБНОВЛЕНИЕ ДАННЫХ BTC..."]);
-          const [tradeStats, setTradeStats] = useState({ wins: 0, losses: 0, winRate: 0 });
-          
-          const chartContainerRef = useRef(null);
-          const chartInstance = useRef(null);
-          const candleSeries = useRef(null);
-          const audioCtx = useRef(null);
+          const [timer, setTimer] = useState(null);
+          const [price, setPrice] = useState(0);
+
+          const chartContainer = useRef(null);
+          const chart = useRef(null);
+          const series = useRef(null);
+          const allMarkers = useRef([]);
           const engineActive = useRef(false);
-          const currentPrice = useRef(null);
-          const statsRef = useRef({ wins: 0, losses: 0 });
-          const markersRef = useRef([]); 
-          const fullNewsPool = useRef([...FALLBACK_BTC_NEWS]);
 
-          const fetchNews = async () => {
-              try {
-                  const urls = ['https://api.rss2json.com/v1/api.json?rss_url=https://forklog.com/feed/'];
-                  let btcItems = [];
-                  for(let u of urls) {
-                      let res = await fetch(u).catch(()=>null);
-                      if(res && res.ok) {
-                          let data = await res.json();
-                          if (data && data.items) {
-                              btcItems = data.items.filter(item => /биткоин|btc/i.test(item.title)).map(item => item.title.replace(/<\/?[^>]+(>|$)/g, "").trim());
-                          }
-                      }
-                  }
-                  if (btcItems.length > 0) { fullNewsPool.current = [...new Set(btcItems)]; setNewsHeadlines(fullNewsPool.current); }
-                  else { setNewsHeadlines(FALLBACK_BTC_NEWS); }
-              } catch (error) { setNewsHeadlines(FALLBACK_BTC_NEWS); }
-          };
-
-          useEffect(() => {
-            fetchNews();
-            const newsInterval = setInterval(fetchNews, 20 * 60 * 1000); 
-            return () => clearInterval(newsInterval);
-          }, []);
-
-          const addLog = (msg, isAi = false) => setLogs(p => [`${isAi ? 'SMC АНАЛИЗ:' : 'СИСТЕМА:'} ${msg}`, ...p].slice(0, 5));
-
-          const speak = (text) => new Promise(res => {
-            if (!window.speechSynthesis) return res();
-            window.speechSynthesis.cancel(); 
+          const speak = (text) => {
+            window.speechSynthesis.cancel();
             const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'ru-RU'; u.rate = 1.05; u.pitch = 0.95; 
-            let resolved = false;
-            const resolveOnce = () => { if (!resolved) { resolved = true; setTimeout(res, 200); } };
-            u.onend = resolveOnce; u.onerror = resolveOnce;
-            try { window.speechSynthesis.speak(u); } catch(e) { resolveOnce(); }
-            setTimeout(resolveOnce, Math.max(3000, text.length * 80)); 
-          });
-
-          const initChart = async () => {
-            if (!chartContainerRef.current || chartInstance.current) return;
-            const mainChart = window.LightweightCharts.createChart(chartContainerRef.current, {
-                autoSize: true,
-                layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#475569', fontFamily: 'JetBrains Mono' },
-                grid: { vertLines: { color: 'rgba(148, 163, 184, 0.2)' }, horzLines: { color: 'rgba(148, 163, 184, 0.2)' } },
-                timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
-                rightPriceScale: { borderVisible: false }
-            });
-            candleSeries.current = mainChart.addCandlestickSeries({ 
-                upColor: '#0ea5e9', downColor: '#ef4444', borderVisible: true, 
-                borderUpColor: '#0ea5e9', borderDownColor: '#ef4444', wickUpColor: '#0ea5e9', wickDownColor: '#ef4444'
-            });
-            chartInstance.current = mainChart;
+            u.lang = 'ru-RU'; u.rate = 1.0;
+            window.speechSynthesis.speak(u);
           };
 
-          const runTerminalEngine = async () => {
+          const runEngine = async () => {
             if (engineActive.current) return;
             engineActive.current = true;
-            let lastCancelledTime = 0;
 
-            await speak('Аналитическая система Слава Гордеев PRO MAX активирована. Выполняю бэктест рынка за последний час.');
-            setAppPhase('БЭКТЕСТ: АНАЛИЗ SMC ИСТОРИИ...');
+            await speak("Аналитическая система Слава Гордеев ПРО МАКС активирована. Выполняю бэктест рынка за последний час.");
+            setPhase("БЭКТЕСТ ИСТОРИИ SMC...");
 
-            const initialData = await ScannerAPI.getCandles(ASSETS[0].symbol, 150, '1m'); // Качаем с запасом
-            
-            if (initialData && initialData.length > 100) {
-                setSparklines({[ASSETS[0].symbol]: initialData});
-                currentPrice.current = initialData[initialData.length - 1].close;
+            const history = await ScannerAPI.getCandles('BTCUSDT', 150);
+            if (history.length > 100) {
+              setPrice(history[history.length - 1].close);
+              
+              // ЛОГИКА БЭКТЕСТА (за 60 минут)
+              let wins = 0; let losses = 0;
+              const startIdx = history.length - 75;
+              const endIdx = history.length - 16;
 
-                const liqZones = calcLiquidityZones(initialData, 30); 
-                const atrSeries = calcATRSeries(initialData, 14); 
+              for (let i = startIdx; i <= endIdx; i++) {
+                const candle = history[i];
+                const prev = history.slice(i - 20, i);
+                const high = Math.max(...prev.map(c => c.high));
+                const low = Math.min(...prev.map(c => c.low));
 
-                let historicalWins = 0; let historicalLosses = 0;
-                
-                // БЭКТЕСТ ЗА ПОСЛЕДНИЙ ЧАС (около 60 свечей)
-                const startIdx = initialData.length - 75; 
-                const endIdx = initialData.length - 16; // Нужно место для оценки результата через 15 свечей
+                let type = null;
+                if (candle.high > high && candle.close < high) type = 'PUT';
+                if (candle.low < low && candle.close > low) type = 'CALL';
 
-                for (let idx = startIdx; idx <= endIdx; idx++) {
-                    const currCandle = initialData[idx];
-                    const prevCandle = initialData[idx - 1];
-                    const cUpper = liqZones[idx]?.upper; const cLower = liqZones[idx]?.lower;
-                    const cAtr = atrSeries[idx]?.value;
+                if (type) {
+                  const entry = candle.close;
+                  const exit = history[i + 15].close;
+                  const isWin = type === 'CALL' ? exit > entry : exit < entry;
+                  
+                  allMarkers.current.push({
+                    time: candle.time, position: type === 'CALL' ? 'belowBar' : 'aboveBar',
+                    color: type === 'CALL' ? '#3b82f6' : '#ef4444', shape: type === 'CALL' ? 'arrowUp' : 'arrowDown',
+                    text: 'ВХОД'
+                  });
+                  allMarkers.current.push({
+                    time: history[i + 15].time, position: isWin ? 'aboveBar' : 'belowBar',
+                    color: isWin ? '#10b981' : '#94a3b8', shape: 'circle',
+                    text: isWin ? 'ВИН (+)' : 'ЛОСС (-)'
+                  });
 
-                    if (cUpper && cAtr) {
-                        const isRangeValid = (cUpper - cLower) > (cAtr * 1.0);
-                        let isCall = false; let isPut = false;
+                  if (isWin) wins++; else losses++;
+                  i += 15; // Пропускаем время сделки
+                }
+              }
 
-                        if ((currCandle.high > cUpper || prevCandle.high > cUpper) && currCandle.close < cUpper && currCandle.close < prevCandle.low && isRangeValid) isPut = true;
-                        if ((currCandle.low < cLower || prevCandle.low < cLower) && currCandle.close > cLower && currCandle.close > prevCandle.high && isRangeValid) isCall = true;
+              const total = wins + losses;
+              const calculatedWR = total > 0 ? Math.round((wins / total) * 100) : 0;
+              setStats({ wins, losses, wr: calculatedWR });
 
-                        if (isCall || isPut) {
-                            const entryPrice = currCandle.close;
-                            // Смотрим результат через 15 минут
-                            const exitPrice = initialData[idx + 15].close; 
-                            const isWin = (isCall && exitPrice > entryPrice) || (isPut && exitPrice < entryPrice);
+              // Показываем график с историей
+              setView("DETAIL");
+              setTimeout(() => {
+                if (!chart.current && chartContainer.current) {
+                  chart.current = LightweightCharts.createChart(chartContainer.current, {
+                    layout: { background: { color: 'white' }, textColor: '#64748b' },
+                    grid: { vertLines: { visible: false }, horzLines: { color: '#f1f5f9' } },
+                    timeScale: { borderVisible: false, timeVisible: true }
+                  });
+                  series.current = chart.current.addCandlestickSeries({ upColor: '#3b82f6', downColor: '#ef4444' });
+                }
+                series.current.setData(history);
+                series.current.setMarkers(allMarkers.current);
+              }, 100);
 
-                            // Маркер входа (Стрелка)
-                            markersRef.current.push({
-                                time: currCandle.time,
-                                position: isCall ? 'belowBar' : 'aboveBar',
-                                color: isCall ? '#0ea5e9' : '#f43f5e',
-                                shape: isCall ? 'arrowUp' : 'arrowDown',
-                                text: 'ВХОД', size: 1
-                            });
+              if (total > 0) {
+                await speak(`Бэктест завершен. За последний час алгоритм нашел ${total} сигналов. Винрейт составил ${calculatedWR} процентов.`);
+              } else {
+                await speak(`Бэктест завершен. За последний час идеальных точек входа не обнаружено.`);
+              }
 
-                            // Маркер выхода (Точка) ровно через 15 минут
-                            markersRef.current.push({
-                                time: initialData[idx + 15].time,
-                                position: isWin ? (isCall ? 'aboveBar' : 'belowBar') : (isCall ? 'aboveBar' : 'belowBar'),
-                                color: isWin ? '#10b981' : '#64748b', // Зеленый если плюс, Серый если минус
-                                shape: 'circle',
-                                text: isWin ? '+ ПРОФИТ' : '- МИНУС', size: 1
-                            });
+              await new Promise(r => setTimeout(r, 5000));
+              await speak("Перехожу к сканированию рынка. Ищу новые манипуляции крупного капитала.");
+              setView("SCREENER");
 
-                            if (isWin) historicalWins++; else historicalLosses++;
-                            idx += 15; // Пропускаем время сделки
-                        }
+              // ЛАЙВ-ЦИКЛ
+              while (engineActive.current) {
+                setPhase("СКАНИРОВАНИЕ ЛИКВИДНОСТИ...");
+                const live = await ScannerAPI.getCandles('BTCUSDT', 100);
+                if (live.length > 0) {
+                  const last = live[live.length - 1];
+                  setPrice(last.close);
+                  const prevHigh = Math.max(...live.slice(-30, -1).map(c => c.high));
+                  const prevLow = Math.min(...live.slice(-30, -1).map(c => c.low));
+
+                  let liveType = null;
+                  if (last.high > prevHigh && last.close < prevHigh) liveType = 'PUT';
+                  if (last.low < prevLow && last.close > prevLow) liveType = 'CALL';
+
+                  if (liveType) {
+                    setView("DETAIL");
+                    allMarkers.current.push({
+                      time: last.time, position: liveType === 'CALL' ? 'belowBar' : 'aboveBar',
+                      color: liveType === 'CALL' ? '#3b82f6' : '#ef4444', shape: liveType === 'CALL' ? 'arrowUp' : 'arrowDown',
+                      text: 'СИГНАЛ'
+                    });
+                    series.current.setMarkers(allMarkers.current);
+
+                    setPhase(`ГОТОВЬТЕ: BTC (15 МИН)`);
+                    await speak(`Внимание! Обнаружено снятие ликвидности. Подготовьте Биткоин. Время пятнадцать минут. Направление на ${liveType === 'CALL' ? 'повышение' : 'понижение'}.`);
+
+                    // 5 сек на подтверждение
+                    let cancelled = false;
+                    for (let s = 5; s > 0; s--) {
+                      setPhase(`СНАЙПЕР: ПРОВЕРКА... ${s}С`);
+                      await new Promise(r => setTimeout(r, 1000));
+                      const check = await ScannerAPI.getCandles('BTCUSDT', 1);
+                      if (liveType === 'PUT' && check[0].close > prevHigh) cancelled = true;
+                      if (liveType === 'CALL' && check[0].close < prevLow) cancelled = true;
                     }
-                }
 
-                const total = historicalWins + historicalLosses;
-                const wr = total > 0 ? Math.round((historicalWins / total) * 100) : 0;
-                statsRef.current = { wins: historicalWins, losses: historicalLosses };
-                setTradeStats({ wins: historicalWins, losses: historicalLosses, winRate: wr });
+                    if (cancelled) {
+                      setPhase("ОТМЕНА: ПРОВЕРКА НЕ ПРОЙДЕНА");
+                      await speak("Отмена. Паттерн сломан. Возвращаюсь к сканеру.");
+                      await new Promise(r => setTimeout(r, 2000));
+                    } else {
+                      setPhase("СИГНАЛ АКТИВЕН");
+                      setSignal({ type: liveType, entry: last.close });
+                      await speak("Вход подтвержден! Экспирация пятнадцать минут. Жмите кнопку!");
 
-                setViewMode('DETAIL');
-                await initChart();
-                if (candleSeries.current) {
-                    candleSeries.current.setData(initialData);
-                    candleSeries.current.setMarkers(markersRef.current);
-                }
-
-                if (total > 0) {
-                    addLog(`БЭКТЕСТ: НАЙДЕНО СИГНАЛОВ: ${total}. ВИНРЕЙТ: ${wr}%`);
-                    await speak(`Бэктест завершен. На графике отмечены реальные сигналы за последний час. Входов было ${total}, винрейт составил ${wr} процентов.`);
-                } else {
-                    addLog(`БЭКТЕСТ: СИГНАЛОВ ЗА ЧАС НЕ БЫЛО.`);
-                    await speak(`Бэктест завершен. За последний час алгоритм не нашел идеальных точек входа. График чист.`);
-                }
-
-                await new Promise(r => setTimeout(r, 4000));
-                await speak('Перехожу к сканированию рынка в реальном времени.');
-                setViewMode('SCREENER');
-            }
-            
-            // ЛАЙВ СКАНЕР
-            while (engineActive.current) {
-              try {
-                  setAppPhase('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...');
-                  setViewMode('SCREENER');
-                  setSignal(null);
-                  
-                  const data = await ScannerAPI.getCandles(ASSETS[0].symbol, 150, '1m'); 
-                  
-                  if (data && data.length > 100) {
-                      const lastIdx = data.length - 1;
-                      currentPrice.current = data[lastIdx].close; 
-
-                      const liqZones = calcLiquidityZones(data, 30); 
-                      const atrSeries = calcATRSeries(data, 14);    
-
-                      let isCall = false; let isPut = false; let triggerCandleIdx = lastIdx;
-
-                      for (let j = 0; j < 3; j++) {
-                          const idx = lastIdx - j;
-                          const currCandle = data[idx]; const prevCandle = data[idx - 1];
-                          const cUpper = liqZones[idx]?.upper; const cLower = liqZones[idx]?.lower;
-                          
-                          if (cUpper && atrSeries[idx]) {
-                              const isRangeValid = (cUpper - cLower) > (atrSeries[idx].value * 1.0);
-                              
-                              if ((currCandle.high > cUpper || prevCandle.high > cUpper) && currCandle.close < cUpper && currCandle.close < prevCandle.low && isRangeValid) {
-                                  if (data[idx].time !== lastCancelledTime) { isPut = true; triggerCandleIdx = idx; break; }
-                              }
-                              if ((currCandle.low < cLower || prevCandle.low < cLower) && currCandle.close > cLower && currCandle.close > prevCandle.high && isRangeValid) {
-                                  if (data[idx].time !== lastCancelledTime) { isCall = true; triggerCandleIdx = idx; break; }
-                              }
-                          }
+                      let exp = 15 * 60;
+                      while (exp > 0) {
+                        setTimer(exp);
+                        await new Promise(r => setTimeout(r, 1000));
+                        exp--;
                       }
-
-                      if (isCall || isPut) {
-                          setViewMode('DETAIL');
-                          if(candleSeries.current) {
-                              data.slice(-5).forEach(d => candleSeries.current.update(d));
-                              markersRef.current.push({
-                                  time: data[triggerCandleIdx].time,
-                                  position: isCall ? 'belowBar' : 'aboveBar',
-                                  color: isCall ? '#0ea5e9' : '#f43f5e',
-                                  shape: isCall ? 'arrowUp' : 'arrowDown',
-                                  text: 'ВХОД', size: 2
-                              });
-                              candleSeries.current.setMarkers(markersRef.current);
-                          }
-                          
-                          setAppPhase('ГОТОВЬТЕ: BTC (15 МИН)');
-                          await speak(`Внимание. Слом структуры. Подготовьте Биткоин. Время пятнадцать минут. Направление на ${isCall ? 'повышение' : 'понижение'}.`);
-
-                          let tradeCancelled = false;
-                          for(let w=5; w>0; w--) {
-                              setAppPhase(`СНАЙПЕР: ПРОВЕРКА ОТКАТА... ${w}С`);
-                              await new Promise(r => setTimeout(r, 1000));
-                              // Проверка на отмену (если цена сразу улетела без нас)
-                              const liveData = await ScannerAPI.getCandles(ASSETS[0].symbol, 2, '1m');
-                              if (isPut && liveData[1].close > liqZones[lastIdx].upper) tradeCancelled = true;
-                              if (isCall && liveData[1].close < liqZones[lastIdx].lower) tradeCancelled = true;
-                          }
-
-                          if (tradeCancelled) {
-                              lastCancelledTime = data[triggerCandleIdx].time; 
-                              setAppPhase('ОТМЕНА: ИСТИННЫЙ ПРОБОЙ');
-                              await speak("Отмена. Паттерн сломан, возвращаюсь к радару.");
-                              await new Promise(r => setTimeout(r, 2000));
-                              continue; 
-                          }
-
-                          setAppPhase('СИГНАЛ АКТИВЕН');
-                          const expMins = 15; // 15 МИНУТ ЭКСПИРАЦИЯ
-                          setSignal({ type: isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice: currentPrice.current });
-                          await speak(`Вход подтвержден! Время пятнадцать минут. Жмите кнопку!`);
-
-                          let expirySeconds = expMins * 60;
-                          while(expirySeconds > 0) {
-                            setCountdown(expirySeconds);
-                            await new Promise(r => setTimeout(r, 1000));
-                            expirySeconds--;
-                            // Обновляем график в фоне
-                            if(expirySeconds % 2 === 0) {
-                                const tick = await ScannerAPI.getCandles(ASSETS[0].symbol, 1, '1m');
-                                if(candleSeries.current) candleSeries.current.update(tick[0]);
-                            }
-                          }
-                          
-                          setCountdown(null);
-                          setAppPhase('АНАЛИЗ РЕЗУЛЬТАТА');
-
-                          const resultData = await ScannerAPI.getCandles(ASSETS[0].symbol, 1, '1m');
-                          const finalPrice = resultData[0].close;
-                          const isWin = (isCall && finalPrice > currentPrice.current) || (isPut && finalPrice < currentPrice.current) || finalPrice === currentPrice.current; 
-
-                          // Ставим метку выхода
-                          markersRef.current.push({
-                              time: resultData[0].time,
-                              position: isWin ? (isCall ? 'aboveBar' : 'belowBar') : (isCall ? 'aboveBar' : 'belowBar'),
-                              color: isWin ? '#10b981' : '#64748b',
-                              shape: 'circle',
-                              text: isWin ? '+ ПРОФИТ' : '- МИНУС', size: 2
-                          });
-                          if(candleSeries.current) candleSeries.current.setMarkers(markersRef.current);
-
-                          if (isWin) statsRef.current.wins++; else statsRef.current.losses++;
-                          
-                          const newTotal = statsRef.current.wins + statsRef.current.losses;
-                          const newWinRate = Math.round((statsRef.current.wins / newTotal) * 100);
-                          setTradeStats({ wins: statsRef.current.wins, losses: statsRef.current.losses, winRate: newWinRate });
-
-                          if (isWin) await speak(`Плюс. Сделка успешно завершена. Винрейт: ${newWinRate} процентов.`);
-                          else await speak(`Минус. Сделка закрылась в убыток.`);
-
-                          setSignal(null);
-                          await new Promise(r => setTimeout(r, 3000));
+                      
+                      setTimer(null);
+                      setSignal(null);
+                      const result = await ScannerAPI.getCandles('BTCUSDT', 1);
+                      const isWin = liveType === 'CALL' ? result[0].close > last.close : result[0].close < last.close;
+                      
+                      allMarkers.current.push({
+                        time: result[0].time, position: isWin ? 'aboveBar' : 'belowBar',
+                        color: isWin ? '#10b981' : '#94a3b8', shape: 'circle', text: isWin ? 'ВИН (+)' : 'ЛОСС (-)'
+                      });
+                      series.current.setMarkers(allMarkers.current);
+                      
+                      if (isWin) {
+                        setStats(p => ({ ...p, wins: p.wins + 1, wr: Math.round(((p.wins+1)/(p.wins+p.losses+1))*100) }));
+                        await speak("Плюс! Сделка закрыта в профит.");
+                      } else {
+                        setStats(p => ({ ...p, losses: p.losses + 1, wr: Math.round((p.wins/(p.wins+p.losses+1))*100) }));
+                        await speak("Сделка закрыта в минус.");
                       }
+                    }
                   }
-                  await new Promise(r => setTimeout(r, 2000)); 
-              } catch (e) {
-                  await new Promise(r => setTimeout(r, 3000));
+                }
+                await new Promise(r => setTimeout(r, 3000));
               }
             }
           };
 
+          const start = () => { setIsStarted(true); runEngine(); };
+
           if (!isStarted) {
             return (
-              <div className="h-[100dvh] w-screen flex flex-col items-center justify-center relative overflow-hidden text-slate-900">
-                <div className="bg-orb-1 pointer-events-none"></div>
-                <div className="bg-orb-2 pointer-events-none"></div>
-                
-                <div className="max-w-[90%] sm:max-w-md w-full p-8 md:p-12 text-center relative z-10 glass-panel-heavy rounded-[2.5rem] flex flex-col items-center">
-                  <div className="w-20 h-20 mb-6 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-[0_15px_30px_rgba(14,165,233,0.4)]">
-                      <Zap size={44} className="text-white" />
-                  </div>
-                  <h1 className="text-4xl md:text-5xl text-slate-800 leading-none mb-3 oswald-font font-bold drop-shadow-sm">
-                    КРИПТО ЯДРО <br/><span className="text-gradient font-black">PRO MAX</span>
-                  </h1>
-                  <p className="text-sm md:text-base text-slate-500 tracking-[0.2em] mb-10 font-bold uppercase">Smart Money Concepts</p>
-                  <button onClick={startTerminal} className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-xl oswald-font font-bold rounded-2xl">
-                    ЗАПУСК СИСТЕМЫ
-                  </button>
+              <div className="h-screen flex items-center justify-center p-6 bg-slate-50">
+                <div className="w-full max-w-sm glass-card p-10 rounded-[2.5rem] text-center">
+                  <div className="w-20 h-20 bg-blue-500 rounded-3xl mx-auto mb-8 flex items-center justify-center shadow-lg"><Zap size={40} className="text-white" /></div>
+                  <h1 className="text-3xl font-black text-slate-800 oswald-font leading-none mb-2">КРИПТО ЯДРО<br/><span className="text-blue-600">PRO MAX</span></h1>
+                  <p className="text-[10px] text-slate-400 font-bold tracking-[0.3em] uppercase mb-10">Smart Money Concepts</p>
+                  <button onClick={start} className="w-full py-4 premium-btn text-white rounded-2xl font-bold text-lg oswald-font tracking-widest">ЗАПУСК СИСТЕМЫ</button>
                 </div>
               </div>
             );
           }
 
           return (
-            <div className="h-[100dvh] w-screen flex flex-col text-slate-900 relative overflow-hidden bg-slate-50">
-              <div className="bg-orb-1 pointer-events-none opacity-50"></div>
-              <div className="bg-orb-2 pointer-events-none opacity-50"></div>
-
-              {/* Новостная лента */}
-              <div className="h-7 md:h-9 glass-panel z-50 overflow-hidden flex items-center shrink-0 w-full relative border-b border-slate-200">
-                <div className="absolute left-0 h-full bg-slate-900 text-white px-3 flex items-center z-20 text-[10px] font-bold oswald-font tracking-widest rounded-r-xl">
-                  РАДАР СЕТИ
-                </div>
-                <div className="ticker-wrapper text-[10px] md:text-xs text-slate-700 font-bold oswald-font ml-[100px]">
-                  <div className="flex gap-10 whitespace-nowrap">
-                    {newsHeadlines.map((h, i) => <span key={i}>• {h}</span>)}
-                  </div>
+            <div className="h-screen flex flex-col">
+              {/* Новости */}
+              <div className="h-8 bg-slate-900 flex items-center overflow-hidden border-b border-white/10 shrink-0">
+                <div className="bg-blue-600 h-full px-4 text-[10px] font-black text-white flex items-center oswald-font tracking-widest z-10">РАДАР СЕТИ</div>
+                <div className="ticker-wrapper text-[10px] text-slate-400 font-bold oswald-font">
+                  {[...Array(2)].map((_, i) => <div key={i} className="flex gap-10 px-10"><span>• БИТКОИН ФОРМИРУЕТ ЗОНЫ ЛИКВИДНОСТИ...</span><span>• ПОИСК СЛОМА СТРУКТУРЫ В РЕАЛЬНОМ ВРЕМЕНИ...</span><span>• АЛГОРИТМ SLAVA GORDEEV АКТИВИРОВАН...</span></div>)}
                 </div>
               </div>
 
-              {/* Шапка с именем Слава Гордеев */}
-              <header className="py-2 px-4 flex justify-between items-center z-40 bg-white/80 border-b border-slate-200 shadow-sm">
+              {/* Шапка */}
+              <header className="px-6 py-4 flex justify-between items-center glass-card border-b border-slate-200">
                 <div className="flex items-center gap-3">
-                  <Zap size={28} className="text-cyan-600" /> 
+                  <Zap size={28} className="text-blue-600" />
                   <div className="flex flex-col">
-                      <h1 className="text-2xl text-slate-900 leading-none font-bold oswald-font tracking-wider">
-                        ТЕРМИНАЛ <span className="text-cyan-600 font-black">PRO MAX</span>
-                      </h1>
-                      <span className="text-[10px] mt-1 tracking-[0.2em] uppercase font-black" style={{background: 'linear-gradient(180deg, #94a3b8 0%, #475569 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
-                        SLAVA GORDEEV
-                      </span>
+                    <h1 className="text-xl font-bold oswald-font leading-none">ТЕРМИНАЛ <span className="text-blue-600">PRO MAX</span></h1>
+                    <span className="silver-text text-[11px] mt-1 tracking-widest uppercase">SLAVA GORDEEV</span>
                   </div>
                 </div>
-                <div className="text-xs md:text-sm text-white px-4 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-lg oswald-font font-bold">
-                  {appPhase}
-                </div>
+                <div className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-black oswald-font border border-blue-100">{phase}</div>
               </header>
 
-              <main className="flex-1 flex flex-col md:flex-row p-2 gap-2 overflow-hidden z-10">
-                
-                {/* Левая часть (График / Спидометры) */}
-                <div className="flex-1 glass-panel-heavy rounded-2xl relative overflow-hidden flex flex-col border border-slate-200 bg-white">
-                  
-                  {/* СКРИНЕР */}
-                  <div className={`absolute inset-0 z-30 transition-all flex items-center justify-center p-4 ${viewMode === 'SCREENER' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                    <div className="flex flex-col w-full max-w-2xl">
-                      <div className="flex items-center gap-5 mb-8">
-                          <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-cyan-400 text-white rounded-3xl flex items-center justify-center text-4xl shadow-lg font-black">₿</div>
-                          <div><h2 className="text-5xl font-black text-slate-900 oswald-font">BITCOIN</h2><span className="text-xl font-bold text-cyan-700 bg-cyan-100/50 px-3 rounded-lg">BTC/USDT</span></div>
-                      </div>
-                      <div className="grid grid-cols-4 gap-2 bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-inner">
-                         <Speedometer value={metrics.structure} label="СТРУКТУРА" colorHex="#d97706" />
-                         <Speedometer value={metrics.liquidity} label="ЛИКВИДНОСТЬ" colorHex="#2563eb" />
-                         <Speedometer value={metrics.filterLevel} label="АТР ФИЛЬТР" colorHex="#6366f1" />
-                         <Speedometer value={metrics.smartMoney} label="SMART MONEY" colorHex="#06b6d4" />
-                      </div>
+              <main className="flex-1 flex flex-col md:flex-row p-3 gap-3 overflow-hidden">
+                {/* График / Скринер */}
+                <div className="flex-1 glass-card rounded-3xl relative overflow-hidden flex flex-col">
+                  {view === "SCREENER" ? (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                       <div className="w-full max-w-lg p-6">
+                         <div className="flex items-center gap-6 mb-10">
+                            <div className="w-20 h-20 bg-slate-100 text-slate-800 rounded-3xl flex items-center justify-center text-4xl font-black shadow-inner">₿</div>
+                            <div><h2 className="text-5xl font-black text-slate-900 oswald-font">BITCOIN</h2><span className="text-xl font-bold text-blue-600 tracking-widest">BTC/USDT</span></div>
+                         </div>
+                         <div className="grid grid-cols-4 gap-4">
+                           <Speedometer value={75} label="СТРУКТУРА" />
+                           <Speedometer value={90} label="ЛИКВИДНОСТЬ" color="#06b6d4" />
+                           <Speedometer value={40} label="АТР ФИЛЬТР" color="#6366f1" />
+                           <Speedometer value={15} label="SMART MONEY" color="#8b5cf6" />
+                         </div>
+                       </div>
                     </div>
-                  </div>
-
-                  {/* ГРАФИК */}
-                  <div className={`absolute inset-0 z-20 flex flex-col transition-all ${viewMode === 'DETAIL' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                    <div className="absolute top-4 left-4 z-40 bg-white/90 p-4 rounded-2xl shadow-lg border border-slate-200">
-                      <div className="text-[10px] text-slate-500 font-bold uppercase flex items-center gap-2"><div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"/> РЕАЛЬНОЕ ВРЕМЯ</div>
-                      <div className="text-4xl text-slate-900 font-black oswald-font mt-1">{asset.name}</div>
-                      <div className="mt-2 text-xs font-bold">ТАЙМФРЕЙМ: <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">{currentTF}</span></div>
+                  ) : (
+                    <div className="flex-1 flex flex-col p-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <div><div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Live Chart</div><div className="text-3xl font-black text-slate-800 oswald-font">BITCOIN PRO</div></div>
+                        <div className="text-right text-xs font-bold text-slate-500">TF: <span className="text-blue-600">15M</span></div>
+                      </div>
+                      <div ref={chartContainer} className="flex-1 border rounded-2xl overflow-hidden shadow-inner"></div>
                     </div>
-                    <div className="flex-1 relative mt-32 px-4 pb-4"><div ref={chartContainerRef} className="absolute inset-0 rounded-2xl overflow-hidden border border-slate-200" /></div>
-                  </div>
+                  )}
                 </div>
 
-                {/* Правая часть (Статистика) */}
-                <div className="w-[340px] flex flex-col glass-panel-heavy rounded-2xl overflow-hidden shrink-0 border border-slate-200 bg-white p-4 gap-4">
-                  
-                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col items-center justify-center shadow-inner">
-                     <span className="text-sm text-slate-500 font-bold oswald-font mb-2">ВИНРЕЙТ СИСТЕМЫ</span>
-                     <span className={`text-6xl font-black oswald-font ${(tradeStats.wins + tradeStats.losses)>0 ? (tradeStats.winRate >= 50 ? 'text-emerald-500' : 'text-rose-500') : 'text-slate-800'}`}>{tradeStats.winRate}%</span>
-                     <div className="flex gap-4 mt-4 w-full justify-center">
-                         <div className="text-center"><div className="text-[10px] font-bold text-slate-400">ПРОФИТ</div><div className="text-2xl font-black text-emerald-500">{tradeStats.wins}</div></div>
-                         <div className="text-center"><div className="text-[10px] font-bold text-slate-400">УБЫТОК</div><div className="text-2xl font-black text-rose-500">{tradeStats.losses}</div></div>
+                {/* Статистика */}
+                <div className="w-full md:w-[350px] flex flex-col gap-3">
+                  <div className="glass-card p-6 rounded-3xl flex flex-col items-center">
+                    <span className="text-xs font-black text-slate-400 tracking-widest uppercase mb-2">ВИНРЕЙТ СИСТЕМЫ</span>
+                    <span className={`text-6xl font-black oswald-font ${stats.wr >= 50 ? 'text-emerald-500' : 'text-rose-500'}`}>{stats.wr}%</span>
+                    <div className="flex gap-8 mt-6">
+                      <div className="text-center"><div className="text-[10px] font-bold text-slate-400">ПРОФИТ</div><div className="text-2xl font-black text-emerald-500">{stats.wins}</div></div>
+                      <div className="text-center"><div className="text-[10px] font-bold text-slate-400">УБЫТОК</div><div className="text-2xl font-black text-rose-500">{stats.losses}</div></div>
+                    </div>
+                  </div>
+
+                  <div className="glass-card p-6 rounded-3xl flex justify-between items-center">
+                     <div><div className="text-[10px] font-bold text-slate-400 uppercase mb-1">ЭКСПИРАЦИЯ</div><div className="text-3xl font-black text-blue-600 oswald-font">{timer ? `${Math.floor(timer/60)}:${(timer%60).toString().padStart(2,'0')}` : '--:--'}</div></div>
+                     <div className="text-right">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">ВХОД</div>
+                        <div className="text-xl font-black text-slate-800">{signal ? signal.entry.toFixed(2) : '00000.00'}</div>
                      </div>
                   </div>
 
-                  <div className="flex gap-2 h-28">
-                    <div className={`w-[40%] rounded-2xl flex flex-col items-center justify-center border transition-all ${signal ? 'border-cyan-400 bg-cyan-50' : 'border-slate-200 bg-slate-50'}`}>
-                      {signal ? <VolumetricArrow type={signal.type} /> : <div className="text-xs font-bold text-slate-400">ОЖИДАНИЕ</div>}
-                    </div>
-                    <div className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 p-2 flex overflow-hidden">
-                      <OrderBookDepth price={currentPrice.current} /><HftTape price={currentPrice.current} />
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex justify-between">
-                     <div><div className="text-[10px] font-bold text-slate-500">ВХОД</div><div className="text-xl font-black">{signal ? formatPrice(signal.entryPrice) : '---'}</div></div>
-                     <div className="text-right"><div className="text-[10px] font-bold text-slate-500">ЭКСПИРАЦИЯ</div><div className="text-3xl font-black text-cyan-600">{countdown !== null ? `${Math.floor(countdown/60)}:${(countdown%60).toString().padStart(2,'0')}` : '--:--'}</div></div>
-                  </div>
-
-                  <div className="flex-1 bg-slate-50 rounded-2xl p-3 border border-slate-200 overflow-hidden flex flex-col gap-1">
-                    {logs.map((l, i) => <div key={i} className={`text-[10px] font-bold mono-font ${i===0?'text-slate-900 bg-cyan-100 p-1 rounded':'text-slate-400'}`}>{l}</div>)}
+                  <div className="flex-1 glass-card p-4 rounded-3xl overflow-hidden flex flex-col gap-2">
+                    <div className="text-[10px] font-black text-slate-300 uppercase mb-2">СИСТЕМНЫЙ ЛОГ</div>
+                    <div className="text-xs font-bold text-slate-800 bg-blue-50 p-2 rounded-lg border border-blue-100">BTCUSDT: {price.toFixed(2)}</div>
+                    <div className="text-[10px] font-bold text-blue-500">• СИСТЕМА: ПОИСК МАНИПУЛЯЦИЙ...</div>
+                    <div className="text-[10px] font-bold text-slate-400">• АНАЛИЗ SMC ЗА 1 ЧАС ЗАВЕРШЕН</div>
                   </div>
                 </div>
               </main>
+
+              <footer className="h-10 bg-white border-t border-slate-200 px-6 flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <div>СОЕДИНЕНИЕ ЗАЩИЩЕНО • GORDEEV PRO MAX</div>
+                <div className="text-blue-600">ЛИЦЕНЗИЯ АКТИВНА</div>
+              </footer>
             </div>
           );
         }
