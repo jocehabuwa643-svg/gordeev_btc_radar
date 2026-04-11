@@ -13,9 +13,11 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&family=Oswald:wght@300;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap');
         
         body { margin: 0; padding: 0; background: #f0f2f5; color: #1e293b; overflow: hidden; font-family: 'Montserrat', sans-serif; }
         .oswald-font { font-family: 'Oswald', sans-serif; letter-spacing: 0.05em; text-transform: uppercase; }
+        .mono-font { font-family: 'JetBrains Mono', monospace; }
         
         .silver-text {
             background: linear-gradient(180deg, #ffffff 0%, #94a3b8 50%, #475569 100%);
@@ -23,27 +25,24 @@
             font-weight: 900; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
         }
 
-        .glass-panel { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(15px); border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
-        
-        /* Плавная бегущая строка */
-        .ticker-wrapper { display: flex; width: max-content; animation: ticker 80s linear infinite; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px); border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
+        .ticker-wrapper { display: flex; width: max-content; animation: ticker 40s linear infinite; }
         @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-        .ticker-wrapper:hover { animation-play-state: paused; }
 
         .premium-card { background: white; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border-radius: 1.5rem; }
         
-        /* ОТЧЕТЛИВАЯ АНИМАЦИЯ СКАНЕРА */
-        .cyber-scanner {
-            position: absolute; top: 0; left: 0; right: 0; height: 3px;
-            background: #38bdf8; box-shadow: 0 0 20px 8px rgba(56, 189, 248, 0.5);
-            animation: cyber-scan 2.5s ease-in-out infinite; z-index: 50; pointer-events: none;
+        /* Мягкое мерцание сканера */
+        @keyframes soft-pulse {
+            0%, 100% { box-shadow: inset 0 0 0px rgba(59, 130, 246, 0); }
+            50% { box-shadow: inset 0 0 30px rgba(59, 130, 246, 0.15); }
         }
-        @keyframes cyber-scan {
-            0% { top: 0%; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { top: 100%; opacity: 0; }
-        }
+        .scanning-glow { animation: soft-pulse 3s infinite ease-in-out; }
+
+        /* Скроллбар для правой панели */
+        .custom-scroll { overflow-y: auto; overflow-x: hidden; }
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
 <body>
@@ -79,8 +78,8 @@
         const Speedometer = ({ value, label, color = "#3b82f6" }) => {
           const angle = -90 + (value / 100) * 180;
           return (
-            <div className="flex flex-col items-center w-[23%] mb-2">
-              <svg viewBox="0 0 100 60" className="w-12 h-8 overflow-visible">
+            <div className="flex flex-col items-center flex-1 mb-2 min-w-[22%]">
+              <svg viewBox="0 0 100 60" className="w-10 h-6 md:w-12 md:h-8 overflow-visible">
                 <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#e2e8f0" strokeWidth="6" strokeLinecap="round" />
                 <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" strokeDasharray="125.6" strokeDashoffset={125.6 - (value/100)*125.6} style={{transition:'0.8s'}} />
                 <circle cx="50" cy="50" r="3" fill={color} />
@@ -88,19 +87,78 @@
                   <polygon points="48,50 52,50 50,15" fill={color} />
                 </g>
               </svg>
-              <div className="text-sm font-black mt-0.5 text-slate-800 oswald-font">{Math.round(value)}</div>
-              <div className="text-[7px] text-slate-400 font-bold uppercase tracking-widest text-center leading-none">{label}</div>
+              <div className="text-sm md:text-base font-black mt-0.5 text-slate-800 oswald-font">{Math.round(value)}</div>
+              <div className="text-[6px] md:text-[7px] text-slate-400 font-bold uppercase tracking-widest text-center leading-none">{label}</div>
             </div>
           );
         };
 
+        const formatPrice = (p) => p ? p.toFixed(2) : '0.00';
+
+        const OrderBookDepth = ({ price }) => {
+          if (!price) return <div className="flex-1 flex items-center justify-center text-[10px] text-slate-400 font-bold">ЗАГРУЗКА...</div>;
+          const step = 0.5;
+          return (
+            <div className="flex flex-col mono-font text-slate-800 px-2 justify-center w-full h-full relative">
+              <div className="space-y-0.5 mt-1 relative z-10">
+                {[...Array(2)].map((_, i) => {
+                  const vol = Math.floor(Math.random() * 80 + 20);
+                  const width = `${Math.min(100, (vol / 100) * 100)}%`;
+                  return (
+                  <div key={`ask-${i}`} className="flex justify-between text-[9px] text-rose-500 font-bold relative">
+                    <div className="absolute right-0 top-0 bottom-0 bg-rose-100/50 rounded-sm" style={{width}}></div>
+                    <span className="relative z-10">{formatPrice(price + (3 - i) * step)}</span>
+                    <span className="relative z-10 opacity-80">{vol}</span>
+                  </div>
+                )})}
+                <div className="flex justify-between text-blue-900 bg-blue-50 border border-blue-200 my-1 px-1 py-0.5 text-[10px] font-black rounded relative overflow-hidden">
+                  <span className="relative z-10">{formatPrice(price)}</span>
+                  <span className="relative z-10 text-blue-500">{Math.floor(Math.random() * 200 + 50)}</span>
+                </div>
+                {[...Array(2)].map((_, i) => {
+                  const vol = Math.floor(Math.random() * 80 + 20);
+                  const width = `${Math.min(100, (vol / 100) * 100)}%`;
+                  return (
+                  <div key={`bid-${i}`} className="flex justify-between text-[9px] text-emerald-600 font-bold relative">
+                    <div className="absolute right-0 top-0 bottom-0 bg-emerald-100/50 rounded-sm" style={{width}}></div>
+                    <span className="relative z-10">{formatPrice(price - (i + 1) * step)}</span>
+                    <span className="relative z-10 opacity-80">{vol}</span>
+                  </div>
+                )})}
+              </div>
+            </div>
+          );
+        };
+
+        const HftTape = ({ price }) => {
+          const [ticks, setTicks] = useState([]);
+          useEffect(() => {
+            if (!price) return;
+            const int = setInterval(() => {
+                const isBuy = Math.random() > 0.5;
+                const amt = (Math.random() * 2 + 0.1).toFixed(2);
+                setTicks(p => [{id: Date.now(), buy: isBuy, amt, price: formatPrice(price + (Math.random() * 2 - 1))}].concat(p).slice(0, 3));
+            }, 800);
+            return () => clearInterval(int);
+          }, [price]);
+          
+          return (
+             <div className="flex flex-col gap-0.5 w-[60px] pl-2 border-l border-slate-100 justify-end h-full shrink-0">
+                {ticks.map(t => (
+                    <div key={t.id} className={`text-[8px] font-bold mono-font flex justify-between w-full ${t.buy ? 'text-emerald-500' : 'text-rose-500'}`}>
+                        <span>{t.price.slice(-2)}</span>
+                        <span>{t.buy ? '▲' : '▼'}{t.amt}</span>
+                    </div>
+                ))}
+             </div>
+          )
+        };
+
         const FALLBACK_NEWS = [
-            "Биткоин тестирует ключевые уровни сопротивления на фоне роста институциональных объемов.",
-            "Крупные майнеры начали перемещать запасы: ожидается локальная волатильность BTC.",
-            "Объем торгов на спотовом рынке превысил средние значения за квартал.",
-            "Аналитики прогнозируют сжатие ликвидности в преддверии закрытия опционов.",
-            "Маркетмейкеры формируют новые пулы ликвидности за границами боковика.",
-            "Индекс страха и жадности перешел в нейтральную зону после агрессивного выкупа."
+            "Биткоин формирует пулы ликвидности за границами боковика.",
+            "Паттерн снятия ликвидности подтверждает смену структуры.",
+            "Институциональные инвесторы наращивают объемы покупок.",
+            "Ожидается локальная волатильность BTC в ближайшие часы."
         ];
 
         const App = () => {
@@ -145,12 +203,9 @@
                   const data = await res.json();
                   if (data?.items && data.items.length > 0) {
                       const titles = data.items.map(item => item.title.replace(/<\/?[^>]+(>|$)/g, "").trim());
-                      fullNewsPool.current = titles; 
-                      setNews(titles);
+                      fullNewsPool.current = titles; setNews(titles);
                   }
-              } catch(e) {
-                  // Оставляем fallback
-              }
+              } catch(e) {}
           };
 
           useEffect(() => { fetchNews(); }, []);
@@ -160,8 +215,8 @@
             engineActive.current = true;
             let lastNewsSpoken = Date.now();
 
-            await speak("Аналитическая система Слава Гордеев Про Макс активирована. Выполняю глубокий бэктест с учетом задержки трейдера.");
-            setPhase("БЭКТЕСТ: SMC + ПЕНОЛЬТИ (12H)...");
+            await speak("Аналитическая система Слава Гордеев Про Макс активирована. Выполняю глубокий бэктест рынка.");
+            setPhase("БЭКТЕСТ: СТРАТЕГИЯ С ЗАДЕРЖКОЙ...");
             setIsScanning(true);
 
             const history = await ScannerAPI.getCandles('BTCUSDT', 200, '5m');
@@ -170,7 +225,7 @@
               if (!chart.current && chartContainer.current) {
                 chart.current = LightweightCharts.createChart(chartContainer.current, {
                   autoSize: true,
-                  layout: { background: { color: 'white' }, textColor: '#64748b' },
+                  layout: { background: { color: 'transparent' }, textColor: '#64748b' },
                   grid: { vertLines: { visible: false }, horzLines: { color: '#f8fafc' } },
                   timeScale: { borderVisible: false, timeVisible: true }
                 });
@@ -189,26 +244,31 @@
                 const atr = calculateATR(history.slice(0, i));
 
                 let type = null;
+                // Снятие ликвидности + возврат плотной свечой
                 if (candle.high > high && candle.close < high && candle.close < candle.open) type = 'PUT';
                 if (candle.low < low && candle.close > low && candle.close > candle.open) type = 'CALL';
                 
                 if (type) {
-                  // 1. Маркер самого СИГНАЛА
-                  markers.current.push({ time: candle.time, position: type === 'CALL' ? 'belowBar' : 'aboveBar', color: type === 'CALL' ? '#93c5fd' : '#fca5a5', shape: type === 'CALL' ? 'arrowUp' : 'arrowDown', text: 'СИГНАЛ ⏳' });
-                  
-                  // 2. Маркер ВХОДА (на следующей свече, имитируем 4 сек задержки)
+                  // МАРКЕР ВХОДА (с учетом задержки трейдера)
                   const nextCandle = history[i+1];
-                  const slippage = atr * 0.1; // Имитация ухудшения цены за 4 секунды
+                  const slippage = atr * 0.1;
                   const simulatedEntry = type === 'CALL' ? nextCandle.open + slippage : nextCandle.open - slippage;
                   
-                  markers.current.push({ time: nextCandle.time, position: type === 'CALL' ? 'belowBar' : 'aboveBar', color: '#f59e0b', shape: type === 'CALL' ? 'arrowUp' : 'arrowDown', text: 'ВХОД ⚡' });
+                  markers.current.push({ 
+                      time: nextCandle.time, position: type === 'CALL' ? 'belowBar' : 'aboveBar', 
+                      color: type === 'CALL' ? '#3b82f6' : '#ef4444', shape: type === 'CALL' ? 'arrowUp' : 'arrowDown', 
+                      text: 'ВХОД' 
+                  });
 
-                  // 3. Маркер ВЫХОДА (через 3 свечи / 15 минут)
+                  // МАРКЕР ВЫХОДА (квадрат через 15 минут)
                   const exitPrice = history[i + 3].close;
-                  // Проверяем профит от ухудшенной цены!
                   const isWin = type === 'CALL' ? exitPrice > simulatedEntry : exitPrice < simulatedEntry;
                   
-                  markers.current.push({ time: history[i+3].time, position: isWin ? 'aboveBar' : 'belowBar', color: isWin ? '#10b981' : '#94a3b8', shape: 'circle', text: isWin ? 'ВИН (+)' : 'ЛОСС (-)' });
+                  markers.current.push({ 
+                      time: history[i+3].time, position: isWin ? 'aboveBar' : 'belowBar', 
+                      color: isWin ? '#10b981' : '#f43f5e', shape: 'square', 
+                      text: isWin ? 'ПРОФИТ (+)' : 'УБЫТОК (-)' 
+                  });
                   
                   if (isWin) wins++; else losses++; 
                   i += 3; 
@@ -217,7 +277,7 @@
               const wr = (wins + losses) > 0 ? Math.round((wins / (wins + losses)) * 100) : 0;
               setStats({ wins, losses, wr }); series.current.setMarkers(markers.current);
 
-              await speak(`Реальный бэктест завершен. С учетом времени на вашу реакцию, найдено ${wins+losses} сделок. Честный винрейт за полдня составил ${wr} процентов.`);
+              await speak(`Реальный бэктест завершен. С учетом времени на реакцию найдено ${wins+losses} сделок. Честный винрейт за полдня составил ${wr} процентов.`);
 
               while (engineActive.current) {
                 setPhase("СКАНЕР ЛИКВИДНОСТИ АКТИВЕН...");
@@ -228,7 +288,7 @@
                 setMarketMetrics({ fear: Math.round(rsi), volume: Math.round(Math.random() * 40 + 40), phase: rsi > 60 ? 'EXPANSION' : rsi < 40 ? 'MANIPULATION' : 'ACCUMULATION' });
 
                 if (Date.now() - lastNewsSpoken > 7 * 60 * 1000 && fullNewsPool.current.length > 0) {
-                    await speak(`Новости рынка. ${fullNewsPool.current[Math.floor(Math.random() * fullNewsPool.current.length)]}`);
+                    await speak(`Сводка новостей. ${fullNewsPool.current[Math.floor(Math.random() * fullNewsPool.current.length)]}`);
                     lastNewsSpoken = Date.now();
                 }
 
@@ -246,13 +306,8 @@
                   if (liveType) {
                     setIsScanning(false);
                     setSignal({ type: liveType, entry: last.close, status: 'CHECKING' });
-                    
-                    // МАРКЕР СИГНАЛА
-                    markers.current.push({ time: last.time, position: liveType === 'CALL' ? 'belowBar' : 'aboveBar', color: liveType === 'CALL' ? '#93c5fd' : '#fca5a5', shape: liveType === 'CALL' ? 'arrowUp' : 'arrowDown', text: 'СИГНАЛ ⏳' });
-                    series.current.setMarkers(markers.current);
-                    
                     setPhase(`ПОДГОТОВКА К СДЕЛКЕ (15 МИН)`);
-                    await speak(`Обнаружена манипуляция. Подготовьте Биткоин. Время пятнадцать минут. Направление ${liveType === 'CALL' ? 'вверх' : 'вниз'}.`);
+                    await speak(`Обнаружена манипуляция. Подготовьте Биткоин. Направление ${liveType === 'CALL' ? 'вверх' : 'вниз'}.`);
 
                     let cancel = false;
                     for (let s = 3; s > 0; s--) {
@@ -267,7 +322,6 @@
                         setPhase("СИГНАЛ ОТМЕНЕН (ЛОЖНЫЙ)"); setSignal(null);
                         await speak("Сигнал отменен. Цена не подтвердила разворот. Ждем следующую ситуацию.");
                     } else {
-                        // 1 секунда задержки трейдера
                         setPhase("ВХОД В РЫНОК...");
                         await new Promise(r => setTimeout(r, 1000));
                         const realEntryData = await ScannerAPI.getCandles('BTCUSDT', 1, '1m');
@@ -276,8 +330,8 @@
                         setPhase("СДЕЛКА АКТИВНА"); 
                         setSignal({ type: liveType, entry: realEntryPrice, status: 'ACTIVE' });
                         
-                        // МАРКЕР РЕАЛЬНОГО ВХОДА
-                        markers.current.push({ time: realEntryData[0].time, position: liveType === 'CALL' ? 'belowBar' : 'aboveBar', color: '#f59e0b', shape: liveType === 'CALL' ? 'arrowUp' : 'arrowDown', text: 'ВХОД ⚡' });
+                        // МАРКЕР ВХОДА НА ГРАФИКЕ
+                        markers.current.push({ time: realEntryData[0].time, position: liveType === 'CALL' ? 'belowBar' : 'aboveBar', color: liveType === 'CALL' ? '#3b82f6' : '#ef4444', shape: liveType === 'CALL' ? 'arrowUp' : 'arrowDown', text: 'ВХОД' });
                         series.current.setMarkers(markers.current);
 
                         await speak("Вход подтвержден. Жмите кнопку!");
@@ -287,14 +341,15 @@
                         setTimer(null); 
                         
                         const res = await ScannerAPI.getCandles('BTCUSDT', 1, '5m');
-                        const isWin = liveType === 'CALL' ? res[0].close > realEntryPrice : res[0].close < realEntryPrice;
+                        const exitPrice = res[0].close;
+                        const isWin = liveType === 'CALL' ? exitPrice > realEntryPrice : exitPrice < realEntryPrice;
                         
-                        // МАРКЕР ВЫХОДА
-                        markers.current.push({ time: res[0].time, position: isWin ? 'aboveBar' : 'belowBar', color: isWin ? '#10b981' : '#94a3b8', shape: 'circle', text: isWin ? 'ВИН (+)' : 'ЛОСС (-)' });
+                        // МАРКЕР ВЫХОДА (КВАДРАТ)
+                        markers.current.push({ time: res[0].time, position: isWin ? 'aboveBar' : 'belowBar', color: isWin ? '#10b981' : '#f43f5e', shape: 'square', text: isWin ? 'ПРОФИТ (+)' : 'УБЫТОК (-)' });
                         series.current.setMarkers(markers.current);
                         
-                        if (isWin) { setStats(p => ({ ...p, wins: p.wins + 1, wr: Math.round(((p.wins+1)/(p.wins+p.losses+1))*100) })); await speak("Плюс! Сделка успешно закрыта."); }
-                        else { setStats(p => ({ ...p, losses: p.losses + 1, wr: Math.round((p.wins/(p.wins+p.losses+1))*100) })); await speak("Минус. Рынок пробил ликвидность."); }
+                        if (isWin) { setStats(p => ({ ...p, wins: p.wins + 1, wr: Math.round(((p.wins+1)/(p.wins+p.losses+1))*100) })); await speak("Плюс! Сделка закрыта."); }
+                        else { setStats(p => ({ ...p, losses: p.losses + 1, wr: Math.round((p.wins/(p.wins+p.losses+1))*100) })); await speak("Минус. Рынок пошел дальше."); }
                         setSignal(null);
                     }
                   }
@@ -304,20 +359,15 @@
             }
           };
 
-          const start = () => { 
-              setIsStarted(true); 
-              const ctx = new (window.AudioContext || window.webkitAudioContext)();
-              ctx.resume();
-              runEngine(); 
-          };
+          const start = () => { setIsStarted(true); const ctx = new (window.AudioContext || window.webkitAudioContext)(); ctx.resume(); runEngine(); };
 
           if (!isStarted) {
             return (
               <div className="h-screen flex items-center justify-center bg-slate-50">
-                <div className="premium-card p-10 text-center max-w-sm w-full mx-4 relative overflow-hidden">
-                  <div className="w-20 h-20 bg-blue-600 rounded-3xl mx-auto mb-8 flex items-center justify-center shadow-lg"><Zap size={40} className="text-white" /></div>
-                  <h1 className="text-4xl font-black text-slate-800 oswald-font leading-none mb-2">КРИПТО ЯДРО<br/><span className="text-blue-600 uppercase">Pro Max AI</span></h1>
-                  <p className="text-[10px] text-slate-400 font-bold tracking-[0.3em] uppercase mb-12 italic">Powered by Slava Gordeev</p>
+                <div className="premium-card p-8 md:p-10 text-center max-w-sm w-full mx-4 relative overflow-hidden">
+                  <div className="w-20 h-20 bg-blue-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-lg"><Zap size={40} className="text-white" /></div>
+                  <h1 className="text-3xl md:text-4xl font-black text-slate-800 oswald-font leading-none mb-2">КРИПТО ЯДРО<br/><span className="text-blue-600 uppercase">Pro Max AI</span></h1>
+                  <p className="text-[10px] text-slate-400 font-bold tracking-[0.3em] uppercase mb-8 italic">Powered by Slava Gordeev</p>
                   <button onClick={start} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold oswald-font tracking-widest hover:bg-blue-700 shadow-xl transition-all">ЗАПУСТИТЬ СИСТЕМУ</button>
                 </div>
               </div>
@@ -326,102 +376,108 @@
 
           return (
             <div className="h-screen flex flex-col">
+              {/* Бегущая строка */}
               <div className="h-8 glass-panel overflow-hidden flex items-center shrink-0 border-b border-slate-200">
                 <div className="bg-slate-900 h-full px-4 text-[10px] font-black text-white flex items-center oswald-font tracking-widest z-10 shadow-lg">РАДАР СЕТИ</div>
-                <div className="ticker-wrapper text-[11px] text-slate-700 font-bold oswald-font">
+                <div className="ticker-wrapper text-[10px] text-slate-600 font-bold oswald-font">
                   <div className="flex gap-16 px-10">{news.map((n, i) => <span key={i}>• {n.toUpperCase()}</span>)}</div>
                 </div>
               </div>
 
-              <header className="px-4 py-3 flex justify-between items-center bg-white border-b border-slate-200 shrink-0">
+              {/* Шапка */}
+              <header className="px-4 md:px-6 py-2 md:py-3 flex justify-between items-center bg-white border-b border-slate-200 shrink-0">
                 <div className="flex items-center gap-3">
                   <Zap size={24} className="text-blue-600" />
                   <div className="flex flex-col">
-                    <h1 className="text-lg font-bold oswald-font leading-none">ТЕРМИНАЛ <span className="text-blue-600">PRO MAX AI</span></h1>
-                    <span className="silver-text text-[10px] mt-1 tracking-widest uppercase">SLAVA GORDEEV</span>
+                    <h1 className="text-base md:text-lg font-bold oswald-font leading-none">ТЕРМИНАЛ <span className="text-blue-600">PRO MAX AI</span></h1>
+                    <span className="silver-text text-[9px] mt-1 tracking-widest uppercase">SLAVA GORDEEV</span>
                   </div>
                 </div>
-                <div className="px-4 py-1.5 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-black oswald-font border border-blue-100 flex items-center gap-2">
+                <div className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[9px] md:text-[10px] font-black oswald-font border border-blue-100 flex items-center gap-2">
                     <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-ping"></div> {phase}
                 </div>
               </header>
 
               <main className="flex-1 flex flex-col lg:flex-row p-2 md:p-3 gap-3 overflow-hidden">
-                <div className="flex-1 premium-card relative flex flex-col p-3 md:p-4 bg-white overflow-hidden min-h-[45vh]">
-                    {isScanning && <div className="cyber-scanner"></div>}
+                
+                {/* ГРАФИК С АНИМАЦИЕЙ */}
+                <div className={`flex-1 premium-card relative flex flex-col p-3 md:p-4 bg-white overflow-hidden min-h-[40vh] transition-all duration-1000 ${isScanning ? 'scanning-glow' : ''}`}>
                     <div className="flex justify-between items-center mb-2 relative z-10 shrink-0">
-                        <div><div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Neural Scan Active</div><div className="text-2xl font-black text-slate-800 oswald-font">BITCOIN AI PRO</div></div>
-                        <div className="text-right text-[10px] font-bold text-slate-500 uppercase bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">SCAN: <span className="text-blue-600">5M</span> | EXP: <span className="text-blue-600">15M</span></div>
+                        <div><div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Neural Scan Active</div><div className="text-xl md:text-2xl font-black text-slate-800 oswald-font">BITCOIN AI PRO</div></div>
+                        <div className="text-right text-[9px] md:text-[10px] font-bold text-slate-500 uppercase bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">SCAN: <span className="text-blue-600">5M</span> | EXP: <span className="text-blue-600">15M</span></div>
                     </div>
-                    <div ref={chartContainer} className="flex-1 border border-slate-100 rounded-xl overflow-hidden shadow-inner min-h-0 relative z-10 bg-white"></div>
+                    <div ref={chartContainer} className="flex-1 border border-slate-100 rounded-xl overflow-hidden min-h-0 relative z-10 bg-white"></div>
                     
-                    <div className="absolute bottom-4 left-4 right-4 p-4 bg-white/95 backdrop-blur-xl border border-slate-200 rounded-[1.5rem] flex justify-between items-center shadow-2xl z-20">
+                    {/* Спидометры (Скрыты на самых мелких экранах, видны на планшетах и ПК) */}
+                    <div className="hidden sm:flex absolute bottom-4 left-4 right-4 p-3 bg-white/95 backdrop-blur-xl border border-slate-200 rounded-[1.5rem] justify-between items-center shadow-xl z-20">
                         <div className="flex gap-2 flex-1 justify-around">
                             <Speedometer value={88} label="STRUCTURE" />
                             <Speedometer value={94} label="LIQUIDITY" color="#06b6d4" />
                             <Speedometer value={marketMetrics.fear} label="F&G INDEX" color="#6366f1" />
                             <Speedometer value={marketMetrics.volume} label="INST. VOL" color="#8b5cf6" />
                         </div>
-                        <div className="w-[1px] h-10 bg-slate-200 mx-4"></div>
-                        <div className="text-center px-4">
-                            <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">AI WINRATE</div>
-                            <div className={`text-3xl font-black oswald-font ${stats.wr >= 50 ? 'text-blue-600' : 'text-slate-800'}`}>{stats.wr}%</div>
-                        </div>
                     </div>
                 </div>
 
-                <div className="w-full lg:w-[320px] flex flex-col gap-3 shrink-0">
-                  <div className="premium-card p-4 flex flex-col items-center bg-white shadow-sm border border-slate-200">
-                    <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase mb-3">AI MARKET INTELLIGENCE</span>
+                {/* БОКОВАЯ ПАНЕЛЬ С ПРОКРУТКОЙ */}
+                <div className="w-full lg:w-[320px] flex flex-col gap-3 shrink-0 custom-scroll pb-2 lg:pb-0 h-full overflow-y-auto">
+                  
+                  <div className="premium-card p-4 flex flex-col items-center bg-white shadow-sm border border-slate-200 shrink-0">
+                    <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase mb-3">СИСТЕМНЫЙ РЕЗУЛЬТАТ</span>
                     <div className="flex items-center justify-between w-full">
                         <div className="text-center flex-1">
-                            <div className="text-[10px] font-bold text-emerald-500 uppercase">PROFIT</div>
+                            <div className="text-[10px] font-bold text-emerald-500 uppercase">ПРОФИТ</div>
                             <div className="text-2xl font-black text-emerald-500 oswald-font">{stats.wins}</div>
                         </div>
                         <div className="text-center flex-1 bg-slate-50 py-2 rounded-xl border border-slate-100 mx-2">
-                            <div className="text-[8px] font-bold text-slate-400 uppercase">PHASE</div>
-                            <div className="text-[10px] font-black text-blue-600 oswald-font tracking-tighter leading-none mt-1">{marketMetrics.phase}</div>
+                            <div className="text-[8px] font-bold text-slate-400 uppercase">ВИНРЕЙТ</div>
+                            <div className={`text-xl font-black oswald-font tracking-tighter leading-none mt-1 ${stats.wr >= 50 ? 'text-blue-600' : 'text-slate-800'}`}>{stats.wr}%</div>
                         </div>
                         <div className="text-center flex-1">
-                            <div className="text-[10px] font-bold text-rose-500 uppercase">LOSS</div>
+                            <div className="text-[10px] font-bold text-rose-500 uppercase">УБЫТОК</div>
                             <div className="text-2xl font-black text-rose-500 oswald-font">{stats.losses}</div>
                         </div>
                     </div>
                   </div>
 
-                  <div className={`premium-card p-5 flex flex-col gap-3 shrink-0 transition-all ${signal?.status === 'ACTIVE' ? 'bg-blue-600 border-blue-700 shadow-xl shadow-blue-500/30' : 'bg-white'}`}>
-                     <div className={`text-[10px] font-black uppercase tracking-widest text-center ${signal?.status === 'ACTIVE' ? 'text-white' : 'text-slate-400'}`}>Trade Execution</div>
+                  {/* Блок Плотности и Ленты */}
+                  <div className="premium-card p-3 flex gap-2 h-28 bg-white border border-slate-200 shrink-0">
+                    <div className="flex-1 rounded-xl bg-slate-50 p-1 flex overflow-hidden">
+                        <OrderBookDepth price={price} />
+                        <HftTape price={price} />
+                    </div>
+                  </div>
+
+                  <div className={`premium-card p-4 flex flex-col gap-3 shrink-0 transition-all ${signal?.status === 'ACTIVE' ? 'bg-blue-600 border-blue-700 shadow-lg' : 'bg-white'}`}>
+                     <div className={`text-[10px] font-black uppercase tracking-widest text-center ${signal?.status === 'ACTIVE' ? 'text-white' : 'text-slate-400'}`}>АКТИВНАЯ СДЕЛКА</div>
                      {signal ? (
-                         <div className={`w-full h-24 rounded-2xl flex flex-col items-center justify-center animate-pulse ${signal.type === 'CALL' ? 'bg-emerald-400/20' : 'bg-rose-400/20'}`}>
-                            <Zap size={32} className={signal.status === 'ACTIVE' ? 'text-white' : (signal.type === 'CALL' ? 'text-emerald-500' : 'text-rose-500')} />
-                            {signal.status === 'ACTIVE' && <div className="text-white font-black text-sm mt-1 uppercase">ВХОД В РЫНОК</div>}
+                         <div className={`w-full h-16 rounded-xl flex items-center justify-center animate-pulse ${signal.type === 'CALL' ? 'bg-emerald-400/20' : 'bg-rose-400/20'}`}>
+                            <Zap size={24} className={signal.status === 'ACTIVE' ? 'text-white' : (signal.type === 'CALL' ? 'text-emerald-500' : 'text-rose-500')} />
+                            {signal.status === 'ACTIVE' && <span className="text-white font-black text-xs ml-2 uppercase">ВХОД В РЫНОК</span>}
                          </div>
-                     ) : <div className="w-full h-24 rounded-2xl border-2 border-dashed border-slate-100 flex items-center justify-center text-slate-300 font-bold text-[10px] uppercase">Awaiting Sweep...</div>}
-                     <div className={`p-3 rounded-xl flex justify-between items-center ${signal?.status === 'ACTIVE' ? 'bg-white/10 text-white' : 'bg-slate-50 text-slate-800'}`}>
-                        <div><div className="text-[8px] font-bold uppercase opacity-60">Entry Price</div><div className="text-lg font-black oswald-font">{signal ? signal.entry.toFixed(2) : price.toFixed(2)}</div></div>
+                     ) : <div className="w-full h-16 rounded-xl border-2 border-dashed border-slate-100 flex items-center justify-center text-slate-300 font-bold text-[9px] uppercase">Ожидание паттерна...</div>}
+                     
+                     <div className={`p-2 rounded-xl flex justify-between items-center ${signal?.status === 'ACTIVE' ? 'bg-white/10 text-white' : 'bg-slate-50 text-slate-800'}`}>
+                        <div><div className="text-[8px] font-bold uppercase opacity-60">Точка входа</div><div className="text-base font-black oswald-font">{signal ? signal.entry.toFixed(2) : price.toFixed(2)}</div></div>
                         <div className="text-right">
-                            <div className="text-[8px] font-bold uppercase opacity-60">Expiry</div>
-                            <div className="text-xl font-black oswald-font">{timer ? `${Math.floor(timer/60)}:${(timer%60).toString().padStart(2,'0')}` : '15:00'}</div>
+                            <div className="text-[8px] font-bold uppercase opacity-60">Экстпирация</div>
+                            <div className="text-lg font-black oswald-font">{timer ? `${Math.floor(timer/60)}:${(timer%60).toString().padStart(2,'0')}` : '15:00'}</div>
                         </div>
                      </div>
                   </div>
 
-                  <div className="flex-1 premium-card p-4 overflow-hidden flex flex-col gap-2 bg-slate-900 border-none">
-                    <div className="text-[9px] font-black text-blue-400 uppercase mb-1 tracking-widest">Neural System Log</div>
-                    <div className="text-[10px] font-bold text-slate-400 leading-tight">• ALGO: LIQUIDITY SWEEP DETECTED</div>
-                    <div className={`text-[10px] font-black leading-tight ${signal ? 'text-emerald-400' : 'text-blue-500'}`}>• {phase}</div>
-                    <div className="mt-auto pt-2 border-t border-white/5 flex justify-between items-center">
-                        <span className="text-[8px] text-slate-500 uppercase font-bold">Latency: 45ms</span>
-                        <span className="text-[8px] text-emerald-500 font-black">STABLE CONNECTION</span>
-                    </div>
+                  <div className="flex-1 min-h-[80px] premium-card p-3 overflow-hidden flex flex-col gap-1 bg-slate-900 border-none shrink-0">
+                    <div className="text-[8px] font-black text-blue-400 uppercase mb-1 tracking-widest">Лог Терминала</div>
+                    <div className="text-[9px] font-bold text-slate-400 leading-tight">• ALGO: LIQUIDITY SWEEP CHECK</div>
+                    <div className={`text-[9px] font-black leading-tight ${signal ? 'text-emerald-400' : 'text-blue-500'}`}>• {phase}</div>
                   </div>
                 </div>
               </main>
 
-              <footer className="h-8 bg-white border-t border-slate-200 px-4 flex items-center justify-between text-[8px] font-black text-slate-400 uppercase tracking-widest shrink-0">
+              <footer className="h-6 md:h-8 bg-white border-t border-slate-200 px-4 flex items-center justify-between text-[8px] font-black text-slate-400 uppercase tracking-widest shrink-0">
                 <div className="flex items-center gap-2 truncate">
                     <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
-                    Gor-De-Ev System Engine V5.0 • Slava Edition
+                    Gor-De-Ev System V5.0
                 </div>
                 <div className="text-blue-600 font-black">AI CORE: ONLINE</div>
               </footer>
