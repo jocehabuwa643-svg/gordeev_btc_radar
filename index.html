@@ -31,14 +31,12 @@
 
         .premium-card { background: white; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border-radius: 1.5rem; }
         
-        /* Мягкое мерцание сканера */
         @keyframes soft-pulse {
             0%, 100% { box-shadow: inset 0 0 0px rgba(59, 130, 246, 0); }
             50% { box-shadow: inset 0 0 30px rgba(59, 130, 246, 0.15); }
         }
         .scanning-glow { animation: soft-pulse 3s infinite ease-in-out; }
 
-        /* Скроллбар для правой панели */
         .custom-scroll { overflow-y: auto; overflow-x: hidden; }
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
@@ -155,9 +153,9 @@
         };
 
         const FALLBACK_NEWS = [
-            "Биткоин формирует пулы ликвидности за границами боковика.",
-            "Паттерн снятия ликвидности подтверждает смену структуры.",
-            "Институциональные инвесторы наращивают объемы покупок.",
+            "Биткоин тестирует зоны пулов ликвидности: алгоритмы в ожидании.",
+            "Формирование паттерна снятия ликвидности подтверждает смену структуры.",
+            "Институциональные инвесторы наращивают объемы покупок в зонах интереса.",
             "Ожидается локальная волатильность BTC в ближайшие часы."
         ];
 
@@ -175,6 +173,11 @@
           const chartContainer = useRef(null);
           const chart = useRef(null);
           const series = useRef(null);
+          
+          // Референсы для магнитных зон ликвидности
+          const upperPoolLine = useRef(null);
+          const lowerPoolLine = useRef(null);
+          
           const engineActive = useRef(false);
           const markers = useRef([]);
           const fullNewsPool = useRef([...FALLBACK_NEWS]);
@@ -215,7 +218,7 @@
             engineActive.current = true;
             let lastNewsSpoken = Date.now();
 
-            await speak("Аналитическая система Слава Гордеев Про Макс активирована. Выполняю глубокий бэктест рынка.");
+            await speak("Аналитическая система Слава Гордеев Про Макс активирована. Запускаю поиск пулов ликвидности.");
             setPhase("БЭКТЕСТ: СТРАТЕГИЯ С ЗАДЕРЖКОЙ...");
             setIsScanning(true);
 
@@ -244,12 +247,10 @@
                 const atr = calculateATR(history.slice(0, i));
 
                 let type = null;
-                // Снятие ликвидности + возврат плотной свечой
                 if (candle.high > high && candle.close < high && candle.close < candle.open) type = 'PUT';
                 if (candle.low < low && candle.close > low && candle.close > candle.open) type = 'CALL';
                 
                 if (type) {
-                  // МАРКЕР ВХОДА (с учетом задержки трейдера)
                   const nextCandle = history[i+1];
                   const slippage = atr * 0.1;
                   const simulatedEntry = type === 'CALL' ? nextCandle.open + slippage : nextCandle.open - slippage;
@@ -260,7 +261,6 @@
                       text: 'ВХОД' 
                   });
 
-                  // МАРКЕР ВЫХОДА (квадрат через 15 минут)
                   const exitPrice = history[i + 3].close;
                   const isWin = type === 'CALL' ? exitPrice > simulatedEntry : exitPrice < simulatedEntry;
                   
@@ -277,7 +277,7 @@
               const wr = (wins + losses) > 0 ? Math.round((wins / (wins + losses)) * 100) : 0;
               setStats({ wins, losses, wr }); series.current.setMarkers(markers.current);
 
-              await speak(`Реальный бэктест завершен. С учетом времени на реакцию найдено ${wins+losses} сделок. Честный винрейт за полдня составил ${wr} процентов.`);
+              await speak(`Сканирование истории завершено. Утилита готова к работе.`);
 
               while (engineActive.current) {
                 setPhase("СКАНЕР ЛИКВИДНОСТИ АКТИВЕН...");
@@ -293,9 +293,42 @@
                 }
 
                 if (live.length > 0) {
-                  const last = live[live.length - 1]; setPrice(last.close); series.current.update(last);
-                  const prevHigh = Math.max(...live.slice(-16, -1).map(c => c.high));
-                  const prevLow = Math.min(...live.slice(-16, -1).map(c => c.low));
+                  const last = live[live.length - 1]; 
+                  setPrice(last.close); 
+                  series.current.update(last);
+                  
+                  const prev = live.slice(-16, -1);
+                  const prevHigh = Math.max(...prev.map(c => c.high));
+                  const prevLow = Math.min(...prev.map(c => c.low));
+                  const currentAtr = calculateATR(live);
+                  
+                  // --- ДИНАМИЧЕСКАЯ ОТРИСОВКА И ПОДСВЕТКА ЗОН ---
+                  const upperDist = prevHigh - last.close;
+                  const lowerDist = last.close - prevLow;
+                  const glowThreshold = currentAtr * 1.5; // Зона активации подсветки
+
+                  if (!upperPoolLine.current) {
+                      upperPoolLine.current = series.current.createPriceLine({ price: prevHigh, color: 'rgba(239, 68, 68, 0.2)', lineWidth: 1, lineStyle: 2, title: 'SELL ZONE' });
+                  }
+                  if (!lowerPoolLine.current) {
+                      lowerPoolLine.current = series.current.createPriceLine({ price: prevLow, color: 'rgba(16, 185, 129, 0.2)', lineWidth: 1, lineStyle: 2, title: 'BUY ZONE' });
+                  }
+
+                  // Вспышка зон при приближении цены
+                  upperPoolLine.current.applyOptions({
+                      price: prevHigh,
+                      color: upperDist < glowThreshold ? 'rgba(239, 68, 68, 1)' : 'rgba(239, 68, 68, 0.2)',
+                      lineWidth: upperDist < glowThreshold ? 2 : 1,
+                      lineStyle: upperDist < glowThreshold ? 0 : 2
+                  });
+                  lowerPoolLine.current.applyOptions({
+                      price: prevLow,
+                      color: lowerDist < glowThreshold ? 'rgba(16, 185, 129, 1)' : 'rgba(16, 185, 129, 0.2)',
+                      lineWidth: lowerDist < glowThreshold ? 2 : 1,
+                      lineStyle: lowerDist < glowThreshold ? 0 : 2
+                  });
+                  // ----------------------------------------------
+
                   const body = Math.abs(last.open - last.close);
                   const isImpulse = body > (last.high - last.low) * 0.4;
 
@@ -307,7 +340,7 @@
                     setIsScanning(false);
                     setSignal({ type: liveType, entry: last.close, status: 'CHECKING' });
                     setPhase(`ПОДГОТОВКА К СДЕЛКЕ (15 МИН)`);
-                    await speak(`Обнаружена манипуляция. Подготовьте Биткоин. Направление ${liveType === 'CALL' ? 'вверх' : 'вниз'}.`);
+                    await speak(`Обнаружен захват ликвидности в зоне пула. Подготовьте Биткоин. Направление ${liveType === 'CALL' ? 'вверх' : 'вниз'}.`);
 
                     let cancel = false;
                     for (let s = 3; s > 0; s--) {
@@ -316,11 +349,12 @@
                         const check = await ScannerAPI.getCandles('BTCUSDT', 1, '5m');
                         if (liveType === 'PUT' && check[0].close > prevHigh) cancel = true;
                         if (liveType === 'CALL' && check[0].close < prevLow) cancel = true;
+                        series.current.update(check[0]);
                     }
 
                     if (cancel) {
                         setPhase("СИГНАЛ ОТМЕНЕН (ЛОЖНЫЙ)"); setSignal(null);
-                        await speak("Сигнал отменен. Цена не подтвердила разворот. Ждем следующую ситуацию.");
+                        await speak("Сигнал отменен. Цена не подтвердила возврат. Ждем следующую ситуацию.");
                     } else {
                         setPhase("ВХОД В РЫНОК...");
                         await new Promise(r => setTimeout(r, 1000));
@@ -330,26 +364,32 @@
                         setPhase("СДЕЛКА АКТИВНА"); 
                         setSignal({ type: liveType, entry: realEntryPrice, status: 'ACTIVE' });
                         
-                        // МАРКЕР ВХОДА НА ГРАФИКЕ
                         markers.current.push({ time: realEntryData[0].time, position: liveType === 'CALL' ? 'belowBar' : 'aboveBar', color: liveType === 'CALL' ? '#3b82f6' : '#ef4444', shape: liveType === 'CALL' ? 'arrowUp' : 'arrowDown', text: 'ВХОД' });
                         series.current.setMarkers(markers.current);
 
                         await speak("Вход подтвержден. Жмите кнопку!");
                         
                         let exp = 15 * 60;
-                        while(exp > 0) { setTimer(exp); await new Promise(r => setTimeout(r, 1000)); exp--; }
-                        setTimer(null); 
+                        while(exp > 0) { 
+                            setTimer(exp); 
+                            await new Promise(r => setTimeout(r, 1000)); 
+                            exp--; 
+                            if(exp % 5 === 0) {
+                                const tick = await ScannerAPI.getCandles('BTCUSDT', 1, '5m');
+                                series.current.update(tick[0]);
+                            }
+                        }
                         
+                        setTimer(null); 
                         const res = await ScannerAPI.getCandles('BTCUSDT', 1, '5m');
                         const exitPrice = res[0].close;
                         const isWin = liveType === 'CALL' ? exitPrice > realEntryPrice : exitPrice < realEntryPrice;
                         
-                        // МАРКЕР ВЫХОДА (КВАДРАТ)
                         markers.current.push({ time: res[0].time, position: isWin ? 'aboveBar' : 'belowBar', color: isWin ? '#10b981' : '#f43f5e', shape: 'square', text: isWin ? 'ПРОФИТ (+)' : 'УБЫТОК (-)' });
                         series.current.setMarkers(markers.current);
                         
                         if (isWin) { setStats(p => ({ ...p, wins: p.wins + 1, wr: Math.round(((p.wins+1)/(p.wins+p.losses+1))*100) })); await speak("Плюс! Сделка закрыта."); }
-                        else { setStats(p => ({ ...p, losses: p.losses + 1, wr: Math.round((p.wins/(p.wins+p.losses+1))*100) })); await speak("Минус. Рынок пошел дальше."); }
+                        else { setStats(p => ({ ...p, losses: p.losses + 1, wr: Math.round((p.wins/(p.wins+p.losses+1))*100) })); await speak("Минус. Зафиксирован убыток."); }
                         setSignal(null);
                     }
                   }
@@ -376,7 +416,6 @@
 
           return (
             <div className="h-screen flex flex-col">
-              {/* Бегущая строка */}
               <div className="h-8 glass-panel overflow-hidden flex items-center shrink-0 border-b border-slate-200">
                 <div className="bg-slate-900 h-full px-4 text-[10px] font-black text-white flex items-center oswald-font tracking-widest z-10 shadow-lg">РАДАР СЕТИ</div>
                 <div className="ticker-wrapper text-[10px] text-slate-600 font-bold oswald-font">
@@ -384,7 +423,6 @@
                 </div>
               </div>
 
-              {/* Шапка */}
               <header className="px-4 md:px-6 py-2 md:py-3 flex justify-between items-center bg-white border-b border-slate-200 shrink-0">
                 <div className="flex items-center gap-3">
                   <Zap size={24} className="text-blue-600" />
@@ -399,8 +437,6 @@
               </header>
 
               <main className="flex-1 flex flex-col lg:flex-row p-2 md:p-3 gap-3 overflow-hidden">
-                
-                {/* ГРАФИК С АНИМАЦИЕЙ */}
                 <div className={`flex-1 premium-card relative flex flex-col p-3 md:p-4 bg-white overflow-hidden min-h-[40vh] transition-all duration-1000 ${isScanning ? 'scanning-glow' : ''}`}>
                     <div className="flex justify-between items-center mb-2 relative z-10 shrink-0">
                         <div><div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Neural Scan Active</div><div className="text-xl md:text-2xl font-black text-slate-800 oswald-font">BITCOIN AI PRO</div></div>
@@ -408,7 +444,6 @@
                     </div>
                     <div ref={chartContainer} className="flex-1 border border-slate-100 rounded-xl overflow-hidden min-h-0 relative z-10 bg-white"></div>
                     
-                    {/* Спидометры (Скрыты на самых мелких экранах, видны на планшетах и ПК) */}
                     <div className="hidden sm:flex absolute bottom-4 left-4 right-4 p-3 bg-white/95 backdrop-blur-xl border border-slate-200 rounded-[1.5rem] justify-between items-center shadow-xl z-20">
                         <div className="flex gap-2 flex-1 justify-around">
                             <Speedometer value={88} label="STRUCTURE" />
@@ -419,9 +454,7 @@
                     </div>
                 </div>
 
-                {/* БОКОВАЯ ПАНЕЛЬ С ПРОКРУТКОЙ */}
                 <div className="w-full lg:w-[320px] flex flex-col gap-3 shrink-0 custom-scroll pb-2 lg:pb-0 h-full overflow-y-auto">
-                  
                   <div className="premium-card p-4 flex flex-col items-center bg-white shadow-sm border border-slate-200 shrink-0">
                     <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase mb-3">СИСТЕМНЫЙ РЕЗУЛЬТАТ</span>
                     <div className="flex items-center justify-between w-full">
@@ -440,7 +473,6 @@
                     </div>
                   </div>
 
-                  {/* Блок Плотности и Ленты */}
                   <div className="premium-card p-3 flex gap-2 h-28 bg-white border border-slate-200 shrink-0">
                     <div className="flex-1 rounded-xl bg-slate-50 p-1 flex overflow-hidden">
                         <OrderBookDepth price={price} />
@@ -468,7 +500,7 @@
 
                   <div className="flex-1 min-h-[80px] premium-card p-3 overflow-hidden flex flex-col gap-1 bg-slate-900 border-none shrink-0">
                     <div className="text-[8px] font-black text-blue-400 uppercase mb-1 tracking-widest">Лог Терминала</div>
-                    <div className="text-[9px] font-bold text-slate-400 leading-tight">• ALGO: LIQUIDITY SWEEP CHECK</div>
+                    <div className="text-[9px] font-bold text-slate-400 leading-tight">• ALGO: MAGNETIC ZONES ACTIVE</div>
                     <div className={`text-[9px] font-black leading-tight ${signal ? 'text-emerald-400' : 'text-blue-500'}`}>• {phase}</div>
                   </div>
                 </div>
@@ -477,7 +509,7 @@
               <footer className="h-6 md:h-8 bg-white border-t border-slate-200 px-4 flex items-center justify-between text-[8px] font-black text-slate-400 uppercase tracking-widest shrink-0">
                 <div className="flex items-center gap-2 truncate">
                     <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
-                    Gor-De-Ev System V5.0
+                    Gor-De-Ev System V6.0
                 </div>
                 <div className="text-blue-600 font-black">AI CORE: ONLINE</div>
               </footer>
