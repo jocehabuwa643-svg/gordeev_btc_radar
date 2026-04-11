@@ -53,7 +53,7 @@
         const Zap = ({ size = 24, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
 
         const ScannerAPI = {
-          async getCandles(symbol, limit = 300, interval = '5m') {
+          async getCandles(symbol, limit = 250, interval = '5m') {
             try {
               const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`);
               const data = await res.json();
@@ -154,7 +154,7 @@
         };
 
         const FALLBACK_NEWS = [
-            "Биткоин тестирует 4-часовые зоны пулов ликвидности: алгоритмы в ожидании.",
+            "Биткоин тестирует зоны пулов ликвидности: алгоритмы в ожидании.",
             "Формирование паттерна снятия ликвидности подтверждает смену локального тренда.",
             "Институциональные инвесторы наращивают объемы покупок в магнитных зонах.",
             "Ожидается скачок волатильности BTC при подходе к экстремумам."
@@ -175,9 +175,9 @@
           const chart = useRef(null);
           const series = useRef(null);
           
-          // Референсы для магнитных зон ликвидности (4H)
-          const upperPoolLine = useRef(null);
-          const lowerPoolLine = useRef(null);
+          // Динамические зоны для лайва
+          const upperPoolLive = useRef(null);
+          const lowerPoolLive = useRef(null);
           
           const engineActive = useRef(false);
           const markers = useRef([]);
@@ -219,13 +219,15 @@
             engineActive.current = true;
             let lastNewsSpoken = Date.now();
 
-            await speak("Аналитическая система Слава Гордеев Про Макс активирована. Изучаю график за последние 12 часов.");
+            await speak("Аналитическая система Слава Гордеев Про Макс активирована. Анализирую историю за последние 12 часов.");
             setPhase("АНАЛИЗ ИСТОРИИ (12H)...");
             setIsScanning(true);
 
-            // Берем 300 свечей, чтобы иметь историю 4H (48 свечей) для начала 12-часового окна (144 свечи)
-            const history = await ScannerAPI.getCandles('BTCUSDT', 300, '5m');
-            if (history.length > 200) {
+            // Оптимальный период пула - 24 свечи (2 часа)
+            const poolSize = 24; 
+            const history = await ScannerAPI.getCandles('BTCUSDT', 250, '5m');
+            
+            if (history.length > 144) {
               setPrice(history[history.length - 1].close);
               if (!chart.current && chartContainer.current) {
                 chart.current = LightweightCharts.createChart(chartContainer.current, {
@@ -243,47 +245,44 @@
               
               for (let i = startIdx; i <= history.length - 5; i++) {
                 const candle = history[i];
-                // 4H High/Low = 48 свечей по 5 минут
-                const prev4H = history.slice(i - 48, i);
-                const high4H = Math.max(...prev4H.map(c => c.high));
-                const low4H = Math.min(...prev4H.map(c => c.low));
+                const prevZone = history.slice(i - poolSize, i);
+                const highZone = Math.max(...prevZone.map(c => c.high));
+                const lowZone = Math.min(...prevZone.map(c => c.low));
                 const atr = calculateATR(history.slice(0, i));
 
                 let type = null;
                 const body = Math.abs(candle.open - candle.close);
                 const isImpulse = body > (candle.high - candle.low) * 0.4;
 
-                // Снятие 4H ликвидности + возврат плотной свечой
-                if (candle.high > high4H && candle.close < high4H && candle.close < candle.open && isImpulse) type = 'PUT';
-                if (candle.low < low4H && candle.close > low4H && candle.close > candle.open && isImpulse) type = 'CALL';
+                if (candle.high > highZone && candle.close < highZone && candle.close < candle.open && isImpulse) type = 'PUT';
+                if (candle.low < lowZone && candle.close > lowZone && candle.close > candle.open && isImpulse) type = 'CALL';
                 
                 if (type) {
-                  // Отрисовка "замороженной" зоны, где отработал сигнал
-                  const targetLevel = type === 'CALL' ? low4H : high4H;
-                  series.current.createPriceLine({
-                      price: targetLevel,
-                      color: 'rgba(148, 163, 184, 0.4)', // Тускло-серый стеклянный цвет
-                      lineWidth: 3,
-                      lineStyle: 0,
-                      title: 'ОТРАБОТАНО'
+                  // Отрисовка ЗАМОРОЖЕННОГО прямоугольника (следа)
+                  const targetLevel = type === 'CALL' ? lowZone : highZone;
+                  const histZone = chart.current.addLineSeries({
+                      color: 'rgba(148, 163, 184, 0.4)', // Тускло-серый
+                      lineWidth: 8, // Толстая линия, как блок
+                      crosshairMarkerVisible: false, priceLineVisible: false, lastValueVisible: false
                   });
+                  histZone.setData([
+                      { time: history[i - poolSize].time, value: targetLevel },
+                      { time: history[i + 3].time, value: targetLevel } // Тянется до конца сделки
+                  ]);
 
-                  // МАРКЕР СИГНАЛА
-                  markers.current.push({ time: candle.time, position: type === 'CALL' ? 'belowBar' : 'aboveBar', color: type === 'CALL' ? '#93c5fd' : '#fca5a5', shape: type === 'CALL' ? 'arrowUp' : 'arrowDown', text: 'СИГНАЛ ⏳' });
-
-                  // МАРКЕР ВХОДА (Имитация задержки)
+                  // МАРКЕР ВХОДА (С задержкой)
                   const nextCandle = history[i+1];
                   const slippage = atr * 0.1;
                   const simulatedEntry = type === 'CALL' ? nextCandle.open + slippage : nextCandle.open - slippage;
                   markers.current.push({ time: nextCandle.time, position: type === 'CALL' ? 'belowBar' : 'aboveBar', color: '#f59e0b', shape: type === 'CALL' ? 'arrowUp' : 'arrowDown', text: 'ВХОД ⚡' });
 
-                  // МАРКЕР ВЫХОДА (квадрат через 15 минут)
+                  // МАРКЕР ВЫХОДА (Квадрат)
                   const exitPrice = history[i + 3].close;
                   const isWin = type === 'CALL' ? exitPrice > simulatedEntry : exitPrice < simulatedEntry;
                   markers.current.push({ time: history[i+3].time, position: isWin ? 'aboveBar' : 'belowBar', color: isWin ? '#10b981' : '#f43f5e', shape: 'square', text: isWin ? 'ПРОФИТ (+)' : 'УБЫТОК (-)' });
                   
                   if (isWin) wins++; else losses++; 
-                  i += 3; // Пропускаем время отработки
+                  i += 3; 
                 }
               }
               const totalTrades = wins + losses;
@@ -292,10 +291,14 @@
 
               await speak(`Анализ завершен. За последние 12 часов найдено ${totalTrades} сделок. Из них ${wins} успешных и ${losses} убыточных. Винрейт составил ${wr} процентов. Перехожу к сканированию рынка.`);
 
+              // Подготовка живых линий для сканера
+              if (!upperPoolLive.current) upperPoolLive.current = chart.current.addLineSeries({ color: 'rgba(239, 68, 68, 0.2)', lineWidth: 4, crosshairMarkerVisible: false, priceLineVisible: false, lastValueVisible: false });
+              if (!lowerPoolLive.current) lowerPoolLive.current = chart.current.addLineSeries({ color: 'rgba(16, 185, 129, 0.2)', lineWidth: 4, crosshairMarkerVisible: false, priceLineVisible: false, lastValueVisible: false });
+
               while (engineActive.current) {
                 setPhase("НЕЙРОННОЕ СКАНИРОВАНИЕ...");
                 setIsScanning(true);
-                const live = await ScannerAPI.getCandles('BTCUSDT', 300, '5m');
+                const live = await ScannerAPI.getCandles('BTCUSDT', 150, '5m');
                 
                 const rsi = 50 + (Math.random() * 20 - 10);
                 setMarketMetrics({ fear: Math.round(rsi), volume: Math.round(Math.random() * 40 + 40), phase: rsi > 60 ? 'EXPANSION' : rsi < 40 ? 'MANIPULATION' : 'ACCUMULATION' });
@@ -310,62 +313,45 @@
                   setPrice(last.close); 
                   series.current.update(last);
                   
-                  // Расчет активных зон на основе последних 4 часов (48 свечей)
-                  const prev4H = live.slice(-49, -1);
-                  const high4H = Math.max(...prev4H.map(c => c.high));
-                  const low4H = Math.min(...prev4H.map(c => c.low));
+                  const prevZone = live.slice(-(poolSize + 1), -1);
+                  const highZone = Math.max(...prevZone.map(c => c.high));
+                  const lowZone = Math.min(...prevZone.map(c => c.low));
                   const currentAtr = calculateATR(live);
                   
-                  // --- ДИНАМИЧЕСКАЯ ОТРИСОВКА СТЕКЛЯННЫХ ЗОН (4H) ---
-                  const upperDist = high4H - last.close;
-                  const lowerDist = last.close - low4H;
-                  const glowThreshold = currentAtr * 2.0; // Зона активации подсветки
-
-                  if (!upperPoolLine.current) {
-                      upperPoolLine.current = series.current.createPriceLine({ price: high4H, color: 'rgba(239, 68, 68, 0.2)', lineWidth: 4, lineStyle: 0, title: 'SELL ZONE (4H)' });
-                  }
-                  if (!lowerPoolLine.current) {
-                      lowerPoolLine.current = series.current.createPriceLine({ price: low4H, color: 'rgba(16, 185, 129, 0.2)', lineWidth: 4, lineStyle: 0, title: 'BUY ZONE (4H)' });
-                  }
+                  // Отрисовка живых стеклянных блоков (от начала пула до текущего времени)
+                  const startZoneTime = prevZone[0].time;
+                  upperPoolLive.current.setData([{ time: startZoneTime, value: highZone }, { time: last.time, value: highZone }]);
+                  lowerPoolLive.current.setData([{ time: startZoneTime, value: lowZone }, { time: last.time, value: lowZone }]);
 
                   // Вспышка зон при приближении цены (Свечение)
-                  upperPoolLine.current.applyOptions({
-                      price: high4H,
-                      color: upperDist < glowThreshold ? 'rgba(239, 68, 68, 0.8)' : 'rgba(239, 68, 68, 0.2)'
-                  });
-                  lowerPoolLine.current.applyOptions({
-                      price: low4H,
-                      color: lowerDist < glowThreshold ? 'rgba(16, 185, 129, 0.8)' : 'rgba(16, 185, 129, 0.2)'
-                  });
-                  // ----------------------------------------------
+                  const upperDist = highZone - last.close;
+                  const lowerDist = last.close - lowZone;
+                  const glowThreshold = currentAtr * 1.5; 
+
+                  upperPoolLive.current.applyOptions({ color: upperDist < glowThreshold ? 'rgba(239, 68, 68, 0.8)' : 'rgba(239, 68, 68, 0.2)' });
+                  lowerPoolLive.current.applyOptions({ color: lowerDist < glowThreshold ? 'rgba(16, 185, 129, 0.8)' : 'rgba(16, 185, 129, 0.2)' });
 
                   const body = Math.abs(last.open - last.close);
                   const isImpulse = body > (last.high - last.low) * 0.4;
 
                   let liveType = null;
-                  if (last.high > high4H && last.close < high4H && isImpulse && last.close < last.open) liveType = 'PUT';
-                  if (last.low < low4H && last.close > low4H && isImpulse && last.close > last.open) liveType = 'CALL';
+                  if (last.high > highZone && last.close < highZone && isImpulse && last.close < last.open) liveType = 'PUT';
+                  if (last.low < lowZone && last.close > lowZone && isImpulse && last.close > last.open) liveType = 'CALL';
 
                   if (liveType) {
                     setIsScanning(false);
                     setSignal({ type: liveType, entry: last.close, status: 'CHECKING' });
                     setPhase(`ПОДГОТОВКА (15 МИН)`);
                     
-                    // Замораживаем историческую линию
-                    series.current.createPriceLine({ price: liveType === 'CALL' ? low4H : high4H, color: 'rgba(148, 163, 184, 0.4)', lineWidth: 3, lineStyle: 0, title: 'ОТРАБОТАНО' });
-                    
-                    markers.current.push({ time: last.time, position: liveType === 'CALL' ? 'belowBar' : 'aboveBar', color: liveType === 'CALL' ? '#93c5fd' : '#fca5a5', shape: liveType === 'CALL' ? 'arrowUp' : 'arrowDown', text: 'СИГНАЛ ⏳' });
-                    series.current.setMarkers(markers.current);
-
-                    await speak(`Обнаружен захват ликвидности в зоне пула. Направление ${liveType === 'CALL' ? 'вверх' : 'вниз'}.`);
+                    await speak(`Обнаружен захват ликвидности в зоне пула. Подготовка 3 секунды. Направление ${liveType === 'CALL' ? 'вверх' : 'вниз'}.`);
 
                     let cancel = false;
                     for (let s = 3; s > 0; s--) {
                         setPhase(`ОЦЕНКА ИМПУЛЬСА... ${s}С`);
                         await new Promise(r => setTimeout(r, 1000));
                         const check = await ScannerAPI.getCandles('BTCUSDT', 1, '5m');
-                        if (liveType === 'PUT' && check[0].close > high4H) cancel = true;
-                        if (liveType === 'CALL' && check[0].close < low4H) cancel = true;
+                        if (liveType === 'PUT' && check[0].close > highZone) cancel = true;
+                        if (liveType === 'CALL' && check[0].close < lowZone) cancel = true;
                         series.current.update(check[0]);
                     }
 
@@ -394,6 +380,9 @@
                             if(exp % 5 === 0) {
                                 const tick = await ScannerAPI.getCandles('BTCUSDT', 1, '5m');
                                 series.current.update(tick[0]);
+                                // Растягиваем живые линии до конца сделки
+                                upperPoolLive.current.setData([{ time: startZoneTime, value: highZone }, { time: tick[0].time, value: highZone }]);
+                                lowerPoolLive.current.setData([{ time: startZoneTime, value: lowZone }, { time: tick[0].time, value: lowZone }]);
                             }
                         }
                         
@@ -404,6 +393,11 @@
                         
                         markers.current.push({ time: res[0].time, position: isWin ? 'aboveBar' : 'belowBar', color: isWin ? '#10b981' : '#f43f5e', shape: 'square', text: isWin ? 'ПРОФИТ (+)' : 'УБЫТОК (-)' });
                         series.current.setMarkers(markers.current);
+                        
+                        // Превращаем живую линию в исторический след
+                        const histLevel = liveType === 'CALL' ? lowZone : highZone;
+                        const histZone = chart.current.addLineSeries({ color: 'rgba(148, 163, 184, 0.4)', lineWidth: 8, crosshairMarkerVisible: false, priceLineVisible: false, lastValueVisible: false });
+                        histZone.setData([{ time: startZoneTime, value: histLevel }, { time: res[0].time, value: histLevel }]);
                         
                         if (isWin) { setStats(p => ({ ...p, wins: p.wins + 1, wr: Math.round(((p.wins+1)/(p.wins+p.losses+1))*100) })); await speak("Плюс! Сделка закрыта успешно."); }
                         else { setStats(p => ({ ...p, losses: p.losses + 1, wr: Math.round((p.wins/(p.wins+p.losses+1))*100) })); await speak("Минус. Рынок пошел дальше."); }
