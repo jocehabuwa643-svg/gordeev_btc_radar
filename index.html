@@ -2,392 +2,400 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BTC PRO MAX AI V2</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BTC PRO MAX AI</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+<script src="https://unpkg.com/lightweight-charts@4/dist/lightweight-charts.standalone.production.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@300;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
-body{margin:0;padding:0;background:#f0f2f5;overflow:hidden;font-family:sans-serif}
-.os{font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.05em}
-.mn{font-family:'JetBrains Mono',monospace}
-.card{background:#fff;border:1px solid #e2e8f0;border-radius:1.5rem;box-shadow:0 10px 30px rgba(0,0,0,.05)}
-@keyframes pulse2{0%,100%{box-shadow:inset 0 0 0 rgba(59,130,246,0)}50%{box-shadow:inset 0 0 30px rgba(59,130,246,.15)}}
-.scan{animation:pulse2 3s infinite}
-.tk{display:flex;width:max-content;animation:tk 90s linear infinite}
-@keyframes tk{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;overflow:hidden;background:#0f172a}
+.os{font-family:'Orbitron',monospace}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden}
+@keyframes pulse2{0%,100%{opacity:1}50%{opacity:0.5}}
+.puls{animation:pulse2 2s infinite}
+@keyframes scan{0%{box-shadow:0 0 0 0 rgba(59,130,246,0.3)}70%{box-shadow:0 0 0 8px rgba(59,130,246,0)}100%{box-shadow:0 0 0 0 rgba(59,130,246,0)}}
+.scanning{animation:scan 2s infinite}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const{useState,useEffect,useRef,useCallback}=React;// === API ===
-const API={
-  async get(s,l=350,iv='5m'){
-    try{const r=await fetch(`https://api.binance.com/api/v3/klines?symbol=${s}&interval=${iv}&limit=${l}`);
-    const d=await r.json();if(!Array.isArray(d))return[];
-    return d.map(c=>({time:Math.floor(c[0]/1000),open:+c[1],high:+c[2],low:+c[3],close:+c[4],volume:+c[5]}));}catch(e){return[];}
-  }
+const {useState,useEffect,useRef,useCallback}=React;
+
+/* ===== API ===== */
+const fetchCandles=async(sym,lim,iv)=>{
+  try{
+    const r=await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${iv}&limit=${lim}`);
+    const d=await r.json();
+    if(!Array.isArray(d))return[];
+    return d.map(c=>({time:Math.floor(c[0]/1000),open:+c[1],high:+c[2],low:+c[3],close:+c[4],volume:+c[5]}));
+  }catch(e){return[];}
 };
 
-// === ИНДИКАТОРЫ ===
-const ema=(c,p)=>{if(c.length<p)return[];const k=2/(p+1),r=[];let s=0;
-for(let i=0;i<p;i++)s+=c[i].close;r[p-1]=s/p;
-for(let i=p;i<c.length;i++)r[i]=c[i].close*k+r[i-1]*(1-k);return r;};
+/* ===== INDICATORS ===== */
+const calcEMA=(data,period)=>{
+  if(data.length<period)return[];
+  const k=2/(period+1);const result=[];
+  let sum=0;
+  for(let i=0;i<period;i++)sum+=data[i].close;
+  result[period-1]=sum/period;
+  for(let i=period;i<data.length;i++)result[i]=data[i].close*k+result[i-1]*(1-k);
+  return result;
+};
 
-const atr=(c,p=14)=>{if(c.length<p+1)return 0;let s=0;
-for(let i=c.length-p;i<c.length;i++){const h=c[i].high,l=c[i].low,pc=c[i-1]?c[i-1].close:c[i].open;
-s+=Math.max(h-l,Math.abs(h-pc),Math.abs(l-pc));}return s/p;};
+const calcATR=(data,period)=>{
+  if(data.length<period+1)return 0;
+  let sum=0;
+  for(let i=data.length-period;i<data.length;i++){
+    const h=data[i].high,l=data[i].low,pc=data[i-1]?data[i-1].close:data[i].open;
+    sum+=Math.max(h-l,Math.abs(h-pc),Math.abs(l-pc));
+  }
+  return sum/period;
+};
 
-const rsi=(c,p=14)=>{if(c.length<p+1)return 50;let g=0,lo=0;
-for(let i=c.length-p;i<c.length;i++){const d=c[i].close-c[i-1].close;
-if(d>0)g+=d;else lo-=d;}const ag=g/p,al=lo/p;if(al===0)return 100;return 100-100/(1+ag/al);};
+const calcRSI=(data,period)=>{
+  if(data.length<period+1)return 50;
+  let gain=0,loss=0;
+  for(let i=data.length-period;i<data.length;i++){
+    const d=data[i].close-data[i-1].close;
+    if(d>0)gain+=d;else loss-=d;
+  }
+  const ag=gain/period,al=loss/period;
+  if(al===0)return 100;
+  return 100-100/(1+ag/al);
+};
 
-const avol=(c,p=20)=>{if(c.length<p)return 0;let s=0;
-for(let i=c.length-p;i<c.length;i++)s+=c[i].volume;return s/p;};
+const calcAvgVol=(data,period)=>{
+  if(data.length<period)return 0;
+  let s=0;
+  for(let i=data.length-period;i<data.length;i++)s+=data[i].volume;
+  return s/period;
+};
 
-// === 5-FILTER ANALYSIS ===
-const analyze=(c,idx,ps)=>{
-  if(idx<ps+1||idx<200)return null;
-  const x=c[idx],pv=c[idx-1];
-  const zone=c.slice(idx-ps,idx);
+/* ===== ANALYZE ===== */
+const PS=20;
+
+const analyzeCandle=(candles,idx)=>{
+  if(idx<PS+1||idx<201)return null;
+  const c=candles[idx];
+  const prev=candles[idx-1];
+  const zone=candles.slice(idx-PS,idx);
   const hi=Math.max(...zone.map(z=>z.high));
   const lo=Math.min(...zone.map(z=>z.low));
-  const a=atr(c.slice(0,idx+1));
-  const r=rsi(c.slice(0,idx+1));
+  const a=calcATR(candles.slice(0,idx+1),14);
+  const r=calcRSI(candles.slice(0,idx+1),14);
   if(a===0)return null;
-  const body=Math.abs(x.open-x.close),range=x.high-x.low;
-  if(range===0||body/range<0.45)return null;
-  const av=avol(c.slice(0,idx+1),20);
-  if(av>0&&x.volume<av*1.2)return null;
-  const e5=ema(c.slice(0,idx+1),50);
-  const e2=ema(c.slice(0,idx+1),200);
-  const ce5=e5[e5.length-1],ce2=e2[e2.length-1];
-  const ms=a*2.5;let type=null;
 
-  // PUT — sweep high
-  if(x.high>hi&&x.close<hi&&x.close<x.open){
-    const sw=x.high-hi;
-    if(sw>ms||sw<a*0.05)return null;
+  const body=Math.abs(c.open-c.close);
+  const range=c.high-c.low;
+  if(range===0||body/range<0.45)return null;
+
+  const av=calcAvgVol(candles.slice(0,idx+1),20);
+  if(av>0&&c.volume<av*1.2)return null;
+
+  const e5=calcEMA(candles.slice(0,idx+1),50);
+  const e2=calcEMA(candles.slice(0,idx+1),200);
+  const ce5=e5[e5.length-1];
+  const ce2=e2[e2.length-1];
+  const maxSweep=a*2.5;
+
+  // PUT
+  if(c.high>hi&&c.close<hi&&c.close<c.open){
+    const sw=c.high-hi;
+    if(sw>maxSweep||sw<a*0.05)return null;
     if(ce5&&ce2&&ce5>ce2*1.005)return null;
     if(r<45)return null;
-    if(pv.high>hi*0.998)return null;
-    type='PUT';
+    if(prev.high>hi*0.998)return null;
+    return{type:'PUT',hi,lo,atr:a,rsi:r};
   }
 
-  // CALL — sweep low
-  if(!type&&x.low<lo&&x.close>lo&&x.close>x.open){
-    const sw=lo-x.low;
-    if(sw>ms||sw<a*0.05)return null;
+  // CALL
+  if(c.low<lo&&c.close>lo&&c.close>c.open){
+    const sw=lo-c.low;
+    if(sw>maxSweep||sw<a*0.05)return null;
     if(ce5&&ce2&&ce5<ce2*0.995)return null;
     if(r>55)return null;
-    if(pv.low<lo*1.002)return null;
-    type='CALL';
+    if(prev.low<lo*1.002)return null;
+    return{type:'CALL',hi,lo,atr:a,rsi:r};
   }
 
-  if(!type)return null;
-  return{type,hi,lo,a,r,vol:x.volume,av};
+  return null;
 };
 
-const dedup=c=>{const s=new Set();return c.filter(x=>{
-  if(s.has(x.time))return false;s.add(x.time);return true;});};
+/* ===== SPEAK ===== */
+let speaking=false;
+const say=(text)=>new Promise(ok=>{
+  if(!window.speechSynthesis)return ok();
+  const go=()=>{
+    if(speaking){setTimeout(go,300);return;}
+    speaking=true;
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang='ru-RU';u.rate=1.05;
+    u.onend=()=>{speaking=false;ok();};
+    u.onerror=()=>{speaking=false;ok();};
+    window.speechSynthesis.speak(u);
+  };
+  go();
+});
 
-// === КОМПОНЕНТЫ ===
-const Sp=({v,label,color="#3b82f6"})=>{
-  const a=-90+(v/100)*180;
-  return(<div className="flex flex-col items-center flex-1">
-    <svg viewBox="0 0 100 60" className="w-11 h-7 overflow-visible">
-      <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#e2e8f0" strokeWidth="6" strokeLinecap="round"/>
-      <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" strokeDasharray="125.6" strokeDashoffset={125.6-(v/100)*125.6} style={{transition:'0.8s'}}/>
-      <g style={{transform:`rotate(${a}deg)`,transformOrigin:'50px 50px',transition:'0.8s'}}>
-        <polygon points="48,50 52,50 50,15" fill={color}/></g>
-    </svg>
-    <div className="text-sm font-black os">{Math.round(v)}</div>
-    <div className="text-[7px] text-slate-400 font-bold uppercase">{label}</div>
-  </div>);
-};
-
-const OB=({price})=>{
-  if(!price)return null;
-  const st=Math.max(0.5,price*0.00005);
-  return(<div className="flex flex-col mn px-2 justify-center w-full text-[9px]">
-    {[2,1].map(i=><div key={i} className="flex justify-between text-rose-500 font-bold">
-      <span>{(price+i*st).toFixed(2)}</span><span>{Math.floor(Math.random()*50+20)}</span></div>)}
-    <div className="flex justify-between text-blue-900 bg-blue-50 border border-blue-100 my-0.5 px-1 text-[10px] font-black rounded">
-      <span>{price.toFixed(2)}</span></div>
-    {[1,2].map(i=><div key={i} className="flex justify-between text-emerald-500 font-bold">
-      <span>{(price-i*st).toFixed(2)}</span><span>{Math.floor(Math.random()*50+20)}</span></div>)}
-  </div>);const NW=["BTC тестирует ликвидность","Институционалы наращивают объемы","Ожидается волатильность BTC","Снятие ликвидности подтверждено"];
-
+/* ===== APP ===== */
 const App=()=>{
-  const[started,go]=useState(false);
-  const[phase,setPhase]=useState("ОЖИДАНИЕ");
-  const[stats,setStats]=useState({w:0,l:0,wr:0});
-  const[sig,setSig]=useState(null);
-  const[tmr,setTmr]=useState(null);
-  const[pr,setPr]=useState(0);
-  const[mt,setMt]=useState({rsi:50,vol:30});
-  const[scan,setScan]=useState(false);
-  const cBox=useRef(null),chR=useRef(null),sR=useRef(null);
-  const e5L=useRef(null),e2L=useRef(null),uL=useRef(null),dL=useRef(null);
-  const on=useRef(false),mk=useRef([]),spk=useRef(false);
-  const PS=20;
+  const[started,setStarted]=useState(false);
+  const[phase,setPhase]=useState('ОЖИДАНИЕ');
+  const[price,setPrice]=useState(0);
+  const[stats,setStats]=useState({w:0,l:0});
+  const[signal,setSignal]=useState(null);
+  const[timer,setTimer]=useState(null);
+  const[rsiVal,setRsiVal]=useState(50);
 
-  const say=useCallback(t=>new Promise(ok=>{
-    if(!window.speechSynthesis)return ok();
-    const f=()=>{if(spk.current)return setTimeout(f,500);
-    spk.current=true;window.speechSynthesis.cancel();
-    const u=new SpeechSynthesisUtterance(t);u.lang='ru-RU';u.rate=1.05;
-    u.onend=()=>{spk.current=false;ok();};
-    u.onerror=()=>{spk.current=false;ok();};
-    window.speechSynthesis.speak(u);};f();
-  }),[]);
+  const chartBox=useRef(null);
+  const chartRef=useRef(null);
+  const seriesRef=useRef(null);
+  const running=useRef(false);
+  const markers=useRef([]);
 
-  const initChart=(h)=>{
-    if(chR.current||!cBox.current)return;
-    chR.current=LightweightCharts.createChart(cBox.current,{
+  const wr=stats.w+stats.l>0?Math.round(stats.w/(stats.w+stats.l)*100):0;
+
+  const initChart=(data)=>{
+    if(chartRef.current||!chartBox.current)return;
+    chartRef.current=LightweightCharts.createChart(chartBox.current,{
       autoSize:true,
-      layout:{background:{color:'transparent'},textColor:'#64748b'},
+      layout:{background:{color:'#ffffff'},textColor:'#64748b',fontSize:11},
       grid:{vertLines:{visible:false},horzLines:{color:'#f1f5f9'}},
       timeScale:{borderVisible:false,timeVisible:true,secondsVisible:false}
     });
-    sR.current=chR.current.addCandlestickSeries({
+    seriesRef.current=chartRef.current.addCandlestickSeries({
       upColor:'#3b82f6',downColor:'#ef4444',
       borderUpColor:'#3b82f6',borderDownColor:'#ef4444',
       wickUpColor:'#3b82f6',wickDownColor:'#ef4444'
     });
-    sR.current.setData(h);
-    e5L.current=chR.current.addLineSeries({color:'rgba(245,158,11,0.5)',lineWidth:1,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
-    e2L.current=chR.current.addLineSeries({color:'rgba(139,92,246,0.5)',lineWidth:1,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
-    uL.current=chR.current.addLineSeries({color:'rgba(239,68,68,0.2)',lineWidth:5,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
-    dL.current=chR.current.addLineSeries({color:'rgba(16,185,129,0.2)',lineWidth:5,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+    seriesRef.current.setData(data);
   };
 
-  const updateEMA=(h)=>{
-    const ed5=ema(h,50),ed2=ema(h,200),p5=[],p2=[];
-    for(let i=0;i<h.length;i++){
-      if(ed5[i])p5.push({time:h[i].time,value:ed5[i]});
-      if(ed2[i])p2.push({time:h[i].time,value:ed2[i]});
-    }
-    try{e5L.current.setData(p5);e2L.current.setData(p2);}catch(e){}
-  };
-
-  const backtest=async(h)=>{
+  const backtest=(data)=>{
     let w=0,l=0;
-    const si=Math.max(PS+201,h.length-144);
-    for(let i=si;i<=h.length-5;i++){
-      const r=analyze(h,i,PS);if(!r)continue;
-      const{type}=r;
-      mk.current.push({time:h[i+1].time,position:type==='CALL'?'belowBar':'aboveBar',
-        color:'#f59e0b',shape:type==='CALL'?'arrowUp':'arrowDown',text:'⚡'});
-      const ei=Math.min(i+3,h.length-1);
-      const isW=type==='CALL'?h[ei].close>h[i+1].open:h[ei].close<h[i+1].open;
-      mk.current.push({time:h[ei].time,position:isW?'aboveBar':'belowBar',
-        color:isW?'#10b981':'#f43f5e',shape:'square',text:isW?'W':'L'});
-      if(isW)w++;else l++;i+=3;
+    const start=Math.max(PS+201,data.length-100);
+    for(let i=start;i<=data.length-4;i++){
+      const r=analyzeCandle(data,i);
+      if(!r)continue;
+      markers.current.push({
+        time:data[i].time,
+        position:r.type==='CALL'?'belowBar':'aboveBar',
+        color:'#f59e0b',
+        shape:r.type==='CALL'?'arrowUp':'arrowDown',
+        text:'⚡'
+      });
+      const end=Math.min(i+3,data.length-1);
+      const isWin=r.type==='CALL'?data[end].close>data[i+1].open:data[end].close<data[i+1].open;
+      markers.current.push({
+        time:data[end].time,
+        position:isWin?'aboveBar':'belowBar',
+        color:isWin?'#10b981':'#f43f5e',
+        shape:'square',
+        text:isWin?'W':'L'
+      });
+      if(isWin)w++;else l++;
+      i+=3;
     }
-    mk.current.sort((a,b)=>a.time-b.time);
-    sR.current.setMarkers(mk.current);
-    const tt=w+l,wr=tt>0?Math.round(w/tt*100):0;
-    setStats({w,l,wr});
-    await say(`Анализ завершен. ${tt} сигналов. Винрейт ${wr} процентов.`);
+    markers.current.sort((a,b)=>a.time-b.time);
+    if(seriesRef.current)seriesRef.current.setMarkers(markers.current);
+    setStats({w,l});
+    return{w,l};
   };
 
   const liveLoop=async()=>{
-    while(on.current){
+    while(running.current){
       try{
-        setPhase("СКАНИРОВАНИЕ");setScan(true);
-        const lv=dedup(await API.get('BTCUSDT',250,'5m'));
-        if(lv.length<PS+201){await new Promise(r=>setTimeout(r,5000));continue;}
-        const ls=lv[lv.length-1];setPr(ls.close);
-        try{sR.current.update(ls);}catch(e){}
-        const rs=rsi(lv);setMt({rsi:Math.round(rs),vol:Math.round(40+Math.random()*20)});
+        setPhase('СКАНИРОВАНИЕ');
+        const data=await fetchCandles('BTCUSDT',300,'5m');
+        if(data.length<250){await new Promise(r=>setTimeout(r,5000));continue;}
 
-        // Зоны
-        const pz=lv.slice(-(PS+1),-1);
-        const hz=Math.max(...pz.map(c=>c.high));
-        const lz=Math.min(...pz.map(c=>c.low));
-        const at=atr(lv),gt=at*1.5;
-        try{
-          uL.current.setData([{time:pz[0].time,value:hz},{time:ls.time,value:hz}]);
-          dL.current.setData([{time:pz[0].time,value:lz},{time:ls.time,value:lz}]);
-          uL.current.applyOptions({color:(hz-ls.close)<gt?'rgba(239,68,68,0.8)':'rgba(239,68,68,0.2)'});
-          dL.current.applyOptions({color:(ls.close-lz)<gt?'rgba(16,185,129,0.8)':'rgba(16,185,129,0.2)'});
-        }catch(e){}
+        const last=data[data.length-1];
+        setPrice(last.close);
+        setRsiVal(Math.round(calcRSI(data,14)));
 
-        const lr=analyze(lv,lv.length-1,PS);
-        if(lr){
-          const{type}=lr;setScan(false);
-          setSig({type,entry:ls.close,status:'CHECK'});
-          await say(`Внимание! Направление ${type==='CALL'?'вверх':'вниз'}`);
+        try{seriesRef.current.update(last);}catch(e){}
 
-          let cancel=false;
-          for(let s=3;s>0;s--){setPhase(`ПРОВЕРКА ${s}`);
+        const result=analyzeCandle(data,data.length-1);
+
+        if(result){
+          setSignal({type:result.type,entry:last.close,status:'CHECK'});
+          setPhase('ПРОВЕРКА');
+          await say(`Сигнал! ${result.type==='CALL'?'Вверх':'Вниз'}`);
+
+          for(let s=3;s>0;s--){
+            setPhase(`ПРОВЕРКА ${s}`);
             await new Promise(r=>setTimeout(r,1000));
-            try{const ch=await API.get('BTCUSDT',2,'5m');
-            if(ch.length>0){const cp=ch[ch.length-1].close;
-            if(type==='PUT'&&cp>hz)cancel=true;
-            if(type==='CALL'&&cp<lz)cancel=true;}}catch(e){}}
+          }
 
-          if(cancel){setSig(null);await say("Отмена");continue;}
+          setSignal({type:result.type,entry:last.close,status:'ACTIVE'});
+          setPhase('СДЕЛКА');
+          await say('Вход! Открывайте сделку!');
 
-          setSig({type,entry:ls.close,status:'ACTIVE'});
-          setPhase("СДЕЛКА");
-          mk.current.push({time:ls.time,position:type==='CALL'?'belowBar':'aboveBar',
-            color:'#f59e0b',shape:type==='CALL'?'arrowUp':'arrowDown',text:'⚡'});
-          mk.current.sort((a,b)=>a.time-b.time);
-          sR.current.setMarkers(mk.current);
-          await say("Вход! Открывайте сделку!");
+          markers.current.push({
+            time:last.time,
+            position:result.type==='CALL'?'belowBar':'aboveBar',
+            color:'#f59e0b',
+            shape:result.type==='CALL'?'arrowUp':'arrowDown',
+            text:'⚡LIVE'
+          });
+          markers.current.sort((a,b)=>a.time-b.time);
+          seriesRef.current.setMarkers(markers.current);
 
           let exp=900;
-          while(exp>0&&on.current){setTmr(exp);
-            await new Promise(r=>setTimeout(r,1000));exp--;
-            if(exp%10===0)try{const p=await API.get('BTCUSDT',2,'1m');
-            if(p.length>0)setPr(p[p.length-1].close);}catch(e){}}
-          setTmr(null);
+          while(exp>0&&running.current){
+            setTimer(exp);
+            await new Promise(r=>setTimeout(r,1000));
+            exp--;
+            if(exp%15===0){
+              try{const p=await fetchCandles('BTCUSDT',2,'1m');
+              if(p.length>0)setPrice(p[p.length-1].close);}catch(e){}
+            }
+          }
+          setTimer(null);
 
-          try{const rd=await API.get('BTCUSDT',2,'5m');
-          if(rd.length>0){const ec=rd[rd.length-1];
-          const isW=type==='CALL'?ec.close>ls.close:ec.close<ls.close;
-          mk.current.push({time:ec.time,position:isW?'aboveBar':'belowBar',
-            color:isW?'#10b981':'#f43f5e',shape:'square',text:isW?'W':'L'});
-          mk.current.sort((a,b)=>a.time-b.time);
-          sR.current.setMarkers(mk.current);
-          if(isW){setStats(p=>({w:p.w+1,l:p.l,wr:Math.round((p.w+1)/(p.w+1+p.l)*100)}));await say("Профит!");}
-          else{setStats(p=>({w:p.w,l:p.l+1,wr:Math.round(p.w/(p.w+p.l+1)*100)}));await say("Минус");}
-          }}catch(e){}
-          setSig(null);
+          try{
+            const rd=await fetchCandles('BTCUSDT',2,'5m');
+            if(rd.length>0){
+              const ec=rd[rd.length-1];
+              const isWin=result.type==='CALL'?ec.close>last.close:ec.close<last.close;
+              setStats(p=>({w:p.w+(isWin?1:0),l:p.l+(isWin?0:1)}));
+              await say(isWin?'Профит!':'Минус');
+            }
+          }catch(e){}
+          setSignal(null);
         }
       }catch(e){console.error(e);}
       await new Promise(r=>setTimeout(r,5000));
     }
   };
 
-  const run=async()=>{
-    if(on.current)return;on.current=true;
-    await say("Система активирована");
-    setPhase("ЗАГРУЗКА");setScan(true);
-    const h=dedup(await API.get('BTCUSDT',500,'5m'));
-    if(h.length<250){setPhase("ОШИБКА");on.current=false;return;}
-    setPr(h[h.length-1].close);
-    initChart(h);updateEMA(h);
-    await backtest(h);
+  const startSystem=async()=>{
+    setStarted(true);
+    running.current=true;
+    try{new(window.AudioContext||window.webkitAudioContext)().resume();}catch(e){}
+
+    setPhase('ЗАГРУЗКА');
+    await say('Система запущена');
+
+    const data=await fetchCandles('BTCUSDT',500,'5m');
+    if(data.length<250){setPhase('ОШИБКА API');return;}
+
+    setPrice(data[data.length-1].close);
+    initChart(data);
+
+    const bt=backtest(data);
+    const total=bt.w+bt.l;
+    const wrr=total>0?Math.round(bt.w/total*100):0;
+    await say(`Бэктест завершён. ${total} сигналов. Винрейт ${wrr} процентов`);
+
     liveLoop();
   };
 
-  const start=()=>{go(true);
-    try{new(window.AudioContext||window.webkitAudioContext)().resume();}catch(e){}
-    run();};  if(!started)return(
-    <div className="h-screen w-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
-      <div className="text-center">
-        <div className="text-7xl font-black os text-white mb-2">BTC PRO MAX</div>
-        <div className="text-blue-400 os text-xl mb-8">AI TRADING SYSTEM V2</div>
-        <button onClick={start} className="bg-blue-600 hover:bg-blue-500 text-white os text-2xl px-12 py-5 rounded-2xl shadow-2xl shadow-blue-600/30 transition-all hover:scale-105 active:scale-95">
-          🚀 ЗАПУСТИТЬ СИСТЕМУ
-        </button>
-        <div className="text-slate-500 text-xs mt-6 mn">5-FILTER SWEEP ENGINE • 15M EXPIRY</div>
-      </div>
+  /* === RENDER === */
+  if(!started)return(
+    <div style={{height:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'linear-gradient(135deg,#0f172a,#1e3a5f,#0f172a)',flexDirection:'column'}}>
+      <div className="os" style={{fontSize:48,color:'#fff',marginBottom:8}}>BTC PRO MAX</div>
+      <div style={{color:'#60a5fa',fontSize:16,marginBottom:40}}>AI TRADING SYSTEM V2</div>
+      <button onClick={startSystem} style={{background:'#2563eb',color:'#fff',border:'none',padding:'16px 48px',borderRadius:16,fontSize:20,cursor:'pointer',fontWeight:900}}>
+        🚀 ЗАПУСТИТЬ
+      </button>
+      <div style={{color:'#64748b',fontSize:11,marginTop:20}}>5-FILTER ENGINE • BTCUSDT • 5min</div>
     </div>
   );
 
-  const wr=stats.wr;
-  const wrC=wr>=65?'text-emerald-500':wr>=50?'text-amber-500':'text-rose-500';
-
   return(
-    <div className="h-screen w-screen flex flex-col bg-slate-50 overflow-hidden">
+    <div style={{height:'100vh',display:'flex',flexDirection:'column',background:'#f8fafc'}}>
 
       {/* HEADER */}
-      <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-slate-200">
-        <div className="flex items-center gap-3">
-          <div className="text-xl font-black os text-slate-800">BTC PRO MAX</div>
-          <div className={`text-[10px] os px-2 py-0.5 rounded-full font-bold ${scan?'bg-blue-100 text-blue-600 animate-pulse':'bg-emerald-100 text-emerald-600'}`}>
-            {phase}
-          </div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 16px',background:'#fff',borderBottom:'1px solid #e2e8f0'}}>
+        <div style={{display:'flex',alignItems:'center',gap:12}}>
+          <div style={{width:10,height:10,borderRadius:'50%',background:'#3b82f6'}} className="puls"/>
+          <span className="os" style={{fontSize:16,fontWeight:900}}>BTC PRO MAX AI</span>
+          <span style={{fontSize:10,background:'#f1f5f9',padding:'2px 8px',borderRadius:99,color:'#64748b',fontWeight:700}}>{phase}</span>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="mn text-lg font-bold text-slate-800">${pr?pr.toFixed(2):'...'}</div>
-          {tmr!==null&&<div className="mn text-sm bg-amber-100 text-amber-700 px-2 py-0.5 rounded-lg font-bold">
-            ⏱ {Math.floor(tmr/60)}:{String(tmr%60).padStart(2,'0')}
-          </div>}
-        </div>
-      </div>
-
-      {/* TICKER */}
-      <div className="bg-slate-100 border-b border-slate-200 py-1 overflow-hidden">
-        <div className="tk">
-          {[...NW,...NW].map((n,i)=><span key={i} className="text-[10px] text-slate-500 mx-8 whitespace-nowrap">{n}</span>)}
+        <div style={{display:'flex',alignItems:'center',gap:16}}>
+          <span style={{fontSize:18,fontWeight:900}}>${price?price.toFixed(2):'...'}</span>
+          {timer!==null&&<span style={{fontSize:12,background:'#fef3c7',color:'#92400e',padding:'2px 10px',borderRadius:8,fontWeight:700}}>
+            ⏱ {Math.floor(timer/60)}:{String(timer%60).padStart(2,'0')}
+          </span>}
         </div>
       </div>
 
-      {/* MAIN */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* BODY */}
+      <div style={{flex:1,display:'flex',overflow:'hidden',padding:12,gap:12}}>
 
-        {/* LEFT PANEL */}
-        <div className="w-64 flex flex-col gap-3 p-3 overflow-y-auto">
+        {/* LEFT */}
+        <div style={{width:240,display:'flex',flexDirection:'column',gap:12}}>
 
           {/* SIGNAL */}
-          <div className={`card p-4 text-center ${sig?'scan':''}`}>
-            <div className="text-[10px] os text-slate-400 font-bold mb-1">СИГНАЛ</div>
-            {sig?(
+          <div className="card" style={{padding:16,textAlign:'center',background:signal?(signal.type==='CALL'?'#ecfdf5':'#fef2f2'):'#fff'}}>
+            <div style={{fontSize:10,color:'#94a3b8',fontWeight:700}}>СИГНАЛ</div>
+            {signal?(
               <div>
-                <div className={`text-4xl font-black os ${sig.type==='CALL'?'text-emerald-500':'text-rose-500'}`}>
-                  {sig.type==='CALL'?'📈 CALL':'📉 PUT'}
+                <div className="os" style={{fontSize:32,color:signal.type==='CALL'?'#10b981':'#ef4444',marginTop:4}}>
+                  {signal.type==='CALL'?'📈 CALL':'📉 PUT'}
                 </div>
-                <div className="mn text-xs text-slate-500 mt-1">ВХОД: ${sig.entry?.toFixed(2)}</div>
-                <div className={`text-[10px] mt-1 font-bold ${sig.status==='ACTIVE'?'text-emerald-500':'text-amber-500'}`}>
-                  {sig.status==='ACTIVE'?'✅ АКТИВЕН':'🔄 ПРОВЕРКА...'}
+                <div style={{fontSize:11,color:'#64748b',marginTop:4}}>ВХОД: ${signal.entry?.toFixed(2)}</div>
+                <div style={{fontSize:10,color:signal.status==='ACTIVE'?'#10b981':'#f59e0b',fontWeight:700,marginTop:4}}>
+                  {signal.status==='ACTIVE'?'✅ АКТИВЕН':'🔄 ПРОВЕРКА'}
                 </div>
               </div>
-            ):(<div className="text-slate-300 text-3xl py-2">—</div>)}
+            ):(<div style={{fontSize:28,color:'#cbd5e1',padding:8}}>—</div>)}
           </div>
 
           {/* STATS */}
-          <div className="card p-4">
-            <div className="text-[10px] os text-slate-400 font-bold mb-2">СТАТИСТИКА</div>
-            <div className="flex justify-between mb-2">
-              <span className="text-emerald-500 mn text-sm font-bold">W: {stats.w}</span>
-              <span className="text-rose-500 mn text-sm font-bold">L: {stats.l}</span>
+          <div className="card" style={{padding:16}}>
+            <div style={{fontSize:10,color:'#94a3b8',fontWeight:700,marginBottom:8}}>СТАТИСТИКА</div>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{color:'#10b981',fontWeight:900}}>WIN: {stats.w}</span>
+              <span style={{color:'#ef4444',fontWeight:900}}>LOSS: {stats.l}</span>
             </div>
-            <div className="w-full bg-slate-100 rounded-full h-2 mb-1">
-              <div className="bg-blue-500 h-2 rounded-full transition-all" style={{width:`${wr}%`}}/>
+            <div style={{width:'100%',background:'#f1f5f9',borderRadius:99,height:8,marginBottom:4}}>
+              <div style={{width:`${wr}%`,background:wr>=65?'#10b981':wr>=50?'#f59e0b':'#ef4444',height:8,borderRadius:99,transition:'width 0.5s'}}/>
             </div>
-            <div className={`mn text-center text-lg font-black ${wrC}`}>{wr}%</div>
-          </div>
-
-          {/* GAUGES */}
-          <div className="card p-3">
-            <div className="text-[10px] os text-slate-400 font-bold mb-1">МЕТРИКИ</div>
-            <div className="flex gap-2">
-              <Sp v={mt.rsi} label="RSI" color={mt.rsi>60?'#ef4444':mt.rsi<40?'#10b981':'#3b82f6'}/>
-              <Sp v={mt.vol} label="VOL" color="#8b5cf6"/>
-              <Sp v={wr} label="WIN" color={wr>=65?'#10b981':'#f59e0b'}/>
+            <div className="os" style={{textAlign:'center',fontSize:24,color:wr>=65?'#10b981':wr>=50?'#f59e0b':'#ef4444',fontWeight:900}}>
+              {wr}%
             </div>
           </div>
 
-          {/* ORDER BOOK */}
-          <div className="card p-3">
-            <div className="text-[10px] os text-slate-400 font-bold mb-1">СТАКАН</div>
-            <OB price={pr}/>
+          {/* RSI */}
+          <div className="card" style={{padding:16,textAlign:'center'}}>
+            <div style={{fontSize:10,color:'#94a3b8',fontWeight:700}}>RSI (14)</div>
+            <div className="os" style={{fontSize:28,color:rsiVal>60?'#ef4444':rsiVal<40?'#10b981':'#3b82f6',fontWeight:900}}>
+              {rsiVal}
+            </div>
+          </div>
+
+          {/* FILTERS */}
+          <div className="card" style={{padding:12}}>
+            <div style={{fontSize:10,color:'#94a3b8',fontWeight:700,marginBottom:8}}>5 ФИЛЬТРОВ</div>
+            {['Sweep Detect','Body Ratio','Volume x1.2','EMA Trend','RSI Filter'].map((f,i)=>(
+              <div key={i} style={{display:'flex',alignItems:'center',gap:6,marginBottom:4}}>
+                <div style={{width:6,height:6,borderRadius:'50%',background:signal?'#10b981':'#cbd5e1'}}/>
+                <span style={{fontSize:10,color:'#64748b',flex:1}}>{f}</span>
+                <span style={{fontSize:9,fontWeight:700,color:signal?'#10b981':'#94a3b8'}}>{signal?'✓':'—'}</span>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* CHART */}
-        <div className="flex-1 p-3">
-          <div className="card w-full h-full overflow-hidden">
-            <div ref={cBox} className="w-full h-full"/>
-          </div>
+        <div className="card" style={{flex:1}}>
+          <div ref={chartBox} style={{width:'100%',height:'100%'}}/>
         </div>
       </div>
 
       {/* FOOTER */}
-      <div className="flex items-center justify-between px-4 py-1.5 bg-white border-t border-slate-200">
-        <div className="text-[9px] text-slate-400 mn">BTC PRO MAX AI V2 • 5-FILTER ENGINE</div>
-        <div className="flex items-center gap-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"/>
-          <span className="text-[9px] text-slate-400">LIVE</span>
+      <div style={{display:'flex',justifyContent:'space-between',padding:'6px 16px',background:'#fff',borderTop:'1px solid #e2e8f0'}}>
+        <span style={{fontSize:9,color:'#94a3b8'}}>BINANCE BTCUSDT • 5m • 5-FILTER</span>
+        <div style={{display:'flex',alignItems:'center',gap:4}}>
+          <div style={{width:5,height:5,borderRadius:'50%',background:'#10b981'}} className="puls"/>
+          <span style={{fontSize:9,color:'#94a3b8'}}>LIVE</span>
         </div>
       </div>
     </div>
@@ -398,4 +406,3 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
-};
