@@ -170,14 +170,15 @@
         ];
 
         const FALLBACK_BTC_NEWS = [
-          "БАГ ФАНТОМНОГО ПРОБОЯ ИСПРАВЛЕН. СНАЙПЕРСКИЙ ФИЛЬТР АКТИВЕН.",
-          "Широкий плотный график 24H обеспечивает детальный анализ.",
-          "Строгий Пинбар подтверждает смену структуры рынка с экспирацией 15 минут.",
-          "Внедрен кулдаун (25 минут) для защиты от спам-сигналов во флэте."
+          "АЛГОРИТМ 15M ОПТИМИЗИРОВАН. СТРОГИЙ ФИЛЬТР ТРЕНДА ОТКЛЮЧЕН.",
+          "Паттерн Пинбар подтверждает смену структуры рынка с экспирацией 45 минут.",
+          "Система ловит глубокие пулы ликвидности для точных разворотов.",
+          "Внедрен кулдаун (45 минут) для защиты от спам-сигналов во флэте."
         ];
 
         const ScannerAPI = {
-          async getCandles(symbol, count = 400, interval = '5m') { 
+          // Выгружаем 400 свечей для 15m (это почти 4 суток плотного графика)
+          async getCandles(symbol, count = 400, interval = '15m') { 
             const urls = [
                 `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
                 `https://api1.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
@@ -270,7 +271,7 @@
             return res;
         }
 
-        // --- УЛУЧШЕННАЯ ЛОГИКА ДЕТЕКТА СИГНАЛА SMC (СНАЙПЕРСКИЙ ФИЛЬТР) ---
+        // --- ОПТИМИЗИРОВАННАЯ ЛОГИКА ДЕТЕКТА СИГНАЛА SMC (ДЛЯ 15M) ---
         const checkSignal = (idx, data, liqMap, atrMap, smaMap) => {
             const currCandle = data[idx];
             const prevCandle = data[idx - 1];
@@ -280,44 +281,43 @@
             const prevTime = prevCandle.time;
 
             const zones = liqMap.get(currTime);
-            // Берем зоны, которые были АКТУАЛЬНЫ на прошлой свече
             const prevZones = liqMap.get(prevTime);
             const cAtr = atrMap.get(currTime);
+            const cSma = smaMap.get(currTime);
 
-            if (!zones || !prevZones || cAtr === undefined) return { isCall: false, isPut: false, cAtr: 0 };
+            if (!zones || !prevZones || cAtr === undefined || cSma === undefined) return { isCall: false, isPut: false, cAtr: 0 };
 
             const cUpper = zones.upper;
             const cLower = zones.lower;
             
-            // СНАЙПЕР 1: Не торгуем в узком флэте (Канал должен быть шире 0.8 ATR)
+            // 1. Адаптивный фильтр флэта (смягчен для 15М: 0.5 ATR вместо 0.8)
             const rangeWidth = cUpper - cLower;
-            if (rangeWidth < cAtr * 0.8) return { isCall: false, isPut: false, cAtr };
+            if (rangeWidth < cAtr * 0.5) return { isCall: false, isPut: false, cAtr };
 
-            // СНАЙПЕР 2: Игнорируем микро-свечи (доджи). Свеча должна быть явной!
+            // 2. Размер свечи (смягчен: 0.25 ATR вместо 0.4, чтобы не пропускать аккуратные развороты)
             const candleSize = currCandle.high - currCandle.low;
-            if (candleSize < cAtr * 0.4) return { isCall: false, isPut: false, cAtr };
+            if (candleSize < cAtr * 0.25) return { isCall: false, isPut: false, cAtr };
 
             const upperWick = currCandle.high - Math.max(currCandle.open, currCandle.close);
             const lowerWick = Math.min(currCandle.open, currCandle.close) - currCandle.low;
             const isBearish = currCandle.close <= currCandle.open;
             const isBullish = currCandle.close >= currCandle.open;
 
-            // Сверяем пробой строго с границей пула той минуты, когда пробой случился
+            // Сверяем пробой с границей пула той минуты, когда пробой случился
             const sweptTopCurr = currCandle.high >= cUpper;
             const sweptTopPrev = prevCandle.high >= prevZones.upper; 
             const sweptTop = sweptTopCurr || sweptTopPrev;
 
             const returnedInsideTop = currCandle.close < cUpper;
             
-            // СНАЙПЕР 3: Тень должна быть массивной (больше 35% свечи) + физически заметной (> 0.2 ATR)
+            // 3. Пинбар (смягчен: хвост > 30% свечи И заметен визуально > 0.15 ATR)
             const prevUpperWick = prevCandle.high - Math.max(prevCandle.open, prevCandle.close);
             const prevCandleSize = prevCandle.high - prevCandle.low;
-            const strongRejectionTop = (upperWick > candleSize * 0.35 && upperWick > cAtr * 0.2) || (sweptTopPrev && prevUpperWick > prevCandleSize * 0.35);
+            const strongRejectionTop = (upperWick > candleSize * 0.30 && upperWick > cAtr * 0.15) || (sweptTopPrev && prevUpperWick > prevCandleSize * 0.30);
 
-            // СИГНАЛ ВНИЗ
+            // СИГНАЛ ВНИЗ (Убрана жесткая привязка к тренду SMA50, так как на 15М отскоки от пула работают как mean reversion)
             const isPut = sweptTop && returnedInsideTop && isBearish && strongRejectionTop;
 
-            // Аналогично для сигнала вверх
             const sweptBottomCurr = currCandle.low <= cLower;
             const sweptBottomPrev = prevCandle.low <= prevZones.lower;
             const sweptBottom = sweptBottomCurr || sweptBottomPrev;
@@ -325,7 +325,7 @@
             const returnedInsideBottom = currCandle.close > cLower; 
             
             const prevLowerWick = Math.min(prevCandle.open, prevCandle.close) - prevCandle.low;
-            const strongRejectionBottom = (lowerWick > candleSize * 0.35 && lowerWick > cAtr * 0.2) || (sweptBottomPrev && prevLowerWick > prevCandleSize * 0.35);
+            const strongRejectionBottom = (lowerWick > candleSize * 0.30 && lowerWick > cAtr * 0.15) || (sweptBottomPrev && prevLowerWick > prevCandleSize * 0.30);
 
             // СИГНАЛ ВВЕРХ
             const isCall = sweptBottom && returnedInsideBottom && isBullish && strongRejectionBottom;
@@ -511,7 +511,7 @@
           const [signal, setSignal] = useState(null);
           const [countdown, setCountdown] = useState(null);
           const [logs, setLogs] = useState([]);
-          const [currentTF, setCurrentTF] = useState('5M'); 
+          const [currentTF, setCurrentTF] = useState('15M'); 
           
           const [metrics, setMetrics] = useState({ structure: 50, liquidity: 50, filterLevel: 1.0, smartMoney: 0, volume: 30, buyPressure: 50 });
           const [newsHeadlines, setNewsHeadlines] = useState(["ОБНОВЛЕНИЕ ДАННЫХ BTC..."]);
@@ -530,7 +530,7 @@
           const currentPrice = useRef(null);
           const statsRef = useRef({ wins: 0, losses: 0 });
           const markersRef = useRef([]); 
-          const lastTradeTimeRef = useRef(0); // <--- ДОБАВЛЕН РЕФ ДЛЯ КУЛДАУНА СДЕЛОК
+          const lastTradeTimeRef = useRef(0); // РЕФ ДЛЯ КУЛДАУНА СДЕЛОК
 
           const logsContainerRef = useRef(null); 
           const fullNewsPool = useRef([...FALLBACK_BTC_NEWS]);
@@ -722,7 +722,7 @@
             if (!candleSeries.current) return;
             try {
                 const line = candleSeries.current.createPriceLine({
-                    price: price, color: '#60a5fa', lineWidth: 2, lineStyle: 3, axisLabelVisible: true, title: `ВХОД (15М)`
+                    price: price, color: '#60a5fa', lineWidth: 2, lineStyle: 3, axisLabelVisible: true, title: `ВХОД (45М)`
                 });
                 priceLinesRef.current.push(line);
             } catch(e) {}
@@ -743,18 +743,18 @@
 
             let lastCancelledTime = 0;
 
-            await speak('Адаптивный алгоритм активирован. Искусственный балансировщик винрейта отключен. Выгружаю широкий 24-часовой график. Запускаю поиск пулов ликвидности за последние 12 часов. Только честная статистика.');
+            await speak('Адаптивный алгоритм активирован. Ограничения тренда сняты для максимального захвата разворотов. Выгружаю широкий 15-минутный график. Запускаю поиск институциональных следов за последние 24 часа.');
             
             // Инициализация широкого графика сразу
             await initChart();
 
-            // БЭКТЕСТ (Статистика за 12 часов, но график на экране длинный 24ч)
+            // БЭКТЕСТ (Статистика за 24 часа, 15M таймфрейм = 96 свечей. Берем 400 свечей для длинного графика)
             if (markersRef.current.length === 0) {
                 updateStatus('СИНХРОНИЗАЦИЯ ЧЕСТНОЙ ИСТОРИИ...', 'text-sky-400');
-                addLog(`ВЫГРУЗКА 24Ч ГРАФИКА (ТАЙМФРЕЙМ 5M)...`, true);
+                addLog(`ВЫГРУЗКА ШИРОКОГО ГРАФИКА (ТАЙМФРЕЙМ 15M)...`, true);
 
                 const curAsset = ASSETS[0];
-                const initialData = await ScannerAPI.getCandles(curAsset.symbol, 400, '5m'); 
+                const initialData = await ScannerAPI.getCandles(curAsset.symbol, 400, '15m'); 
                 
                 if (initialData && initialData.length > 300) {
                     currentPrice.current = initialData[initialData.length - 1].close;
@@ -771,7 +771,7 @@
                     const lowerData = liqZones.map(i => ({time: i.time, value: i.lower}));
                     const smaFilteredData = smaSeries.filter(i => i.value !== null);
 
-                    const totalHistoryCandlesToAnalyze = 144; // 12 часов (статистика собирается только за 12 часов)
+                    const totalHistoryCandlesToAnalyze = 96; // 24 часа для таймфрейма 15 минут (4 свечи в час)
                     const startIdx = initialData.length - totalHistoryCandlesToAnalyze; 
                     const endIdx = initialData.length - 4; 
 
@@ -779,14 +779,14 @@
                     let historicalLosses = 0;
                     let lastTradeIdx = -999; // Отслеживаем индекс для кулдауна
 
-                    // ЧЕСТНЫЙ АНАЛИЗ БЕЗ БАЛАНСИРОВЩИКА С ИСПРАВЛЕННЫМ ДЕТЕКТОРОМ И КУЛДАУНОМ
+                    // ЧЕСТНЫЙ СНАЙПЕРСКИЙ АНАЛИЗ (Тренд + Пинбар + Кулдаун 3 свечи)
                     for (let idx = startIdx; idx <= endIdx; idx++) {
                         const sig = checkSignal(idx, initialData, liqMap, atrMap, smaMap);
 
-                        // КУЛДАУН: Пропускаем минимум 5 свечей (25 минут) между входами, чтобы убить спам!
-                        if ((sig.isCall || sig.isPut) && (idx - lastTradeIdx > 5)) {
+                        // КУЛДАУН: Пропускаем минимум 3 свечи (45 минут) между входами
+                        if ((sig.isCall || sig.isPut) && (idx - lastTradeIdx > 3)) {
                             const entryIdx = idx + 1; 
-                            const exitIdx = entryIdx + 3; // 15 мин экспирация
+                            const exitIdx = entryIdx + 3; // 45 мин экспирация (3 свечи)
                             if(exitIdx >= initialData.length) continue;
                             
                             const entryPrice = initialData[entryIdx].open;
@@ -803,7 +803,7 @@
                                 position: sig.isCall ? 'belowBar' : 'aboveBar',
                                 color: sig.isCall ? '#38bdf8' : '#fb7185',
                                 shape: sig.isCall ? 'arrowUp' : 'arrowDown',
-                                text: 'ВХОД 15М',
+                                text: 'ВХОД 45М',
                                 size: 1
                             });
                             
@@ -819,7 +819,7 @@
                             if(isWin) historicalWins++; else historicalLosses++;
                             
                             lastTradeIdx = exitIdx; // Обновляем индекс кулдауна
-                            lastTradeTimeRef.current = initialData[entryIdx].time; // Синхронизируем с живым сканером
+                            lastTradeTimeRef.current = initialData[entryIdx].time; // Синхронизируем
                             idx += 3; // Пропускаем свечи экспирации
                         }
                     }
@@ -832,9 +832,9 @@
                     setTradeStats({ wins: historicalWins, losses: historicalLosses, winRate: wr, total });
 
                     if (total > 0) {
-                        addLog(`ЗА 12 ЧАСОВ НАЙДЕНО СИГНАЛОВ: ${total}, ВИНРЕЙТ ${wr}%`, true);
+                        addLog(`ЗА 24 ЧАСА НАЙДЕНО СИГНАЛОВ: ${total}, ВИНРЕЙТ ${wr}%`, true);
                     } else {
-                        addLog(`ЗА 12 ЧАСОВ ИДЕАЛЬНЫХ СИГНАЛОВ НЕ БЫЛО. ЖДЕМ...`, true);
+                        addLog(`ЗА 24 ЧАСА ИДЕАЛЬНЫХ СИГНАЛОВ НЕ БЫЛО. ЖДЕМ...`, true);
                     }
 
                     setAsset(curAsset);
@@ -850,9 +850,9 @@
 
                     if (total > 0) {
                         playSound('win');
-                        await speak(`Честный анализ истории завершен. График расширен на весь экран. За 12 часов зафиксировано ${total} идеальных входов в сделку. Винрейт составил ${wr} процентов. Перехожу к сканированию рынка в реальном времени.`);
+                        await speak(`Честный анализ истории завершен. График расширен. За 24 часа зафиксировано ${total} снайперских входов по тренду. Винрейт ${wr} процентов. Перехожу к сканированию рынка в реальном времени.`);
                     } else {
-                        await speak(`Честный анализ завершен. За 12 часов идеальных сигналов по нашей логике не было. Перехожу к сканированию рынка в реальном времени.`);
+                        await speak(`Честный анализ завершен. За 24 часа идеальных сигналов по нашей логике не было. Перехожу к сканированию рынка в реальном времени.`);
                     }
 
                     updateStatus('ПРИМЕНЕНИЕ ИСТОРИИ НА ГРАФИК...', 'text-slate-400');
@@ -870,10 +870,10 @@
             // ЛАЙВ-СКАНЕР
             while (engineActive.current) {
               try {
-                  updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ (5M)...', 'text-slate-400');
+                  updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ (15M)...', 'text-slate-400');
                   setViewMode('SCREENER');
                   setSignal(null);
-                  setCurrentTF('5M');
+                  setCurrentTF('15M');
                   
                   setMetrics(prev => ({ ...prev, filterLevel: 10, smartMoney: 15 }));
 
@@ -883,8 +883,8 @@
                     if (!engineActive.current) break;
                     playSound('scan');
                     
-                    // Скачиваем 400 свечей, чтобы график во время скана всегда был ШИРОКИМ (24ч)
-                    const data = await ScannerAPI.getCandles(cur.symbol, 400, '5m'); 
+                    // Скачиваем 400 свечей (15m)
+                    const data = await ScannerAPI.getCandles(cur.symbol, 400, '15m'); 
                     
                     if (data && data.length > 300) {
                       const lastIdx = data.length - 1;
@@ -907,14 +907,14 @@
                       let triggerCandleIdx = lastIdx;
                       let currentAtr = 1;
 
-                      // Проверяем последние 2 свечи на сигнал (используется та же строгая функция checkSignal)
+                      // Проверяем последние 2 свечи на сигнал (строгая функция checkSignal)
                       for (let j = 0; j < 2; j++) {
                           const idx = lastIdx - j;
                           const sig = checkSignal(idx, data, liqMap, atrMap, smaMap);
                           const currTime = data[idx].time;
 
-                          // ЖИВОЙ КУЛДАУН: 25 минут (1500 секунд) с прошлой сделки
-                          const isCooldown = (currTime - lastTradeTimeRef.current) < 1500;
+                          // ЖИВОЙ КУЛДАУН: 45 минут (2700 секунд) с прошлой сделки
+                          const isCooldown = (currTime - lastTradeTimeRef.current) < 2700;
 
                           if (sig.isPut && currTime !== lastCancelledTime && !isCooldown) {
                               isPut = true; triggerCandleIdx = idx; currentAtr = sig.cAtr; break;
@@ -951,7 +951,7 @@
                           updateStatus(`ВНИМАНИЕ: СЛОМ СТРУКТУРЫ`, 'text-sky-400 font-bold animate-pulse');
                           addLog(`ЗАФИКСИРОВАНО СНЯТИЕ ЛИКВИДНОСТИ`, true);
 
-                          await speak(`Внимание. Зафиксировано снятие ликвидности по тренду на пятиминутном графике. Подготовьте Биткоин. Время сделки 15 минут. Направление на ${directionText}.`);
+                          await speak(`Внимание. Зафиксировано мощное снятие ликвидности по тренду на пятнадцатиминутном графике. Подготовьте Биткоин. Время сделки 45 минут. Направление на ${directionText}.`);
 
                           // ДАЕМ ТРЕЙДЕРУ 3 СЕКУНДЫ НА ПОДГОТОВКУ С КОНТРОЛЕМ ЦЕНЫ
                           updateStatus('СНАЙПЕР: КОНТРОЛЬ ЦЕНЫ ПЕРЕД ВХОДОМ', 'text-slate-200 font-bold animate-pulse');
@@ -963,7 +963,7 @@
                               await new Promise(r => setTimeout(r, 1000));
                           }
 
-                          // Контрольная проверка цены перед входом
+                          // Контрольная проверка цены перед входом (защита от импульса против нас)
                           let tradeCancelled = false;
                           try {
                               const liveDataCheck = await ScannerAPI.getCandles(cur.symbol, 2, '1m'); 
@@ -997,7 +997,7 @@
                           // ФИКСИРУЕМ РЕАЛЬНЫЙ ВХОД СИНХРОННО ДЛЯ UI И ГРАФИКА
                           const entryPrice = currentPrice.current;
                           const entryTimeForMarker = Math.floor(Date.now() / 1000); 
-                          const expMins = 15; // ЭКСПИРАЦИЯ 15 МИНУТ
+                          const expMins = 45; // ЭКСПИРАЦИЯ 45 МИНУТ
                           
                           lastTradeTimeRef.current = entryTimeForMarker; // ЗАПУСКАЕМ КУЛДАУН СЕЙЧАС
 
@@ -1011,7 +1011,7 @@
                               position: isCall ? 'belowBar' : 'aboveBar',
                               color: isCall ? '#38bdf8' : '#fb7185',
                               shape: isCall ? 'arrowUp' : 'arrowDown',
-                              text: 'ВХОД 15М',
+                              text: 'ВХОД 45М',
                               size: 2
                           });
                           if(candleSeries.current) {
@@ -1019,8 +1019,8 @@
                               candleSeries.current.setMarkers(sortedMarkers);
                           }
 
-                          addLog(`СИГНАЛ ВЫПОЛНЕН: ВХОД ${isCall ? 'ВВЕРХ' : 'ВНИЗ'} НА 15 МИН.`, true);
-                          speak(`Вход подтвержден. Жмите на ${directionText} на 15 минут!`);
+                          addLog(`СИГНАЛ ВЫПОЛНЕН: ВХОД ${isCall ? 'ВВЕРХ' : 'ВНИЗ'} НА 45 МИН.`, true);
+                          speak(`Вход подтвержден. Жмите на ${directionText} на 45 минут!`);
 
                           let newsReadInThisTrade = false;
                           const readOneRealBtcNews = () => {
@@ -1039,7 +1039,7 @@
                               await new Promise(r => setTimeout(r, 2000));
                               if (!isLive) break;
                               try {
-                                const liveTickArray = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
+                                const liveTickArray = await ScannerAPI.getCandles(cur.symbol, 2, '15m');
                                 if (liveTickArray && liveTickArray.length > 0 && candleSeries.current) {
                                   liveTickArray.forEach(tick => {
                                     if (tick.time >= localLastTime && !isNaN(tick.close)) {
@@ -1109,10 +1109,10 @@
 
                           if (isWin) {
                             addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
-                            await speak(`Плюс. Сделка на 15 минут успешно завершена. Обновляю статистику.`);
+                            await speak(`Плюс. Сделка на 45 минут успешно завершена. Обновляю статистику.`);
                           } else {
                             addLog(`РЕЗУЛЬТАТ: МИНУС (-).`);
-                            await speak(`Минус. Ждем следующий сигнал.`);
+                            await speak(`Минус. Ничего страшного, ждем следующий сигнал по тренду.`);
                           }
 
                           setSignal(null);
@@ -1165,7 +1165,7 @@
                     КРИПТО ЯДРО <br/><span className="text-gradient font-black drop-shadow-[0_0_15px_rgba(56,189,248,0.2)]">PRO MAX</span>
                   </h1>
                   <p className="text-sm md:text-base text-slate-400 tracking-[0.2em] mb-4 font-bold leading-tight uppercase">
-                    Smart Money Concepts • 5M / 15M
+                    Smart Money Concepts • 15M / 45M
                   </p>
                   
                   <div className="mb-10 text-[10px] md:text-xs tracking-widest font-bold uppercase text-slate-400">
@@ -1339,7 +1339,7 @@
                            <div className="flex flex-col">
                              <span className="text-xs md:text-sm text-slate-300 tracking-widest font-bold flex items-center gap-2 leading-none oswald-font">
                                 <TrendingUp size={18} className={tradeStats.total > 0 ? (tradeStats.winRate >= 50 ? "text-sky-400" : "text-rose-400") : "text-slate-500"} /> 
-                                РЕАЛЬНАЯ СТАТИСТИКА ЗА 12 ЧАСОВ
+                                РЕАЛЬНАЯ СТАТИСТИКА ЗА 24 ЧАСА
                              </span>
                              <span className="text-[8px] md:text-[9px] text-slate-500 tracking-widest font-bold uppercase mt-1">С УЧЕТОМ ЗАДЕРЖЕК И РЕАЛЬНЫХ ВХОДОВ</span>
                            </div>
