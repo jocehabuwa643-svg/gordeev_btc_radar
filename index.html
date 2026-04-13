@@ -177,7 +177,6 @@
         ];
 
         const ScannerAPI = {
-          // Выгружаем 400 свечей для 15m (это почти 4 суток плотного графика)
           async getCandles(symbol, count = 400, interval = '15m') { 
             const urls = [
                 `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
@@ -187,7 +186,7 @@
             
             for (let url of urls) {
                 try {
-                    let response = await fetch(url);
+                    let response = await fetch(url, { cache: 'no-store' });
                     if (response.ok) {
                         const data = await response.json();
                         return data.map(d => ({
@@ -199,7 +198,7 @@
                             volume: parseFloat(d[5])
                         }));
                     }
-                } catch(e) { continue; }
+                } catch(e) { console.warn("Fetch fallback", url); continue; }
             }
             console.error("Нет связи с Binance API");
             return [];
@@ -283,9 +282,8 @@
             const zones = liqMap.get(currTime);
             const prevZones = liqMap.get(prevTime);
             const cAtr = atrMap.get(currTime);
-            const cSma = smaMap.get(currTime);
 
-            if (!zones || !prevZones || cAtr === undefined || cSma === undefined) return { isCall: false, isPut: false, cAtr: 0 };
+            if (!zones || !prevZones || cAtr === undefined) return { isCall: false, isPut: false, cAtr: 0 };
 
             const cUpper = zones.upper;
             const cLower = zones.lower;
@@ -332,12 +330,11 @@
 
             return { isCall, isPut, cAtr };
         };
-        // -------------------------------------------------------
 
         const LiveClock = () => {
           const [t, setT] = useState(new Date());
           useEffect(() => { const i = setInterval(() => setT(new Date()), 1000); return () => clearInterval(i); }, []);
-          return <span className="text-slate-300 text-sm md:text-base mono-font font-bold">{t.toLocaleTimeString('ru-RU')}</span>;
+          return <span className="text-slate-300 text-xs md:text-sm xl:text-base mono-font font-bold">{t.toLocaleTimeString('ru-RU')}</span>;
         };
 
         const Speedometer = ({ value, label, colorHex = "#0ea5e9", glow = false }) => {
@@ -349,7 +346,7 @@
 
           return (
             <div className="flex flex-col items-center flex-1 relative px-0.5 group pt-1">
-              <svg viewBox="0 0 100 55" className="w-10 h-6 md:w-12 md:h-7 overflow-visible mt-1">
+              <svg viewBox="0 0 100 55" className="w-8 h-5 md:w-8 md:h-5 xl:w-12 xl:h-7 overflow-visible mt-1">
                 <defs>
                     <filter id={`glow-${label.replace(/\s+/g, '')}`}>
                         <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
@@ -370,8 +367,8 @@
                   <circle cx="50" cy="50" r="2.5" fill="#1e293b" />
                 </g>
               </svg>
-              <div className={`text-base md:text-lg mt-1.5 font-black leading-none oswald-font ${glow ? 'drop-shadow-[0_0_8px_currentColor]' : ''}`} style={{color: colorHex}}>{Math.round(safeValue)}</div>
-              <div className="text-[7px] md:text-[8px] text-slate-400 tracking-widest leading-none text-center font-bold mt-1 uppercase whitespace-nowrap">{label}</div>
+              <div className={`text-xs md:text-[11px] xl:text-lg mt-1 font-black leading-none oswald-font ${glow ? 'drop-shadow-[0_0_8px_currentColor]' : ''}`} style={{color: colorHex}}>{Math.round(safeValue)}</div>
+              <div className="text-[6px] md:text-[6px] xl:text-[8px] text-slate-400 tracking-widest leading-none text-center font-bold mt-1 uppercase whitespace-nowrap">{label}</div>
             </div>
           );
         };
@@ -379,7 +376,7 @@
         const VolumetricArrow = ({ type }) => {
           const isUp = type === 'CALL';
           return (
-            <div className="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center animate-arrow-premium">
+            <div className="relative w-12 h-12 md:w-14 md:h-14 xl:w-20 xl:h-20 flex items-center justify-center animate-arrow-premium">
                <svg viewBox="0 0 24 24" className={`w-full h-full fill-current ${isUp ? 'text-[#38bdf8]' : 'text-[#fb7185]'}`}>
                   <path d={isUp ? "M12 2l-10 11h7v9h6v-9h7z" : "M12 22l10-11h-7v-9h-6v9h-7z"} />
                </svg>
@@ -392,11 +389,11 @@
           
           if (!p) {
               return (
-                  <div className="flex flex-col mono-font text-slate-300 border-l border-slate-700/50 px-3 justify-center h-full w-full relative">
-                      <div className="flex justify-between text-slate-500 mb-1 border-b border-slate-700/80 pb-1 text-[10px] md:text-xs tracking-widest font-bold oswald-font">
+                  <div className="flex flex-col mono-font text-slate-300 border-l border-slate-700/50 px-2 xl:px-3 justify-center h-full w-full relative">
+                      <div className="flex justify-between text-slate-500 mb-1 border-b border-slate-700/80 pb-1 text-[8px] md:text-[9px] xl:text-xs tracking-widest font-bold oswald-font">
                           <span>ЦЕНА</span><span>ОБЪЕМ</span>
                       </div>
-                      <div className="flex items-center justify-center h-full text-[10px] md:text-xs text-slate-500 font-bold animate-pulse oswald-font tracking-widest">
+                      <div className="flex items-center justify-center h-full text-[8px] md:text-[9px] xl:text-xs text-slate-500 font-bold animate-pulse oswald-font tracking-widest">
                           СИНХРОНИЗАЦИЯ...
                       </div>
                   </div>
@@ -407,22 +404,22 @@
           const step = p > 1000 ? 0.5 : p > 1 ? 0.005 : 0.00005;
 
           return (
-            <div className="flex flex-col mono-font text-slate-200 border-l border-slate-700/50 px-3 justify-center h-full w-full relative">
-              <div className="flex justify-between text-slate-400 mb-1 border-b border-slate-700/80 pb-1 text-[10px] md:text-xs tracking-widest font-bold oswald-font">
+            <div className="flex flex-col mono-font text-slate-200 border-l border-slate-700/50 px-2 xl:px-3 justify-center h-full w-full relative">
+              <div className="flex justify-between text-slate-400 mb-1 border-b border-slate-700/80 pb-1 text-[8px] md:text-[9px] xl:text-xs tracking-widest font-bold oswald-font">
                 <span>ЦЕНА</span><span>ОБЪЕМ</span>
               </div>
-              <div className="space-y-0.5 mt-1 relative z-10">
+              <div className="space-y-px md:space-y-0.5 mt-1 relative z-10">
                 {[...Array(3)].map((_, i) => {
                   const vol = Math.floor(Math.random() * 80 + 20);
                   const width = `${Math.min(100, (vol / 100) * 100)}%`;
                   return (
-                  <div key={`ask-${i}`} className="flex justify-between text-[10px] md:text-xs text-rose-400/90 font-bold tracking-wider relative group">
+                  <div key={`ask-${i}`} className="flex justify-between text-[8px] md:text-[9px] xl:text-xs text-rose-400/90 font-bold tracking-wider relative group">
                     <div className="absolute right-0 top-0 bottom-0 bg-rose-900/30 rounded-sm transition-all" style={{width}}></div>
                     <span className="relative z-10 drop-shadow-sm">{formatPrice(p + (4 - i) * step)}</span>
                     <span className="relative z-10 opacity-80">{vol}</span>
                   </div>
                 )})}
-                <div className="flex justify-between text-sky-100 bg-sky-900/40 border border-sky-500/50 my-1.5 px-2 py-0.5 text-xs md:text-sm font-black shadow-[0_0_15px_rgba(14,165,233,0.2)] rounded-md relative overflow-hidden">
+                <div className="flex justify-between text-sky-100 bg-sky-900/40 border border-sky-500/50 my-1 xl:my-1.5 px-1.5 xl:px-2 py-px xl:py-0.5 text-[9px] md:text-[10px] xl:text-sm font-black shadow-[0_0_15px_rgba(14,165,233,0.2)] rounded-md relative overflow-hidden">
                   <div className="absolute left-0 top-0 bottom-0 bg-sky-500/20" style={{width: `${Math.random()*60 + 20}%`}}></div>
                   <span className="relative z-10 drop-shadow-sm">{formattedP}</span>
                   <span className="relative z-10 text-sky-300">{Math.floor(Math.random() * 200 + 50)}</span>
@@ -431,7 +428,7 @@
                   const vol = Math.floor(Math.random() * 80 + 20);
                   const width = `${Math.min(100, (vol / 100) * 100)}%`;
                   return (
-                  <div key={`bid-${i}`} className="flex justify-between text-[10px] md:text-xs text-emerald-400/90 font-bold tracking-wider relative">
+                  <div key={`bid-${i}`} className="flex justify-between text-[8px] md:text-[9px] xl:text-xs text-emerald-400/90 font-bold tracking-wider relative">
                     <div className="absolute right-0 top-0 bottom-0 bg-emerald-900/30 rounded-sm transition-all" style={{width}}></div>
                     <span className="relative z-10 drop-shadow-sm">{formatPrice(p - (i + 1) * step)}</span>
                     <span className="relative z-10 opacity-80">{vol}</span>
@@ -457,9 +454,9 @@
           }, [price]);
           
           return (
-             <div className="flex flex-col gap-1 w-[85px] md:w-[95px] pl-2 border-l border-slate-700/50 overflow-hidden justify-end pb-1 h-full shrink-0">
+             <div className="flex flex-col gap-px md:gap-1 w-[65px] md:w-[75px] xl:w-[95px] pl-1.5 xl:pl-2 border-l border-slate-700/50 overflow-hidden justify-end pb-1 h-full shrink-0">
                 {ticks.map(t => (
-                    <div key={t.id} className={`hft-tick text-[9px] md:text-[10px] font-bold mono-font flex justify-between w-full ${t.buy ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    <div key={t.id} className={`hft-tick text-[7px] md:text-[8px] xl:text-[10px] font-bold mono-font flex justify-between w-full ${t.buy ? 'text-emerald-400' : 'text-rose-400'}`}>
                         <span className="opacity-80">{t.price.slice(-2)}</span>
                         <span>{t.buy ? '▲' : '▼'}{t.amt}</span>
                     </div>
@@ -468,7 +465,6 @@
           )
         };
 
-        // --- УМНАЯ ОЧЕРЕДЬ ДЛЯ ГОЛОСА (ЧТОБЫ НЕ ПЕРЕБИВАЛА СЕБЯ) ---
         const speechQueue = [];
         let isSpeakingNow = false;
 
@@ -501,7 +497,6 @@
             speechQueue.push({ text, resolve: res });
             processSpeechQueue();
         });
-        // -----------------------------------------------------------
 
         const App = () => {
           const [isStarted, setIsStarted] = useState(false);
@@ -522,15 +517,19 @@
           const chartContainerRef = useRef(null);
           const chartInstance = useRef(null);
           const candleSeries = useRef(null);
-          const extraSeriesRef = useRef([]); 
-          const priceLinesRef = useRef([]);  
+          
+          const upperSeriesRef = useRef(null);
+          const lowerSeriesRef = useRef(null);
+          const smaSeriesRef = useRef(null);
+          const historicalTradeLinesRef = useRef([]); 
+          const activeLiveTradeLineRef = useRef(null); 
           
           const audioCtx = useRef(null);
           const engineActive = useRef(false);
           const currentPrice = useRef(null);
           const statsRef = useRef({ wins: 0, losses: 0 });
           const markersRef = useRef([]); 
-          const lastTradeTimeRef = useRef(0); // РЕФ ДЛЯ КУЛДАУНА СДЕЛОК
+          const lastTradeTimeRef = useRef(0); 
 
           const logsContainerRef = useRef(null); 
           const fullNewsPool = useRef([...FALLBACK_BTC_NEWS]);
@@ -695,26 +694,29 @@
           };
 
           const drawIndicators = (upperData, lowerData, smaData) => {
-              clearChartExtras();
+              if (!chartInstance.current) return;
               
               try {
-                  const upperSeries = chartInstance.current.addLineSeries({ 
-                      color: 'rgba(251, 113, 133, 0.6)', lineWidth: 2, lineStyle: 2, title: 'BUY LIQUIDITY' 
-                  });
-                  upperSeries.setData(upperData);
-                  extraSeriesRef.current.push(upperSeries);
+                  if (!upperSeriesRef.current) {
+                      upperSeriesRef.current = chartInstance.current.addLineSeries({ 
+                          color: 'rgba(251, 113, 133, 0.6)', lineWidth: 2, lineStyle: 2, title: 'BUY LIQ' 
+                      });
+                  }
+                  upperSeriesRef.current.setData(upperData);
 
-                  const lowerSeries = chartInstance.current.addLineSeries({ 
-                      color: 'rgba(52, 211, 153, 0.6)', lineWidth: 2, lineStyle: 2, title: 'SELL LIQUIDITY' 
-                  });
-                  lowerSeries.setData(lowerData);
-                  extraSeriesRef.current.push(lowerSeries);
+                  if (!lowerSeriesRef.current) {
+                      lowerSeriesRef.current = chartInstance.current.addLineSeries({ 
+                          color: 'rgba(52, 211, 153, 0.6)', lineWidth: 2, lineStyle: 2, title: 'SELL LIQ' 
+                      });
+                  }
+                  lowerSeriesRef.current.setData(lowerData);
 
-                  const smaSeriesLine = chartInstance.current.addLineSeries({ 
-                      color: 'rgba(234, 179, 8, 0.8)', lineWidth: 2, title: 'SMA 50' 
-                  });
-                  smaSeriesLine.setData(smaData);
-                  extraSeriesRef.current.push(smaSeriesLine);
+                  if (!smaSeriesRef.current) {
+                      smaSeriesRef.current = chartInstance.current.addLineSeries({ 
+                          color: 'rgba(234, 179, 8, 0.8)', lineWidth: 2, title: 'SMA 50' 
+                      });
+                  }
+                  smaSeriesRef.current.setData(smaData);
               } catch(e) {}
           };
 
@@ -745,10 +747,9 @@
 
             await speak('Адаптивный алгоритм активирован. Ограничения тренда сняты для максимального захвата разворотов. Выгружаю широкий 15-минутный график. Запускаю поиск институциональных следов за последние 24 часа.');
             
-            // Инициализация широкого графика сразу
             await initChart();
 
-            // БЭКТЕСТ (Статистика за 24 часа, 15M таймфрейм = 96 свечей. Берем 400 свечей для длинного графика)
+            // БЭКТЕСТ ИСТОРИИ
             if (markersRef.current.length === 0) {
                 updateStatus('СИНХРОНИЗАЦИЯ ЧЕСТНОЙ ИСТОРИИ...', 'text-sky-400');
                 addLog(`ВЫГРУЗКА ШИРОКОГО ГРАФИКА (ТАЙМФРЕЙМ 15M)...`, true);
@@ -771,22 +772,20 @@
                     const lowerData = liqZones.map(i => ({time: i.time, value: i.lower}));
                     const smaFilteredData = smaSeries.filter(i => i.value !== null);
 
-                    const totalHistoryCandlesToAnalyze = 96; // 24 часа для таймфрейма 15 минут (4 свечи в час)
+                    const totalHistoryCandlesToAnalyze = 96; 
                     const startIdx = initialData.length - totalHistoryCandlesToAnalyze; 
                     const endIdx = initialData.length - 4; 
 
                     let historicalWins = 0;
                     let historicalLosses = 0;
-                    let lastTradeIdx = -999; // Отслеживаем индекс для кулдауна
+                    let lastTradeIdx = -999; 
 
-                    // ЧЕСТНЫЙ СНАЙПЕРСКИЙ АНАЛИЗ (Тренд + Пинбар + Кулдаун 3 свечи)
                     for (let idx = startIdx; idx <= endIdx; idx++) {
                         const sig = checkSignal(idx, initialData, liqMap, atrMap, smaMap);
 
-                        // КУЛДАУН: Пропускаем минимум 3 свечи (45 минут) между входами
                         if ((sig.isCall || sig.isPut) && (idx - lastTradeIdx > 3)) {
                             const entryIdx = idx + 1; 
-                            const exitIdx = entryIdx + 3; // 45 мин экспирация (3 свечи)
+                            const exitIdx = entryIdx + 3; 
                             if(exitIdx >= initialData.length) continue;
                             
                             const entryPrice = initialData[entryIdx].open;
@@ -797,30 +796,60 @@
                                 isWin = true;
                             }
 
-                            // Маркеры рисуются на графике
+                            const entryTime = initialData[entryIdx].time;
+                            const exitTime = initialData[exitIdx].time;
+
+                            // 1. Ставим маркеры ВХОДА
                             markersRef.current.push({
-                                time: initialData[entryIdx].time,
+                                time: entryTime,
                                 position: sig.isCall ? 'belowBar' : 'aboveBar',
                                 color: sig.isCall ? '#38bdf8' : '#fb7185',
                                 shape: sig.isCall ? 'arrowUp' : 'arrowDown',
-                                text: 'ВХОД 45М',
-                                size: 1
+                                text: `ВХОД ${formatPrice(entryPrice)}`,
+                                size: 2
                             });
                             
+                            // 2. Ставим маркер ВЫХОДА с текстом "СДЕЛКА В ПЛЮС/МИНУС"
                             markersRef.current.push({
-                                time: initialData[exitIdx].time,
+                                time: exitTime,
                                 position: isWin ? 'aboveBar' : 'belowBar',
                                 color: isWin ? '#10b981' : '#f43f5e',
                                 shape: 'circle',
-                                text: isWin ? 'ВИН (+)' : 'ЛОСС (-)',
-                                size: 1
+                                text: isWin ? 'СДЕЛКА В ПЛЮС' : 'СДЕЛКА В МИНУС',
+                                size: 2
                             });
+
+                            // 3. Рисуем "Стеклянный кубик" сделки (Базовая линия с заливкой)
+                            try {
+                                const boxColor = isWin ? 'rgba(16, 185, 129, 0.2)' : 'rgba(244, 63, 94, 0.2)';
+                                const lineColor = isWin ? 'rgba(16, 185, 129, 0.8)' : 'rgba(244, 63, 94, 0.8)';
+                                const tradeBox = chartInstance.current.addBaselineSeries({
+                                    baseValue: { type: 'price', price: entryPrice },
+                                    topLineColor: lineColor,
+                                    topFillColor1: boxColor,
+                                    topFillColor2: boxColor,
+                                    bottomLineColor: lineColor,
+                                    bottomFillColor1: boxColor,
+                                    bottomFillColor2: boxColor,
+                                    lineWidth: 2,
+                                    lineStyle: 0,
+                                    crosshairMarkerVisible: false,
+                                    lastValueVisible: false,
+                                    priceLineVisible: false,
+                                });
+                                // Задаем точки для создания прямоугольника
+                                tradeBox.setData([
+                                    { time: entryTime, value: exitPrice },
+                                    { time: exitTime, value: exitPrice }
+                                ]);
+                                historicalTradeLinesRef.current.push(tradeBox);
+                            } catch(e) {}
 
                             if(isWin) historicalWins++; else historicalLosses++;
                             
-                            lastTradeIdx = exitIdx; // Обновляем индекс кулдауна
-                            lastTradeTimeRef.current = initialData[entryIdx].time; // Синхронизируем
-                            idx += 3; // Пропускаем свечи экспирации
+                            lastTradeIdx = exitIdx; 
+                            lastTradeTimeRef.current = entryTime; 
+                            idx += 3; 
                         }
                     }
 
@@ -840,7 +869,9 @@
                     setAsset(curAsset);
                     
                     if (candleSeries.current) {
+                        // Оставляем свечи в оригинальном цвете
                         candleSeries.current.setData(initialData);
+                        
                         const sortedMarkers = [...markersRef.current].sort((a, b) => a.time - b.time);
                         candleSeries.current.setMarkers(sortedMarkers);
                         drawIndicators(upperData, lowerData, smaFilteredData);
@@ -850,9 +881,9 @@
 
                     if (total > 0) {
                         playSound('win');
-                        await speak(`Честный анализ истории завершен. График расширен. За 24 часа зафиксировано ${total} снайперских входов по тренду. Винрейт ${wr} процентов. Перехожу к сканированию рынка в реальном времени.`);
+                        await speak(`Анализ истории завершен. Внедрены стеклянные ценовые блоки сделок. За 24 часа зафиксировано ${total} снайперских входов. Винрейт ${wr} процентов. Перехожу к сканированию рынка.`);
                     } else {
-                        await speak(`Честный анализ завершен. За 24 часа идеальных сигналов по нашей логике не было. Перехожу к сканированию рынка в реальном времени.`);
+                        await speak(`Анализ завершен. За 24 часа идеальных сигналов по нашей логике не было. Перехожу к сканированию рынка.`);
                     }
 
                     updateStatus('ПРИМЕНЕНИЕ ИСТОРИИ НА ГРАФИК...', 'text-slate-400');
@@ -883,7 +914,6 @@
                     if (!engineActive.current) break;
                     playSound('scan');
                     
-                    // Скачиваем 400 свечей (15m)
                     const data = await ScannerAPI.getCandles(cur.symbol, 400, '15m'); 
                     
                     if (data && data.length > 300) {
@@ -907,13 +937,11 @@
                       let triggerCandleIdx = lastIdx;
                       let currentAtr = 1;
 
-                      // Проверяем последние 2 свечи на сигнал (строгая функция checkSignal)
                       for (let j = 0; j < 2; j++) {
                           const idx = lastIdx - j;
                           const sig = checkSignal(idx, data, liqMap, atrMap, smaMap);
                           const currTime = data[idx].time;
 
-                          // ЖИВОЙ КУЛДАУН: 45 минут (2700 секунд) с прошлой сделки
                           const isCooldown = (currTime - lastTradeTimeRef.current) < 2700;
 
                           if (sig.isPut && currTime !== lastCancelledTime && !isCooldown) {
@@ -924,10 +952,15 @@
                           }
                       }
 
-                      // Обновляем ЖИВОЙ ШИРОКИЙ график
+                      // Обновляем ЖИВОЙ ШИРОКИЙ график (БЕЗ раскраски кубиков)
                       if(candleSeries.current) {
                           try { 
                               candleSeries.current.setData(data);
+                              
+                              // Убираем маркеры с несуществующим временем перед добавлением, чтобы избежать краша
+                              const dataTimes = new Set(data.map(d => d.time));
+                              markersRef.current = markersRef.current.filter(m => dataTimes.has(m.time));
+
                               const sortedMarkers = [...markersRef.current].sort((a, b) => a.time - b.time);
                               candleSeries.current.setMarkers(sortedMarkers);
                           } catch (e) {}
@@ -951,9 +984,8 @@
                           updateStatus(`ВНИМАНИЕ: СЛОМ СТРУКТУРЫ`, 'text-sky-400 font-bold animate-pulse');
                           addLog(`ЗАФИКСИРОВАНО СНЯТИЕ ЛИКВИДНОСТИ`, true);
 
-                          await speak(`Внимание. Зафиксировано мощное снятие ликвидности по тренду на пятнадцатиминутном графике. Подготовьте Биткоин. Время сделки 45 минут. Направление на ${directionText}.`);
+                          await speak(`Внимание. Зафиксировано мощное снятие ликвидности на пятнадцатиминутном графике. Подготовьте Биткоин. Время сделки 45 минут. Направление на ${directionText}.`);
 
-                          // ДАЕМ ТРЕЙДЕРУ 3 СЕКУНДЫ НА ПОДГОТОВКУ С КОНТРОЛЕМ ЦЕНЫ
                           updateStatus('СНАЙПЕР: КОНТРОЛЬ ЦЕНЫ ПЕРЕД ВХОДОМ', 'text-slate-200 font-bold animate-pulse');
                           addLog(`ЖДЕМ ПОДТВЕРЖДЕНИЯ (3 СЕК)...`, true);
 
@@ -963,7 +995,6 @@
                               await new Promise(r => setTimeout(r, 1000));
                           }
 
-                          // Контрольная проверка цены перед входом (защита от импульса против нас)
                           let tradeCancelled = false;
                           try {
                               const liveDataCheck = await ScannerAPI.getCandles(cur.symbol, 2, '1m'); 
@@ -973,7 +1004,6 @@
                                   currentPrice.current = liveTick.close;
                                   if (candleSeries.current) { try { candleSeries.current.update(liveTick); } catch(e){} }
                                   
-                                  // Если за 3 секунды цена улетела сильно против нас (на половину среднего ATR) - ОТМЕНА
                                   if (isCall && liveTick.close < (data[triggerCandleIdx].close - (currentAtr * 0.5))) tradeCancelled = true;
                                   if (isPut && liveTick.close > (data[triggerCandleIdx].close + (currentAtr * 0.5))) tradeCancelled = true;
                               }
@@ -994,30 +1024,43 @@
                           playSound('start');
                           updateStatus('СИГНАЛ АКТИВЕН', 'text-sky-400 font-bold');
                           
-                          // ФИКСИРУЕМ РЕАЛЬНЫЙ ВХОД СИНХРОННО ДЛЯ UI И ГРАФИКА
                           const entryPrice = currentPrice.current;
-                          const entryTimeForMarker = Math.floor(Date.now() / 1000); 
-                          const expMins = 45; // ЭКСПИРАЦИЯ 45 МИНУТ
+                          // ИСПОЛЬЗУЕМ ВРЕМЯ ТЕКУЩЕЙ СВЕЧИ ИЗ ДАННЫХ
+                          const entryTimeForMarker = data[lastIdx].time; 
+                          const expMins = 45; 
                           
-                          lastTradeTimeRef.current = entryTimeForMarker; // ЗАПУСКАЕМ КУЛДАУН СЕЙЧАС
+                          lastTradeTimeRef.current = entryTimeForMarker; 
 
-                          // Появление стрелки в UI терминала
                           setSignal({ type: isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice });
-                          drawEntryLine(entryPrice);
 
-                          // Появление маркера на графике СИНХРОННО
                           markersRef.current.push({
                               time: entryTimeForMarker,
                               position: isCall ? 'belowBar' : 'aboveBar',
                               color: isCall ? '#38bdf8' : '#fb7185',
                               shape: isCall ? 'arrowUp' : 'arrowDown',
-                              text: 'ВХОД 45М',
+                              text: `ВХОД ${formatPrice(entryPrice)}`,
                               size: 2
                           });
+
                           if(candleSeries.current) {
                               const sortedMarkers = [...markersRef.current].sort((a, b) => a.time - b.time);
                               candleSeries.current.setMarkers(sortedMarkers);
                           }
+
+                          // Создаем активный (золотой) Стеклянный кубик сделки, который будет расти с каждым тиком
+                          try {
+                              activeLiveTradeLineRef.current = chartInstance.current.addBaselineSeries({
+                                  baseValue: { type: 'price', price: entryPrice },
+                                  topLineColor: 'rgba(251, 191, 36, 0.8)', // Gold
+                                  topFillColor1: 'rgba(251, 191, 36, 0.2)',
+                                  topFillColor2: 'rgba(251, 191, 36, 0.2)',
+                                  bottomLineColor: 'rgba(251, 191, 36, 0.8)',
+                                  bottomFillColor1: 'rgba(251, 191, 36, 0.2)',
+                                  bottomFillColor2: 'rgba(251, 191, 36, 0.2)',
+                                  lineWidth: 2,
+                                  crosshairMarkerVisible: false, lastValueVisible: false, priceLineVisible: false,
+                              });
+                          } catch(e){}
 
                           addLog(`СИГНАЛ ВЫПОЛНЕН: ВХОД ${isCall ? 'ВВЕРХ' : 'ВНИЗ'} НА 45 МИН.`, true);
                           speak(`Вход подтвержден. Жмите на ${directionText} на 45 минут!`);
@@ -1047,6 +1090,14 @@
                                           candleSeries.current.update(tick);
                                           currentPrice.current = tick.close;
                                           localLastTime = Math.max(localLastTime, tick.time);
+
+                                          // РАСТЯГИВАЕМ СТЕКЛЯННЫЙ КУБИК ЖИВОЙ СДЕЛКИ
+                                          if (activeLiveTradeLineRef.current && tick.time > entryTimeForMarker) {
+                                              activeLiveTradeLineRef.current.setData([
+                                                  { time: entryTimeForMarker, value: currentPrice.current },
+                                                  { time: tick.time, value: currentPrice.current }
+                                              ]);
+                                          }
                                       } catch (err) {}
                                     }
                                   });
@@ -1071,26 +1122,63 @@
                           setCountdown(null);
                           updateStatus('АНАЛИЗ РЕЗУЛЬТАТА', 'text-slate-400');
 
-                          const resultData = await ScannerAPI.getCandles(cur.symbol, 1, '1m');
+                          // Обновляем весь график для выхода
+                          const updatedData = await ScannerAPI.getCandles(cur.symbol, 400, '15m');
                           let finalPrice = entryPrice;
-                          if (resultData && resultData.length > 0) {
-                              finalPrice = resultData[resultData.length - 1].close;
+                          let exitTimeForMarker = entryTimeForMarker;
+                          
+                          if (updatedData && updatedData.length > 0) {
+                              finalPrice = updatedData[updatedData.length - 1].close;
+                              exitTimeForMarker = updatedData[updatedData.length - 1].time;
                           }
+                          
                           let isWin = false;
-
                           if ((isCall && finalPrice > entryPrice) || (isPut && finalPrice < entryPrice)) isWin = true;
 
-                          // Записываем маркер ВЫХОДА
-                          const exitTimeForMarker = Math.floor(Date.now() / 1000);
-                          markersRef.current.push({
-                              time: exitTimeForMarker,
-                              position: isWin ? 'aboveBar' : 'belowBar',
-                              color: isWin ? '#10b981' : '#f43f5e',
-                              shape: 'circle',
-                              text: isWin ? 'ВИН (+)' : 'ЛОСС (-)',
-                              size: 2
-                          });
-                          if(candleSeries.current) {
+                          // Удаляем золотой кубик
+                          if (activeLiveTradeLineRef.current && chartInstance.current) {
+                              try { chartInstance.current.removeSeries(activeLiveTradeLineRef.current); } catch(e) {}
+                              activeLiveTradeLineRef.current = null;
+                          }
+
+                          if (exitTimeForMarker > entryTimeForMarker) {
+                              // Записываем маркер ВЫХОДА
+                              markersRef.current.push({
+                                  time: exitTimeForMarker,
+                                  position: isWin ? 'aboveBar' : 'belowBar',
+                                  color: isWin ? '#10b981' : '#f43f5e',
+                                  shape: 'circle',
+                                  text: isWin ? 'СДЕЛКА В ПЛЮС' : 'СДЕЛКА В МИНУС',
+                                  size: 2
+                              });
+
+                              // Рисуем финальный (зеленый/красный) кубик
+                              try {
+                                  const boxColor = isWin ? 'rgba(16, 185, 129, 0.2)' : 'rgba(244, 63, 94, 0.2)';
+                                  const lineColor = isWin ? 'rgba(16, 185, 129, 0.8)' : 'rgba(244, 63, 94, 0.8)';
+                                  const tradeBox = chartInstance.current.addBaselineSeries({
+                                      baseValue: { type: 'price', price: entryPrice },
+                                      topLineColor: lineColor,
+                                      topFillColor1: boxColor,
+                                      topFillColor2: boxColor,
+                                      bottomLineColor: lineColor,
+                                      bottomFillColor1: boxColor,
+                                      bottomFillColor2: boxColor,
+                                      lineWidth: 2, lineStyle: 0, crosshairMarkerVisible: false, lastValueVisible: false, priceLineVisible: false
+                                  });
+                                  tradeBox.setData([
+                                      { time: entryTimeForMarker, value: finalPrice },
+                                      { time: exitTimeForMarker, value: finalPrice }
+                                  ]);
+                                  historicalTradeLinesRef.current.push(tradeBox);
+                              } catch(e) {}
+                          }
+
+                          // Безопасное обновление графика (отсев невалидных маркеров)
+                          if(candleSeries.current && updatedData && updatedData.length > 0) {
+                              candleSeries.current.setData(updatedData);
+                              const dataTimes = new Set(updatedData.map(d => d.time));
+                              markersRef.current = markersRef.current.filter(m => dataTimes.has(m.time));
                               const sortedMarkers = [...markersRef.current].sort((a, b) => a.time - b.time);
                               candleSeries.current.setMarkers(sortedMarkers);
                           }
@@ -1109,7 +1197,7 @@
 
                           if (isWin) {
                             addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
-                            await speak(`Плюс. Сделка на 45 минут успешно завершена. Обновляю статистику.`);
+                            await speak(`Плюс. Сделка успешно закрылась. График обновлен.`);
                           } else {
                             addLog(`РЕЗУЛЬТАТ: МИНУС (-).`);
                             await speak(`Минус. Ничего страшного, ждем следующий сигнал по тренду.`);
@@ -1156,28 +1244,28 @@
                 <div className="bg-orb-2 pointer-events-none"></div>
                 <div className="absolute inset-0 bg-grid-pattern pointer-events-none opacity-50"></div>
                 
-                <div className="max-w-[90%] sm:max-w-md w-full p-8 md:p-12 text-center relative z-10 glass-panel-heavy rounded-[2.5rem] premium-glow flex flex-col items-center border border-slate-700">
-                  <div className="w-20 h-20 mb-6 bg-gradient-to-br from-sky-400 to-indigo-600 rounded-2xl flex items-center justify-center shadow-[0_15px_30px_rgba(14,165,233,0.3)] border border-white/20 relative overflow-hidden">
+                <div className="max-w-[90%] sm:max-w-md w-full p-6 md:p-8 xl:p-12 text-center relative z-10 glass-panel-heavy rounded-3xl xl:rounded-[2.5rem] premium-glow flex flex-col items-center border border-slate-700">
+                  <div className="w-16 h-16 md:w-20 md:h-20 mb-4 md:mb-6 bg-gradient-to-br from-sky-400 to-indigo-600 rounded-2xl flex items-center justify-center shadow-[0_15px_30px_rgba(14,165,233,0.3)] border border-white/20 relative overflow-hidden">
                       <div className="absolute inset-0 bg-white/10 animate-pulse"></div>
-                      <Zap size={44} className="text-white relative z-10" />
+                      <Zap size={36} className="text-white relative z-10 md:w-[44px] md:h-[44px]" />
                   </div>
-                  <h1 className="text-4xl md:text-5xl text-white leading-none mb-3 oswald-font font-bold tracking-wide drop-shadow-sm">
-                    КРИПТО ЯДРО <br/><span className="text-gradient font-black drop-shadow-[0_0_15px_rgba(56,189,248,0.2)]">PRO MAX</span>
+                  <h1 className="text-3xl md:text-4xl xl:text-5xl text-white leading-none mb-2 md:mb-3 oswald-font font-bold tracking-wide drop-shadow-sm">
+                    КРИПТО ЯДРО <br className="md:hidden" /><span className="text-gradient font-black drop-shadow-[0_0_15px_rgba(56,189,248,0.2)] md:ml-2">PRO MAX</span>
                   </h1>
-                  <p className="text-sm md:text-base text-slate-400 tracking-[0.2em] mb-4 font-bold leading-tight uppercase">
+                  <p className="text-xs md:text-sm xl:text-base text-slate-400 tracking-[0.15em] xl:tracking-[0.2em] mb-3 md:mb-4 font-bold leading-tight uppercase">
                     Smart Money Concepts • 15M / 45M
                   </p>
                   
-                  <div className="mb-10 text-[10px] md:text-xs tracking-widest font-bold uppercase text-slate-400">
-                    DEVELOPER: <span className="silver-text text-base md:text-lg ml-1">SLAVA GORDEEV</span>
+                  <div className="mb-6 md:mb-10 text-[9px] md:text-[10px] xl:text-xs tracking-widest font-bold uppercase text-slate-400">
+                    DEVELOPER: <span className="silver-text text-sm md:text-base xl:text-lg ml-1">SLAVA GORDEEV</span>
                   </div>
 
                   <button 
                     onClick={startTerminal} 
-                    className="w-full py-4 bg-gradient-to-r from-indigo-600 to-sky-500 hover:from-indigo-500 hover:to-sky-400 border border-white/20 shadow-[0_15px_35px_rgba(56,189,248,0.3)] text-white text-xl md:text-2xl transition-all duration-300 oswald-font font-bold active:scale-95 rounded-2xl cursor-pointer flex items-center justify-center gap-3 group relative overflow-hidden"
+                    className="w-full py-3 xl:py-4 bg-gradient-to-r from-indigo-600 to-sky-500 hover:from-indigo-500 hover:to-sky-400 border border-white/20 shadow-[0_15px_35px_rgba(56,189,248,0.3)] text-white text-lg xl:text-2xl transition-all duration-300 oswald-font font-bold active:scale-95 rounded-xl xl:rounded-2xl cursor-pointer flex items-center justify-center gap-3 group relative overflow-hidden"
                   >
                     <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
-                    <Cpu size={24} className="text-sky-100 group-hover:animate-spin relative z-10" /> 
+                    <Cpu size={20} className="text-sky-100 group-hover:animate-spin relative z-10 md:w-[24px] md:h-[24px]" /> 
                     <span className="relative z-10 tracking-widest">ЗАПУСК СИСТЕМЫ</span>
                   </button>
                 </div>
@@ -1191,17 +1279,17 @@
               <div className="bg-orb-2 pointer-events-none opacity-60"></div>
               <div className="absolute inset-0 bg-grid-pattern pointer-events-none z-0 opacity-40"></div>
 
-              <div className="h-7 md:h-9 glass-panel z-50 overflow-hidden flex items-center shrink-0 w-full relative">
-                <div className="absolute left-0 h-full bg-slate-900 text-white px-3 md:px-5 flex items-center gap-2 z-20 text-[10px] md:text-xs tracking-widest shadow-[5px_0_15px_rgba(0,0,0,0.5)] font-bold oswald-font rounded-r-xl border-r border-sky-500/50">
-                  <Globe size={14} className="text-sky-400" /> РАДАР СЕТИ
+              <div className="h-6 md:h-7 xl:h-9 glass-panel z-50 overflow-hidden flex items-center shrink-0 w-full relative">
+                <div className="absolute left-0 h-full bg-slate-900 text-white px-2 md:px-3 xl:px-5 flex items-center gap-1.5 z-20 text-[8px] md:text-[10px] xl:text-xs tracking-widest shadow-[5px_0_15px_rgba(0,0,0,0.5)] font-bold oswald-font rounded-r-lg xl:rounded-r-xl border-r border-sky-500/50">
+                  <Globe size={12} className="text-sky-400 xl:w-[14px] xl:h-[14px]" /> РАДАР СЕТИ
                 </div>
-                <div className="flex-1 overflow-hidden relative h-full flex items-center ml-[120px] sm:ml-[160px]">
-                  <div className="ticker-wrapper text-[10px] md:text-xs text-slate-300 tracking-widest pt-0.5 font-bold oswald-font">
+                <div className="flex-1 overflow-hidden relative h-full flex items-center ml-[90px] sm:ml-[120px] xl:ml-[160px]">
+                  <div className="ticker-wrapper text-[8px] md:text-[10px] xl:text-xs text-slate-300 tracking-widest pt-0.5 font-bold oswald-font">
                     {[...Array(2)].map((_, idx) => (
-                      <div key={idx} className="flex gap-10 md:gap-16 whitespace-nowrap pr-10 md:pr-16">
+                      <div key={idx} className="flex gap-6 md:gap-10 xl:gap-16 whitespace-nowrap pr-6 md:pr-10 xl:pr-16">
                         {newsHeadlines.map((headline, i) => (
                           <span key={i} className="flex items-center">
-                            <span className="w-1.5 h-1.5 rounded-full bg-sky-500 mr-2 shadow-[0_0_8px_rgba(56,189,248,0.8)]"></span>
+                            <span className="w-1 h-1 xl:w-1.5 xl:h-1.5 rounded-full bg-sky-500 mr-1.5 xl:mr-2 shadow-[0_0_8px_rgba(56,189,248,0.8)]"></span>
                             {headline.toUpperCase()}
                           </span>
                         ))}
@@ -1211,28 +1299,28 @@
                 </div>
               </div>
 
-              <header className="h-auto md:h-16 py-2 md:py-0 flex flex-col md:flex-row items-start md:items-center justify-between px-3 md:px-6 shrink-0 z-40 gap-1 md:gap-0 mt-2">
+              <header className="h-auto py-2 xl:py-0 flex flex-col md:flex-row items-start md:items-center justify-between px-3 md:px-4 xl:px-6 shrink-0 z-40 gap-1 md:gap-0 mt-1 md:mt-2">
                 <div className="flex flex-col justify-center w-full md:w-auto">
                   <div className="flex justify-between items-center md:block">
-                      <h1 className="text-2xl md:text-3xl text-white leading-none font-bold flex items-center gap-2 oswald-font tracking-wider">
-                        <Zap size={28} className="text-sky-400 drop-shadow-[0_0_10px_rgba(56,189,248,0.4)]" /> 
+                      <h1 className="text-xl md:text-2xl xl:text-3xl text-white leading-none font-bold flex items-center gap-1.5 xl:gap-2 oswald-font tracking-wider">
+                        <Zap size={22} className="text-sky-400 drop-shadow-[0_0_10px_rgba(56,189,248,0.4)] xl:w-[28px] xl:h-[28px]" /> 
                         ТЕРМИНАЛ <span className="text-gradient font-black hidden sm:inline">PRO MAX</span>
                       </h1>
-                      <div className="text-[10px] text-white px-3 py-1 bg-gradient-to-r from-indigo-600 to-sky-500 rounded-lg flex items-center shadow-[0_0_15px_rgba(56,189,248,0.3)] border border-white/10 oswald-font tracking-widest block md:hidden font-bold">
+                      <div className="text-[8px] text-white px-2 py-1 bg-gradient-to-r from-indigo-600 to-sky-500 rounded-md flex items-center shadow-[0_0_15px_rgba(56,189,248,0.3)] border border-white/10 oswald-font tracking-widest block md:hidden font-bold">
                         {appPhase}
                       </div>
                   </div>
-                  <div className="text-[9px] md:text-xs text-slate-400 tracking-[0.2em] mt-1 font-bold leading-none uppercase">
+                  <div className="text-[7px] md:text-[9px] xl:text-xs text-slate-400 tracking-[0.15em] xl:tracking-[0.2em] mt-1 font-bold leading-none uppercase">
                     DEVELOPER: <span className="silver-text">SLAVA GORDEEV</span>
                   </div>
                 </div>
-                <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-1 md:gap-1.5">
-                  <div className="text-xs md:text-sm text-white px-4 py-1.5 border border-white/20 bg-gradient-to-r from-indigo-600 to-sky-500 shadow-[0_5px_20px_rgba(56,189,248,0.2)] rounded-lg oswald-font tracking-widest hidden md:block font-bold">
+                <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-1">
+                  <div className="text-[10px] xl:text-sm text-white px-3 xl:px-4 py-1 xl:py-1.5 border border-white/20 bg-gradient-to-r from-indigo-600 to-sky-500 shadow-[0_5px_20px_rgba(56,189,248,0.2)] rounded-md xl:rounded-lg oswald-font tracking-widest hidden md:block font-bold">
                     {appPhase}
                   </div>
-                  <div className="flex gap-4 items-center tracking-wider w-full md:w-auto justify-between md:justify-end">
-                    <span className="text-[9px] md:text-[10px] text-slate-300 flex items-center gap-1.5 font-bold uppercase border border-slate-600 px-2 py-0.5 rounded-full bg-slate-800/50">
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
+                  <div className="flex gap-2 xl:gap-4 items-center tracking-wider w-full md:w-auto justify-between md:justify-end mt-1 md:mt-0">
+                    <span className="text-[7px] md:text-[8px] xl:text-[10px] text-slate-300 flex items-center gap-1 xl:gap-1.5 font-bold uppercase border border-slate-600 px-1.5 xl:px-2 py-0.5 rounded-full bg-slate-800/50">
+                      <div className="w-1.5 h-1.5 xl:w-2 xl:h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
                       ПОДКЛЮЧЕНО К БИРЖЕ
                     </span>
                     <LiveClock />
@@ -1240,10 +1328,10 @@
                 </div>
               </header>
 
-              <main className="flex-1 flex flex-col md:flex-row p-2 md:p-4 gap-3 md:gap-4 overflow-hidden z-10">
+              <main className="flex-1 flex flex-col md:flex-row p-1.5 md:p-2 xl:p-4 gap-1.5 md:gap-2 xl:gap-4 overflow-y-auto overflow-x-hidden md:overflow-hidden z-10">
                 
                 {/* ЛЕВЫЙ БЛОК: ВСЕГДА ШИРОКИЙ ЖИВОЙ ГРАФИК */}
-                <div className="w-full md:flex-1 h-[50vh] md:h-full glass-panel-heavy rounded-3xl md:rounded-[2.5rem] relative overflow-hidden flex flex-col shrink-0 border-slate-700">
+                <div className="w-full md:flex-1 min-h-[40vh] md:min-h-0 md:h-full glass-panel-heavy rounded-2xl xl:rounded-[2.5rem] relative overflow-hidden flex flex-col shrink-0 border-slate-700 shadow-xl">
                   
                   {/* САМ ГРАФИК */}
                   <div className="absolute inset-0 z-10">
@@ -1251,36 +1339,36 @@
                   </div>
 
                   {/* ОВЕРЛЕЙ ВО ВРЕМЯ ПОИСКА (SCREENER) */}
-                  <div className={`absolute inset-0 z-20 pointer-events-none transition-opacity duration-700 flex flex-col justify-between p-4 md:p-6 ${viewMode === 'SCREENER' ? 'opacity-100' : 'opacity-0'}`}>
+                  <div className={`absolute inset-0 z-20 pointer-events-none transition-opacity duration-700 flex flex-col justify-between p-3 xl:p-6 ${viewMode === 'SCREENER' ? 'opacity-100' : 'opacity-0'}`}>
                       <div className="flex justify-between items-start">
-                          <div className="glass-card px-4 py-2 rounded-xl border-slate-600 bg-slate-900/80 shadow-lg flex items-center gap-3">
-                              <div className="w-2.5 h-2.5 rounded-full bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,0.8)]"></div>
-                              <span className="font-bold tracking-widest text-sky-100 uppercase">{asset.symbol} • {currentTF}</span>
+                          <div className="glass-card px-2 xl:px-4 py-1 xl:py-2 rounded-lg xl:rounded-xl border-slate-600 bg-slate-900/80 shadow-lg flex items-center gap-2 xl:gap-3">
+                              <div className="w-1.5 h-1.5 xl:w-2.5 xl:h-2.5 rounded-full bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,0.8)]"></div>
+                              <span className="font-bold tracking-widest text-[9px] xl:text-sm text-sky-100 uppercase">{asset.symbol} • {currentTF}</span>
                           </div>
-                          <div className="glass-card px-4 py-2 rounded-xl border-slate-600 bg-slate-900/80 shadow-lg flex items-center gap-2">
-                              <Radar size={16} className="text-sky-400 animate-spin" />
-                              <span className="text-[10px] md:text-xs font-bold tracking-widest text-slate-300 uppercase">ПОИСК СИГНАЛА</span>
+                          <div className="glass-card px-2 xl:px-4 py-1 xl:py-2 rounded-lg xl:rounded-xl border-slate-600 bg-slate-900/80 shadow-lg flex items-center gap-1.5 xl:gap-2">
+                              <Radar size={14} className="text-sky-400 animate-spin xl:w-[16px] xl:h-[16px]" />
+                              <span className="text-[7px] xl:text-xs font-bold tracking-widest text-slate-300 uppercase">ПОИСК СИГНАЛА</span>
                           </div>
                       </div>
                       <div className="absolute inset-0 scanline-anim mix-blend-overlay opacity-30" />
                   </div>
 
                   {/* ОВЕРЛЕЙ ВО ВРЕМЯ СИГНАЛА (DETAIL) */}
-                  <div className={`absolute inset-0 z-20 pointer-events-none transition-opacity duration-700 flex flex-col justify-between p-4 md:p-6 ${viewMode === 'DETAIL' ? 'opacity-100' : 'opacity-0'}`}>
+                  <div className={`absolute inset-0 z-20 pointer-events-none transition-opacity duration-700 flex flex-col justify-between p-3 xl:p-6 ${viewMode === 'DETAIL' ? 'opacity-100' : 'opacity-0'}`}>
                       <div className="flex justify-between items-start">
-                          <div className="glass-card px-5 py-3 rounded-2xl border-sky-500/50 bg-slate-900/90 shadow-[0_0_20px_rgba(56,189,248,0.2)] flex flex-col">
-                              <span className="text-[10px] text-sky-400 font-bold tracking-widest mb-1 uppercase">АКТИВНАЯ ПАРА</span>
-                              <span className="text-2xl font-black text-white oswald-font tracking-wider leading-none uppercase">{asset.symbol}</span>
+                          <div className="glass-card px-3 xl:px-5 py-1.5 xl:py-3 rounded-xl xl:rounded-2xl border-sky-500/50 bg-slate-900/90 shadow-[0_0_20px_rgba(56,189,248,0.2)] flex flex-col">
+                              <span className="text-[7px] xl:text-[10px] text-sky-400 font-bold tracking-widest mb-0.5 xl:mb-1 uppercase">АКТИВНАЯ ПАРА</span>
+                              <span className="text-lg xl:text-2xl font-black text-white oswald-font tracking-wider leading-none uppercase">{asset.symbol}</span>
                           </div>
                       </div>
                   </div>
 
                 </div>
 
-                <div className="w-full md:w-[340px] lg:w-[380px] flex flex-col glass-panel-heavy rounded-3xl md:rounded-[2.5rem] overflow-hidden shrink-0 relative min-h-[50vh] md:h-full border-slate-700">
+                <div className="w-full md:w-[280px] lg:w-[320px] xl:w-[380px] flex flex-col glass-panel-heavy rounded-2xl xl:rounded-[2.5rem] overflow-hidden shrink-0 relative h-auto md:h-full border-slate-700 shadow-xl">
                   
-                  <div className="border-b border-slate-700 p-3 bg-gradient-to-r from-indigo-900/40 to-transparent flex justify-center items-center shrink-0 min-h-[48px] shadow-sm relative z-10">
-                    <div className={`text-base md:text-lg oswald-font tracking-widest flex items-center gap-2 text-center leading-none transition-all duration-300 w-full justify-center font-bold ${statusColorClass}`}>
+                  <div className="border-b border-slate-700 p-2 xl:p-3 bg-gradient-to-r from-indigo-900/40 to-transparent flex justify-center items-center shrink-0 min-h-[36px] xl:min-h-[48px] shadow-sm relative z-10">
+                    <div className={`text-sm md:text-sm xl:text-lg oswald-font tracking-widest flex items-center gap-2 text-center leading-none transition-all duration-300 w-full justify-center font-bold ${statusColorClass}`}>
                       {appPhase.includes('ПРОВЕРКА') || appPhase.includes('ПОДГОТОВ') ? (
                         <span className="text-sky-400 drop-shadow-[0_0_12px_rgba(56,189,248,0.4)] animate-pulse">{appPhase}</span>
                       ) : appPhase.includes('СНАЙПЕР:') ? (
@@ -1289,9 +1377,9 @@
                     </div>
                   </div>
 
-                  <div className="flex-1 flex flex-col p-3 md:p-4 gap-3 md:gap-4 overflow-y-hidden relative z-10">
+                  <div className="flex-1 flex flex-col p-1.5 md:p-2.5 xl:p-4 gap-1.5 md:gap-2.5 xl:gap-4 overflow-y-auto relative z-10 custom-scrollbar">
                     
-                    <div className="grid grid-cols-5 gap-1.5 glass-card rounded-2xl p-2 shrink-0 border-slate-700 bg-slate-800/80">
+                    <div className="grid grid-cols-5 gap-1 xl:gap-1.5 glass-card rounded-xl xl:rounded-2xl p-1 md:p-1.5 xl:p-2 shrink-0 border-slate-700 bg-slate-800/80">
                        <Speedometer value={metrics.structure} label="СТРУКТУРА" colorHex="#f59e0b" />
                        <Speedometer value={metrics.liquidity} label="ЛИКВИД" colorHex="#3b82f6" glow={true} />
                        <Speedometer value={metrics.filterLevel} label="АТР ФИЛЬТР" colorHex="#8b5cf6" />
@@ -1299,58 +1387,58 @@
                        <Speedometer value={metrics.volume} label="ОБЪЕМ (VOL)" colorHex="#10b981" />
                     </div>
 
-                    <div className="glass-card border border-slate-700 rounded-2xl p-3 flex flex-col gap-1 shrink-0 bg-slate-800/80 shadow-sm">
-                        <div className="flex justify-between text-[9px] md:text-[10px] font-bold text-slate-400 tracking-widest uppercase">
+                    <div className="glass-card border border-slate-700 rounded-xl xl:rounded-2xl p-2 xl:p-3 flex flex-col gap-1 shrink-0 bg-slate-800/80 shadow-sm">
+                        <div className="flex justify-between text-[7px] md:text-[8px] xl:text-[10px] font-bold text-slate-400 tracking-widest uppercase">
                             <span className="text-emerald-400">Покупатели</span>
                             <span>Order Flow Pressure</span>
                             <span className="text-rose-400">Продавцы</span>
                         </div>
-                        <div className="w-full h-3 bg-slate-700 rounded-full overflow-hidden flex relative shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)]">
+                        <div className="w-full h-2 xl:h-3 bg-slate-700 rounded-full overflow-hidden flex relative shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)]">
                             <div className="h-full bg-emerald-500 transition-all duration-500" style={{width: `${metrics.buyPressure}%`}}></div>
                             <div className="h-full bg-rose-500 transition-all duration-500" style={{width: `${100 - metrics.buyPressure}%`}}></div>
                         </div>
                     </div>
 
-                    <div className="flex gap-3 h-28 md:h-32 shrink-0">
-                      <div className={`w-[35%] border rounded-2xl flex flex-col items-center justify-center relative transition-all duration-500 glass-card bg-slate-800/90 ${appPhase === 'СИГНАЛ АКТИВЕН' ? 'border-sky-400 shadow-[0_0_20px_rgba(56,189,248,0.2)]' : 'border-slate-700'}`}>
+                    <div className="flex gap-2 xl:gap-3 h-20 md:h-24 xl:h-32 shrink-0">
+                      <div className={`w-[35%] border rounded-xl xl:rounded-2xl flex flex-col items-center justify-center relative transition-all duration-500 glass-card bg-slate-800/90 ${appPhase === 'СИГНАЛ АКТИВЕН' ? 'border-sky-400 shadow-[0_0_20px_rgba(56,189,248,0.2)]' : 'border-slate-700'}`}>
                         {signal ? (
                           <VolumetricArrow type={signal.type} />
                         ) : (
                           <div className="flex flex-col items-center opacity-40">
-                              <Radar size={32} className="text-slate-400 mb-2" />
-                              <span className="text-[10px] md:text-xs tracking-widest font-bold text-slate-400 oswald-font">СТАТУС</span>
+                              <Radar size={24} className="text-slate-400 mb-1 xl:mb-2 xl:w-[32px] xl:h-[32px]" />
+                              <span className="text-[7px] xl:text-[10px] tracking-widest font-bold text-slate-400 oswald-font">СТАТУС</span>
                           </div>
                         )}
                       </div>
                       
-                      <div className="w-[65%] rounded-2xl overflow-hidden glass-card p-1.5 bg-slate-900 border-slate-700 shadow-inner flex">
+                      <div className="w-[65%] rounded-xl xl:rounded-2xl overflow-hidden glass-card p-1 xl:p-1.5 bg-slate-900 border-slate-700 shadow-inner flex">
                         <OrderBookDepth price={currentPrice.current} />
                         <HftTape price={currentPrice.current} />
                       </div>
                     </div>
 
-                    <div className={`glass-card border rounded-3xl p-4 md:p-5 flex flex-col gap-3 shrink-0 relative overflow-hidden transition-all duration-700 bg-slate-800/90 ${
+                    <div className={`glass-card border rounded-xl xl:rounded-3xl p-2.5 xl:p-5 flex flex-col gap-2 xl:gap-3 shrink-0 relative overflow-hidden transition-all duration-700 bg-slate-800/90 ${
                         tradeStats.total > 0 
                             ? (tradeStats.winRate >= 50 ? 'border-sky-400 shadow-[0_10px_30px_rgba(56,189,248,0.15)]' : 'border-rose-400 shadow-[0_10px_30px_rgba(244,63,94,0.15)]') 
                             : 'border-slate-700'
                     }`}>
-                       <div className="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-br from-slate-700 to-slate-800 rounded-full blur-2xl pointer-events-none"></div>
+                       <div className="absolute -right-4 -top-4 w-16 h-16 xl:w-20 xl:h-20 bg-gradient-to-br from-slate-700 to-slate-800 rounded-full blur-2xl pointer-events-none"></div>
                        <div className="flex justify-between items-center z-10 relative">
                            <div className="flex flex-col">
-                             <span className="text-xs md:text-sm text-slate-300 tracking-widest font-bold flex items-center gap-2 leading-none oswald-font">
-                                <TrendingUp size={18} className={tradeStats.total > 0 ? (tradeStats.winRate >= 50 ? "text-sky-400" : "text-rose-400") : "text-slate-500"} /> 
+                             <span className="text-[9px] md:text-[10px] xl:text-sm text-slate-300 tracking-widest font-bold flex items-center gap-1 xl:gap-2 leading-none oswald-font">
+                                <TrendingUp size={14} className={`xl:w-[18px] xl:h-[18px] ${tradeStats.total > 0 ? (tradeStats.winRate >= 50 ? "text-sky-400" : "text-rose-400") : "text-slate-500"}`} /> 
                                 РЕАЛЬНАЯ СТАТИСТИКА ЗА 24 ЧАСА
                              </span>
-                             <span className="text-[8px] md:text-[9px] text-slate-500 tracking-widest font-bold uppercase mt-1">С УЧЕТОМ ЗАДЕРЖЕК И РЕАЛЬНЫХ ВХОДОВ</span>
+                             <span className="text-[6px] xl:text-[8px] text-slate-500 tracking-widest font-bold uppercase mt-1">С УЧЕТОМ ЗАДЕРЖЕК И РЕАЛЬНЫХ ВХОДОВ</span>
                            </div>
-                           <span className={`text-3xl md:text-4xl font-black tracking-wider ios-text leading-none oswald-font ${
+                           <span className={`text-2xl md:text-3xl xl:text-4xl font-black tracking-wider ios-text leading-none oswald-font ${
                                tradeStats.total > 0 ? (tradeStats.winRate >= 50 ? "text-sky-400" : "text-rose-400") : "text-white"
                            }`}>
                              {tradeStats.winRate}%
                            </span>
                        </div>
                        
-                       <div className="w-full h-4 bg-slate-700 rounded-full flex overflow-hidden relative shadow-[inset_0_2px_5px_rgba(0,0,0,0.3)] mt-2 border border-slate-600">
+                       <div className="w-full h-2 xl:h-4 bg-slate-700 rounded-full flex overflow-hidden relative shadow-[inset_0_2px_5px_rgba(0,0,0,0.3)] mt-1 xl:mt-2 border border-slate-600">
                            <div 
                              className="h-full bg-gradient-to-r from-indigo-500 to-sky-400 transition-all duration-1000 ease-out relative"
                              style={{ 
@@ -1371,40 +1459,40 @@
                            </div>
                        </div>
 
-                       <div className="flex justify-between items-center z-10 relative mt-2 oswald-font">
-                           <div className="flex flex-col bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-700">
-                               <span className="text-[9px] md:text-[10px] text-slate-400 tracking-widest font-bold uppercase">ПРОФИТ</span>
-                               <span className="text-xl md:text-2xl text-sky-400 font-black ios-text leading-none mt-0.5">{tradeStats.wins}</span>
+                       <div className="flex justify-between items-center z-10 relative mt-1 xl:mt-2 oswald-font">
+                           <div className="flex flex-col bg-slate-900/80 px-2 xl:px-3 py-1 xl:py-1.5 rounded-md xl:rounded-lg border border-slate-700">
+                               <span className="text-[7px] md:text-[8px] xl:text-[9px] text-slate-400 tracking-widest font-bold uppercase">ПРОФИТ</span>
+                               <span className="text-sm md:text-base xl:text-xl text-sky-400 font-black ios-text leading-none mt-0.5">{tradeStats.wins}</span>
                            </div>
-                           <div className="text-[10px] text-slate-500 font-bold tracking-widest">ВСЕГО: {tradeStats.total}</div>
-                           <div className="flex flex-col items-end bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-700">
-                               <span className="text-[9px] md:text-[10px] text-slate-400 tracking-widest font-bold uppercase">УБЫТОК</span>
-                               <span className="text-xl md:text-2xl text-rose-500 font-black ios-text leading-none mt-0.5">{tradeStats.losses}</span>
+                           <div className="text-[8px] xl:text-[10px] text-slate-500 font-bold tracking-widest">ВСЕГО: {tradeStats.total}</div>
+                           <div className="flex flex-col items-end bg-slate-900/80 px-2 xl:px-3 py-1 xl:py-1.5 rounded-md xl:rounded-lg border border-slate-700">
+                               <span className="text-[7px] md:text-[8px] xl:text-[9px] text-slate-400 tracking-widest font-bold uppercase">УБЫТОК</span>
+                               <span className="text-sm md:text-base xl:text-xl text-rose-500 font-black ios-text leading-none mt-0.5">{tradeStats.losses}</span>
                            </div>
                        </div>
                     </div>
 
-                    <div className="glass-card rounded-2xl p-4 flex justify-between items-center shrink-0 relative overflow-hidden shadow-md border-slate-700 bg-gradient-to-r from-slate-800 to-slate-800/80">
+                    <div className="glass-card rounded-xl xl:rounded-2xl p-2.5 xl:p-4 flex justify-between items-center shrink-0 relative overflow-hidden shadow-md border-slate-700 bg-gradient-to-r from-slate-800 to-slate-800/80">
                        <div className="absolute right-0 top-0 bottom-0 w-2/3 bg-[radial-gradient(ellipse_at_right,_rgba(56,189,248,0.1),_transparent)] pointer-events-none"></div>
                        <div className="flex flex-col relative z-10">
-                          <span className="text-[9px] md:text-[10px] text-slate-400 tracking-widest font-bold leading-none uppercase">ЦЕНА ВХОДА</span>
-                          <span className="text-xl md:text-2xl text-white mt-2 font-black mono-font leading-none drop-shadow-sm">
+                          <span className="text-[7px] xl:text-[9px] text-slate-400 tracking-widest font-bold leading-none uppercase">ЦЕНА ВХОДА</span>
+                          <span className="text-sm md:text-base xl:text-xl text-white mt-1 xl:mt-2 font-black mono-font leading-none drop-shadow-sm">
                             {signal && signal.entryPrice ? formatPrice(signal.entryPrice) : '---.-----'}
                           </span>
                        </div>
                        <div className="flex flex-col items-end relative z-10">
-                          <span className="text-[9px] md:text-[10px] text-slate-400 tracking-widest flex items-center gap-1.5 font-bold leading-none uppercase">
-                            <Clock size={12} className="text-sky-400"/> ЭКСПИРАЦИЯ
+                          <span className="text-[7px] xl:text-[9px] text-slate-400 tracking-widest flex items-center gap-1 xl:gap-1.5 font-bold leading-none uppercase">
+                            <Clock size={10} className="text-sky-400 xl:w-[12px] xl:h-[12px]"/> ЭКСПИРАЦИЯ
                           </span>
-                          <span className="text-3xl md:text-4xl text-sky-400 mt-1 font-black mono-font tracking-wider leading-none drop-shadow-sm">
+                          <span className="text-xl md:text-2xl xl:text-3xl text-sky-400 mt-1 xl:mt-2 font-black mono-font tracking-wider leading-none drop-shadow-sm">
                             {countdown !== null ? `${Math.floor(countdown/60)}:${(countdown%60).toString().padStart(2,'0')}` : (signal && signal.exp ? `0${signal.exp}:00` : '--:--')}
                           </span>
                        </div>
                     </div>
 
-                    <div ref={logsContainerRef} className="flex-1 glass-card rounded-2xl p-4 overflow-hidden flex flex-col justify-start gap-2 border-slate-700 bg-slate-900 shadow-[inset_0_2px_15px_rgba(0,0,0,0.3)]">
+                    <div ref={logsContainerRef} className="flex-1 min-h-[60px] glass-card rounded-xl xl:rounded-2xl p-2 xl:p-4 overflow-y-auto flex flex-col justify-start gap-1 xl:gap-2 border-slate-700 bg-slate-900 shadow-[inset_0_2px_15px_rgba(0,0,0,0.3)] custom-scrollbar">
                       {logs.map((l, i) => (
-                        <div key={i} className={`text-[10px] md:text-xs leading-snug tracking-widest font-semibold mono-font ${i === 0 ? 'text-white font-bold border-l-4 border-sky-400 pl-2 bg-sky-900/30 py-1 rounded-r shadow-sm' : 'text-slate-500 pl-2'}`}>
+                        <div key={i} className={`text-[8px] md:text-[9px] xl:text-[10px] leading-snug tracking-widest font-semibold mono-font ${i === 0 ? 'text-white font-bold border-l-2 xl:border-l-4 border-sky-400 pl-1.5 xl:pl-2 bg-sky-900/30 py-0.5 xl:py-1 rounded-r shadow-sm' : 'text-slate-500 pl-1.5 xl:pl-2'}`}>
                           {l}
                         </div>
                       ))}
@@ -1414,16 +1502,16 @@
                 </div>
               </main>
 
-              <footer className="h-auto md:h-12 py-2 md:py-0 border-t border-slate-700/50 flex flex-row items-center justify-between px-4 md:px-6 shrink-0 glass-panel z-40 bg-slate-900/90">
-                <div className="flex items-center gap-2 text-slate-400 text-[10px] md:text-xs tracking-widest font-bold uppercase oswald-font">
-                  <Shield size={14} className="text-sky-400 hidden sm:block" /> 
+              <footer className="h-auto py-1.5 xl:py-0 border-t border-slate-700/50 flex flex-row items-center justify-between px-3 md:px-4 xl:px-6 shrink-0 glass-panel z-40 bg-slate-900/90 xl:h-12">
+                <div className="flex items-center gap-1.5 xl:gap-2 text-slate-400 text-[7px] md:text-[8px] xl:text-[10px] tracking-widest font-bold uppercase oswald-font">
+                  <Shield size={12} className="text-sky-400 hidden sm:block xl:w-[14px] xl:h-[14px]" /> 
                   <span className="hidden sm:inline">256-BIT ШИФРОВАНИЕ СИСТЕМЫ • СОЕДИНЕНИЕ БЕЗОПАСНО</span>
                   <span className="inline sm:hidden">ЗАЩИТА АКТИВНА</span>
                 </div>
                 
-                <div className="flex items-center gap-3 oswald-font">
-                  <span className="text-slate-500 text-[10px] md:text-xs tracking-widest font-bold hidden sm:block uppercase">ЛИЦЕНЗИЯ:</span>
-                  <span className="text-sky-100 text-[10px] md:text-xs px-3 py-1.5 rounded-lg bg-slate-800 tracking-widest font-bold text-center shadow-[0_4px_10px_rgba(0,0,0,0.3)] border border-slate-600">
+                <div className="flex items-center gap-2 xl:gap-3 oswald-font">
+                  <span className="text-slate-500 text-[7px] xl:text-[10px] tracking-widest font-bold hidden sm:block uppercase">ЛИЦЕНЗИЯ:</span>
+                  <span className="text-sky-100 text-[7px] md:text-[8px] xl:text-[10px] px-2 xl:px-3 py-1 xl:py-1.5 rounded-md xl:rounded-lg bg-slate-800 tracking-widest font-bold text-center shadow-[0_4px_10px_rgba(0,0,0,0.3)] border border-slate-600">
                     КРИПТО ИНВЕСТ PRO MAX
                   </span>
                 </div>
