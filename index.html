@@ -6,7 +6,7 @@
   <title>BTC Radar Pro Max — 5M / 5M</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
 
   <style>
     :root {
@@ -366,6 +366,9 @@
       PREP_INVALIDATION_ATR: 0.35,
       MARKER_LIMIT: 500,
       START_DELAY_MS: 150,
+      CHART_READY_ATTEMPTS: 24,
+      CHART_READY_DELAY_MS: 120,
+      BINANCE_TIMEOUT_MS: 9000,
     };
 
     const FALLBACK_NEWS = [
@@ -381,20 +384,35 @@
       chart: null,
       candleSeries: null,
       areaSeries: null,
-      candles: [],
+      markerPrimitive: null,
       markers: [],
+      candles: [],
       historyTrades: [],
       activeTrade: null,
       stats: { total: 0, wins: 0, losses: 0, cancels: 0, winRate: 0 },
-      lastTradeEpoch: 0,
-      scanTimer: null,
-      countdownTimer: null,
-      isRunning: false,
       currentSignal: null,
       latestPrice: null,
       currentQuality: { liquidity: 0, volatility: 0, quality: 0 },
+      lastTradeEpoch: 0,
+      scanTimer: null,
+      countdownTimer: null,
       resizeObserver: null,
+      resizeFallbackBound: false,
+      isRunning: false,
       booted: false,
+      startupInProgress: false,
+      markerWarningShown: false,
+      runToken: 0,
+      marketContext: {
+        regime: 'UNCLASSIFIED',
+        bias: 'NEUTRAL',
+      },
+      strategyMeta: {
+        signalInterval: APP_CONFIG.PRIMARY_INTERVAL,
+        expiryMinutes: APP_CONFIG.EXPIRY_MINUTES,
+        prepDelaySeconds: APP_CONFIG.PREP_DELAY_SECONDS,
+        confirmInterval: APP_CONFIG.CONFIRM_INTERVAL,
+      },
     };
 
     const els = {
@@ -421,6 +439,8 @@
       tickerTrack: document.getElementById('tickerTrack'),
     };
 
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
     function setClock() {
       els.clock.textContent = new Date().toLocaleTimeString('ru-RU');
     }
@@ -430,7 +450,7 @@
     function renderNews() {
       const doubled = [...FALLBACK_NEWS, ...FALLBACK_NEWS];
       els.tickerTrack.innerHTML = '';
-      doubled.forEach(item => {
+      doubled.forEach((item) => {
         const span = document.createElement('span');
         span.textContent = item;
         els.tickerTrack.appendChild(span);
@@ -443,6 +463,10 @@
       els.appPhase.textContent = text;
     }
 
+    function setScanBadge(text) {
+      els.scanBadge.textContent = text;
+    }
+
     function addLog(text, accent = false) {
       const item = document.createElement('div');
       item.className = accent
@@ -450,53 +474,328 @@
         : 'rounded-lg px-2 py-1 bg-slate-900/50 text-slate-300';
       item.textContent = `${new Date().toLocaleTimeString('ru-RU')} — ${text}`;
       els.logs.prepend(item);
+
       while (els.logs.children.length > APP_CONFIG.MAX_LOGS) {
         els.logs.removeChild(els.logs.lastChild);
       }
     }
 
-    function formatPrice(v) {
-      if (v === null || v === undefined || Number.isNaN(v)) return '—';
-      return Number(v).toLocaleString('en-US', {
+    function reportError(context, error, fallbackText = 'Неизвестная ошибка') {
+      const detail = error instanceof Error ? error.message : String(error || fallbackText);
+      console.error(`[${context}]`, error);
+      addLog(`${context}: ${detail}`, true);
+    }
+
+    function formatPrice(value) {
+      if (value === null || value === undefined || Number.isNaN(value)) return '—';
+      return Number(value).toLocaleString('en-US', {
         minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+        maximumFractionDigits: 2,
       });
     }
 
     function formatCountdown(seconds) {
       if (seconds === null || seconds === undefined || seconds < 0) return '—';
-      const m = Math.floor(seconds / 60);
-      const s = seconds % 60;
-      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      const minutes = Math.floor(seconds / 60);
+      const remainder = seconds % 60;
+      return `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
     }
 
-    async function getCandles(symbol, count = APP_CONFIG.FETCH_LIMIT, interval = APP_CONFIG.PRIMARY_INTERVAL) {
-      const urls = [
-        `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
-        `https://api1.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
-        `https://api2.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`
-      ];
+    function setStartScreenVisible(visible) {
+      els.startScreen.classList.toggle('hidden-start', !visible);
+    }
 
-      for (const url of urls) {
+    function setStartButtonState({ disabled, text }) {
+      els.startBtn.disabled = disabled;
+      els.startBtn.textContent = text;
+    }
+
+    function resetSignalPanel() {
+      els.signalType.textContent = '—';
+      els.signalType.className = 'text-xl font-black signal-neutral';
+      els.entryPrice.textContent = '—';
+      els.countdownText.textContent = '—';
+      els.mLiquidity.textContent = '0';
+      els.mVolatility.textContent = '0';
+      els.mQuality.textContent = '0';
+    }
+
+    function applyStats(trades) {
+      const total = trades.length;
+      const wins = trades.filter((trade) => trade.status === 'WIN').length;
+      const losses = trades.filter((trade) => trade.status === 'LOSS').length;
+      const cancels = trades.filter((trade) => trade.status === 'CANCEL').length;
+      const winRate = total ? Math.round((wins / total) * 100) : 0;
+
+      state.stats = { total, wins, losses, cancels, winRate };
+
+      els.statTotal.textContent = String(total);
+      els.statWins.textContent = String(wins);
+      els.statLosses.textContent = String(losses);
+      els.statCancels.textContent = String(cancels);
+      els.winRate.textContent = `${winRate}%`;
+      els.winBar.style.width = `${winRate}%`;
+    }
+
+    function resetRuntimeState() {
+      state.historyTrades = [];
+      state.currentSignal = null;
+      state.activeTrade = null;
+      state.lastTradeEpoch = 0;
+      state.candles = [];
+      state.markers = [];
+      state.latestPrice = null;
+      state.currentQuality = { liquidity: 0, volatility: 0, quality: 0 };
+      state.stats = { total: 0, wins: 0, losses: 0, cancels: 0, winRate: 0 };
+      applyStats([]);
+      resetSignalPanel();
+    }
+
+    function clearRuntimeTimers() {
+      if (state.scanTimer) {
+        clearInterval(state.scanTimer);
+        state.scanTimer = null;
+      }
+
+      if (state.countdownTimer) {
+        clearInterval(state.countdownTimer);
+        state.countdownTimer = null;
+      }
+    }
+
+    function unbindChartResize() {
+      if (state.resizeObserver) {
         try {
-          const response = await fetch(url, { cache: 'no-store' });
-          if (!response.ok) continue;
-          const data = await response.json();
-          if (!Array.isArray(data)) continue;
+          state.resizeObserver.disconnect();
+        } catch (_) {}
+        state.resizeObserver = null;
+      }
 
-          return data.map(d => ({
-            time: Math.floor(Number(d[0]) / 1000),
-            open: parseFloat(d[1]),
-            high: parseFloat(d[2]),
-            low: parseFloat(d[3]),
-            close: parseFloat(d[4]),
-            volume: parseFloat(d[5]),
-          }));
+      if (state.resizeFallbackBound) {
+        window.removeEventListener('resize', applyChartSize);
+        state.resizeFallbackBound = false;
+      }
+    }
+
+    function destroyChart() {
+      unbindChartResize();
+
+      if (state.chart) {
+        try {
+          state.chart.remove();
+        } catch (_) {}
+      }
+
+      state.chart = null;
+      state.candleSeries = null;
+      state.areaSeries = null;
+      state.markerPrimitive = null;
+    }
+
+    function stopRuntime() {
+      state.isRunning = false;
+      state.booted = false;
+      clearRuntimeTimers();
+      destroyChart();
+      state.runToken += 1;
+    }
+
+    function updateMetrics(metrics) {
+      state.currentQuality = metrics;
+      els.mLiquidity.textContent = String(metrics.liquidity);
+      els.mVolatility.textContent = String(metrics.volatility);
+      els.mQuality.textContent = String(metrics.quality);
+    }
+
+    function updateSignalUI(signal, entryPrice = null) {
+      if (!signal) {
+        resetSignalPanel();
+        return;
+      }
+
+      els.signalType.textContent = signal.side;
+      els.signalType.className = `text-xl font-black ${signal.side === 'CALL' ? 'signal-call' : 'signal-put'}`;
+      els.entryPrice.textContent = entryPrice !== null ? formatPrice(entryPrice) : '—';
+      updateMetrics(signal.metrics || { liquidity: 0, volatility: 0, quality: 0 });
+    }
+
+    function getChartRect() {
+      if (!els.chart) return { width: 0, height: 0 };
+      const rect = els.chart.getBoundingClientRect();
+      return {
+        width: Math.floor(rect.width),
+        height: Math.floor(rect.height),
+      };
+    }
+
+    function applyChartSize() {
+      if (!state.chart) return false;
+      const { width, height } = getChartRect();
+      if (width <= 0 || height <= 0) return false;
+      state.chart.applyOptions({ width, height });
+      return true;
+    }
+
+    async function waitForChartContainerReady() {
+      for (let attempt = 0; attempt < APP_CONFIG.CHART_READY_ATTEMPTS; attempt += 1) {
+        const { width, height } = getChartRect();
+        if (width > 0 && height > 0) return { width, height };
+        await sleep(APP_CONFIG.CHART_READY_DELAY_MS);
+      }
+      throw new Error('Контейнер графика остался нулевого размера.');
+    }
+
+    function bindChartResize() {
+      unbindChartResize();
+
+      if (typeof ResizeObserver === 'function') {
+        try {
+          state.resizeObserver = new ResizeObserver(() => {
+            applyChartSize();
+          });
+          state.resizeObserver.observe(els.chart);
+          return;
         } catch (error) {
-          continue;
+          reportError('ResizeObserver fallback', error, 'ResizeObserver недоступен');
         }
       }
 
+      window.addEventListener('resize', applyChartSize);
+      state.resizeFallbackBound = true;
+    }
+
+    async function createChartSafe() {
+      if (state.chart && state.candleSeries) {
+        applyChartSize();
+        return state.chart;
+      }
+
+      if (!window.LightweightCharts) {
+        throw new Error('Библиотека lightweight-charts не загрузилась.');
+      }
+
+      if (!els.chart) {
+        throw new Error('Контейнер графика не найден.');
+      }
+
+      const size = await waitForChartContainerReady();
+
+      state.chart = LightweightCharts.createChart(els.chart, {
+        width: size.width,
+        height: size.height,
+        layout: {
+          background: { color: '#07111f' },
+          textColor: '#9fb0c9',
+          fontSize: 12,
+        },
+        grid: {
+          vertLines: { color: 'rgba(71,85,105,0.18)' },
+          horzLines: { color: 'rgba(71,85,105,0.18)' },
+        },
+        rightPriceScale: {
+          borderColor: 'rgba(100,116,139,0.35)',
+        },
+        timeScale: {
+          borderColor: 'rgba(100,116,139,0.35)',
+          timeVisible: true,
+          secondsVisible: false,
+        },
+        crosshair: {
+          vertLine: { color: 'rgba(56,189,248,0.35)' },
+          horzLine: { color: 'rgba(56,189,248,0.35)' },
+        },
+        localization: {
+          locale: 'ru-RU',
+        },
+      });
+
+      state.candleSeries = state.chart.addCandlestickSeries({
+        upColor: '#10b981',
+        downColor: '#f43f5e',
+        borderVisible: false,
+        wickUpColor: '#10b981',
+        wickDownColor: '#f43f5e',
+      });
+
+      bindChartResize();
+      applyChartSize();
+      return state.chart;
+    }
+
+    function isValidCandleRow(row) {
+      return Array.isArray(row)
+        && row.length >= 6
+        && Number.isFinite(Number(row[0]))
+        && Number.isFinite(Number(row[1]))
+        && Number.isFinite(Number(row[2]))
+        && Number.isFinite(Number(row[3]))
+        && Number.isFinite(Number(row[4]))
+        && Number.isFinite(Number(row[5]));
+    }
+
+    async function fetchWithTimeout(url, timeoutMs) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+      try {
+        return await fetch(url, {
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    async function getCandles(symbol, count = APP_CONFIG.FETCH_LIMIT, interval = APP_CONFIG.PRIMARY_INTERVAL, context = 'Binance API') {
+      const urls = [
+        `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
+        `https://api1.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
+        `https://api2.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
+      ];
+
+      let lastError = null;
+
+      for (const url of urls) {
+        try {
+          const response = await fetchWithTimeout(url, APP_CONFIG.BINANCE_TIMEOUT_MS);
+          if (!response.ok) {
+            lastError = new Error(`HTTP ${response.status}`);
+            continue;
+          }
+
+          const data = await response.json();
+          if (!Array.isArray(data)) {
+            lastError = new Error('Ответ Binance не является массивом.');
+            continue;
+          }
+
+          if (!data.length) {
+            lastError = new Error('Binance вернул пустой массив свечей.');
+            continue;
+          }
+
+          const candles = data.filter(isValidCandleRow).map((row) => ({
+            time: Math.floor(Number(row[0]) / 1000),
+            open: parseFloat(row[1]),
+            high: parseFloat(row[2]),
+            low: parseFloat(row[3]),
+            close: parseFloat(row[4]),
+            volume: parseFloat(row[5]),
+          }));
+
+          if (!candles.length) {
+            lastError = new Error('Не удалось собрать валидные свечи из ответа Binance.');
+            continue;
+          }
+
+          return candles;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+
+      reportError(context, lastError, 'Не удалось получить свечи Binance.');
       return [];
     }
 
@@ -505,22 +804,23 @@
       if (!Array.isArray(data) || data.length < period + 2) return atr;
 
       const trs = [];
-      for (let i = 1; i < data.length; i++) {
-        const c = data[i];
-        const p = data[i - 1];
+      for (let index = 1; index < data.length; index += 1) {
+        const current = data[index];
+        const previous = data[index - 1];
         const tr = Math.max(
-          c.high - c.low,
-          Math.abs(c.high - p.close),
-          Math.abs(c.low - p.close)
+          current.high - current.low,
+          Math.abs(current.high - previous.close),
+          Math.abs(current.low - previous.close)
         );
         trs.push(tr);
 
         if (trs.length >= period) {
           const window = trs.slice(trs.length - period);
-          const avg = window.reduce((a, b) => a + b, 0) / period;
-          atr.set(c.time, avg);
+          const avg = window.reduce((sum, value) => sum + value, 0) / period;
+          atr.set(current.time, avg);
         }
       }
+
       return atr;
     }
 
@@ -528,39 +828,70 @@
       const start = Math.max(0, idx - period + 1);
       const sample = data.slice(start, idx + 1);
       if (!sample.length) return 0;
-      return sample.reduce((sum, c) => sum + c.volume, 0) / sample.length;
+      return sample.reduce((sum, candle) => sum + candle.volume, 0) / sample.length;
     }
 
-    function clamp(v, min, max) {
-      return Math.max(min, Math.min(max, v));
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function analyzeMarketContext(data, idx, atrMap) {
+      if (!Array.isArray(data) || idx < 30 || idx >= data.length) {
+        return { regime: 'UNCLASSIFIED', bias: 'NEUTRAL', rangeScore: 0, trendScore: 0 };
+      }
+
+      const slice = data.slice(Math.max(0, idx - 24), idx + 1);
+      const first = slice[0];
+      const last = slice[slice.length - 1];
+      const high = Math.max(...slice.map((candle) => candle.high));
+      const low = Math.min(...slice.map((candle) => candle.low));
+      const atr = atrMap.get(last.time) || 0;
+      const range = high - low;
+      const directionalMove = last.close - first.close;
+      const rangeScore = atr > 0 ? clamp(Math.round((range / atr) * 10), 0, 99) : 0;
+      const trendScore = atr > 0 ? clamp(Math.round((Math.abs(directionalMove) / atr) * 10), 0, 99) : 0;
+
+      let regime = 'SIDEWAYS';
+      let bias = 'NEUTRAL';
+
+      if (trendScore >= 18 && directionalMove > 0) {
+        regime = 'TREND';
+        bias = 'BULLISH';
+      } else if (trendScore >= 18 && directionalMove < 0) {
+        regime = 'TREND';
+        bias = 'BEARISH';
+      }
+
+      return { regime, bias, rangeScore, trendScore };
     }
 
     function buildSignal(idx, data, atrMap) {
       if (idx < APP_CONFIG.SWEEP_LOOKBACK + 2 || idx >= data.length - 1) return null;
 
-      const c = data[idx];
-      const prev = data[idx - 1];
+      const candle = data[idx];
+      const previous = data[idx - 1];
       const recent = data.slice(idx - APP_CONFIG.SWEEP_LOOKBACK, idx);
-      const atr = atrMap.get(c.time);
+      const atr = atrMap.get(candle.time);
 
       if (!atr || !recent.length) return null;
 
-      const recentHigh = Math.max(...recent.map(x => x.high));
-      const recentLow = Math.min(...recent.map(x => x.low));
+      const recentHigh = Math.max(...recent.map((item) => item.high));
+      const recentLow = Math.min(...recent.map((item) => item.low));
 
-      const body = Math.abs(c.close - c.open);
-      const lowerWick = Math.min(c.open, c.close) - c.low;
-      const upperWick = c.high - Math.max(c.open, c.close);
-
+      const body = Math.abs(candle.close - candle.open);
+      const lowerWick = Math.min(candle.open, candle.close) - candle.low;
+      const upperWick = candle.high - Math.max(candle.open, candle.close);
       const avgVol = averageVolume(data, idx, 20);
-      const volBoost = avgVol > 0 ? c.volume / avgVol : 1;
+      const volBoost = avgVol > 0 ? candle.volume / avgVol : 1;
 
-      const sweptLow = c.low < recentLow;
-      const sweptHigh = c.high > recentHigh;
-      const closedBackAbove = c.close > recentLow + atr * 0.08;
-      const closedBackBelow = c.close < recentHigh - atr * 0.08;
-      const bullishRecovery = c.close > c.open || c.close > prev.close;
-      const bearishRecovery = c.close < c.open || c.close < prev.close;
+      const sweptLow = candle.low < recentLow;
+      const sweptHigh = candle.high > recentHigh;
+      const closedBackAbove = candle.close > recentLow + atr * 0.08;
+      const closedBackBelow = candle.close < recentHigh - atr * 0.08;
+      const bullishRecovery = candle.close > candle.open || candle.close > previous.close;
+      const bearishRecovery = candle.close < candle.open || candle.close < previous.close;
+
+      const marketContext = analyzeMarketContext(data, idx, atrMap);
 
       const callScore =
         (sweptLow ? 32 : 0) +
@@ -568,7 +899,8 @@
         (lowerWick > body * 1.2 ? 18 : 0) +
         (volBoost > 1.05 ? 12 : 0) +
         (bullishRecovery ? 12 : 0) +
-        ((recentHigh - c.close) > atr * 0.15 ? 8 : 0);
+        ((recentHigh - candle.close) > atr * 0.15 ? 8 : 0) +
+        (marketContext.bias === 'BULLISH' ? 4 : 0);
 
       const putScore =
         (sweptHigh ? 32 : 0) +
@@ -576,24 +908,26 @@
         (upperWick > body * 1.2 ? 18 : 0) +
         (volBoost > 1.05 ? 12 : 0) +
         (bearishRecovery ? 12 : 0) +
-        ((c.close - recentLow) > atr * 0.15 ? 8 : 0);
+        ((candle.close - recentLow) > atr * 0.15 ? 8 : 0) +
+        (marketContext.bias === 'BEARISH' ? 4 : 0);
 
       const liquidityScore = clamp(Math.round((Math.max(callScore, putScore) / 100) * 100), 0, 100);
-      const volatilityScore = clamp(Math.round((atr / c.close) * 100000), 0, 99);
+      const volatilityScore = clamp(Math.round((atr / candle.close) * 100000), 0, 99);
       const qualityScore = clamp(Math.max(callScore, putScore), 0, 99);
 
       if (callScore >= 62 && callScore > putScore) {
         return {
           side: 'CALL',
           signalIndex: idx,
-          signalTime: c.time,
-          signalPrice: c.close,
+          signalTime: candle.time,
+          signalPrice: candle.close,
           atr,
+          marketContext,
           metrics: {
             liquidity: liquidityScore,
             volatility: volatilityScore,
             quality: qualityScore,
-          }
+          },
         };
       }
 
@@ -601,99 +935,86 @@
         return {
           side: 'PUT',
           signalIndex: idx,
-          signalTime: c.time,
-          signalPrice: c.close,
+          signalTime: candle.time,
+          signalPrice: candle.close,
           atr,
+          marketContext,
           metrics: {
             liquidity: liquidityScore,
             volatility: volatilityScore,
             quality: qualityScore,
-          }
+          },
         };
       }
 
       return null;
     }
 
-    async function evaluateHistoricalTrades(data) {
+    function makeTradeRecord(base, overrides) {
+      return {
+        side: base.side,
+        signalTime: base.signalTime,
+        signalPrice: base.signalPrice,
+        entryTime: overrides.entryTime,
+        entryPrice: overrides.entryPrice,
+        exitTime: overrides.exitTime,
+        exitPrice: overrides.exitPrice,
+        status: overrides.status,
+        cancelReason: overrides.cancelReason || '',
+        metrics: base.metrics,
+        marketContext: base.marketContext || null,
+      };
+    }
+
+    function evaluateHistoricalTrades(data) {
       const atrMap = computeATR(data);
       const historySlice = data.slice(-APP_CONFIG.HISTORY_CANDLES);
       const offset = data.length - historySlice.length;
       const trades = [];
       let lastEntryTime = 0;
 
-      for (let localIdx = APP_CONFIG.SWEEP_LOOKBACK + 2; localIdx < historySlice.length - 2; localIdx++) {
+      for (let localIdx = APP_CONFIG.SWEEP_LOOKBACK + 2; localIdx < historySlice.length - 2; localIdx += 1) {
         const globalIdx = offset + localIdx;
         const signal = buildSignal(globalIdx, data, atrMap);
         if (!signal) continue;
-
         if ((signal.signalTime - lastEntryTime) < APP_CONFIG.COOLDOWN_SECONDS) continue;
 
         const entryCandle = data[globalIdx + 1];
         const exitCandle = data[globalIdx + 2];
         if (!entryCandle || !exitCandle) continue;
 
-        let entryPrice = entryCandle.open;
-        let status = 'WIN';
-        let cancelReason = '';
-
+        const entryPrice = entryCandle.open;
         const guard = signal.atr * APP_CONFIG.PREP_INVALIDATION_ATR;
+        const invalidated = signal.side === 'CALL'
+          ? entryPrice < signal.signalPrice - guard
+          : entryPrice > signal.signalPrice + guard;
 
-        if (signal.side === 'CALL') {
-          if (entryPrice < signal.signalPrice - guard) {
-            status = 'CANCEL';
-            cancelReason = 'Цена ушла против сигнала во время подготовки';
-          }
-        } else {
-          if (entryPrice > signal.signalPrice + guard) {
-            status = 'CANCEL';
-            cancelReason = 'Цена ушла против сигнала во время подготовки';
-          }
+        if (invalidated) {
+          trades.push(makeTradeRecord(signal, {
+            entryTime: entryCandle.time,
+            entryPrice,
+            exitTime: entryCandle.time,
+            exitPrice: entryPrice,
+            status: 'CANCEL',
+            cancelReason: 'Историческая аппроксимация: цена ушла против входа на следующей 5m свече.',
+          }));
+          continue;
         }
 
         const exitPrice = exitCandle.close;
+        const win = signal.side === 'CALL' ? exitPrice > entryPrice : exitPrice < entryPrice;
+        lastEntryTime = entryCandle.time;
 
-        if (status !== 'CANCEL') {
-          const win = signal.side === 'CALL'
-            ? exitPrice > entryPrice
-            : exitPrice < entryPrice;
-
-          status = win ? 'WIN' : 'LOSS';
-          lastEntryTime = entryCandle.time;
-        }
-
-        trades.push({
-          side: signal.side,
-          signalTime: signal.signalTime,
-          signalPrice: signal.signalPrice,
+        trades.push(makeTradeRecord(signal, {
           entryTime: entryCandle.time,
           entryPrice,
           exitTime: exitCandle.time,
           exitPrice,
-          status,
-          cancelReason,
-          metrics: signal.metrics,
-        });
+          status: win ? 'WIN' : 'LOSS',
+        }));
       }
 
       return trades;
-    }
-
-    function applyStats(trades) {
-      const total = trades.length;
-      const wins = trades.filter(t => t.status === 'WIN').length;
-      const losses = trades.filter(t => t.status === 'LOSS').length;
-      const cancels = trades.filter(t => t.status === 'CANCEL').length;
-      const winRate = total ? Math.round((wins / total) * 100) : 0;
-
-      state.stats = { total, wins, losses, cancels, winRate };
-
-      els.statTotal.textContent = total;
-      els.statWins.textContent = wins;
-      els.statLosses.textContent = losses;
-      els.statCancels.textContent = cancels;
-      els.winRate.textContent = `${winRate}%`;
-      els.winBar.style.width = `${winRate}%`;
     }
 
     function toMarker(trade, kind) {
@@ -736,6 +1057,28 @@
       };
     }
 
+    function applyMarkersSafe(markers) {
+      if (!state.candleSeries) return;
+
+      if (typeof state.candleSeries.setMarkers === 'function') {
+        state.candleSeries.setMarkers(markers);
+        return;
+      }
+
+      if (!state.markerWarningShown) {
+        state.markerWarningShown = true;
+        addLog('Маркерный API библиотеки недоступен. График продолжит работу без маркеров.', true);
+      }
+
+      if (window.LightweightCharts && typeof window.LightweightCharts.createSeriesMarkers === 'function') {
+        try {
+          state.markerPrimitive = window.LightweightCharts.createSeriesMarkers(state.candleSeries, markers);
+        } catch (error) {
+          reportError('Установка маркеров', error, 'Не удалось применить маркеры.');
+        }
+      }
+    }
+
     function renderTradeMarkers(trades) {
       if (!state.candleSeries) return;
 
@@ -751,163 +1094,132 @@
       }
 
       state.markers = markers.slice(-APP_CONFIG.MARKER_LIMIT);
-      state.candleSeries.setMarkers(state.markers);
+      applyMarkersSafe(state.markers);
     }
 
     function renderTradeBlocks(trades) {
-      if (!state.chart) return;
+      if (!state.chart || !state.candles.length) return;
 
       if (state.areaSeries) {
-        try { state.chart.removeSeries(state.areaSeries); } catch (_) {}
+        try {
+          state.chart.removeSeries(state.areaSeries);
+        } catch (_) {}
         state.areaSeries = null;
       }
 
-      const lastClose = state.candles[state.candles.length - 1]?.close || 0;
-      state.areaSeries = state.chart.addBaselineSeries({
-        baseValue: { type: 'price', price: lastClose },
-        topLineColor: 'rgba(56,189,248,0)',
-        topFillColor1: 'rgba(56,189,248,0.05)',
-        topFillColor2: 'rgba(56,189,248,0)',
-        bottomLineColor: 'rgba(56,189,248,0)',
-        bottomFillColor1: 'rgba(56,189,248,0)',
-        bottomFillColor2: 'rgba(56,189,248,0)',
-        lineWidth: 1,
-        crosshairMarkerVisible: false,
-        lastValueVisible: false,
-        priceLineVisible: false,
-      });
+      try {
+        const lastClose = state.candles[state.candles.length - 1]?.close || 0;
+        state.areaSeries = state.chart.addBaselineSeries({
+          baseValue: { type: 'price', price: lastClose },
+          topLineColor: 'rgba(56,189,248,0)',
+          topFillColor1: 'rgba(56,189,248,0.05)',
+          topFillColor2: 'rgba(56,189,248,0)',
+          bottomLineColor: 'rgba(56,189,248,0)',
+          bottomFillColor1: 'rgba(56,189,248,0)',
+          bottomFillColor2: 'rgba(56,189,248,0)',
+          lineWidth: 1,
+          crosshairMarkerVisible: false,
+          lastValueVisible: false,
+          priceLineVisible: false,
+        });
 
-      const points = [];
-      for (const trade of trades) {
-        if (trade.status === 'CANCEL') continue;
-        points.push({ time: trade.entryTime, value: trade.exitPrice });
-        points.push({ time: trade.exitTime, value: trade.exitPrice });
-      }
-
-      if (points.length) {
-        state.areaSeries.setData(points);
-      }
-    }
-
-    function updateMetrics(metrics) {
-      state.currentQuality = metrics;
-      els.mLiquidity.textContent = metrics.liquidity;
-      els.mVolatility.textContent = metrics.volatility;
-      els.mQuality.textContent = metrics.quality;
-    }
-
-    function updateSignalUI(signal, entryPrice = null) {
-      if (!signal) {
-        els.signalType.textContent = '—';
-        els.signalType.className = 'text-xl font-black signal-neutral';
-        els.entryPrice.textContent = '—';
-        els.countdownText.textContent = '—';
-        return;
-      }
-
-      els.signalType.textContent = signal.side;
-      els.signalType.className = `text-xl font-black ${signal.side === 'CALL' ? 'signal-call' : 'signal-put'}`;
-      els.entryPrice.textContent = entryPrice ? formatPrice(entryPrice) : '—';
-      updateMetrics(signal.metrics || { liquidity: 0, volatility: 0, quality: 0 });
-    }
-
-    function createChart() {
-      if (state.chart || !window.LightweightCharts || !els.chart) return;
-
-      state.chart = LightweightCharts.createChart(els.chart, {
-        layout: {
-          background: { color: '#07111f' },
-          textColor: '#9fb0c9',
-          fontSize: 12,
-        },
-        grid: {
-          vertLines: { color: 'rgba(71,85,105,0.18)' },
-          horzLines: { color: 'rgba(71,85,105,0.18)' },
-        },
-        rightPriceScale: {
-          borderColor: 'rgba(100,116,139,0.35)',
-        },
-        timeScale: {
-          borderColor: 'rgba(100,116,139,0.35)',
-          timeVisible: true,
-          secondsVisible: false,
-        },
-        crosshair: {
-          vertLine: { color: 'rgba(56,189,248,0.35)' },
-          horzLine: { color: 'rgba(56,189,248,0.35)' },
-        },
-        localization: {
-          locale: 'ru-RU',
+        const points = [];
+        for (const trade of trades) {
+          if (trade.status === 'CANCEL') continue;
+          points.push({ time: trade.entryTime, value: trade.exitPrice });
+          points.push({ time: trade.exitTime, value: trade.exitPrice });
         }
-      });
 
-      state.candleSeries = state.chart.addCandlestickSeries({
-        upColor: '#10b981',
-        downColor: '#f43f5e',
-        borderVisible: false,
-        wickUpColor: '#10b981',
-        wickDownColor: '#f43f5e',
-      });
-
-      state.resizeObserver = new ResizeObserver(() => {
-        if (!state.chart) return;
-        const rect = els.chart.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0) {
-          state.chart.applyOptions({ width: rect.width, height: rect.height });
+        if (points.length) {
+          state.areaSeries.setData(points);
         }
-      });
-
-      state.resizeObserver.observe(els.chart);
-
-      const rect = els.chart.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-        state.chart.applyOptions({ width: rect.width, height: rect.height });
+      } catch (error) {
+        reportError('Отрисовка trade blocks', error, 'Не удалось обновить блоки истории.');
       }
+    }
+
+    function updateChartData(candles) {
+      if (!state.candleSeries) {
+        throw new Error('Свечная серия графика не создана.');
+      }
+      state.candleSeries.setData(candles);
     }
 
     async function loadInitialState() {
       setPhase('ЗАГРУЗКА ИСТОРИИ');
+      setScanBadge('ЗАГРУЗКА');
       addLog('Загружаю 5-минутный график BTCUSDT за последние 12 часов.', true);
+      addLog('Подтверждение 1m используется только как быстрый технический слой перед входом.');
 
-      const candles = await getCandles(APP_CONFIG.SYMBOL, APP_CONFIG.FETCH_LIMIT, APP_CONFIG.PRIMARY_INTERVAL);
+      const candles = await getCandles(
+        APP_CONFIG.SYMBOL,
+        APP_CONFIG.FETCH_LIMIT,
+        APP_CONFIG.PRIMARY_INTERVAL,
+        'Загрузка истории 5m'
+      );
 
       if (!candles.length) {
         setPhase('НЕТ ДАННЫХ', 'text-rose-300');
-        addLog('Не удалось получить свечи Binance API.', true);
+        setScanBadge('НЕТ ДАННЫХ');
+        addLog('Старт остановлен: Binance не вернул валидную 5m историю.', true);
         return false;
       }
 
       state.candles = candles;
       state.latestPrice = candles[candles.length - 1].close;
+      updateChartData(candles);
 
-      state.candleSeries.setData(candles);
-
-      addLog('Считаю честную историю сигналов за 12 часов.', true);
-      const trades = await evaluateHistoricalTrades(candles);
-
+      addLog('Считаю детерминированную историю сигналов за 12 часов.', true);
+      const trades = evaluateHistoricalTrades(candles);
       state.historyTrades = trades;
       applyStats(trades);
       renderTradeMarkers(trades);
       renderTradeBlocks(trades);
 
-      state.chart.timeScale().fitContent();
+      try {
+        state.chart.timeScale().fitContent();
+      } catch (error) {
+        reportError('fitContent', error, 'Не удалось выровнять временную шкалу.');
+      }
 
       addLog(`История готова. Сделок: ${state.stats.total}, WIN: ${state.stats.wins}, LOSS: ${state.stats.losses}, CANCEL: ${state.stats.cancels}.`, true);
       return true;
     }
 
-    async function runLiveScan() {
-      if (state.activeTrade || !state.isRunning) return;
+    function appendTrade(trade) {
+      state.historyTrades.push(trade);
+      applyStats(state.historyTrades);
+      renderTradeMarkers(state.historyTrades);
+      renderTradeBlocks(state.historyTrades);
+    }
 
-      const candles = await getCandles(APP_CONFIG.SYMBOL, APP_CONFIG.FETCH_LIMIT, APP_CONFIG.PRIMARY_INTERVAL);
+    async function runLiveScan() {
+      const runToken = state.runToken;
+      if (!state.isRunning || state.activeTrade) return;
+
+      const candles = await getCandles(
+        APP_CONFIG.SYMBOL,
+        APP_CONFIG.FETCH_LIMIT,
+        APP_CONFIG.PRIMARY_INTERVAL,
+        'Live scan 5m'
+      );
+
+      if (runToken !== state.runToken || !state.isRunning) return;
+
       if (!candles.length) {
-        addLog('Live scan: Binance временно не ответил.');
+        addLog('Live scan: валидные 5m свечи не получены. Терминал остаётся в рабочем состоянии.');
         return;
       }
 
       state.candles = candles;
       state.latestPrice = candles[candles.length - 1].close;
-      state.candleSeries.setData(candles);
+
+      try {
+        updateChartData(candles);
+      } catch (error) {
+        reportError('Live chart update', error, 'Не удалось обновить 5m график.');
+        return;
+      }
 
       const atrMap = computeATR(candles);
       const idx = candles.length - 2;
@@ -915,9 +1227,11 @@
 
       if (!signal) {
         setPhase('СКАНИРОВАНИЕ', 'text-sky-300');
-        els.scanBadge.textContent = 'СКАНИРОВАНИЕ';
+        setScanBadge('СКАНИРОВАНИЕ');
         return;
       }
+
+      state.marketContext = signal.marketContext || state.marketContext;
 
       if ((signal.signalTime - state.lastTradeEpoch) < APP_CONFIG.COOLDOWN_SECONDS) {
         addLog('Сигнал найден, но кулдаун ещё активен.');
@@ -928,42 +1242,40 @@
       updateSignalUI(signal);
 
       setPhase('SIGNAL FOUND', signal.side === 'CALL' ? 'text-sky-300' : 'text-rose-300');
-      els.scanBadge.textContent = 'ПРОВЕРКА ВХОДА';
-      addLog(`Найден сигнал ${signal.side}. Запускаю подготовку ${APP_CONFIG.PREP_DELAY_SECONDS}с.`, true);
+      setScanBadge('ПРОВЕРКА ВХОДА');
+      addLog(`Найден сигнал ${signal.side}. Подготовка ${APP_CONFIG.PREP_DELAY_SECONDS}с, быстрый confirm = 1m.`, true);
 
       let prepLeft = APP_CONFIG.PREP_DELAY_SECONDS;
       els.countdownText.textContent = `00:0${prepLeft}`;
 
-      while (prepLeft > 0 && state.isRunning) {
-        await new Promise(r => setTimeout(r, 1000));
+      while (prepLeft > 0 && state.isRunning && runToken === state.runToken) {
+        await sleep(1000);
         prepLeft -= 1;
         els.countdownText.textContent = prepLeft > 0 ? `00:0${prepLeft}` : '00:00';
       }
 
-      if (!state.isRunning) return;
+      if (!state.isRunning || runToken !== state.runToken) return;
 
-      const confirmCandles = await getCandles(APP_CONFIG.SYMBOL, 3, APP_CONFIG.CONFIRM_INTERVAL);
+      const confirmCandles = await getCandles(
+        APP_CONFIG.SYMBOL,
+        3,
+        APP_CONFIG.CONFIRM_INTERVAL,
+        'Подтверждение входа 1m'
+      );
       const confirm = confirmCandles[confirmCandles.length - 1];
 
       if (!confirm) {
-        addLog('Подтверждение входа не получено. Сигнал отменён.', true);
-        const cancelTrade = {
-          side: signal.side,
-          signalTime: signal.signalTime,
-          signalPrice: signal.signalPrice,
+        appendTrade(makeTradeRecord(signal, {
           entryTime: candles[candles.length - 1].time,
           entryPrice: signal.signalPrice,
           exitTime: candles[candles.length - 1].time,
           exitPrice: signal.signalPrice,
           status: 'CANCEL',
-          cancelReason: 'Нет подтверждающих данных',
-          metrics: signal.metrics,
-        };
-        state.historyTrades.push(cancelTrade);
-        applyStats(state.historyTrades);
-        renderTradeMarkers(state.historyTrades);
+          cancelReason: 'Нет валидных 1m данных для быстрого подтверждения входа.',
+        }));
         setPhase('CANCEL', 'text-amber-300');
-        els.scanBadge.textContent = 'ОТМЕНА';
+        setScanBadge('ОТМЕНА');
+        addLog('Подтверждение входа не получено. Сигнал отменён без падения терминала.', true);
         return;
       }
 
@@ -974,24 +1286,17 @@
         : entryPrice > signal.signalPrice + invalidation;
 
       if (invalidated) {
-        addLog('Сигнал отменён: цена ушла против нас во время подготовки.', true);
-        const cancelTrade = {
-          side: signal.side,
-          signalTime: signal.signalTime,
-          signalPrice: signal.signalPrice,
+        appendTrade(makeTradeRecord(signal, {
           entryTime: confirm.time,
           entryPrice,
           exitTime: confirm.time,
           exitPrice: entryPrice,
           status: 'CANCEL',
-          cancelReason: 'Цена ушла против входа',
-          metrics: signal.metrics,
-        };
-        state.historyTrades.push(cancelTrade);
-        applyStats(state.historyTrades);
-        renderTradeMarkers(state.historyTrades);
+          cancelReason: 'Цена ушла против входа во время 3-секундной подготовки.',
+        }));
         setPhase('CANCEL', 'text-amber-300');
-        els.scanBadge.textContent = 'ОТМЕНА';
+        setScanBadge('ОТМЕНА');
+        addLog('Сигнал отменён: цена ушла против входа на быстром confirm-слое.', true);
         return;
       }
 
@@ -1002,14 +1307,14 @@
         entryTime: confirm.time,
         entryPrice,
         metrics: signal.metrics,
+        marketContext: signal.marketContext,
       };
-
       state.lastTradeEpoch = confirm.time;
-      updateSignalUI(signal, entryPrice);
 
+      updateSignalUI(signal, entryPrice);
       setPhase('ENTRY CONFIRMED', signal.side === 'CALL' ? 'text-sky-300' : 'text-rose-300');
-      els.scanBadge.textContent = 'АКТИВНАЯ СДЕЛКА';
-      addLog(`Вход подтверждён: ${signal.side} по цене ${formatPrice(entryPrice)} на 5 минут.`, true);
+      setScanBadge('АКТИВНАЯ СДЕЛКА');
+      addLog(`Вход подтверждён: ${signal.side} по цене ${formatPrice(entryPrice)}. Экспирация 5 минут.`, true);
 
       let remaining = APP_CONFIG.EXPIRY_MINUTES * 60;
       els.countdownText.textContent = formatCountdown(remaining);
@@ -1020,94 +1325,104 @@
         els.countdownText.textContent = formatCountdown(Math.max(remaining, 0));
       }, 1000);
 
-      await new Promise(r => setTimeout(r, APP_CONFIG.EXPIRY_MINUTES * 60 * 1000));
+      await sleep(APP_CONFIG.EXPIRY_MINUTES * 60 * 1000);
 
       clearInterval(state.countdownTimer);
+      state.countdownTimer = null;
       els.countdownText.textContent = '00:00';
 
-      if (!state.isRunning) return;
+      if (!state.isRunning || runToken !== state.runToken) return;
 
-      const resultCandles = await getCandles(APP_CONFIG.SYMBOL, 3, APP_CONFIG.CONFIRM_INTERVAL);
+      const resultCandles = await getCandles(
+        APP_CONFIG.SYMBOL,
+        3,
+        APP_CONFIG.CONFIRM_INTERVAL,
+        'Завершение сделки 1m'
+      );
       const exitTick = resultCandles[resultCandles.length - 1] || {
         time: Math.floor(Date.now() / 1000),
-        close: entryPrice
+        close: entryPrice,
       };
       const exitPrice = exitTick.close;
+      const win = signal.side === 'CALL' ? exitPrice > entryPrice : exitPrice < entryPrice;
 
-      const win = signal.side === 'CALL'
-        ? exitPrice > entryPrice
-        : exitPrice < entryPrice;
-
-      const trade = {
-        side: signal.side,
-        signalTime: signal.signalTime,
-        signalPrice: signal.signalPrice,
+      appendTrade(makeTradeRecord(signal, {
         entryTime: confirm.time,
         entryPrice,
         exitTime: exitTick.time,
         exitPrice,
         status: win ? 'WIN' : 'LOSS',
-        cancelReason: '',
-        metrics: signal.metrics,
-      };
-
-      state.historyTrades.push(trade);
-      applyStats(state.historyTrades);
-      renderTradeMarkers(state.historyTrades);
-      renderTradeBlocks(state.historyTrades);
+      }));
 
       state.activeTrade = null;
-
       updateSignalUI(signal, entryPrice);
       setPhase(win ? 'СДЕЛКА В ПЛЮС' : 'СДЕЛКА В МИНУС', win ? 'text-emerald-300' : 'text-rose-300');
-      els.scanBadge.textContent = win ? 'WIN' : 'LOSS';
-      addLog(`Сделка завершена: ${trade.side}, результат ${trade.status}, вход ${formatPrice(entryPrice)}, выход ${formatPrice(exitPrice)}.`, true);
+      setScanBadge(win ? 'WIN' : 'LOSS');
+      addLog(`Сделка завершена: ${signal.side}, результат ${win ? 'WIN' : 'LOSS'}, вход ${formatPrice(entryPrice)}, выход ${formatPrice(exitPrice)}.`, true);
     }
 
     async function bootstrap() {
-      if (state.booted) return;
-      state.booted = true;
+      if (state.startupInProgress || state.booted) return;
+
+      state.startupInProgress = true;
+      state.runToken += 1;
       state.isRunning = true;
+      resetRuntimeState();
+      clearRuntimeTimers();
 
       setPhase('ИНИЦИАЛИЗАЦИЯ');
-      addLog('Система запущена. Инициализирую терминал.', true);
+      setScanBadge('ЗАПУСК');
+      addLog('Система запущена. Инициализирую терминал без смены интерфейса.', true);
 
-      createChart();
+      try {
+        await createChartSafe();
+        await sleep(APP_CONFIG.START_DELAY_MS);
 
-      await new Promise(r => setTimeout(r, APP_CONFIG.START_DELAY_MS));
+        const ok = await loadInitialState();
+        if (!ok) {
+          throw new Error('Не удалось загрузить стартовые данные терминала.');
+        }
 
-      const ok = await loadInitialState();
-      if (!ok) {
+        state.booted = true;
+        setPhase('СКАНИРОВАНИЕ', 'text-sky-300');
+        setScanBadge('СКАНИРОВАНИЕ');
+        addLog('Терминал готов. Основной сигнал = 5m, экспирация = 5m, быстрый confirm = 1m.', true);
+
+        setStartScreenVisible(false);
+        setStartButtonState({ disabled: true, text: 'ТЕРМИНАЛ АКТИВЕН' });
+
+        await runLiveScan();
+        state.scanTimer = setInterval(() => {
+          runLiveScan().catch((error) => {
+            reportError('Live scan loop', error, 'Ошибка в цикле live scan.');
+          });
+        }, APP_CONFIG.LIVE_SCAN_INTERVAL_MS);
+      } catch (error) {
+        stopRuntime();
         setPhase('ОШИБКА', 'text-rose-300');
-        els.scanBadge.textContent = 'ОШИБКА';
-        state.isRunning = false;
-        return;
+        setScanBadge('ОШИБКА');
+        reportError('Инициализация терминала', error, 'Ошибка запуска терминала.');
+        setStartScreenVisible(true);
+        setStartButtonState({ disabled: false, text: 'ПОВТОРИТЬ ЗАПУСК' });
+        throw error;
+      } finally {
+        state.startupInProgress = false;
       }
-
-      setPhase('СКАНИРОВАНИЕ', 'text-sky-300');
-      els.scanBadge.textContent = 'СКАНИРОВАНИЕ';
-      addLog('Терминал готов. Перехожу к live-сканированию 5M / 5M.', true);
-
-      await runLiveScan();
-      state.scanTimer = setInterval(runLiveScan, APP_CONFIG.LIVE_SCAN_INTERVAL_MS);
     }
 
     els.startBtn.addEventListener('click', async () => {
-      els.startBtn.disabled = true;
-      els.startBtn.textContent = 'ЗАПУСК...';
-      els.startScreen.classList.add('hidden-start');
+      if (state.startupInProgress || state.booted) return;
+
+      setStartButtonState({ disabled: true, text: 'ЗАПУСК...' });
 
       try {
         await bootstrap();
-      } catch (err) {
-        console.error(err);
-        setPhase('ОШИБКА', 'text-rose-300');
-        els.scanBadge.textContent = 'ОШИБКА';
-        addLog('Произошла ошибка инициализации. Проверь консоль браузера.', true);
+      } catch (_) {
+        // Ошибка уже показана в интерфейсе через reportError.
       }
     });
 
     addLog('Терминал ожидает нажатия кнопки запуска.');
   </script>
 </body>
-  </html>
+</html>
