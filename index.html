@@ -125,7 +125,6 @@
         .candle-scanner-item {
             animation: candle-scan-pulse 24s linear infinite;
         }
-        /* -------------------------------------- */
         
         .glass-panel {
             background: rgba(255, 255, 255, 0.85);
@@ -238,86 +237,15 @@
           "Маркетмейкер собирает стопы розничных трейдеров перед разворотом."
         ];
 
-        // --- ADAPTIVE STRATEGY CONFIGURATION ---
+        // --- ADAPTIVE STRATEGY CONFIGURATION (CLEAN CORE SMC) ---
         const STRATEGY_CONFIG = {
             NORMAL: {
-                strictnessMult: 0.8,      // Базовый множитель ширины канала
-                trendAtrMultiplier: 2.0,  // Базовое отклонение тренда для слабых сигналов
-                requireStrongCandle: false // Обычные свечи допустимы
+                minScore: 55,
             },
             REINFORCED: {
-                strictnessMult: 1.3,      // Более строгий фильтр ширины (отсекает флэт)
-                trendAtrMultiplier: 1.2,  // Очень строгая защита от тренда для слабых сигналов
-                requireStrongCandle: true  // ВСЕГДА требует сильное подтверждение
+                minScore: 70,
             }
         };
-
-        // --- MARKET REGIME ENGINE ---
-        const REGIMES = {
-            BULLISH: { id: 'BULLISH', label: 'БЫЧИЙ ТРЕНД', color: 'text-emerald-500' },
-            BEARISH: { id: 'BEARISH', label: 'МЕДВЕЖИЙ ТРЕНД', color: 'text-rose-500' },
-            SIDEWAYS: { id: 'SIDEWAYS', label: 'БОКОВИК (ФЛЭТ)', color: 'text-slate-400' },
-            WEAKENING_BULLISH: { id: 'WEAKENING_BULLISH', label: 'ЗАТУХАНИЕ (БЫКИ)', color: 'text-amber-500' },
-            WEAKENING_BEARISH: { id: 'WEAKENING_BEARISH', label: 'ЗАТУХАНИЕ (МЕДВЕДИ)', color: 'text-amber-500' },
-        };
-
-        function detectMarketRegime(data, smaArr, atrArr, idx) {
-            if (idx < 15 || !data || !smaArr || !atrArr) return { regime: REGIMES.SIDEWAYS, confidence: 0, explanation: "Синхронизация..." };
-            if (!data[idx] || !smaArr[idx] || !atrArr[idx] || !data[idx - 10] || !smaArr[idx - 10] || !atrArr[idx - 10]) {
-                 return { regime: REGIMES.SIDEWAYS, confidence: 0, explanation: "Ожидание скользящих средних..." };
-            }
-            
-            const currCandle = data[idx];
-            const currSma = smaArr[idx].value;
-            const currAtr = atrArr[idx].value;
-            
-            const pastCandle10 = data[idx - 10];
-            const pastSma10 = smaArr[idx - 10].value;
-            const pastAtr10 = atrArr[idx - 10].value;
-
-            if(!currSma || !pastSma10) return { regime: REGIMES.SIDEWAYS, confidence: 0, explanation: "Ожидание скользящих средних..." };
-
-            const distToSma = currCandle.close - currSma;
-            const distInAtr = distToSma / currAtr;
-
-            // Наклон тренда за последние 50 минут (10 свечей 5M)
-            const smaSlope = (currSma - pastSma10) / currAtr;
-            // Локальный импульс цены
-            const priceChange = (currCandle.close - pastCandle10.close) / currAtr;
-
-            let regime = REGIMES.SIDEWAYS;
-            let confidence = 0;
-            let explanation = "Рынок находится в боковике. Цена колеблется около средних значений.";
-
-            if (distInAtr > 1.2 && smaSlope > 0.25) {
-                if (priceChange < -0.8) {
-                    regime = REGIMES.WEAKENING_BULLISH;
-                    confidence = 0.7;
-                    explanation = "Бычий импульс ослабевает. Возможен переход в диапазон или коррекция.";
-                } else {
-                    regime = REGIMES.BULLISH;
-                    confidence = Math.min(0.99, 0.5 + (distInAtr * 0.1) + (smaSlope * 0.2));
-                    explanation = "Обнаружен устойчивый бычий режим. Приоритет лонг-позициям.";
-                }
-            } else if (distInAtr < -1.2 && smaSlope < -0.25) {
-                if (priceChange > 0.8) {
-                    regime = REGIMES.WEAKENING_BEARISH;
-                    confidence = 0.7;
-                    explanation = "Медвежий импульс ослабевает. Признаки торможения продавцов.";
-                } else {
-                    regime = REGIMES.BEARISH;
-                    confidence = Math.min(0.99, 0.5 + (Math.abs(distInAtr) * 0.1) + (Math.abs(smaSlope) * 0.2));
-                    explanation = "Обнаружен устойчивый медвежий режим. Приоритет шорт-позициям.";
-                }
-            } else {
-                confidence = Math.max(0.1, 1 - Math.abs(distInAtr));
-                if (currAtr > pastAtr10 * 1.4) {
-                    explanation = "Боковик расширяется. Зафиксирован выход из компрессии.";
-                }
-            }
-
-            return { regime, confidence, explanation };
-        }
 
         const ScannerAPI = {
           async getCandles(symbol, count = 250, interval = '5m') { 
@@ -362,22 +290,6 @@
         };
 
         // --- УСИЛЕНИЕ ЛОГИКИ (SMC + TREND) ---
-        function calcSMA(data, period) {
-            let res = [];
-            for (let i = 0; i < data.length; i++) {
-                if (i < period - 1) {
-                    res.push({time: data[i].time, value: data[i].close});
-                    continue;
-                }
-                let sum = 0;
-                for (let j = 0; j < period; j++) {
-                    sum += data[i - j].close;
-                }
-                res.push({time: data[i].time, value: sum / period});
-            }
-            return res;
-        }
-
         function calcLiquidityZones(data, period = 15) {
             let res = [];
             for (let i = 0; i < data.length; i++) {
@@ -421,103 +333,226 @@
             return res;
         }
 
-        // --- ЕДИНЫЙ БЛОК ЛОГИКИ SMC (Context-Aware SFP Engine) ---
-        function evaluateHistoricalSetup(currCandle, prevCandle, zones, cAtr, cSma, config, currentRegime, logCallback = null) {
-            if (!zones || cAtr === undefined || cSma === undefined) return { isCall: false, isPut: false };
-
-            const cUpper = zones.upper;
-            const cLower = zones.lower;
-            const candleSize = currCandle.high - currCandle.low || 1; // Предотвращение деления на 0
-            const bodySize = Math.abs(currCandle.open - currCandle.close);
-            const topWick = currCandle.high - Math.max(currCandle.open, currCandle.close);
-            const bottomWick = Math.min(currCandle.open, currCandle.close) - currCandle.low;
-
-            // 1. Поиск базового паттерна Свипа (Sweep Candidate)
-            const sweptTop = currCandle.high > cUpper || prevCandle.high > cUpper;
-            const returnedInsideTop = currCandle.close < cUpper;
-            const putCandidate = sweptTop && returnedInsideTop;
-
-            const sweptBottom = currCandle.low < cLower || prevCandle.low < cLower;
-            const returnedInsideBottom = currCandle.close > cLower;
-            const callCandidate = sweptBottom && returnedInsideBottom;
-
-            // Если даже не коснулись ликвидности - сразу отбрасываем
-            if (!putCandidate && !callCandidate) return { isCall: false, isPut: false };
-
-            // 2. Вычисление силы свечи (Confirmation & Displacement)
-            const isBearishCandle = currCandle.close < currCandle.open;
-            const isBullishCandle = currCandle.close > currCandle.open;
-
-            // СИЛЬНЫЙ РАЗВОРОТ: либо огромная тень (отклонение цены), либо мощное тело (поглощение)
-            const strongPutRejection = isBearishCandle && (topWick > candleSize * 0.4 || bodySize > candleSize * 0.4);
-            const strongCallRejection = isBullishCandle && (bottomWick > candleSize * 0.4 || bodySize > candleSize * 0.4);
-
-            // 3. Адаптивные пороги ширины канала (Regime-Aware Filtering)
-            let callStrictness = config.strictnessMult;
-            let putStrictness = config.strictnessMult;
-
-            if (currentRegime.id === 'BULLISH') {
-                putStrictness *= 1.3;  // Шортить бычий рынок сложнее (нужен шире канал)
-                callStrictness *= 0.8; // Лонговать по тренду проще
-            } else if (currentRegime.id === 'BEARISH') {
-                callStrictness *= 1.3; 
-                putStrictness *= 0.8; 
-            } else if (currentRegime.id === 'SIDEWAYS') {
-                callStrictness *= 1.1; // Во флэте повышаем защиту от шума
-                putStrictness *= 1.1;
-            } else if (currentRegime.id.includes('WEAKENING')) {
-                callStrictness *= 1.2;
-                putStrictness *= 1.2;
+        // --- ЧИСТОЕ ЯДРО SMC (Liquidity Sweep, Reclaim & Confirmation) ---
+        function evaluateSweepSetup(data, idx, zonesArr, atrArr, config, logCallback = null) {
+            if (idx < 2 || !zonesArr || !atrArr || !zonesArr[idx] || !zonesArr[idx - 1] || !atrArr[idx]) {
+                return { isCall: false, isPut: false };
             }
 
-            const rangeWidth = cUpper - cLower;
-            const isCallRangeValid = rangeWidth > (cAtr * Math.max(0.5, callStrictness * 0.7));
-            const isPutRangeValid = rangeWidth > (cAtr * Math.max(0.5, putStrictness * 0.7));
+            const curr = data[idx];
+            const prev = data[idx - 1];
+            const prePrev = data[idx - 2];
 
-            // 4. Контекстно-зависимый фильтр тренда (Context-Aware Trend Filter)
-            const distFromSma = currCandle.close - cSma;
-            const atrDist = distFromSma / cAtr;
+            const currZones = zonesArr[idx];
+            const prevZones = zonesArr[idx - 1];
+            const cAtr = atrArr[idx].value || 0;
 
-            // Динамический порог: Базовый (напр. 2.0 ATR). Если есть СИЛЬНОЕ подтверждение - раздвигаем до 4.0 ATR
-            const maxPutCounterTrendAtr = strongPutRejection ? 4.0 : config.trendAtrMultiplier; 
-            const maxCallCounterTrendAtr = strongCallRejection ? 4.0 : config.trendAtrMultiplier;
+            const candleStats = (c) => {
+                const size = Math.max(c.high - c.low, 0.0001);
+                const body = Math.abs(c.close - c.open);
+                const topWick = c.high - Math.max(c.open, c.close);
+                const bottomWick = Math.min(c.open, c.close) - c.low;
 
-            const trendBlocksPut = atrDist > maxPutCounterTrendAtr;   // Рост слишком сильный для шорта без мощного SFP
-            const trendBlocksCall = atrDist < -maxCallCounterTrendAtr; // Падение слишком сильное для лонга без мощного SFP
+                return {
+                    size,
+                    body,
+                    topWick,
+                    bottomWick,
+                    isBull: c.close > c.open,
+                    isBear: c.close < c.open,
+                };
+            };
 
-            let isCall = false;
+            const isChoppyRange = (currZones.upper - currZones.lower) < cAtr * 0.55;
+
+            let putCandidate = null;
+            let callCandidate = null;
+
+            // --- PUT: same candle sweep + reclaim
+            if (curr.high > currZones.upper && curr.close < currZones.upper) {
+                putCandidate = {
+                    sweepCandle: curr,
+                    confirmCandle: curr,
+                    sweepLevel: currZones.upper,
+                    mode: 'same_candle'
+                };
+            }
+            // --- PUT: previous candle swept old pool, current candle reclaimed old level
+            else if (
+                prev.high > prevZones.upper &&
+                prev.close >= prevZones.upper &&
+                curr.close < prevZones.upper
+            ) {
+                putCandidate = {
+                    sweepCandle: prev,
+                    confirmCandle: curr,
+                    sweepLevel: prevZones.upper,
+                    mode: 'two_candle_reclaim'
+                };
+            }
+
+            // --- CALL: same candle sweep + reclaim
+            if (curr.low < currZones.lower && curr.close > currZones.lower) {
+                callCandidate = {
+                    sweepCandle: curr,
+                    confirmCandle: curr,
+                    sweepLevel: currZones.lower,
+                    mode: 'same_candle'
+                };
+            }
+            // --- CALL: previous candle swept old pool, current candle reclaimed old level
+            else if (
+                prev.low < prevZones.lower &&
+                prev.close <= prevZones.lower &&
+                curr.close > prevZones.lower
+            ) {
+                callCandidate = {
+                    sweepCandle: prev,
+                    confirmCandle: curr,
+                    sweepLevel: prevZones.lower,
+                    mode: 'two_candle_reclaim'
+                };
+            }
+
+            const threshold = config.minScore;
             let isPut = false;
+            let isCall = false;
 
-            // 5. Итоговая оценка и Детерминированное Логирование
+            const logResult = (time, dir, status, confirms, penalties, score) => {
+                if (!logCallback) return;
+                logCallback(
+                    time,
+                    dir,
+                    status,
+                    `Score: ${score}/${threshold} | [+] ${confirms.join(', ') || '—'} | [-] ${penalties.join(', ') || '—'}`
+                );
+            };
+
+            // ---------------- PUT ----------------
             if (putCandidate) {
-                let reason = null;
-                if (!isBearishCandle) reason = "Отсутствует медвежье подтверждение (свеча зеленая)";
-                else if (!isPutRangeValid) reason = `Узкий канал (${(rangeWidth/cAtr).toFixed(1)} < ${(putStrictness*0.7).toFixed(1)} ATR)`;
-                else if (config.requireStrongCandle && !strongPutRejection) reason = `Слабое подтверждение (нет длинной тени или крупного тела)`;
-                else if (trendBlocksPut) reason = `Блок по тренду (Отклонение +${atrDist.toFixed(1)} ATR > лимит ${maxPutCounterTrendAtr})`;
-                else if (currentRegime.id === 'BULLISH' && !strongPutRejection) reason = "Контртренд в BULLISH режиме требует ИДЕАЛЬНОГО подтверждения";
-                
-                if (reason) {
-                    if (logCallback) logCallback(currCandle.time, 'PUT', 'ОТКЛОНЁН', `[SFP: ${strongPutRejection ? 'Strong' : 'Weak'}] ${reason}`, currentRegime.id);
+                const sweepStats = candleStats(putCandidate.sweepCandle);
+                const confirmStats = candleStats(putCandidate.confirmCandle);
+
+                const sweepDepth = putCandidate.sweepCandle.high - putCandidate.sweepLevel;
+                const reclaimDistance = putCandidate.sweepLevel - putCandidate.confirmCandle.close;
+                const structureShift =
+                    putCandidate.confirmCandle.close < prev.low ||
+                    putCandidate.confirmCandle.close < prePrev.low;
+
+                let score = 20;
+                const confirms = ['Sweep+Reclaim'];
+                const penalties = [];
+
+                if (sweepDepth >= cAtr * 0.08) {
+                    score += 10;
+                    confirms.push('SweepDepth');
                 } else {
+                    score -= 10;
+                    penalties.push('Мелкий sweep');
+                }
+
+                if (sweepStats.topWick >= sweepStats.size * 0.35) {
+                    score += 20;
+                    confirms.push('Rejection');
+                }
+
+                if (confirmStats.isBear && confirmStats.body >= confirmStats.size * 0.35) {
+                    score += 20;
+                    confirms.push('BearDisplacement');
+                }
+
+                if (reclaimDistance >= cAtr * 0.10) {
+                    score += 15;
+                    confirms.push('ReclaimHold');
+                } else {
+                    score -= 10;
+                    penalties.push('Слабый возврат');
+                }
+
+                if (structureShift) {
+                    score += 20;
+                    confirms.push('MSS');
+                }
+
+                if (putCandidate.mode === 'two_candle_reclaim' && !confirmStats.isBear) {
+                    score -= 15;
+                    penalties.push('Слабая подтверждающая свеча');
+                }
+
+                if (isChoppyRange) {
+                    score -= 20;
+                    penalties.push('Шум/узкий канал');
+                }
+
+                if (score >= threshold) {
                     isPut = true;
-                    if (logCallback) logCallback(currCandle.time, 'PUT', 'ПРИНЯТ', `[SFP: ${strongPutRejection ? 'Strong' : 'Weak'}] Сигнал подтвержден`, currentRegime.id);
+                    logResult(curr.time, 'PUT', 'ПРИНЯТ', confirms, penalties, score);
+                } else {
+                    logResult(curr.time, 'PUT', 'ОТКЛОНЁН', confirms, penalties, score);
                 }
             }
 
+            // ---------------- CALL ----------------
             if (callCandidate && !isPut) {
-                let reason = null;
-                if (!isBullishCandle) reason = "Отсутствует бычье подтверждение (свеча красная)";
-                else if (!isCallRangeValid) reason = `Узкий канал (${(rangeWidth/cAtr).toFixed(1)} < ${(callStrictness*0.7).toFixed(1)} ATR)`;
-                else if (config.requireStrongCandle && !strongCallRejection) reason = `Слабое подтверждение (нет длинной тени или крупного тела)`;
-                else if (trendBlocksCall) reason = `Блок по тренду (Отклонение ${atrDist.toFixed(1)} ATR < лимит -${maxCallCounterTrendAtr})`;
-                else if (currentRegime.id === 'BEARISH' && !strongCallRejection) reason = "Контртренд в BEARISH режиме требует ИДЕАЛЬНОГО подтверждения";
-                
-                if (reason) {
-                    if (logCallback) logCallback(currCandle.time, 'CALL', 'ОТКЛОНЁН', `[SFP: ${strongCallRejection ? 'Strong' : 'Weak'}] ${reason}`, currentRegime.id);
+                const sweepStats = candleStats(callCandidate.sweepCandle);
+                const confirmStats = candleStats(callCandidate.confirmCandle);
+
+                const sweepDepth = callCandidate.sweepLevel - callCandidate.sweepCandle.low;
+                const reclaimDistance = callCandidate.confirmCandle.close - callCandidate.sweepLevel;
+                const structureShift =
+                    callCandidate.confirmCandle.close > prev.high ||
+                    callCandidate.confirmCandle.close > prePrev.high;
+
+                let score = 20;
+                const confirms = ['Sweep+Reclaim'];
+                const penalties = [];
+
+                if (sweepDepth >= cAtr * 0.08) {
+                    score += 10;
+                    confirms.push('SweepDepth');
                 } else {
+                    score -= 10;
+                    penalties.push('Мелкий sweep');
+                }
+
+                if (sweepStats.bottomWick >= sweepStats.size * 0.35) {
+                    score += 20;
+                    confirms.push('Rejection');
+                }
+
+                if (confirmStats.isBull && confirmStats.body >= confirmStats.size * 0.35) {
+                    score += 20;
+                    confirms.push('BullDisplacement');
+                }
+
+                if (reclaimDistance >= cAtr * 0.10) {
+                    score += 15;
+                    confirms.push('ReclaimHold');
+                } else {
+                    score -= 10;
+                    penalties.push('Слабый возврат');
+                }
+
+                if (structureShift) {
+                    score += 20;
+                    confirms.push('MSS');
+                }
+
+                if (callCandidate.mode === 'two_candle_reclaim' && !confirmStats.isBull) {
+                    score -= 15;
+                    penalties.push('Слабая подтверждающая свеча');
+                }
+
+                if (isChoppyRange) {
+                    score -= 20;
+                    penalties.push('Шум/узкий канал');
+                }
+
+                if (score >= threshold) {
                     isCall = true;
-                    if (logCallback) logCallback(currCandle.time, 'CALL', 'ПРИНЯТ', `[SFP: ${strongCallRejection ? 'Strong' : 'Weak'}] Сигнал подтвержден`, currentRegime.id);
+                    logResult(curr.time, 'CALL', 'ПРИНЯТ', confirms, penalties, score);
+                } else {
+                    logResult(curr.time, 'CALL', 'ОТКЛОНЁН', confirms, penalties, score);
                 }
             }
 
@@ -715,9 +750,8 @@
           const [logs, setLogs] = useState([]);
           const [currentTF, setCurrentTF] = useState('5M');
           const [strategyModeUI, setStrategyModeUI] = useState('NORMAL');
-          const [marketRegimeUI, setMarketRegimeUI] = useState(REGIMES.SIDEWAYS);
           
-          const [metrics, setMetrics] = useState({ structure: 50, liquidity: 50, filterLevel: 40, smartMoney: 0, buyPressure: 50 });
+          const [metrics, setMetrics] = useState({ structure: 50, liquidity: 50, filterLevel: 60, smartMoney: 0, buyPressure: 50 });
           const [newsHeadlines, setNewsHeadlines] = useState(["ОБНОВЛЕНИЕ ДАННЫХ BTC..."]);
           const [tradeStats, setTradeStats] = useState({ wins: 0, losses: 0, winRate: 0 });
           
@@ -1037,12 +1071,6 @@
             }
 
             let lastCancelledTime = 0;
-            let lastLoggedRejectTime = 0;
-            
-            // Market Regime State Machine Variables
-            let activeRegimeId = 'SIDEWAYS';
-            let regimeCounter = 0;
-            let pendingRegime = null;
             let lastEvaluatedTime = 0;
 
             await speak('Институциональный алгоритм активирован. Запущен анализ пулов ликвидности Smart Money на 5-минутном таймфрейме за последние 12 часов.');
@@ -1050,7 +1078,7 @@
 
             markersRef.current = [];
             updateStatus('БЭКТЕСТ: АНАЛИЗ SMC ИСТОРИИ...', 'text-cyan-600');
-            addLog(`ЗАПУСК НЕЙРОСЕТИ: ПОИСК СНЯТИЯ ЛИКВИДНОСТИ ЗА 12 ЧАСОВ (5M)...`, true);
+            addLog(`ЗАПУСК ПОИСКА: СНЯТИЕ ЛИКВИДНОСТИ ЗА 12 ЧАСОВ (5M)...`, true);
 
             const curAsset = ASSETS[0];
             let initialData;
@@ -1072,73 +1100,47 @@
 
                 const liqZones = calcLiquidityZones(initialData, 15); 
                 const atrSeries = calcATRSeries(initialData, 14); 
-                const sma50 = calcSMA(initialData, 50);
-
-                const liqMap = new Map(liqZones.map(i => [i.time, {upper: i.upper, lower: i.lower}]));
-                const atrMap = new Map(atrSeries.map(i => [i.time, i.value]));
-                const smaMap = new Map(sma50.map(i => [i.time, i.value]));
 
                 const upperData = liqZones.map(i => ({time: i.time, value: i.upper}));
                 const lowerData = liqZones.map(i => ({time: i.time, value: i.lower}));
 
                 let historicalWins = 0;
                 let historicalLosses = 0;
+                let rawCandidatesCount = 0;
+                let acceptedSignalsCount = 0;
 
-                // ДЕТЕРМИНИРОВАННАЯ ЛОГИКА БЭКТЕСТА (без Look-Ahead Bias)
-                // Оцениваем сигналы только до length - 3, чтобы экспирация (length - 2) была на 100% ЗАКРЫТОЙ свече.
+                // ДЕТЕРМИНИРОВАННАЯ ЛОГИКА БЭКТЕСТА (СТРОГО ЗАКРЫТЫЕ СВЕЧИ)
                 const maxEvalIdx = initialData.length - 3;
-                const startEvalIdx = Math.max(15, maxEvalIdx - 144 + 1); // Строго последние 144 закрытые свечи
+                const startEvalIdx = Math.max(15, maxEvalIdx - 144 + 1); // Строго последние 12 часов
 
                 strategyMode.current = 'NORMAL';
                 let simStrategyMode = 'NORMAL';
-                let simRegimeId = 'SIDEWAYS';
-                let simRegimeCounter = 0;
-                let simPendingRegime = null;
 
-                console.log("=== ЗАПУСК ДИАГНОСТИКИ БЭКТЕСТА ЗА 12 ЧАСОВ ===");
+                console.log("=== ЗАПУСК АУДИТА БЭКТЕСТА (PURE SMC) ===");
 
                 for (let idx = startEvalIdx; idx <= maxEvalIdx; idx++) {
                     const currTime = initialData[idx].time;
-                    const currCandle = initialData[idx];
-                    const prevCandle = initialData[idx - 1];
-                    
-                    // Определение режима строго на закрытой свече idx
-                    const regimeInfo = detectMarketRegime(initialData, sma50, atrSeries, idx);
-                    if (regimeInfo.regime.id !== simRegimeId) {
-                        if (simPendingRegime === regimeInfo.regime.id) {
-                            simRegimeCounter++;
-                            if (simRegimeCounter >= 2) {
-                                simRegimeId = simPendingRegime;
-                                simRegimeCounter = 0;
-                            }
-                        } else {
-                            simPendingRegime = regimeInfo.regime.id;
-                            simRegimeCounter = 1;
-                        }
-                    } else {
-                        simRegimeCounter = 0;
-                        simPendingRegime = null;
-                    }
 
-                    const zones = liqMap.get(currTime);
-                    const cAtr = atrMap.get(currTime);
-                    const cSma = smaMap.get(currTime);
-
-                    // Логгер для записи потенциальных сетапов в консоль F12
-                    const backtestLogger = (t, dir, status, reason, regimeId) => {
+                    // Сбор аналитики пайплайна
+                    const backtestLogger = (t, dir, status, reason) => {
+                        rawCandidatesCount++;
+                        if (status === 'ПРИНЯТ') acceptedSignalsCount++;
                         const dateStr = new Date(t * 1000).toLocaleTimeString('ru-RU');
-                        console.log(`[BACKTEST] ${dateStr} | ${dir} | ${regimeId} | ${status} | ${reason}`);
+                        console.log(`[BACKTEST PIPELINE] ${dateStr} | ${dir} | ${status} | ${reason}`);
                     };
 
-                    const { isCall, isPut } = evaluateHistoricalSetup(
-                        currCandle, prevCandle, zones, cAtr, cSma, 
-                        STRATEGY_CONFIG[simStrategyMode], REGIMES[simRegimeId], 
+                    const { isCall, isPut } = evaluateSweepSetup(
+                        initialData,
+                        idx,
+                        liqZones,
+                        atrSeries,
+                        STRATEGY_CONFIG[simStrategyMode],
                         backtestLogger
                     );
 
                     if (isCall || isPut) {
-                        const entryPrice = currCandle.close;
-                        const exitPrice = initialData[idx + 1].close; // Экспирация на гарантированно ЗАКРЫТОЙ свече
+                        const entryPrice = initialData[idx].close;
+                        const exitPrice = initialData[idx + 1].close; 
                         let isWin = false;
 
                         if ((isCall && exitPrice > entryPrice) || (isPut && exitPrice < entryPrice) || exitPrice === entryPrice) {
@@ -1164,7 +1166,9 @@
                     }
                 }
                 
-                console.log("=== БЭКТЕСТ ЗАВЕРШЕН ===");
+                console.log(`=== АУДИТ ПАЙПЛАЙНА ЗАВЕРШЕН ===`);
+                console.log(`Кандидатов найдено (Sweep + Reclaim): ${rawCandidatesCount}`);
+                console.log(`Прошли скоринг-фильтр (Accepted): ${acceptedSignalsCount}`);
 
                 const total = historicalWins + historicalLosses;
                 const wr = total > 0 ? Math.round((historicalWins / total) * 100) : 0;
@@ -1176,10 +1180,6 @@
                 // Перенос состояния из симуляции в LIVE
                 strategyMode.current = simStrategyMode;
                 setStrategyModeUI(simStrategyMode);
-                activeRegimeId = simRegimeId;
-                pendingRegime = simPendingRegime;
-                regimeCounter = simRegimeCounter;
-                setMarketRegimeUI(REGIMES[activeRegimeId]);
                 
                 // Инициализируем lastEvaluatedTime временем последней закрытой свечи перед лайв-циклом
                 lastEvaluatedTime = initialData[initialData.length - 2].time; 
@@ -1208,9 +1208,9 @@
 
                 if (total > 0) {
                     playSound('win');
-                    await speak(`Бэктест 12 часов завершен. S F P паттерн на 5 минутах отработал ${total} раз. Винрейт ${wr} процентов. Перехожу к живому сканированию рынка.`);
+                    await speak(`Бэктест 12 часов завершен. Чистая стратегия SFP на 5 минутах отработала ${total} раз. Винрейт ${wr} процентов. Перехожу к живому сканированию рынка.`);
                 } else {
-                    await speak(`Бэктест завершен. За последние 12 часов S F P паттерны не найдены. Перехожу к живому сканированию рынка.`);
+                    await speak(`Бэктест завершен. За последние 12 часов подтвержденных SFP паттернов не найдено. Перехожу к живому сканированию рынка.`);
                 }
 
                 updateStatus('ИЗУЧЕНИЕ РЕАЛЬНОЙ ИСТОРИИ...', 'text-slate-500');
@@ -1231,6 +1231,8 @@
             // ОСНОВНОЙ ЛАЙВ-ЦИКЛ
             let logsThrottle = 0;
             let lastBackgroundNewsTime = Date.now();
+            let lastLoggedRejectTime = 0;
+
             while (engineActive.current) {
               try {
                   updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ 5M...', 'text-slate-700');
@@ -1238,7 +1240,7 @@
                   setSignal(null);
                   setCurrentTF('5M');
                   
-                  setMetrics(prev => ({ ...prev, filterLevel: strategyMode.current === 'NORMAL' ? 40 : 85, smartMoney: 15 }));
+                  setMetrics(prev => ({ ...prev, filterLevel: strategyMode.current === 'NORMAL' ? 60 : 75, smartMoney: 15 }));
 
                   let signalFound = false;
 
@@ -1258,11 +1260,6 @@
 
                       const liqZones = calcLiquidityZones(data, 15); 
                       const atrSeries = calcATRSeries(data, 14);    
-                      const sma50 = calcSMA(data, 50);
-
-                      const liqMap = new Map(liqZones.map(i => [i.time, {upper: i.upper, lower: i.lower}]));
-                      const atrMap = new Map(atrSeries.map(i => [i.time, i.value]));
-                      const smaMap = new Map(sma50.map(i => [i.time, i.value]));
 
                       const upperData = liqZones.map(i => ({time: i.time, value: i.upper}));
                       const lowerData = liqZones.map(i => ({time: i.time, value: i.lower}));
@@ -1275,48 +1272,24 @@
                       let triggerCandleIdx = closedIdx;
 
                       if (currentClosedTime !== lastEvaluatedTime) {
-                          const regimeInfo = detectMarketRegime(data, sma50, atrSeries, closedIdx);
-                          if (regimeInfo.regime.id !== activeRegimeId) {
-                              if (pendingRegime === regimeInfo.regime.id) {
-                                  regimeCounter++;
-                                  if (regimeCounter >= 2) { 
-                                      activeRegimeId = pendingRegime;
-                                      setMarketRegimeUI(REGIMES[activeRegimeId]);
-                                      addLog(`[РЕЖИМ РЫНКА ИЗМЕНЕН]: ${REGIMES[activeRegimeId].label} (${Math.round(regimeInfo.confidence*100)}%)`, true);
-                                      speak(regimeInfo.explanation).catch(()=>null);
-                                      regimeCounter = 0;
-                                  }
-                              } else {
-                                  pendingRegime = regimeInfo.regime.id;
-                                  regimeCounter = 1;
-                              }
-                          } else {
-                              regimeCounter = 0;
-                              pendingRegime = null;
-                          }
                           lastEvaluatedTime = currentClosedTime;
 
-                          const currCandle = data[closedIdx];
-                          const prevCandle = data[closedIdx - 1];
-                          const currTime = currCandle.time;
+                          const currTime = data[closedIdx].time;
                           
-                          const zones = liqMap.get(currTime);
-                          const cAtr = atrMap.get(currTime);
-                          const cSma = smaMap.get(currTime);
-                          
-                          // Лайв-логгер для вывода отклоненных сигналов в интерфейс
-                          const liveLogger = (t, dir, status, reason, regimeId) => {
+                          // Лайв-логгер
+                          const liveLogger = (t, dir, status, reason) => {
                               if (status === 'ОТКЛОНЁН' && t !== lastLoggedRejectTime) {
-                                  if (reason.includes('Режим') || reason.includes('канал') || reason.includes('Блок по тренду') || reason.includes('Слабое') || reason.includes('Контртренд')) {
-                                      addLog(`ПРОПУСК (${dir}): ${reason}`, true);
-                                      lastLoggedRejectTime = t;
-                                  }
+                                  addLog(`ПРОПУСК (${dir}): ${reason}`, true);
+                                  lastLoggedRejectTime = t;
                               }
                           };
 
-                          const { isCall: callSignal, isPut: putSignal } = evaluateHistoricalSetup(
-                              currCandle, prevCandle, zones, cAtr, cSma, 
-                              STRATEGY_CONFIG[strategyMode.current], REGIMES[activeRegimeId], 
+                          const { isCall: callSignal, isPut: putSignal } = evaluateSweepSetup(
+                              data,
+                              closedIdx,
+                              liqZones,
+                              atrSeries,
+                              STRATEGY_CONFIG[strategyMode.current],
                               liveLogger
                           );
 
@@ -1368,10 +1341,10 @@
                           const directionText = isCall ? "повышение" : "понижение";
                           
                           updateStatus(`ГОТОВЬТЕ: BTC (5 МИН)`, 'text-cyan-600 font-bold animate-pulse');
-                          addLog(`ЗАФИКСИРОВАН SFP ПАТТЕРН (5M)`, true);
-                          addLog(`СЛОМ СТРУКТУРЫ ПОДТВЕРЖДЕН`, true);
+                          addLog(`ЗАФИКСИРОВАН СИЛЬНЫЙ ПАТТЕРН SFP (5M)`, true);
+                          addLog(`УСЛОВИЯ СКОРРИНГА ВЫПОЛНЕНЫ`, true);
 
-                          await speak(`Внимание. Зафиксировано снятие ликвидности на пятиминутном таймфрейме. Слом структуры подтвержден. Подготовьте Биткоин. Время экспирации пять минут. Направление на ${directionText}.`);
+                          await speak(`Внимание. Успешно подтверждено снятие ликвидности. Подготовьте Биткоин. Время экспирации пять минут. Направление на ${directionText}.`);
 
                           for(let w=6; w>0; w--) {
                               if (!engineActive.current) break;
@@ -1538,7 +1511,7 @@
                               playSound('loss');
                               statsRef.current.losses++;
                               
-                              let lossText = `Минус. Рынок совершил ложный маневр.`;
+                              let lossText = `Минус. Ложный пробой.`;
                               
                               if (!wasReinforced) {
                                   strategyMode.current = 'REINFORCED';
@@ -1724,9 +1697,6 @@
                     <span className={`inline-block sm:hidden ml-2 px-1.5 py-0.5 rounded text-white ${strategyModeUI === 'NORMAL' ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`}>
                         {strategyModeUI}
                     </span>
-                    <span className={`hidden sm:inline-block px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 shadow-sm ${marketRegimeUI.color}`}>
-                        {marketRegimeUI.label}
-                    </span>
                   </div>
                 </div>
                 <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-1 md:gap-1.5">
@@ -1827,7 +1797,7 @@
                     <div className="grid grid-cols-4 gap-2 glass-card rounded-2xl p-2 shrink-0 border-white bg-white/80">
                        <Speedometer value={metrics.structure} label="СТРУКТУРА" colorHex="#d97706" />
                        <Speedometer value={metrics.liquidity} label="ЛИКВИДНОСТЬ" colorHex="#2563eb" glow={true} />
-                       <Speedometer value={metrics.filterLevel} label="АТР ФИЛЬТР" colorHex={strategyModeUI === 'REINFORCED' ? '#f43f5e' : '#6366f1'} />
+                       <Speedometer value={metrics.filterLevel} label="SCORE ПОРОГ" colorHex={strategyModeUI === 'REINFORCED' ? '#f43f5e' : '#6366f1'} />
                        <Speedometer value={metrics.smartMoney} label="SMART MONEY" colorHex="#06b6d4" />
                     </div>
 
