@@ -242,13 +242,13 @@
         const STRATEGY_CONFIG = {
             NORMAL: {
                 strictnessMult: 0.8,      // Базовый множитель ширины канала
-                trendAtrMultiplier: 3.5,  // Базовое отклонение тренда
+                trendAtrMultiplier: 2.0,  // Базовое отклонение тренда для слабых сигналов
                 requireStrongCandle: false // Обычные свечи допустимы
             },
             REINFORCED: {
                 strictnessMult: 1.3,      // Более строгий фильтр ширины (отсекает флэт)
-                trendAtrMultiplier: 2.2,  // Запрет входа против даже умеренного тренда
-                requireStrongCandle: true  // Тело подтверждающей свечи должно быть крупным
+                trendAtrMultiplier: 1.2,  // Очень строгая защита от тренда для слабых сигналов
+                requireStrongCandle: true  // ВСЕГДА требует сильное подтверждение
             }
         };
 
@@ -333,7 +333,7 @@
                     let response = await fetch(url);
                     if (response.ok) {
                         const data = await response.json();
-                        return data.map(d => ({
+                        const mapped = data.map(d => ({
                             time: d[0] / 1000,
                             open: parseFloat(d[1]),
                             high: parseFloat(d[2]),
@@ -341,6 +341,11 @@
                             close: parseFloat(d[4]),
                             volume: parseFloat(d[5])
                         }));
+                        
+                        // Строгая дедупликация и сортировка для детерминированного массива
+                        const unique = new Map();
+                        mapped.forEach(c => unique.set(c.time, c));
+                        return Array.from(unique.values()).sort((a, b) => a.time - b.time);
                     }
                 } catch(e) { continue; }
             }
@@ -416,81 +421,107 @@
             return res;
         }
 
-        // --- ЕДИНЫЙ БЛОК ЛОГИКИ SMC (Adaptive SFP Pattern) ---
-        function checkSMCSignal(currCandle, prevCandle, zones, cAtr, cSma, config, currentRegime) {
-            if (!zones || cAtr === undefined || cSma === undefined) return { isCall: false, isPut: false, rejectReason: null };
-            
+        // --- ЕДИНЫЙ БЛОК ЛОГИКИ SMC (Context-Aware SFP Engine) ---
+        function evaluateHistoricalSetup(currCandle, prevCandle, zones, cAtr, cSma, config, currentRegime, logCallback = null) {
+            if (!zones || cAtr === undefined || cSma === undefined) return { isCall: false, isPut: false };
+
             const cUpper = zones.upper;
             const cLower = zones.lower;
-            
+            const candleSize = currCandle.high - currCandle.low || 1; // Предотвращение деления на 0
+            const bodySize = Math.abs(currCandle.open - currCandle.close);
+            const topWick = currCandle.high - Math.max(currCandle.open, currCandle.close);
+            const bottomWick = Math.min(currCandle.open, currCandle.close) - currCandle.low;
+
+            // 1. Поиск базового паттерна Свипа (Sweep Candidate)
+            const sweptTop = currCandle.high > cUpper || prevCandle.high > cUpper;
+            const returnedInsideTop = currCandle.close < cUpper;
+            const putCandidate = sweptTop && returnedInsideTop;
+
+            const sweptBottom = currCandle.low < cLower || prevCandle.low < cLower;
+            const returnedInsideBottom = currCandle.close > cLower;
+            const callCandidate = sweptBottom && returnedInsideBottom;
+
+            // Если даже не коснулись ликвидности - сразу отбрасываем
+            if (!putCandidate && !callCandidate) return { isCall: false, isPut: false };
+
+            // 2. Вычисление силы свечи (Confirmation & Displacement)
+            const isBearishCandle = currCandle.close < currCandle.open;
+            const isBullishCandle = currCandle.close > currCandle.open;
+
+            // СИЛЬНЫЙ РАЗВОРОТ: либо огромная тень (отклонение цены), либо мощное тело (поглощение)
+            const strongPutRejection = isBearishCandle && (topWick > candleSize * 0.4 || bodySize > candleSize * 0.4);
+            const strongCallRejection = isBullishCandle && (bottomWick > candleSize * 0.4 || bodySize > candleSize * 0.4);
+
+            // 3. Адаптивные пороги ширины канала (Regime-Aware Filtering)
             let callStrictness = config.strictnessMult;
             let putStrictness = config.strictnessMult;
-            let callAtrMult = config.trendAtrMultiplier;
-            let putAtrMult = config.trendAtrMultiplier;
 
-            // ADAPT STRATEGY BASED ON REGIME
             if (currentRegime.id === 'BULLISH') {
-                putStrictness *= 1.5; // Сложнее найти шорт
-                callStrictness *= 0.8; // Легче найти лонг
-                putAtrMult = 1.5;      // Жесткий блок шортов против локального роста
+                putStrictness *= 1.3;  // Шортить бычий рынок сложнее (нужен шире канал)
+                callStrictness *= 0.8; // Лонговать по тренду проще
             } else if (currentRegime.id === 'BEARISH') {
-                callStrictness *= 1.5; 
+                callStrictness *= 1.3; 
                 putStrictness *= 0.8; 
-                callAtrMult = 1.5;
             } else if (currentRegime.id === 'SIDEWAYS') {
-                callStrictness *= 1.25;
-                putStrictness *= 1.25;
+                callStrictness *= 1.1; // Во флэте повышаем защиту от шума
+                putStrictness *= 1.1;
             } else if (currentRegime.id.includes('WEAKENING')) {
-                // В переходных фазах требуем максимального подтверждения
-                callStrictness *= 1.4;
-                putStrictness *= 1.4;
+                callStrictness *= 1.2;
+                putStrictness *= 1.2;
             }
 
-            // Фильтр тренда (адаптивный)
-            const trendIsStrongBull = (currCandle.close - cSma) > (cAtr * callAtrMult);
-            const trendIsStrongBear = (cSma - currCandle.close) > (cAtr * putAtrMult);
-
             const rangeWidth = cUpper - cLower;
-            // Фильтр ширины канала (адаптивный)
-            const isCallRangeValid = rangeWidth > (cAtr * Math.max(0.6, callStrictness * 0.7));
-            const isPutRangeValid = rangeWidth > (cAtr * Math.max(0.6, putStrictness * 0.7));
+            const isCallRangeValid = rangeWidth > (cAtr * Math.max(0.5, callStrictness * 0.7));
+            const isPutRangeValid = rangeWidth > (cAtr * Math.max(0.5, putStrictness * 0.7));
+
+            // 4. Контекстно-зависимый фильтр тренда (Context-Aware Trend Filter)
+            const distFromSma = currCandle.close - cSma;
+            const atrDist = distFromSma / cAtr;
+
+            // Динамический порог: Базовый (напр. 2.0 ATR). Если есть СИЛЬНОЕ подтверждение - раздвигаем до 4.0 ATR
+            const maxPutCounterTrendAtr = strongPutRejection ? 4.0 : config.trendAtrMultiplier; 
+            const maxCallCounterTrendAtr = strongCallRejection ? 4.0 : config.trendAtrMultiplier;
+
+            const trendBlocksPut = atrDist > maxPutCounterTrendAtr;   // Рост слишком сильный для шорта без мощного SFP
+            const trendBlocksCall = atrDist < -maxCallCounterTrendAtr; // Падение слишком сильное для лонга без мощного SFP
 
             let isCall = false;
             let isPut = false;
-            let rejectReason = null;
 
-            // PUT: Sweep (снятие пула) сверху
-            const sweptTop = currCandle.high > cUpper || prevCandle.high > cUpper;
-            const returnedInsideTop = currCandle.close < cUpper;
-            const isBearishCandle = currCandle.close < currCandle.open;
-            // Проверка на сильное медвежье тело свечи (> 40% от длины свечи) для усиленного режима
-            const strongBearishBody = (currCandle.open - currCandle.close) > (currCandle.high - currCandle.low) * 0.4;
-
-            if (sweptTop && returnedInsideTop) {
-                if (!isBearishCandle) rejectReason = "Свеча не медвежья";
-                else if (!isPutRangeValid) rejectReason = "Узкий канал (Адаптивный фильтр)";
-                else if (trendIsStrongBull) rejectReason = "Сильный контртренд";
-                else if (config.requireStrongCandle && !strongBearishBody) rejectReason = "Слабое тело свечи (REINFORCED)";
-                else if (currentRegime.id === 'BULLISH') rejectReason = "Шорт заблокирован (BULLISH РЕЖИМ)";
-                else isPut = true;
+            // 5. Итоговая оценка и Детерминированное Логирование
+            if (putCandidate) {
+                let reason = null;
+                if (!isBearishCandle) reason = "Отсутствует медвежье подтверждение (свеча зеленая)";
+                else if (!isPutRangeValid) reason = `Узкий канал (${(rangeWidth/cAtr).toFixed(1)} < ${(putStrictness*0.7).toFixed(1)} ATR)`;
+                else if (config.requireStrongCandle && !strongPutRejection) reason = `Слабое подтверждение (нет длинной тени или крупного тела)`;
+                else if (trendBlocksPut) reason = `Блок по тренду (Отклонение +${atrDist.toFixed(1)} ATR > лимит ${maxPutCounterTrendAtr})`;
+                else if (currentRegime.id === 'BULLISH' && !strongPutRejection) reason = "Контртренд в BULLISH режиме требует ИДЕАЛЬНОГО подтверждения";
+                
+                if (reason) {
+                    if (logCallback) logCallback(currCandle.time, 'PUT', 'ОТКЛОНЁН', `[SFP: ${strongPutRejection ? 'Strong' : 'Weak'}] ${reason}`, currentRegime.id);
+                } else {
+                    isPut = true;
+                    if (logCallback) logCallback(currCandle.time, 'PUT', 'ПРИНЯТ', `[SFP: ${strongPutRejection ? 'Strong' : 'Weak'}] Сигнал подтвержден`, currentRegime.id);
+                }
             }
-            
-            // CALL: Sweep (снятие пула) снизу
-            const sweptBottom = currCandle.low < cLower || prevCandle.low < cLower;
-            const returnedInsideBottom = currCandle.close > cLower;
-            const isBullishCandle = currCandle.close > currCandle.open;
-            const strongBullishBody = (currCandle.close - currCandle.open) > (currCandle.high - currCandle.low) * 0.4;
 
-            if (sweptBottom && returnedInsideBottom && !isPut) {
-                if (!isBullishCandle) rejectReason = "Свеча не бычья";
-                else if (!isCallRangeValid) rejectReason = "Узкий канал (Адаптивный фильтр)";
-                else if (trendIsStrongBear) rejectReason = "Сильный контртренд";
-                else if (config.requireStrongCandle && !strongBullishBody) rejectReason = "Слабое тело свечи (REINFORCED)";
-                else if (currentRegime.id === 'BEARISH') rejectReason = "Лонг заблокирован (BEARISH РЕЖИМ)";
-                else isCall = true;
+            if (callCandidate && !isPut) {
+                let reason = null;
+                if (!isBullishCandle) reason = "Отсутствует бычье подтверждение (свеча красная)";
+                else if (!isCallRangeValid) reason = `Узкий канал (${(rangeWidth/cAtr).toFixed(1)} < ${(callStrictness*0.7).toFixed(1)} ATR)`;
+                else if (config.requireStrongCandle && !strongCallRejection) reason = `Слабое подтверждение (нет длинной тени или крупного тела)`;
+                else if (trendBlocksCall) reason = `Блок по тренду (Отклонение ${atrDist.toFixed(1)} ATR < лимит -${maxCallCounterTrendAtr})`;
+                else if (currentRegime.id === 'BEARISH' && !strongCallRejection) reason = "Контртренд в BEARISH режиме требует ИДЕАЛЬНОГО подтверждения";
+                
+                if (reason) {
+                    if (logCallback) logCallback(currCandle.time, 'CALL', 'ОТКЛОНЁН', `[SFP: ${strongCallRejection ? 'Strong' : 'Weak'}] ${reason}`, currentRegime.id);
+                } else {
+                    isCall = true;
+                    if (logCallback) logCallback(currCandle.time, 'CALL', 'ПРИНЯТ', `[SFP: ${strongCallRejection ? 'Strong' : 'Weak'}] Сигнал подтвержден`, currentRegime.id);
+                }
             }
-            
-            return { isCall, isPut, rejectReason };
+
+            return { isCall, isPut };
         }
 
 
@@ -1024,7 +1055,7 @@
             const curAsset = ASSETS[0];
             let initialData;
             try {
-                // Запрашиваем 200 свечей по 5 минут (~16.6 часов)
+                // Запрашиваем свечи (дедупликация и сортировка в ScannerAPI)
                 initialData = await ScannerAPI.getCandles(curAsset.symbol, 200, '5m');
             } catch (err) {
                 addLog("ОШИБКА: " + err.message, true);
@@ -1053,45 +1084,61 @@
                 let historicalWins = 0;
                 let historicalLosses = 0;
 
-                const startIdx = initialData.length - 144;
-                const endIdx = initialData.length - 2;
+                // ДЕТЕРМИНИРОВАННАЯ ЛОГИКА БЭКТЕСТА (без Look-Ahead Bias)
+                // Оцениваем сигналы только до length - 3, чтобы экспирация (length - 2) была на 100% ЗАКРЫТОЙ свече.
+                const maxEvalIdx = initialData.length - 3;
+                const startEvalIdx = Math.max(15, maxEvalIdx - 144 + 1); // Строго последние 144 закрытые свечи
 
                 strategyMode.current = 'NORMAL';
-                setStrategyModeUI('NORMAL');
+                let simStrategyMode = 'NORMAL';
+                let simRegimeId = 'SIDEWAYS';
+                let simRegimeCounter = 0;
+                let simPendingRegime = null;
 
-                for (let idx = startIdx; idx <= endIdx; idx++) {
+                console.log("=== ЗАПУСК ДИАГНОСТИКИ БЭКТЕСТА ЗА 12 ЧАСОВ ===");
+
+                for (let idx = startEvalIdx; idx <= maxEvalIdx; idx++) {
                     const currTime = initialData[idx].time;
                     const currCandle = initialData[idx];
                     const prevCandle = initialData[idx - 1];
                     
-                    // Бэктест рыночного режима (сглаживание через hysteresis)
-                    const regimeInfo = detectMarketRegime(initialData, sma50, atrSeries, idx - 1);
-                    if (regimeInfo.regime.id !== activeRegimeId) {
-                        if (pendingRegime === regimeInfo.regime.id) {
-                            regimeCounter++;
-                            if (regimeCounter >= 2) {
-                                activeRegimeId = pendingRegime;
-                                setMarketRegimeUI(REGIMES[activeRegimeId]);
-                                regimeCounter = 0;
+                    // Определение режима строго на закрытой свече idx
+                    const regimeInfo = detectMarketRegime(initialData, sma50, atrSeries, idx);
+                    if (regimeInfo.regime.id !== simRegimeId) {
+                        if (simPendingRegime === regimeInfo.regime.id) {
+                            simRegimeCounter++;
+                            if (simRegimeCounter >= 2) {
+                                simRegimeId = simPendingRegime;
+                                simRegimeCounter = 0;
                             }
                         } else {
-                            pendingRegime = regimeInfo.regime.id;
-                            regimeCounter = 1;
+                            simPendingRegime = regimeInfo.regime.id;
+                            simRegimeCounter = 1;
                         }
                     } else {
-                        regimeCounter = 0;
-                        pendingRegime = null;
+                        simRegimeCounter = 0;
+                        simPendingRegime = null;
                     }
 
                     const zones = liqMap.get(currTime);
                     const cAtr = atrMap.get(currTime);
                     const cSma = smaMap.get(currTime);
 
-                    const { isCall, isPut } = checkSMCSignal(currCandle, prevCandle, zones, cAtr, cSma, STRATEGY_CONFIG[strategyMode.current], REGIMES[activeRegimeId]);
+                    // Логгер для записи потенциальных сетапов в консоль F12
+                    const backtestLogger = (t, dir, status, reason, regimeId) => {
+                        const dateStr = new Date(t * 1000).toLocaleTimeString('ru-RU');
+                        console.log(`[BACKTEST] ${dateStr} | ${dir} | ${regimeId} | ${status} | ${reason}`);
+                    };
+
+                    const { isCall, isPut } = evaluateHistoricalSetup(
+                        currCandle, prevCandle, zones, cAtr, cSma, 
+                        STRATEGY_CONFIG[simStrategyMode], REGIMES[simRegimeId], 
+                        backtestLogger
+                    );
 
                     if (isCall || isPut) {
                         const entryPrice = currCandle.close;
-                        const exitPrice = initialData[idx + 1].close; 
+                        const exitPrice = initialData[idx + 1].close; // Экспирация на гарантированно ЗАКРЫТОЙ свече
                         let isWin = false;
 
                         if ((isCall && exitPrice > entryPrice) || (isPut && exitPrice < entryPrice) || exitPrice === entryPrice) {
@@ -1109,15 +1156,15 @@
 
                         if (isWin) {
                             historicalWins++;
-                            strategyMode.current = 'NORMAL';
-                            setStrategyModeUI('NORMAL');
+                            simStrategyMode = 'NORMAL';
                         } else {
                             historicalLosses++;
-                            strategyMode.current = 'REINFORCED';
-                            setStrategyModeUI('REINFORCED');
+                            simStrategyMode = 'REINFORCED';
                         }
                     }
                 }
+                
+                console.log("=== БЭКТЕСТ ЗАВЕРШЕН ===");
 
                 const total = historicalWins + historicalLosses;
                 const wr = total > 0 ? Math.round((historicalWins / total) * 100) : 0;
@@ -1126,8 +1173,19 @@
                 statsRef.current.losses = historicalLosses;
                 setTradeStats({ wins: historicalWins, losses: historicalLosses, winRate: wr });
 
+                // Перенос состояния из симуляции в LIVE
+                strategyMode.current = simStrategyMode;
+                setStrategyModeUI(simStrategyMode);
+                activeRegimeId = simRegimeId;
+                pendingRegime = simPendingRegime;
+                regimeCounter = simRegimeCounter;
+                setMarketRegimeUI(REGIMES[activeRegimeId]);
+                
+                // Инициализируем lastEvaluatedTime временем последней закрытой свечи перед лайв-циклом
+                lastEvaluatedTime = initialData[initialData.length - 2].time; 
+
                 if (total > 0) {
-                    addLog(`БЭКТЕСТ ЗА 12H ЗАВЕРШЕН: НАЙДЕНО ПАТТЕРНОВ ${total}, ВИНРЕЙТ ${wr}%`, true);
+                    addLog(`БЭКТЕСТ (ДЕТЕРМИНИРОВАННЫЙ): НАЙДЕНО ПАТТЕРНОВ ${total}, ВИНРЕЙТ ${wr}%`, true);
                 } else {
                     addLog(`БЭКТЕСТ ЗА 12H: SFP ПАТТЕРНЫ НЕ НАЙДЕНЫ.`, true);
                 }
@@ -1195,6 +1253,7 @@
                       setSparklines(prev => ({...prev, [cur.symbol]: data}));
 
                       const lastIdx = data.length - 1;
+                      const closedIdx = lastIdx - 1; // Анализируем только полностью закрытые свечи
                       currentPrice.current = data[lastIdx].close; 
 
                       const liqZones = calcLiquidityZones(data, 15); 
@@ -1208,14 +1267,19 @@
                       const upperData = liqZones.map(i => ({time: i.time, value: i.upper}));
                       const lowerData = liqZones.map(i => ({time: i.time, value: i.lower}));
 
-                      // ОЦЕНКА РЫНОЧНОГО РЕЖИМА В ЛАЙВЕ (С ГИСТЕРЕЗИСОМ НА ЗАКРЫТЫХ СВЕЧАХ)
-                      const currentClosedTime = data[lastIdx - 1].time;
+                      // ОЦЕНКА И СИГНАЛЫ СТРОГО В МОМЕНТ ЗАКРЫТИЯ СВЕЧИ (Без Repaint)
+                      const currentClosedTime = data[closedIdx].time;
+                      
+                      let isCall = false;
+                      let isPut = false;
+                      let triggerCandleIdx = closedIdx;
+
                       if (currentClosedTime !== lastEvaluatedTime) {
-                          const regimeInfo = detectMarketRegime(data, sma50, atrSeries, lastIdx - 1);
+                          const regimeInfo = detectMarketRegime(data, sma50, atrSeries, closedIdx);
                           if (regimeInfo.regime.id !== activeRegimeId) {
                               if (pendingRegime === regimeInfo.regime.id) {
                                   regimeCounter++;
-                                  if (regimeCounter >= 2) { // Требуем подтверждения в течение 2 свечей (10 мин)
+                                  if (regimeCounter >= 2) { 
                                       activeRegimeId = pendingRegime;
                                       setMarketRegimeUI(REGIMES[activeRegimeId]);
                                       addLog(`[РЕЖИМ РЫНКА ИЗМЕНЕН]: ${REGIMES[activeRegimeId].label} (${Math.round(regimeInfo.confidence*100)}%)`, true);
@@ -1231,46 +1295,40 @@
                               pendingRegime = null;
                           }
                           lastEvaluatedTime = currentClosedTime;
-                      }
 
-                      let isCall = false;
-                      let isPut = false;
-                      let triggerCandleIdx = lastIdx;
-
-                      // Проверяем только текущую формирующуюся и одну закрытую (самую свежую) свечу, чтобы сигналы были моментальными
-                      for (let j = 0; j <= 1; j++) {
-                          const idx = lastIdx - j;
-                          if (idx < 150) continue; 
-
-                          const currTime = data[idx].time;
-                          const currCandle = data[idx];
-                          const prevCandle = data[idx - 1];
+                          const currCandle = data[closedIdx];
+                          const prevCandle = data[closedIdx - 1];
+                          const currTime = currCandle.time;
                           
                           const zones = liqMap.get(currTime);
                           const cAtr = atrMap.get(currTime);
                           const cSma = smaMap.get(currTime);
                           
-                          const { isCall: callSignal, isPut: putSignal, rejectReason } = checkSMCSignal(currCandle, prevCandle, zones, cAtr, cSma, STRATEGY_CONFIG[strategyMode.current], REGIMES[activeRegimeId]);
-
-                          // Логирование причины отклонения сигнала
-                          if (!callSignal && !putSignal && rejectReason && currTime !== lastLoggedRejectTime) {
-                              if (rejectReason.includes('РЕЖИМ') || rejectReason.includes('REINFORCED') || rejectReason.includes('Блокирован')) {
-                                  addLog(`ПРОПУСК: ${rejectReason}`, true);
-                                  lastLoggedRejectTime = currTime;
+                          // Лайв-логгер для вывода отклоненных сигналов в интерфейс
+                          const liveLogger = (t, dir, status, reason, regimeId) => {
+                              if (status === 'ОТКЛОНЁН' && t !== lastLoggedRejectTime) {
+                                  if (reason.includes('Режим') || reason.includes('канал') || reason.includes('Блок по тренду') || reason.includes('Слабое') || reason.includes('Контртренд')) {
+                                      addLog(`ПРОПУСК (${dir}): ${reason}`, true);
+                                      lastLoggedRejectTime = t;
+                                  }
                               }
-                          }
+                          };
 
-                          if (putSignal && currTime !== lastCancelledTime) {
-                              isPut = true; triggerCandleIdx = idx; break;
-                          }
-                          if (callSignal && currTime !== lastCancelledTime) {
-                              isCall = true; triggerCandleIdx = idx; break;
+                          const { isCall: callSignal, isPut: putSignal } = evaluateHistoricalSetup(
+                              currCandle, prevCandle, zones, cAtr, cSma, 
+                              STRATEGY_CONFIG[strategyMode.current], REGIMES[activeRegimeId], 
+                              liveLogger
+                          );
+
+                          if ((callSignal || putSignal) && currTime !== lastCancelledTime) {
+                              signalFound = true;
+                              isCall = callSignal;
+                              isPut = putSignal;
+                              triggerCandleIdx = closedIdx;
                           }
                       }
 
-                      if (isCall || isPut) {
-                          signalFound = true;
-                          
+                      if (signalFound) {
                           setAsset(cur);
                           setViewMode('DETAIL');
                           
