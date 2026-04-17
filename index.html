@@ -238,6 +238,87 @@
           "Маркетмейкер собирает стопы розничных трейдеров перед разворотом."
         ];
 
+        // --- ADAPTIVE STRATEGY CONFIGURATION ---
+        const STRATEGY_CONFIG = {
+            NORMAL: {
+                strictnessMult: 0.8,      // Базовый множитель ширины канала
+                trendAtrMultiplier: 3.5,  // Базовое отклонение тренда
+                requireStrongCandle: false // Обычные свечи допустимы
+            },
+            REINFORCED: {
+                strictnessMult: 1.3,      // Более строгий фильтр ширины (отсекает флэт)
+                trendAtrMultiplier: 2.2,  // Запрет входа против даже умеренного тренда
+                requireStrongCandle: true  // Тело подтверждающей свечи должно быть крупным
+            }
+        };
+
+        // --- MARKET REGIME ENGINE ---
+        const REGIMES = {
+            BULLISH: { id: 'BULLISH', label: 'БЫЧИЙ ТРЕНД', color: 'text-emerald-500' },
+            BEARISH: { id: 'BEARISH', label: 'МЕДВЕЖИЙ ТРЕНД', color: 'text-rose-500' },
+            SIDEWAYS: { id: 'SIDEWAYS', label: 'БОКОВИК (ФЛЭТ)', color: 'text-slate-400' },
+            WEAKENING_BULLISH: { id: 'WEAKENING_BULLISH', label: 'ЗАТУХАНИЕ (БЫКИ)', color: 'text-amber-500' },
+            WEAKENING_BEARISH: { id: 'WEAKENING_BEARISH', label: 'ЗАТУХАНИЕ (МЕДВЕДИ)', color: 'text-amber-500' },
+        };
+
+        function detectMarketRegime(data, smaArr, atrArr, idx) {
+            if (idx < 15 || !data || !smaArr || !atrArr) return { regime: REGIMES.SIDEWAYS, confidence: 0, explanation: "Синхронизация..." };
+            if (!data[idx] || !smaArr[idx] || !atrArr[idx] || !data[idx - 10] || !smaArr[idx - 10] || !atrArr[idx - 10]) {
+                 return { regime: REGIMES.SIDEWAYS, confidence: 0, explanation: "Ожидание скользящих средних..." };
+            }
+            
+            const currCandle = data[idx];
+            const currSma = smaArr[idx].value;
+            const currAtr = atrArr[idx].value;
+            
+            const pastCandle10 = data[idx - 10];
+            const pastSma10 = smaArr[idx - 10].value;
+            const pastAtr10 = atrArr[idx - 10].value;
+
+            if(!currSma || !pastSma10) return { regime: REGIMES.SIDEWAYS, confidence: 0, explanation: "Ожидание скользящих средних..." };
+
+            const distToSma = currCandle.close - currSma;
+            const distInAtr = distToSma / currAtr;
+
+            // Наклон тренда за последние 50 минут (10 свечей 5M)
+            const smaSlope = (currSma - pastSma10) / currAtr;
+            // Локальный импульс цены
+            const priceChange = (currCandle.close - pastCandle10.close) / currAtr;
+
+            let regime = REGIMES.SIDEWAYS;
+            let confidence = 0;
+            let explanation = "Рынок находится в боковике. Цена колеблется около средних значений.";
+
+            if (distInAtr > 1.2 && smaSlope > 0.25) {
+                if (priceChange < -0.8) {
+                    regime = REGIMES.WEAKENING_BULLISH;
+                    confidence = 0.7;
+                    explanation = "Бычий импульс ослабевает. Возможен переход в диапазон или коррекция.";
+                } else {
+                    regime = REGIMES.BULLISH;
+                    confidence = Math.min(0.99, 0.5 + (distInAtr * 0.1) + (smaSlope * 0.2));
+                    explanation = "Обнаружен устойчивый бычий режим. Приоритет лонг-позициям.";
+                }
+            } else if (distInAtr < -1.2 && smaSlope < -0.25) {
+                if (priceChange > 0.8) {
+                    regime = REGIMES.WEAKENING_BEARISH;
+                    confidence = 0.7;
+                    explanation = "Медвежий импульс ослабевает. Признаки торможения продавцов.";
+                } else {
+                    regime = REGIMES.BEARISH;
+                    confidence = Math.min(0.99, 0.5 + (Math.abs(distInAtr) * 0.1) + (Math.abs(smaSlope) * 0.2));
+                    explanation = "Обнаружен устойчивый медвежий режим. Приоритет шорт-позициям.";
+                }
+            } else {
+                confidence = Math.max(0.1, 1 - Math.abs(distInAtr));
+                if (currAtr > pastAtr10 * 1.4) {
+                    explanation = "Боковик расширяется. Зафиксирован выход из компрессии.";
+                }
+            }
+
+            return { regime, confidence, explanation };
+        }
+
         const ScannerAPI = {
           async getCandles(symbol, count = 250, interval = '5m') { 
             const urls = [
@@ -292,7 +373,6 @@
             return res;
         }
 
-        // Уменьшаем период до 15 (75 минут на 5M), чтобы зоны ликвидности быстрее реагировали на локальные экстремумы
         function calcLiquidityZones(data, period = 15) {
             let res = [];
             for (let i = 0; i < data.length; i++) {
@@ -336,43 +416,81 @@
             return res;
         }
 
-        // --- ЕДИНЫЙ БЛОК ЛОГИКИ SMC (SFP Pattern) ---
-        function checkSMCSignal(currCandle, prevCandle, zones, cAtr, cSma, strictnessMult) {
-            if (!zones || cAtr === undefined || cSma === undefined) return { isCall: false, isPut: false };
+        // --- ЕДИНЫЙ БЛОК ЛОГИКИ SMC (Adaptive SFP Pattern) ---
+        function checkSMCSignal(currCandle, prevCandle, zones, cAtr, cSma, config, currentRegime) {
+            if (!zones || cAtr === undefined || cSma === undefined) return { isCall: false, isPut: false, rejectReason: null };
             
             const cUpper = zones.upper;
             const cLower = zones.lower;
             
-            // ОСЛАБЛЕННЫЙ ФИЛЬТР ТРЕНДА: Блокируем только аномальные макро-тренды (> 3.5 ATR от SMA)
-            const trendIsStrongBull = (currCandle.close - cSma) > (cAtr * 3.5);
-            const trendIsStrongBear = (cSma - currCandle.close) > (cAtr * 3.5);
+            let callStrictness = config.strictnessMult;
+            let putStrictness = config.strictnessMult;
+            let callAtrMult = config.trendAtrMultiplier;
+            let putAtrMult = config.trendAtrMultiplier;
+
+            // ADAPT STRATEGY BASED ON REGIME
+            if (currentRegime.id === 'BULLISH') {
+                putStrictness *= 1.5; // Сложнее найти шорт
+                callStrictness *= 0.8; // Легче найти лонг
+                putAtrMult = 1.5;      // Жесткий блок шортов против локального роста
+            } else if (currentRegime.id === 'BEARISH') {
+                callStrictness *= 1.5; 
+                putStrictness *= 0.8; 
+                callAtrMult = 1.5;
+            } else if (currentRegime.id === 'SIDEWAYS') {
+                callStrictness *= 1.25;
+                putStrictness *= 1.25;
+            } else if (currentRegime.id.includes('WEAKENING')) {
+                // В переходных фазах требуем максимального подтверждения
+                callStrictness *= 1.4;
+                putStrictness *= 1.4;
+            }
+
+            // Фильтр тренда (адаптивный)
+            const trendIsStrongBull = (currCandle.close - cSma) > (cAtr * callAtrMult);
+            const trendIsStrongBear = (cSma - currCandle.close) > (cAtr * putAtrMult);
 
             const rangeWidth = cUpper - cLower;
-            // Смягченный фильтр ширины канала
-            const isRangeValid = rangeWidth > (cAtr * Math.max(0.6, strictnessMult * 0.7));
+            // Фильтр ширины канала (адаптивный)
+            const isCallRangeValid = rangeWidth > (cAtr * Math.max(0.6, callStrictness * 0.7));
+            const isPutRangeValid = rangeWidth > (cAtr * Math.max(0.6, putStrictness * 0.7));
 
             let isCall = false;
             let isPut = false;
+            let rejectReason = null;
 
-            // PUT: Sweep (снятие пула) сверху (ликвидность покупателей)
+            // PUT: Sweep (снятие пула) сверху
             const sweptTop = currCandle.high > cUpper || prevCandle.high > cUpper;
             const returnedInsideTop = currCandle.close < cUpper;
             const isBearishCandle = currCandle.close < currCandle.open;
+            // Проверка на сильное медвежье тело свечи (> 40% от длины свечи) для усиленного режима
+            const strongBearishBody = (currCandle.open - currCandle.close) > (currCandle.high - currCandle.low) * 0.4;
 
-            if (sweptTop && returnedInsideTop && isBearishCandle && isRangeValid && !trendIsStrongBull) {
-                isPut = true;
+            if (sweptTop && returnedInsideTop) {
+                if (!isBearishCandle) rejectReason = "Свеча не медвежья";
+                else if (!isPutRangeValid) rejectReason = "Узкий канал (Адаптивный фильтр)";
+                else if (trendIsStrongBull) rejectReason = "Сильный контртренд";
+                else if (config.requireStrongCandle && !strongBearishBody) rejectReason = "Слабое тело свечи (REINFORCED)";
+                else if (currentRegime.id === 'BULLISH') rejectReason = "Шорт заблокирован (BULLISH РЕЖИМ)";
+                else isPut = true;
             }
             
-            // CALL: Sweep (снятие пула) снизу (ликвидность продавцов)
+            // CALL: Sweep (снятие пула) снизу
             const sweptBottom = currCandle.low < cLower || prevCandle.low < cLower;
             const returnedInsideBottom = currCandle.close > cLower;
             const isBullishCandle = currCandle.close > currCandle.open;
+            const strongBullishBody = (currCandle.close - currCandle.open) > (currCandle.high - currCandle.low) * 0.4;
 
-            if (sweptBottom && returnedInsideBottom && isBullishCandle && isRangeValid && !trendIsStrongBear) {
-                isCall = true;
+            if (sweptBottom && returnedInsideBottom && !isPut) {
+                if (!isBullishCandle) rejectReason = "Свеча не бычья";
+                else if (!isCallRangeValid) rejectReason = "Узкий канал (Адаптивный фильтр)";
+                else if (trendIsStrongBear) rejectReason = "Сильный контртренд";
+                else if (config.requireStrongCandle && !strongBullishBody) rejectReason = "Слабое тело свечи (REINFORCED)";
+                else if (currentRegime.id === 'BEARISH') rejectReason = "Лонг заблокирован (BEARISH РЕЖИМ)";
+                else isCall = true;
             }
             
-            return { isCall, isPut };
+            return { isCall, isPut, rejectReason };
         }
 
 
@@ -565,8 +683,10 @@
           const [countdown, setCountdown] = useState(null);
           const [logs, setLogs] = useState([]);
           const [currentTF, setCurrentTF] = useState('5M');
+          const [strategyModeUI, setStrategyModeUI] = useState('NORMAL');
+          const [marketRegimeUI, setMarketRegimeUI] = useState(REGIMES.SIDEWAYS);
           
-          const [metrics, setMetrics] = useState({ structure: 50, liquidity: 50, filterLevel: 10, smartMoney: 0, buyPressure: 50 });
+          const [metrics, setMetrics] = useState({ structure: 50, liquidity: 50, filterLevel: 40, smartMoney: 0, buyPressure: 50 });
           const [newsHeadlines, setNewsHeadlines] = useState(["ОБНОВЛЕНИЕ ДАННЫХ BTC..."]);
           const [tradeStats, setTradeStats] = useState({ wins: 0, losses: 0, winRate: 0 });
           
@@ -582,8 +702,8 @@
           const engineActive = useRef(false);
           const currentPrice = useRef(null);
           const statsRef = useRef({ wins: 0, losses: 0 });
-          const filterStrictness = useRef(1.0); 
           const markersRef = useRef([]); 
+          const strategyMode = useRef('NORMAL'); // State Machine Reference
 
           const logsContainerRef = useRef(null); 
           const fullNewsPool = useRef([...FALLBACK_BTC_NEWS]);
@@ -735,7 +855,6 @@
             fallbackTimer = setTimeout(resolveOnce, Math.max(3000, text.length * 80)); 
           });
 
-          // Сортировка маркеров для предотвращения падения Lightweight Charts
           const safeSetMarkers = (markersArr) => {
               if (!candleSeries.current) return;
               try {
@@ -887,6 +1006,13 @@
             }
 
             let lastCancelledTime = 0;
+            let lastLoggedRejectTime = 0;
+            
+            // Market Regime State Machine Variables
+            let activeRegimeId = 'SIDEWAYS';
+            let regimeCounter = 0;
+            let pendingRegime = null;
+            let lastEvaluatedTime = 0;
 
             await speak('Институциональный алгоритм активирован. Запущен анализ пулов ликвидности Smart Money на 5-минутном таймфрейме за последние 12 часов.');
             await new Promise(r => setTimeout(r, 500)); 
@@ -927,25 +1053,44 @@
                 let historicalWins = 0;
                 let historicalLosses = 0;
 
-                // Базовый множитель истории
-                const historyStrictness = 0.8;
                 const startIdx = initialData.length - 144;
                 const endIdx = initialData.length - 2;
+
+                strategyMode.current = 'NORMAL';
+                setStrategyModeUI('NORMAL');
 
                 for (let idx = startIdx; idx <= endIdx; idx++) {
                     const currTime = initialData[idx].time;
                     const currCandle = initialData[idx];
                     const prevCandle = initialData[idx - 1];
                     
+                    // Бэктест рыночного режима (сглаживание через hysteresis)
+                    const regimeInfo = detectMarketRegime(initialData, sma50, atrSeries, idx - 1);
+                    if (regimeInfo.regime.id !== activeRegimeId) {
+                        if (pendingRegime === regimeInfo.regime.id) {
+                            regimeCounter++;
+                            if (regimeCounter >= 2) {
+                                activeRegimeId = pendingRegime;
+                                setMarketRegimeUI(REGIMES[activeRegimeId]);
+                                regimeCounter = 0;
+                            }
+                        } else {
+                            pendingRegime = regimeInfo.regime.id;
+                            regimeCounter = 1;
+                        }
+                    } else {
+                        regimeCounter = 0;
+                        pendingRegime = null;
+                    }
+
                     const zones = liqMap.get(currTime);
                     const cAtr = atrMap.get(currTime);
                     const cSma = smaMap.get(currTime);
 
-                    const { isCall, isPut } = checkSMCSignal(currCandle, prevCandle, zones, cAtr, cSma, 0.8 * historyStrictness);
+                    const { isCall, isPut } = checkSMCSignal(currCandle, prevCandle, zones, cAtr, cSma, STRATEGY_CONFIG[strategyMode.current], REGIMES[activeRegimeId]);
 
                     if (isCall || isPut) {
                         const entryPrice = currCandle.close;
-                        // Экспирация 5М = ровно 1 следующая свеча 5M
                         const exitPrice = initialData[idx + 1].close; 
                         let isWin = false;
 
@@ -962,8 +1107,15 @@
                             size: 1
                         });
 
-                        if (isWin) historicalWins++;
-                        else historicalLosses++;
+                        if (isWin) {
+                            historicalWins++;
+                            strategyMode.current = 'NORMAL';
+                            setStrategyModeUI('NORMAL');
+                        } else {
+                            historicalLosses++;
+                            strategyMode.current = 'REINFORCED';
+                            setStrategyModeUI('REINFORCED');
+                        }
                     }
                 }
 
@@ -975,9 +1127,7 @@
                 setTradeStats({ wins: historicalWins, losses: historicalLosses, winRate: wr });
 
                 if (total > 0) {
-                    addLog(`БЭКТЕСТ ЗА 12H ЗАВЕРШЕН: НАЙДЕНО SFP ПАТТЕРНОВ ${total}, ВИНРЕЙТ ${wr}%`, true);
-                    if (wr >= 60) filterStrictness.current = 1.0;
-                    else filterStrictness.current = 1.5;
+                    addLog(`БЭКТЕСТ ЗА 12H ЗАВЕРШЕН: НАЙДЕНО ПАТТЕРНОВ ${total}, ВИНРЕЙТ ${wr}%`, true);
                 } else {
                     addLog(`БЭКТЕСТ ЗА 12H: SFP ПАТТЕРНЫ НЕ НАЙДЕНЫ.`, true);
                 }
@@ -1030,7 +1180,7 @@
                   setSignal(null);
                   setCurrentTF('5M');
                   
-                  setMetrics(prev => ({ ...prev, filterLevel: filterStrictness.current * 10, smartMoney: 15 }));
+                  setMetrics(prev => ({ ...prev, filterLevel: strategyMode.current === 'NORMAL' ? 40 : 85, smartMoney: 15 }));
 
                   let signalFound = false;
 
@@ -1058,6 +1208,31 @@
                       const upperData = liqZones.map(i => ({time: i.time, value: i.upper}));
                       const lowerData = liqZones.map(i => ({time: i.time, value: i.lower}));
 
+                      // ОЦЕНКА РЫНОЧНОГО РЕЖИМА В ЛАЙВЕ (С ГИСТЕРЕЗИСОМ НА ЗАКРЫТЫХ СВЕЧАХ)
+                      const currentClosedTime = data[lastIdx - 1].time;
+                      if (currentClosedTime !== lastEvaluatedTime) {
+                          const regimeInfo = detectMarketRegime(data, sma50, atrSeries, lastIdx - 1);
+                          if (regimeInfo.regime.id !== activeRegimeId) {
+                              if (pendingRegime === regimeInfo.regime.id) {
+                                  regimeCounter++;
+                                  if (regimeCounter >= 2) { // Требуем подтверждения в течение 2 свечей (10 мин)
+                                      activeRegimeId = pendingRegime;
+                                      setMarketRegimeUI(REGIMES[activeRegimeId]);
+                                      addLog(`[РЕЖИМ РЫНКА ИЗМЕНЕН]: ${REGIMES[activeRegimeId].label} (${Math.round(regimeInfo.confidence*100)}%)`, true);
+                                      speak(regimeInfo.explanation).catch(()=>null);
+                                      regimeCounter = 0;
+                                  }
+                              } else {
+                                  pendingRegime = regimeInfo.regime.id;
+                                  regimeCounter = 1;
+                              }
+                          } else {
+                              regimeCounter = 0;
+                              pendingRegime = null;
+                          }
+                          lastEvaluatedTime = currentClosedTime;
+                      }
+
                       let isCall = false;
                       let isPut = false;
                       let triggerCandleIdx = lastIdx;
@@ -1075,7 +1250,15 @@
                           const cAtr = atrMap.get(currTime);
                           const cSma = smaMap.get(currTime);
                           
-                          const { isCall: callSignal, isPut: putSignal } = checkSMCSignal(currCandle, prevCandle, zones, cAtr, cSma, 0.8 * filterStrictness.current);
+                          const { isCall: callSignal, isPut: putSignal, rejectReason } = checkSMCSignal(currCandle, prevCandle, zones, cAtr, cSma, STRATEGY_CONFIG[strategyMode.current], REGIMES[activeRegimeId]);
+
+                          // Логирование причины отклонения сигнала
+                          if (!callSignal && !putSignal && rejectReason && currTime !== lastLoggedRejectTime) {
+                              if (rejectReason.includes('РЕЖИМ') || rejectReason.includes('REINFORCED') || rejectReason.includes('Блокирован')) {
+                                  addLog(`ПРОПУСК: ${rejectReason}`, true);
+                                  lastLoggedRejectTime = currTime;
+                              }
+                          }
 
                           if (putSignal && currTime !== lastCancelledTime) {
                               isPut = true; triggerCandleIdx = idx; break;
@@ -1275,28 +1458,47 @@
                               }
                           }
 
+                          // Adaptive State Machine Evaluation
+                          const wasReinforced = strategyMode.current === 'REINFORCED';
+
                           if (isWin) {
-                            playSound('win');
-                            statsRef.current.wins++;
-                            filterStrictness.current = Math.max(1.0, filterStrictness.current - 0.2);
+                              playSound('win');
+                              statsRef.current.wins++;
+                              
+                              let winText = `Плюс. Сделка успешно завершена. Текущий винрейт: ${Math.round((statsRef.current.wins / (statsRef.current.wins + statsRef.current.losses)) * 100)} процентов.`;
+                              
+                              if (wasReinforced) {
+                                  strategyMode.current = 'NORMAL';
+                                  setStrategyModeUI('NORMAL');
+                                  addLog(`РЕЖИМ СТРАТЕГИИ: ВОЗВРАТ К NORMAL MODE`, true);
+                                  winText += " Усиленный режим отработал успешно. Возврат к базовой стратегии.";
+                              }
+                              
+                              addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
+                              await speak(winText);
                           } else {
-                            playSound('loss');
-                            statsRef.current.losses++;
-                            filterStrictness.current = Math.min(2.5, filterStrictness.current + 0.5);
-                            addLog(`ФИЛЬТРЫ ЛИКВИДНОСТИ УСИЛЕНЫ ДО ${filterStrictness.current.toFixed(1)}`, true);
+                              playSound('loss');
+                              statsRef.current.losses++;
+                              
+                              let lossText = `Минус. Рынок совершил ложный маневр.`;
+                              
+                              if (!wasReinforced) {
+                                  strategyMode.current = 'REINFORCED';
+                                  setStrategyModeUI('REINFORCED');
+                                  addLog(`РЕЖИМ СТРАТЕГИИ: АКТИВИРОВАН REINFORCED MODE`, true);
+                                  lossText += " Сигнал не подтвердился. Активирован усиленный режим анализа.";
+                              } else {
+                                  addLog(`РЕЖИМ СТРАТЕГИИ: СОХРАНЕН REINFORCED MODE`, true);
+                                  lossText += " Режим усиленного анализа сохранен.";
+                              }
+                              
+                              addLog(`РЕЗУЛЬТАТ: МИНУС (-).`);
+                              await speak(lossText);
                           }
 
                           const newTotal = statsRef.current.wins + statsRef.current.losses;
                           const newWinRate = Math.round((statsRef.current.wins / newTotal) * 100);
                           setTradeStats({ wins: statsRef.current.wins, losses: statsRef.current.losses, winRate: newWinRate });
-
-                          if (isWin) {
-                            addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
-                            await speak(`Плюс. Сделка успешно завершена. Текущий винрейт: ${newWinRate} процентов.`);
-                          } else {
-                            addLog(`РЕЗУЛЬТАТ: МИНУС (-).`);
-                            await speak(`Минус. Рынок совершил ложный маневр. Усиливаю фильтры ликвидности.`);
-                          }
 
                           setSignal(null);
                           setMetrics(prev => ({ ...prev, smartMoney: 0 }));
@@ -1451,13 +1653,22 @@
                       <h1 className="text-2xl md:text-3xl text-slate-900 leading-none font-bold flex items-center gap-2 oswald-font tracking-wider">
                         <Zap size={28} className="text-cyan-600 drop-shadow-[0_0_10px_rgba(6,182,212,0.4)]" /> 
                         ТЕРМИНАЛ <span className="text-gradient font-black hidden sm:inline">PRO MAX</span>
+                        <span className={`text-[10px] md:text-[11px] ml-2.5 px-2 py-0.5 rounded uppercase tracking-widest text-white shadow-sm align-middle hidden sm:inline-block ${strategyModeUI === 'NORMAL' ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse shadow-[0_0_10px_rgba(244,63,94,0.6)]'}`}>
+                          {strategyModeUI}
+                        </span>
                       </h1>
                       <div className="text-[10px] text-white px-3 py-1 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-lg flex items-center shadow-[0_0_15px_rgba(14,165,233,0.3)] oswald-font tracking-widest block md:hidden font-bold">
                         {appPhase}
                       </div>
                   </div>
-                  <div className="text-[9px] md:text-xs text-slate-500 tracking-[0.2em] mt-1 font-bold leading-none uppercase">
+                  <div className="text-[9px] md:text-xs text-slate-500 tracking-[0.2em] mt-1 font-bold leading-none uppercase flex items-center flex-wrap gap-2">
                     Алгоритм SMC • Анализ Ликвидности
+                    <span className={`inline-block sm:hidden ml-2 px-1.5 py-0.5 rounded text-white ${strategyModeUI === 'NORMAL' ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`}>
+                        {strategyModeUI}
+                    </span>
+                    <span className={`hidden sm:inline-block px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 shadow-sm ${marketRegimeUI.color}`}>
+                        {marketRegimeUI.label}
+                    </span>
                   </div>
                 </div>
                 <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-1 md:gap-1.5">
@@ -1558,7 +1769,7 @@
                     <div className="grid grid-cols-4 gap-2 glass-card rounded-2xl p-2 shrink-0 border-white bg-white/80">
                        <Speedometer value={metrics.structure} label="СТРУКТУРА" colorHex="#d97706" />
                        <Speedometer value={metrics.liquidity} label="ЛИКВИДНОСТЬ" colorHex="#2563eb" glow={true} />
-                       <Speedometer value={metrics.filterLevel} label="АТР ФИЛЬТР" colorHex="#6366f1" />
+                       <Speedometer value={metrics.filterLevel} label="АТР ФИЛЬТР" colorHex={strategyModeUI === 'REINFORCED' ? '#f43f5e' : '#6366f1'} />
                        <Speedometer value={metrics.smartMoney} label="SMART MONEY" colorHex="#06b6d4" />
                     </div>
 
