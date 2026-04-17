@@ -59,7 +59,6 @@
         .card-3d {
             transform-style: preserve-3d;
             animation: float-3d 12s ease-in-out infinite;
-            /* Обновленные тени для премиального стекла */
             box-shadow: 
                 0 40px 100px -20px rgba(15, 23, 42, 0.25), 
                 0 0 50px -10px rgba(14, 165, 233, 0.3),
@@ -76,7 +75,6 @@
             border-radius: inherit; pointer-events: none; z-index: 50; animation: glare 6s infinite linear;
         }
 
-        /* Мягкое свечение под центральной карточкой сканера */
         .card-glow-layer {
             position: absolute;
             inset: -30px;
@@ -108,7 +106,7 @@
         @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         .ticker-wrapper { display: flex; width: max-content; animation: ticker 40s linear infinite; }
         
-        /* --- HORIZONTAL SCANNER ANIMATIONS (UPGRADED) --- */
+        /* --- HORIZONTAL SCANNER ANIMATIONS --- */
         @keyframes scanner-beam-sweep {
             0% { left: 0%; transform: translateX(-100%); }
             100% { left: 100%; transform: translateX(0%); }
@@ -117,7 +115,7 @@
         .scanner-beam-horizontal {
             position: absolute;
             top: 0; bottom: 0;
-            width: 50%; /* Луч стал в 2 раза шире */
+            width: 50%; 
             background: linear-gradient(to right, 
                 transparent 0%, 
                 rgba(14, 165, 233, 0.02) 30%, 
@@ -129,10 +127,9 @@
             animation: scanner-beam-sweep 24s linear infinite;
             z-index: 20;
             pointer-events: none;
-            mix-blend-mode: screen; /* Кинематографичный светящийся эффект */
+            mix-blend-mode: screen; 
         }
         
-        /* Острый светящийся передний край луча */
         .scanner-beam-horizontal::after {
             content: '';
             position: absolute;
@@ -153,7 +150,6 @@
         .candle-scanner-item {
             animation: candle-scan-pulse 24s linear infinite;
         }
-        /* -------------------------------------- */
         
         .glass-panel {
             background: rgba(255, 255, 255, 0.85);
@@ -177,11 +173,6 @@
             border: 1px solid rgba(226, 232, 240, 0.9);
             box-shadow: 0 4px 15px -5px rgba(15, 23, 42, 0.03), inset 0 1px 1px rgba(255, 255, 255, 1);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .glass-card:hover {
-            border-color: rgba(186, 230, 253, 0.8);
-            background: linear-gradient(145deg, rgba(255, 255, 255, 1) 0%, rgba(248, 250, 252, 0.9) 100%);
-            box-shadow: 0 8px 25px -5px rgba(14, 165, 233, 0.15), inset 0 1px 2px rgba(255, 255, 255, 1);
         }
 
         .text-gradient {
@@ -271,16 +262,14 @@
             NORMAL: {
                 modeId: 'NORMAL',
                 minScore: 55,
-                penaltyNoMSS: -15,          // Базовый штраф за отсутствие слома структуры
-                penaltyShallowReclaim: -10, // Базовый штраф за слабый возврат за уровень
-                impulseTrapThreshold: 1.6,  // Порог импульса (в ATR), после которого нужен сильный Reject
+                requireMSS: false,         // Слом структуры желателен, но не обязателен при сильном rejection
+                impulseTrapThreshold: 1.5, // Порог импульса (в ATR), после которого нужен сильный Reject
             },
             REINFORCED: {
                 modeId: 'REINFORCED',
-                minScore: 70,               // Жесткий порог: пройдет только сигнал с сильными подтверждениями
-                penaltyNoMSS: -30,          // Усиленный штраф за вход без слома структуры
-                penaltyShallowReclaim: -25, // Усиленный штраф за слабый возврат (защита от "распила")
-                impulseTrapThreshold: 1.3,  // В усиленном режиме мы боимся резких пробоев сильнее
+                minScore: 70,
+                requireMSS: true,          // В усиленном режиме СЛОМ СТРУКТУРЫ ОБЯЗАТЕЛЕН
+                impulseTrapThreshold: 1.3, // В усиленном режиме мы боимся резких пробоев сильнее
             }
         };
 
@@ -307,7 +296,6 @@
                             volume: parseFloat(d[5])
                         }));
                         
-                        // Строгая дедупликация и сортировка для детерминированного массива
                         const unique = new Map();
                         mapped.forEach(c => unique.set(c.time, c));
                         return Array.from(unique.values()).sort((a, b) => a.time - b.time);
@@ -326,7 +314,6 @@
             return p.toFixed(5);
         };
 
-        // --- УСИЛЕНИЕ ЛОГИКИ (SMC) ---
         function calcLiquidityZones(data, period = 15) {
             let res = [];
             for (let i = 0; i < data.length; i++) {
@@ -382,7 +369,7 @@
 
             const currZones = zonesArr[idx];
             const prevZones = zonesArr[idx - 1];
-            const cAtr = atrArr[idx].value || 0;
+            const cAtr = atrArr[idx].value || 0.0001;
 
             const candleStats = (c) => {
                 const size = Math.max(c.high - c.low, 0.0001);
@@ -501,11 +488,11 @@
                     confirms.push('BearDisplacement');
                 }
 
-                if (reclaimDistance >= cAtr * 0.15) {
+                if (reclaimDistance >= cAtr * 0.10) {
                     score += 15;
-                    confirms.push('StrongReclaim');
+                    confirms.push('SolidReclaim');
                 } else {
-                    score += config.penaltyShallowReclaim;
+                    score -= 10;
                     penalties.push('Слабый возврат');
                 }
 
@@ -513,13 +500,18 @@
                     score += 20;
                     confirms.push('MSS');
                 } else {
-                    score += config.penaltyNoMSS;
-                    penalties.push('Нет слома структуры');
+                    if (config.requireMSS) {
+                        score -= 40;
+                        penalties.push('Нет слома (Обязательно в REINFORCED)');
+                    } else {
+                        score -= 10;
+                        penalties.push('Нет слома');
+                    }
                 }
 
                 // Логика защиты от ловушки на резких выстрелах вверх
                 if (isImpulseTrap) {
-                    if (sweepStats.topWick < sweepStats.size * 0.4 && confirmStats.body < confirmStats.size * 0.5) {
+                    if (sweepStats.topWick < sweepStats.size * 0.4 && confirmStats.body < confirmStats.size * 0.4) {
                         score -= 40;
                         penalties.push('ИМПУЛЬСНАЯ ЛОВУШКА (опасно)');
                     } else {
@@ -583,11 +575,11 @@
                     confirms.push('BullDisplacement');
                 }
 
-                if (reclaimDistance >= cAtr * 0.15) {
+                if (reclaimDistance >= cAtr * 0.10) {
                     score += 15;
-                    confirms.push('StrongReclaim');
+                    confirms.push('SolidReclaim');
                 } else {
-                    score += config.penaltyShallowReclaim;
+                    score -= 10;
                     penalties.push('Слабый возврат');
                 }
 
@@ -595,13 +587,18 @@
                     score += 20;
                     confirms.push('MSS');
                 } else {
-                    score += config.penaltyNoMSS;
-                    penalties.push('Нет слома структуры');
+                    if (config.requireMSS) {
+                        score -= 40;
+                        penalties.push('Нет слома (Обязательно в REINFORCED)');
+                    } else {
+                        score -= 10;
+                        penalties.push('Нет слома');
+                    }
                 }
 
                 // Логика защиты от ловушки на резких проливах вниз
                 if (isImpulseTrap) {
-                    if (sweepStats.bottomWick < sweepStats.size * 0.4 && confirmStats.body < confirmStats.size * 0.5) {
+                    if (sweepStats.bottomWick < sweepStats.size * 0.4 && confirmStats.body < confirmStats.size * 0.4) {
                         score -= 40;
                         penalties.push('ИМПУЛЬСНАЯ ЛОВУШКА (опасно)');
                     } else {
@@ -631,7 +628,6 @@
 
             return { isCall, isPut };
         }
-
 
         const LiveClock = () => {
           const [t, setT] = useState(new Date());
@@ -831,23 +827,25 @@
           const [statusColorClass, setStatusColorClass] = useState('text-slate-800');
           
           const chartContainerRef = useRef(null);
+          const tradeBoxesContainerRef = useRef(null);
           const chartInstance = useRef(null);
           const candleSeries = useRef(null);
           const extraSeriesRef = useRef([]); 
-          const priceLinesRef = useRef([]);  
+          const priceLinesRef = useRef([]); // ВОССТАНОВЛЕНО
+          const activeLiveTradeRef = useRef(null);
+          const tradesRef = useRef([]);
           
           const audioCtx = useRef(null);
           const engineActive = useRef(false);
           const currentPrice = useRef(null);
           const statsRef = useRef({ wins: 0, losses: 0 });
+          const strategyMode = useRef('NORMAL'); 
           const markersRef = useRef([]); 
-          const strategyMode = useRef('NORMAL'); // State Machine Reference
 
           const logsContainerRef = useRef(null); 
           const fullNewsPool = useRef([...FALLBACK_BTC_NEWS]);
           const readNewsHistory = useRef(new Set());
 
-          // Легкая пульсация спидометров для живости UI в режиме сканирования
           useEffect(() => {
               if(!isStarted || viewMode === 'DETAIL') return;
               const interval = setInterval(() => {
@@ -992,6 +990,146 @@
             
             fallbackTimer = setTimeout(resolveOnce, Math.max(3000, text.length * 80)); 
           });
+
+          // --- TRADE VISUALIZATION LOOP ---
+          useEffect(() => {
+            if (!isStarted) return;
+            let animationFrameId;
+
+            const syncOverlays = () => {
+                if (chartInstance.current && candleSeries.current && tradeBoxesContainerRef.current) {
+                    const timeScale = chartInstance.current.timeScale();
+                    const series = candleSeries.current;
+
+                    let html = '';
+                    tradesRef.current.forEach(trade => {
+                        const startX = timeScale.timeToCoordinate(trade.signalTime);
+                        let endX = timeScale.timeToCoordinate(trade.exitTime);
+
+                        if (startX === null) return; 
+
+                        if (endX === null) {
+                            const timeDiff = trade.exitTime - trade.signalTime;
+                            const p1 = timeScale.timeToCoordinate(trade.signalTime);
+                            const p2 = timeScale.timeToCoordinate(trade.signalTime - 300);
+                            if (p1 !== null && p2 !== null) {
+                                const candleW = Math.abs(p1 - p2);
+                                endX = startX + (timeDiff / 300) * candleW;
+                            } else {
+                                endX = startX + 40; 
+                            }
+                        }
+
+                        const boxLeft = startX; 
+                        const boxRight = endX;
+                        const boxWidth = Math.max(boxRight - boxLeft, 2);
+
+                        const padding = (trade.maxHigh - trade.minLow) * 0.1;
+                        const topY = series.priceToCoordinate(trade.maxHigh + padding);
+                        const bottomY = series.priceToCoordinate(trade.minLow - padding);
+
+                        if (topY === null || bottomY === null) return;
+
+                        const boxHeight = Math.max(bottomY - topY, 4);
+                        const isWin = trade.result === 'WIN';
+                        const isPending = trade.result === 'PENDING';
+                        
+                        let baseColor = '148, 163, 184'; // slate
+                        if (isWin) baseColor = '14, 165, 233'; // cyan
+                        if (trade.result === 'LOSS') baseColor = '244, 63, 94'; // rose
+                        if (isPending) baseColor = '245, 158, 11'; // amber
+
+                        let entryX = timeScale.timeToCoordinate(trade.entryTime) || (startX + boxWidth * 0.2);
+
+                        trade.screenLeft = boxLeft;
+                        trade.screenRight = boxRight;
+                        trade.screenTop = topY;
+                        trade.screenBottom = bottomY;
+
+                        // МИНИМАЛИСТИЧНЫЙ ДИЗАЙН РАМКИ
+                        html += `
+                            <div class="trade-box" data-id="${trade.id}" style="position:absolute; left:${boxLeft}px; top:${topY}px; width:${boxWidth}px; height:${boxHeight}px; background: rgba(${baseColor}, 0.08); border: 1px solid rgba(${baseColor}, 0.5); border-radius: 4px; pointer-events: none; z-index: 5; transition: background 0.3s;">
+                                <!-- Dotted Entry Line -->
+                                <div style="position:absolute; left:${Math.max(0, entryX - boxLeft)}px; top:0; bottom:0; border-left: 1px dotted rgba(${baseColor}, 0.8);"></div>
+                                
+                                <!-- Clean Compact Tag -->
+                                <div style="position:absolute; right: 2px; bottom: 2px; font-size: 10px; font-weight: 800; color: rgba(${baseColor}, 1); font-family: 'JetBrains Mono', monospace; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">
+                                    ${isPending ? '...' : (isWin ? 'W' : 'L')}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    tradeBoxesContainerRef.current.innerHTML = html;
+                }
+                animationFrameId = requestAnimationFrame(syncOverlays);
+            };
+
+            syncOverlays();
+            return () => cancelAnimationFrame(animationFrameId);
+          }, [isStarted, viewMode]);
+
+          // --- TOOLTIP HOVER LOGIC ---
+          useEffect(() => {
+            if (!isStarted || !chartInstance.current) return;
+            
+            const handleCrosshairMove = (param) => {
+                const tooltip = document.getElementById('chart-tooltip');
+                if (!tooltip) return;
+
+                if (!param.point || !param.time) {
+                    tooltip.style.opacity = '0';
+                    return;
+                }
+
+                const x = param.point.x;
+                const y = param.point.y;
+
+                const hoveredTrade = tradesRef.current.find(t => 
+                    x >= t.screenLeft && x <= t.screenRight &&
+                    y >= t.screenTop && y <= t.screenBottom
+                );
+
+                if (hoveredTrade) {
+                    const isWin = hoveredTrade.result === 'WIN';
+                    const isPending = hoveredTrade.result === 'PENDING';
+                    let colorClass = 'text-slate-400';
+                    if (isWin) colorClass = 'text-cyan-400';
+                    if (hoveredTrade.result === 'LOSS') colorClass = 'text-rose-400';
+                    if (isPending) colorClass = 'text-amber-400';
+
+                    const sigTime = new Date(hoveredTrade.signalTime * 1000).toLocaleTimeString('ru-RU');
+                    const entTime = new Date(hoveredTrade.entryTime * 1000).toLocaleTimeString('ru-RU');
+                    const extTime = new Date(hoveredTrade.exitTime * 1000).toLocaleTimeString('ru-RU');
+
+                    tooltip.innerHTML = `
+                        <div class="font-bold border-b border-slate-600/50 pb-1 mb-2 text-center ${colorClass} uppercase tracking-widest text-[11px]">${hoveredTrade.direction} • ${hoveredTrade.result}</div>
+                        <div class="flex justify-between gap-6 mt-1">
+                            <span class="text-slate-400">Сигнал:</span>
+                            <span class="font-mono font-bold text-slate-200">${sigTime}</span>
+                        </div>
+                        <div class="flex justify-between gap-6 mt-1">
+                            <span class="text-slate-400">Вход:</span>
+                            <span class="font-mono font-bold text-slate-200">${entTime} @ ${formatPrice(hoveredTrade.entryPrice)}</span>
+                        </div>
+                        <div class="flex justify-between gap-6 mt-1">
+                            <span class="text-slate-400">Выход:</span>
+                            <span class="font-mono font-bold text-slate-200">${isPending ? '--:--' : extTime} @ ${formatPrice(hoveredTrade.exitPrice)}</span>
+                        </div>
+                    `;
+                    
+                    tooltip.style.left = `${x}px`;
+                    tooltip.style.top = `${hoveredTrade.screenTop - 15}px`;
+                    tooltip.style.opacity = '1';
+                } else {
+                    tooltip.style.opacity = '0';
+                }
+            };
+
+            chartInstance.current.subscribeCrosshairMove(handleCrosshairMove);
+            return () => {
+                if (chartInstance.current) chartInstance.current.unsubscribeCrosshairMove(handleCrosshairMove);
+            }
+          }, [isStarted, viewMode]);
 
           const safeSetMarkers = (markersArr) => {
               if (!candleSeries.current) return;
@@ -1138,6 +1276,7 @@
           const runTerminalEngine = async () => {
             if (engineActive.current) return;
             engineActive.current = true;
+            tradesRef.current = [];
 
             if (audioCtx.current && audioCtx.current.state === 'suspended') {
                 await audioCtx.current.resume();
@@ -1149,14 +1288,12 @@
             await speak('Институциональный алгоритм активирован. Запущен анализ пулов ликвидности Smart Money на 5-минутном таймфрейме за последние 12 часов.');
             await new Promise(r => setTimeout(r, 500)); 
 
-            markersRef.current = [];
             updateStatus('БЭКТЕСТ: АНАЛИЗ SMC ИСТОРИИ...', 'text-cyan-600');
             addLog(`ЗАПУСК ПОИСКА: СНЯТИЕ ЛИКВИДНОСТИ ЗА 12 ЧАСОВ (5M)...`, true);
 
             const curAsset = ASSETS[0];
             let initialData;
             try {
-                // Запрашиваем свечи (дедупликация и сортировка в ScannerAPI)
                 initialData = await ScannerAPI.getCandles(curAsset.symbol, 200, '5m');
             } catch (err) {
                 addLog("ОШИБКА: " + err.message, true);
@@ -1182,19 +1319,23 @@
                 let rawCandidatesCount = 0;
                 let acceptedSignalsCount = 0;
 
-                // ДЕТЕРМИНИРОВАННАЯ ЛОГИКА БЭКТЕСТА (СТРОГО ЗАКРЫТЫЕ СВЕЧИ)
                 const maxEvalIdx = initialData.length - 3;
-                const startEvalIdx = Math.max(15, maxEvalIdx - 144 + 1); // Строго последние 12 часов
+                const startEvalIdx = Math.max(15, maxEvalIdx - 144 + 1); 
 
                 strategyMode.current = 'NORMAL';
                 let simStrategyMode = 'NORMAL';
+                let lastTradeTime = 0; // Инициализация Cooldown-трекера
 
                 console.log("=== ЗАПУСК АУДИТА БЭКТЕСТА (PURE SMC) ===");
 
                 for (let idx = startEvalIdx; idx <= maxEvalIdx; idx++) {
                     const currTime = initialData[idx].time;
 
-                    // Сбор аналитики пайплайна
+                    // DUPLICATE SUPPRESSION (Охлаждение 4 свечи = 20 минут)
+                    if (currTime - lastTradeTime < 4 * 300) {
+                        continue; 
+                    }
+
                     const backtestLogger = (t, dir, status, reason) => {
                         rawCandidatesCount++;
                         if (status === 'ПРИНЯТ') acceptedSignalsCount++;
@@ -1212,6 +1353,8 @@
                     );
 
                     if (isCall || isPut) {
+                        lastTradeTime = currTime; // ФИКСИРУЕМ ВРЕМЯ ПОСЛЕДНЕЙ СДЕЛКИ
+
                         const entryPrice = initialData[idx].close;
                         const exitPrice = initialData[idx + 1].close; 
                         let isWin = false;
@@ -1220,13 +1363,29 @@
                             isWin = true;
                         }
 
+                        const maxH = Math.max(initialData[idx].high, initialData[idx+1].high);
+                        const minL = Math.min(initialData[idx].low, initialData[idx+1].low);
+
+                        // КОМПАКТНЫЙ МАРКЕР НА ГРАФИКЕ БЕЗ ТЕКСТА
                         markersRef.current.push({
                             time: currTime,
                             position: isCall ? 'belowBar' : 'aboveBar',
                             color: isCall ? '#0ea5e9' : '#f43f5e',
                             shape: isCall ? 'arrowUp' : 'arrowDown',
-                            text: isWin ? 'ВИН (+)' : 'ЛОСС (-)',
                             size: 1
+                        });
+
+                        tradesRef.current.push({
+                            id: Math.random(),
+                            signalTime: currTime,
+                            entryTime: initialData[idx+1].time, 
+                            exitTime: initialData[idx+1].time + 300, 
+                            entryPrice,
+                            exitPrice,
+                            direction: isCall ? 'CALL' : 'PUT',
+                            result: isWin ? 'WIN' : 'LOSS',
+                            maxHigh: maxH,
+                            minLow: minL
                         });
 
                         if (isWin) {
@@ -1250,11 +1409,9 @@
                 statsRef.current.losses = historicalLosses;
                 setTradeStats({ wins: historicalWins, losses: historicalLosses, winRate: wr });
 
-                // Перенос состояния из симуляции в LIVE
                 strategyMode.current = simStrategyMode;
                 setStrategyModeUI(simStrategyMode);
                 
-                // Инициализируем lastEvaluatedTime временем последней закрытой свечи перед лайв-циклом
                 lastEvaluatedTime = initialData[initialData.length - 2].time; 
 
                 if (total > 0) {
@@ -1305,6 +1462,7 @@
             let logsThrottle = 0;
             let lastBackgroundNewsTime = Date.now();
             let lastLoggedRejectTime = 0;
+            let lastLiveTradeTime = lastEvaluatedTime; // Перенос счетчика Cooldown в Лайв
 
             while (engineActive.current) {
               try {
@@ -1313,7 +1471,6 @@
                   setSignal(null);
                   setCurrentTF('5M');
                   
-                  // Динамическая метрика для UI
                   setMetrics(prev => ({ ...prev, filterLevel: strategyMode.current === 'NORMAL' ? 55 : 70, smartMoney: 15 }));
 
                   let signalFound = false;
@@ -1329,7 +1486,7 @@
                       setSparklines(prev => ({...prev, [cur.symbol]: data}));
 
                       const lastIdx = data.length - 1;
-                      const closedIdx = lastIdx - 1; // Анализируем только полностью закрытые свечи
+                      const closedIdx = lastIdx - 1; 
                       currentPrice.current = data[lastIdx].close; 
 
                       const liqZones = calcLiquidityZones(data, 15); 
@@ -1338,19 +1495,20 @@
                       const upperData = liqZones.map(i => ({time: i.time, value: i.upper}));
                       const lowerData = liqZones.map(i => ({time: i.time, value: i.lower}));
 
-                      // ОЦЕНКА И СИГНАЛЫ СТРОГО В МОМЕНТ ЗАКРЫТИЯ СВЕЧИ (Без Repaint)
                       const currentClosedTime = data[closedIdx].time;
                       
                       let isCall = false;
                       let isPut = false;
                       let triggerCandleIdx = closedIdx;
 
-                      if (currentClosedTime !== lastEvaluatedTime) {
+                      // Duplicate Suppression in Live (Охлаждение 4 свечи)
+                      const isCooldownActive = (currentClosedTime - lastLiveTradeTime) < (4 * 300);
+
+                      if (currentClosedTime !== lastEvaluatedTime && !isCooldownActive) {
                           lastEvaluatedTime = currentClosedTime;
 
                           const currTime = data[closedIdx].time;
                           
-                          // Лайв-логгер
                           const liveLogger = (t, dir, status, reason) => {
                               if (status === 'ОТКЛОНЁН' && t !== lastLoggedRejectTime) {
                                   addLog(`ПРОПУСК (${dir}): ${reason.substring(0, 45)}...`, true);
@@ -1372,6 +1530,20 @@
                               isCall = callSignal;
                               isPut = putSignal;
                               triggerCandleIdx = closedIdx;
+                              lastLiveTradeTime = currentClosedTime; // Обновляем время последней сделки
+                              
+                              activeLiveTradeRef.current = {
+                                  id: Math.random(),
+                                  signalTime: currTime,
+                                  entryTime: Date.now() / 1000, 
+                                  exitTime: (Date.now() / 1000) + 300, 
+                                  entryPrice: currentPrice.current,
+                                  exitPrice: currentPrice.current,
+                                  direction: isCall ? 'CALL' : 'PUT',
+                                  result: 'PENDING',
+                                  maxHigh: data[closedIdx].high,
+                                  minLow: data[closedIdx].low
+                              };
                           }
                       }
 
@@ -1393,22 +1565,22 @@
                           
                           if(candleSeries.current) {
                               try { 
-                                  // Обновляем весь массив данных, чтобы избежать конфликтов со старыми таймстампами
                                   candleSeries.current.setData(data);
                                   
+                                  // КОМПАКТНЫЙ МАРКЕР БЕЗ ТЕКСТА
                                   markersRef.current.push({
                                       time: data[triggerCandleIdx].time,
                                       position: isCall ? 'belowBar' : 'aboveBar',
                                       color: isCall ? '#0ea5e9' : '#f43f5e',
                                       shape: isCall ? 'arrowUp' : 'arrowDown',
-                                      text: 'ВХОД 5M',
-                                      size: 2
+                                      size: 1
                                   });
-                                  safeSetMarkers(markersRef.current);
+                                  if (markersRef.current.length > 0) {
+                                      safeSetMarkers(markersRef.current);
+                                  }
                               } catch (e) { console.error(e); }
                           }
 
-                          const liveMarkerIdx = markersRef.current.length - 1;
                           drawIndicators(upperData, lowerData);
                           currentPrice.current = data[lastIdx].close;
                           
@@ -1431,7 +1603,6 @@
                           updateStatus('СНАЙПЕР: 1M ПОДТВЕРЖДЕНИЕ', 'text-slate-800 font-bold animate-pulse');
                           addLog(`ПРОВЕРКА ТЕХНИЧЕСКОГО СЛОЯ 1M...`, true);
 
-                          // Технический слой: запрашиваем 1m на 3 секунды чтобы исключить ложный микропробой
                           for(let w=3; w>0; w--) {
                               if (!engineActive.current) break;
                               await new Promise(r => setTimeout(r, 1000));
@@ -1440,7 +1611,6 @@
                                   const liveTick = liveTechData[liveTechData.length - 1];
                                   if (liveTick) {
                                       currentPrice.current = liveTick.close;
-                                      // Проверяем, не ушла ли цена резко обратно
                                       const currentZones = calcLiquidityZones(data, 15);
                                       const liveUpper = currentZones[currentZones.length-1].upper;
                                       const liveLower = currentZones[currentZones.length-1].lower;
@@ -1458,6 +1628,7 @@
                               addLog(`СИГНАЛ ОТМЕНЕН: ЦЕНА ВЕРНУЛАСЬ (ФИЛЬТР 1M)`, true);
                               await speak("Внимание. Отмена сигнала. Зафиксировано резкое движение против нас на техническом слое. Возвращаюсь к радару.");
                               
+                              activeLiveTradeRef.current = null; // Очищаем незапущенный трейд
                               await new Promise(r => setTimeout(r, 4000));
                               setViewMode('SCREENER');
                               updateStatus('ПЕРЕЗАПУСК СКАНИРОВАНИЯ...', 'text-slate-600');
@@ -1467,20 +1638,22 @@
 
                           if (!engineActive.current) break;
 
-                          // Чтобы не было флуда ложными повторными заходами на одной и той же свече
                           lastCancelledTime = data[triggerCandleIdx].time;
 
                           playSound('start');
                           updateStatus('СИГНАЛ АКТИВЕН', 'text-blue-700 font-bold');
                           
-                          const entryPrice = currentPrice.current;
                           const expMins = 5; 
                           
-                          setSignal({ type: isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice });
-                          drawEntryLine(entryPrice);
+                          // ЗАПУСК LIVE TRADE ВИЗУАЛИЗАЦИИ
+                          activeLiveTradeRef.current.entryTime = Date.now() / 1000;
+                          activeLiveTradeRef.current.entryPrice = currentPrice.current;
+                          activeLiveTradeRef.current.exitTime = (Date.now() / 1000) + (expMins * 60);
+                          tradesRef.current.push(activeLiveTradeRef.current);
+
+                          setSignal({ type: isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice: currentPrice.current });
 
                           addLog(`СИГНАЛ ВЫПОЛНЕН: ВХОД ${isCall ? 'ВВЕРХ' : 'ВНИЗ'} НА 5 МИН.`, true);
-
                           speak(`Позиция подтверждена. Вход на ${directionText}! Время экспирации пять минут. Жмите кнопку!`);
 
                           let newsReadInThisTrade = false;
@@ -1504,7 +1677,6 @@
                           let expirySeconds = expMins * 60;
                           let isLive = true;
                           
-                          // Лайв обновление 5m графика
                           const liveChartTask = (async () => {
                             let localLastTime = data[data.length - 1].time;
                             while (isLive && engineActive.current) {
@@ -1519,6 +1691,12 @@
                                           candleSeries.current.update(tick);
                                           currentPrice.current = tick.close;
                                           localLastTime = Math.max(localLastTime, tick.time);
+                                          
+                                          if (activeLiveTradeRef.current) {
+                                              activeLiveTradeRef.current.maxHigh = Math.max(activeLiveTradeRef.current.maxHigh, tick.high);
+                                              activeLiveTradeRef.current.minLow = Math.min(activeLiveTradeRef.current.minLow, tick.low);
+                                              activeLiveTradeRef.current.exitPrice = tick.close;
+                                          }
                                       } catch (err) {}
                                     }
                                   });
@@ -1545,25 +1723,23 @@
 
                           updateStatus('АНАЛИЗ РЕЗУЛЬТАТА', 'text-slate-500');
 
-                          // Для финальной проверки цены используем 1m тики, чтобы результат был точным до секунды
                           const finalData = await ScannerAPI.getCandles(cur.symbol, 1, '1m').catch(()=>null);
                           let finalPrice = currentPrice.current;
                           if (finalData && finalData.length > 0) {
                               finalPrice = finalData[finalData.length - 1].close;
                           }
                           
+                          const entryPrice = activeLiveTradeRef.current.entryPrice;
                           let isWin = false;
                           if ((isCall && finalPrice > entryPrice) || (isPut && finalPrice < entryPrice)) isWin = true;
                           else if (finalPrice === entryPrice) isWin = true; 
 
-                          if (markersRef.current[liveMarkerIdx]) {
-                              markersRef.current[liveMarkerIdx].text = isWin ? 'ВИН (+)' : 'ЛОСС (-)';
-                              if (candleSeries.current) {
-                                  safeSetMarkers(markersRef.current);
-                              }
+                          if (activeLiveTradeRef.current) {
+                              activeLiveTradeRef.current.exitTime = Date.now() / 1000;
+                              activeLiveTradeRef.current.exitPrice = finalPrice;
+                              activeLiveTradeRef.current.result = isWin ? 'WIN' : 'LOSS';
                           }
 
-                          // Adaptive State Machine Evaluation
                           const wasReinforced = strategyMode.current === 'REINFORCED';
 
                           if (isWin) {
@@ -1607,6 +1783,7 @@
 
                           setSignal(null);
                           setMetrics(prev => ({ ...prev, smartMoney: 0 }));
+                          activeLiveTradeRef.current = null;
                           await new Promise(r => setTimeout(r, 2000));
                           break; 
                       }
@@ -1619,35 +1796,21 @@
                           addLog('ОЖИДАНИЕ ФОРМИРОВАНИЯ SFP ПАТТЕРНА...', true);
                       }
 
-                      // ФОНОВОЕ ОЗВУЧИВАНИЕ НОВОСТЕЙ (КАЖДЫЕ 10 МИНУТ БЕЗ СИГНАЛОВ)
                       if (Date.now() - lastBackgroundNewsTime > 10 * 60 * 1000) {
                           lastBackgroundNewsTime = Date.now();
-                          
-                          // Отбираем непрочитанные новости подходящей длины
                           const unreadNews = fullNewsPool.current.filter(n => n && n.length > 20 && !readNewsHistory.current.has(n));
-                          
-                          // Если все актуальные новости были прочитаны, сбрасываем историю для нового круга
-                          if (unreadNews.length === 0 && fullNewsPool.current.length > 0) {
-                              readNewsHistory.current.clear();
-                          }
+                          if (unreadNews.length === 0 && fullNewsPool.current.length > 0) readNewsHistory.current.clear();
                           
                           const availableNews = fullNewsPool.current.filter(n => n && n.length > 20 && !readNewsHistory.current.has(n));
-                          
                           if (availableNews.length > 0) {
                               const randomNews = availableNews[Math.floor(Math.random() * availableNews.length)];
                               readNewsHistory.current.add(randomNews);
-                              
-                              // Очистка текста от ссылок и спецсимволов для TTS
                               let cleanText = randomNews.replace(/(https?:\/\/[^\s]+)/g, '').replace(/[#_*~|><]/g, '').trim();
-                              
-                              // Сокращение слишком длинных новостей до ближайшей точки
                               if (cleanText.length > 150) {
                                   const lastDot = cleanText.substring(0, 150).lastIndexOf('.');
                                   cleanText = lastDot > 50 ? cleanText.substring(0, lastDot + 1) : cleanText.substring(0, 150) + '...';
                               }
-                              
                               addLog(`АУДИО СВОДКА: ${cleanText.substring(0, 45).toUpperCase()}...`, true);
-                              // Запуск речи без await (фоновый режим, не прерывающий сканер)
                               speak("Фоновая сводка рынка. " + cleanText).catch(()=>null);
                           }
                       }
@@ -1713,7 +1876,7 @@
                     className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 border border-white/50 shadow-[0_15px_35px_rgba(14,165,233,0.4)] text-white text-xl md:text-2xl transition-all duration-300 oswald-font font-bold active:scale-95 rounded-2xl cursor-pointer flex items-center justify-center gap-3 group relative overflow-hidden animate-item-stagger delay-400"
                   >
                     <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
-                    <Cpu size={24} className="text-blue-50 group-hover:animate-spin relative z-10" /> 
+                    <Cpu size={24} className="text-white group-hover:animate-spin relative z-10" /> 
                     <span className="relative z-10 tracking-widest">ЗАПУСК СИСТЕМЫ</span>
                   </button>
 
@@ -1868,8 +2031,10 @@
                     </div>
                     
                     <div className="flex-1 relative w-full mt-32 md:mt-36 flex flex-col gap-2 px-4 pb-4 md:px-5 md:pb-5">
-                        <div className="flex-1 relative w-full rounded-3xl overflow-hidden shadow-[inset_0_5px_20px_rgba(0,0,0,0.05)] bg-white/90 border border-white">
+                        <div className="flex-1 relative w-full rounded-[2rem] overflow-hidden shadow-[inset_0_5px_20px_rgba(0,0,0,0.05)] bg-white/90 border border-white">
                             <div ref={chartContainerRef} className="absolute inset-0" />
+                            <div ref={tradeBoxesContainerRef} className="absolute inset-0 pointer-events-none z-20 overflow-hidden" />
+                            <div id="chart-tooltip" className="absolute z-50 pointer-events-none opacity-0 transition-opacity bg-slate-900/90 backdrop-blur-xl text-white p-3 rounded-xl border border-slate-700 shadow-2xl flex flex-col gap-1.5 text-[10px] sm:text-xs tracking-wider" style={{transform: 'translate(-50%, -100%)', marginTop: '-15px'}}></div>
                         </div>
                     </div>
                   </div>
