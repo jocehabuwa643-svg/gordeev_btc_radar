@@ -91,16 +91,41 @@
         @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         .ticker-wrapper { display: flex; width: max-content; animation: ticker 40s linear infinite; }
         
-        @keyframes scanline { 
-            0% { transform: translateY(-100%); opacity: 0; } 
-            15% { opacity: 1; }
-            85% { opacity: 1; }
-            100% { transform: translateY(500%); opacity: 0; } 
+        /* --- HORIZONTAL SCANNER ANIMATIONS --- */
+        @keyframes scanner-beam-sweep {
+            0% { left: 0%; transform: translateX(-100%); }
+            100% { left: 100%; transform: translateX(0%); }
         }
-        .scanline-anim { 
-            animation: scanline 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; 
-            background: linear-gradient(to bottom, transparent, rgba(14, 165, 233, 0.4), rgba(59, 130, 246, 0.6), transparent); 
+
+        .scanner-beam-horizontal {
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 25%;
+            background: linear-gradient(to right, 
+                transparent 0%, 
+                rgba(14, 165, 233, 0.0) 20%, 
+                rgba(14, 165, 233, 0.2) 75%, 
+                rgba(56, 189, 248, 0.7) 95%, 
+                rgba(255, 255, 255, 1) 100%
+            );
+            box-shadow: 2px 0 15px -2px rgba(14, 165, 233, 0.5);
+            animation: scanner-beam-sweep 24s linear infinite;
+            z-index: 20;
+            pointer-events: none;
         }
+
+        @keyframes candle-scan-pulse {
+            0%   { opacity: 0.2; filter: grayscale(80%) brightness(0.7); }
+            1%   { opacity: 1.0; filter: grayscale(0%) brightness(1.5); }
+            6%   { opacity: 0.6; filter: grayscale(30%) brightness(1.1); }
+            12%  { opacity: 0.2; filter: grayscale(80%) brightness(0.7); }
+            100% { opacity: 0.2; filter: grayscale(80%) brightness(0.7); }
+        }
+
+        .candle-scanner-item {
+            animation: candle-scan-pulse 24s linear infinite;
+        }
+        /* -------------------------------------- */
         
         .glass-panel {
             background: rgba(255, 255, 255, 0.85);
@@ -157,6 +182,35 @@
         @keyframes shine-silver {
             to { background-position: 200% center; }
         }
+
+        /* --- NEW MENU ANIMATIONS --- */
+        @keyframes menu-expand {
+            0% { transform: scale(0.05); opacity: 0; filter: blur(15px); border-radius: 100px; }
+            60% { transform: scale(1.02); opacity: 1; filter: blur(0px); border-radius: 2.5rem; }
+            100% { transform: scale(1); opacity: 1; filter: blur(0px); border-radius: 2.5rem; }
+        }
+
+        @keyframes item-reveal {
+            0% { transform: translateY(15px) scale(0.95); opacity: 0; filter: blur(8px); }
+            100% { transform: translateY(0) scale(1); opacity: 1; filter: blur(0px); }
+        }
+
+        .animate-menu-container {
+            animation: menu-expand 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            transform-origin: center center;
+        }
+
+        .animate-item-stagger {
+            opacity: 0;
+            animation: item-reveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .delay-100 { animation-delay: 0.2s; }
+        .delay-200 { animation-delay: 0.3s; }
+        .delay-300 { animation-delay: 0.4s; }
+        .delay-400 { animation-delay: 0.5s; }
+        .delay-500 { animation-delay: 0.6s; }
+        /* --------------------------- */
     </style>
 </head>
 <body>
@@ -290,7 +344,6 @@
             const cLower = zones.lower;
             
             // ОСЛАБЛЕННЫЙ ФИЛЬТР ТРЕНДА: Блокируем только аномальные макро-тренды (> 3.5 ATR от SMA)
-            // Это позволит ловить глубокие сквизы (как на скриншоте в 14:00)
             const trendIsStrongBull = (currCandle.close - cSma) > (cAtr * 3.5);
             const trendIsStrongBear = (cSma - currCandle.close) > (cAtr * 3.5);
 
@@ -302,11 +355,8 @@
             let isPut = false;
 
             // PUT: Sweep (снятие пула) сверху (ликвидность покупателей)
-            // Прокол тенью верхней границы
             const sweptTop = currCandle.high > cUpper || prevCandle.high > cUpper;
-            // Возврат закрытия внутрь диапазона
             const returnedInsideTop = currCandle.close < cUpper;
-            // Свеча должна закрыться медвежьей (красной) - это подтверждает реакцию продавца
             const isBearishCandle = currCandle.close < currCandle.open;
 
             if (sweptTop && returnedInsideTop && isBearishCandle && isRangeValid && !trendIsStrongBull) {
@@ -314,11 +364,8 @@
             }
             
             // CALL: Sweep (снятие пула) снизу (ликвидность продавцов)
-            // Прокол тенью нижней границы
             const sweptBottom = currCandle.low < cLower || prevCandle.low < cLower;
-            // Возврат закрытия внутрь диапазона
             const returnedInsideBottom = currCandle.close > cLower;
-            // Свеча должна закрыться бычьей (зеленой) - это подтверждает выкуп
             const isBullishCandle = currCandle.close > currCandle.open;
 
             if (sweptBottom && returnedInsideBottom && isBullishCandle && isRangeValid && !trendIsStrongBear) {
@@ -346,30 +393,36 @@
           const range = (max - min) || 1;
           const width = 200, height = 80;
           const candleWidth = width / chartData.length;
+          const SCAN_DURATION = 24;
 
           return (
-            <svg className="w-full h-full opacity-90" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-              {chartData.map((c, i) => {
-                const isUp = c.close >= c.open;
-                const x = i * candleWidth;
-                const w = candleWidth * 0.7;
-                const oY = height - ((c.open - min) / range) * height;
-                const cY = height - ((c.close - min) / range) * height;
-                const hY = height - ((c.high - min) / range) * height;
-                const lY = height - ((c.low - min) / range) * height;
-                
-                const volH = ((c.volume || 0) / maxVol) * 15;
-                const volY = height - volH;
+            <div className="w-full h-full relative overflow-hidden bg-slate-900/5">
+                <svg className="w-full h-full relative z-10" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+                  {chartData.map((c, i) => {
+                    const isUp = c.close >= c.open;
+                    const x = i * candleWidth;
+                    const w = candleWidth * 0.7;
+                    const oY = height - ((c.open - min) / range) * height;
+                    const cY = height - ((c.close - min) / range) * height;
+                    const hY = height - ((c.high - min) / range) * height;
+                    const lY = height - ((c.low - min) / range) * height;
+                    
+                    const volH = ((c.volume || 0) / maxVol) * 15;
+                    const volY = height - volH;
 
-                return (
-                  <g key={i}>
-                    <line x1={x + w / 2} y1={hY} x2={x + w / 2} y2={lY} stroke={isUp ? "#0ea5e9" : "#94a3b8"} strokeWidth="1" />
-                    <rect x={x} y={isUp ? cY : oY} width={w} height={Math.max(Math.abs(cY - oY), 1.2)} fill={isUp ? "#0ea5e9" : "transparent"} stroke={isUp ? "none" : "#94a3b8"} strokeWidth="1" rx="0.5" />
-                    <rect x={x} y={volY} width={w} height={volH} fill={isUp ? "rgba(14, 165, 233, 0.2)" : "rgba(148, 163, 184, 0.2)"} />
-                  </g>
-                );
-              })}
-            </svg>
+                    const delay = i * (SCAN_DURATION / chartData.length);
+
+                    return (
+                      <g key={i} className="candle-scanner-item" style={{ animationDelay: `${delay}s` }}>
+                        <line x1={x + w / 2} y1={hY} x2={x + w / 2} y2={lY} stroke={isUp ? "#0ea5e9" : "#94a3b8"} strokeWidth="1" />
+                        <rect x={x} y={isUp ? cY : oY} width={w} height={Math.max(Math.abs(cY - oY), 1.2)} fill={isUp ? "#0ea5e9" : "transparent"} stroke={isUp ? "none" : "#94a3b8"} strokeWidth="1" rx="0.5" />
+                        <rect x={x} y={volY} width={w} height={volH} fill={isUp ? "rgba(14, 165, 233, 0.4)" : "rgba(148, 163, 184, 0.4)"} />
+                      </g>
+                    );
+                  })}
+                </svg>
+                <div className="scanner-beam-horizontal"></div>
+            </div>
           );
         };
 
@@ -534,6 +587,7 @@
 
           const logsContainerRef = useRef(null); 
           const fullNewsPool = useRef([...FALLBACK_BTC_NEWS]);
+          const readNewsHistory = useRef(new Set());
 
           // Легкая пульсация спидометров для живости UI в режиме сканирования
           useEffect(() => {
@@ -859,7 +913,7 @@
                 setSparklines(prev => ({...prev, [curAsset.symbol]: initialData}));
                 currentPrice.current = initialData[initialData.length - 1].close;
 
-                const liqZones = calcLiquidityZones(initialData, 20); 
+                const liqZones = calcLiquidityZones(initialData, 15); 
                 const atrSeries = calcATRSeries(initialData, 14); 
                 const sma50 = calcSMA(initialData, 50);
 
@@ -968,6 +1022,7 @@
             
             // ОСНОВНОЙ ЛАЙВ-ЦИКЛ
             let logsThrottle = 0;
+            let lastBackgroundNewsTime = Date.now();
             while (engineActive.current) {
               try {
                   updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ 5M...', 'text-slate-700');
@@ -992,7 +1047,7 @@
                       const lastIdx = data.length - 1;
                       currentPrice.current = data[lastIdx].close; 
 
-                      const liqZones = calcLiquidityZones(data, 20); 
+                      const liqZones = calcLiquidityZones(data, 15); 
                       const atrSeries = calcATRSeries(data, 14);    
                       const sma50 = calcSMA(data, 50);
 
@@ -1098,7 +1153,7 @@
                                   if (liveTick) {
                                       currentPrice.current = liveTick.close;
                                       // Проверяем, не ушла ли цена резко обратно
-                                      const currentZones = calcLiquidityZones(data, 20);
+                                      const currentZones = calcLiquidityZones(data, 15);
                                       const liveUpper = currentZones[currentZones.length-1].upper;
                                       const liveLower = currentZones[currentZones.length-1].lower;
 
@@ -1256,6 +1311,40 @@
                       if (logsThrottle % 4 === 0) {
                           addLog('ОЖИДАНИЕ ФОРМИРОВАНИЯ SFP ПАТТЕРНА...', true);
                       }
+
+                      // ФОНОВОЕ ОЗВУЧИВАНИЕ НОВОСТЕЙ (КАЖДЫЕ 10 МИНУТ БЕЗ СИГНАЛОВ)
+                      if (Date.now() - lastBackgroundNewsTime > 10 * 60 * 1000) {
+                          lastBackgroundNewsTime = Date.now();
+                          
+                          // Отбираем непрочитанные новости подходящей длины
+                          const unreadNews = fullNewsPool.current.filter(n => n && n.length > 20 && !readNewsHistory.current.has(n));
+                          
+                          // Если все актуальные новости были прочитаны, сбрасываем историю для нового круга
+                          if (unreadNews.length === 0 && fullNewsPool.current.length > 0) {
+                              readNewsHistory.current.clear();
+                          }
+                          
+                          const availableNews = fullNewsPool.current.filter(n => n && n.length > 20 && !readNewsHistory.current.has(n));
+                          
+                          if (availableNews.length > 0) {
+                              const randomNews = availableNews[Math.floor(Math.random() * availableNews.length)];
+                              readNewsHistory.current.add(randomNews);
+                              
+                              // Очистка текста от ссылок и спецсимволов для TTS
+                              let cleanText = randomNews.replace(/(https?:\/\/[^\s]+)/g, '').replace(/[#_*~|><]/g, '').trim();
+                              
+                              // Сокращение слишком длинных новостей до ближайшей точки
+                              if (cleanText.length > 150) {
+                                  const lastDot = cleanText.substring(0, 150).lastIndexOf('.');
+                                  cleanText = lastDot > 50 ? cleanText.substring(0, lastDot + 1) : cleanText.substring(0, 150) + '...';
+                              }
+                              
+                              addLog(`АУДИО СВОДКА: ${cleanText.substring(0, 45).toUpperCase()}...`, true);
+                              // Запуск речи без await (фоновый режим, не прерывающий сканер)
+                              speak("Фоновая сводка рынка. " + cleanText).catch(()=>null);
+                          }
+                      }
+
                       await new Promise(r => setTimeout(r, 1500)); 
                   }
               } catch (e) {
@@ -1301,27 +1390,27 @@
                 <div className="bg-orb-2 pointer-events-none"></div>
                 <div className="absolute inset-0 bg-grid-pattern pointer-events-none opacity-40"></div>
                 
-                <div className="max-w-[90%] sm:max-w-md w-full p-8 md:p-12 text-center relative z-10 glass-panel-heavy rounded-[2.5rem] premium-glow flex flex-col items-center">
-                  <div className="w-20 h-20 mb-6 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-[0_15px_30px_rgba(14,165,233,0.4)] border border-white/50 relative overflow-hidden">
+                <div className="max-w-[90%] sm:max-w-md w-full p-8 md:p-12 text-center relative z-10 glass-panel-heavy rounded-[2.5rem] premium-glow flex flex-col items-center animate-menu-container">
+                  <div className="w-20 h-20 mb-6 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-[0_15px_30px_rgba(14,165,233,0.4)] border border-white/50 relative overflow-hidden animate-item-stagger delay-100">
                       <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
                       <Zap size={44} className="text-white relative z-10" />
                   </div>
-                  <h1 className="text-4xl md:text-5xl text-slate-800 leading-none mb-3 oswald-font font-bold tracking-wide drop-shadow-sm">
+                  <h1 className="text-4xl md:text-5xl text-slate-800 leading-none mb-3 oswald-font font-bold tracking-wide drop-shadow-sm animate-item-stagger delay-200">
                     КРИПТО ЯДРО <br/><span className="text-gradient font-black drop-shadow-[0_0_15px_rgba(14,165,233,0.3)]">PRO MAX</span>
                   </h1>
-                  <p className="text-sm md:text-base text-slate-500 tracking-[0.2em] mb-10 font-bold leading-tight uppercase">
+                  <p className="text-sm md:text-base text-slate-500 tracking-[0.2em] mb-10 font-bold leading-tight uppercase animate-item-stagger delay-300">
                     Smart Money Concepts (5M)
                   </p>
                   <button 
                     onClick={startTerminal} 
-                    className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 border border-white/50 shadow-[0_15px_35px_rgba(14,165,233,0.4)] text-white text-xl md:text-2xl transition-all duration-300 oswald-font font-bold active:scale-95 rounded-2xl cursor-pointer flex items-center justify-center gap-3 group relative overflow-hidden"
+                    className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 border border-white/50 shadow-[0_15px_35px_rgba(14,165,233,0.4)] text-white text-xl md:text-2xl transition-all duration-300 oswald-font font-bold active:scale-95 rounded-2xl cursor-pointer flex items-center justify-center gap-3 group relative overflow-hidden animate-item-stagger delay-400"
                   >
                     <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
                     <Cpu size={24} className="text-blue-50 group-hover:animate-spin relative z-10" /> 
                     <span className="relative z-10 tracking-widest">ЗАПУСК СИСТЕМЫ</span>
                   </button>
 
-                  <div className="mt-8 flex flex-col items-center opacity-80 group hover:opacity-100 transition-opacity cursor-default">
+                  <div className="mt-8 flex flex-col items-center opacity-80 group hover:opacity-100 transition-opacity cursor-default animate-item-stagger delay-500">
                       <span className="text-[9px] md:text-[10px] text-slate-500 tracking-[0.3em] uppercase font-bold mb-1 oswald-font">DEVELOPER</span>
                       <span className="text-sm md:text-base font-black tracking-[0.2em] uppercase oswald-font silver-text">SLAVA GORDEEV</span>
                   </div>
@@ -1414,7 +1503,6 @@
 
                           <div className="flex-1 overflow-hidden rounded-3xl bg-white/90 border-2 border-white relative shadow-[inset_0_4px_20px_rgba(0,0,0,0.05)] z-10">
                               <MiniChart data={sparklines['BTCUSDT']} />
-                              <div className="absolute inset-0 scanline-anim pointer-events-none opacity-40 mix-blend-overlay" />
                           </div>
 
                           <div className="mt-6 flex justify-between items-center bg-white/80 p-4 rounded-2xl border border-white relative z-10 shadow-sm">
