@@ -265,7 +265,8 @@
                 minSweepAtrRatio: 0.10,
                 minReclaimAtrRatio: 0.12,
                 maxImpulseAtrRatio: 1.5,
-                cooldownCandles: 4
+                cooldownCandles: 4,
+                minConfirmBodyRatio: 0.35
             },
             REINFORCED: {
                 modeId: 'REINFORCED',
@@ -273,7 +274,8 @@
                 minSweepAtrRatio: 0.12,
                 minReclaimAtrRatio: 0.15,
                 maxImpulseAtrRatio: 1.35,
-                cooldownCandles: 6
+                cooldownCandles: 6,
+                minConfirmBodyRatio: 0.40
             }
         };
 
@@ -443,6 +445,30 @@
             };
         }
 
+        // --- ДОПОЛНИТЕЛЬНЫЕ ФИЛЬТРЫ СТРАТЕГИИ ---
+        function detectImpulseTrap(candle, atr, config) {
+            const candleSize = Math.max(candle.high - candle.low, 0.0001);
+            return candleSize > atr * config.maxImpulseAtrRatio;
+        }
+
+        function validateConfirmationCandle(candle, direction, config) {
+            const candleSize = Math.max(candle.high - candle.low, 0.0001);
+            const bodySize = Math.abs(candle.close - candle.open);
+            const bodyRatio = bodySize / candleSize;
+
+            if (bodyRatio < config.minConfirmBodyRatio) return false;
+            if (direction === 'CALL' && candle.close <= candle.open) return false;
+            if (direction === 'PUT' && candle.close >= candle.open) return false;
+
+            return true;
+        }
+
+        function suppressDuplicateSignals(lastSignalIndex, currentIndex, config) {
+            if (lastSignalIndex == null || lastSignalIndex === -999) return false;
+            return (currentIndex - lastSignalIndex) < config.cooldownCandles;
+        }
+
+
         // --- СТРОГАЯ 1M SMC СТРАТЕГИЯ ---
         function detectLiquiditySweep1M(data, idx, zonesArr, atrArr, config, logCallback = null) {
             if (idx < 2 || !data[idx] || !zonesArr[idx] || !atrArr[idx] || !zonesArr[idx - 1]) {
@@ -451,7 +477,8 @@
 
             const curr = data[idx];
             const prev = data[idx - 1];
-            const zone = zonesArr[idx - 1]; 
+            const prePrev = data[idx - 2];
+            const zone = zonesArr[idx - 1]; // Берем зону с предыдущей свечи для избежания Look-ahead
             const atr = atrArr[idx].value || 0.0001;
 
             const candleSize = Math.max(curr.high - curr.low, 0.0001);
@@ -459,8 +486,13 @@
             const topWick = curr.high - Math.max(curr.open, curr.close);
             const bottomWick = Math.min(curr.open, curr.close) - curr.low;
 
-            const putSweep = (curr.high > zone.upper && curr.close < zone.upper) || (prev.high > zone.upper && prev.close >= zone.upper && curr.close < zone.upper);
-            const callSweep = (curr.low < zone.lower && curr.close > zone.lower) || (prev.low < zone.lower && prev.close <= zone.lower && curr.close > zone.lower);
+            const isChoppyRange = (zone.upper - zone.lower) < atr * 0.55;
+
+            const putSweep = (curr.high > zone.upper && curr.close < zone.upper) || 
+                             (prev.high > zone.upper && prev.close >= zone.upper && curr.close < zone.upper);
+
+            const callSweep = (curr.low < zone.lower && curr.close > zone.lower) || 
+                              (prev.low < zone.lower && prev.close <= zone.lower && curr.close > zone.lower);
 
             let score = 0;
             let isCall = false;
@@ -468,58 +500,126 @@
             let reason = '';
             let sweepLevel = null;
 
+            const getSetupCandles = (isPutSweep) => {
+                if (isPutSweep) {
+                    if (curr.high > zone.upper && curr.close < zone.upper) return { sweepCandle: curr, confirmCandle: curr };
+                    return { sweepCandle: prev, confirmCandle: curr };
+                } else {
+                    if (curr.low < zone.lower && curr.close > zone.lower) return { sweepCandle: curr, confirmCandle: curr };
+                    return { sweepCandle: prev, confirmCandle: curr };
+                }
+            };
+
+            // ---------------- PUT ----------------
             if (putSweep) {
                 sweepLevel = zone.upper;
-                const sweepDepth = curr.high > zone.upper ? curr.high - zone.upper : prev.high - zone.upper;
-                const reclaimStrength = zone.upper - curr.close;
+                const { sweepCandle, confirmCandle } = getSetupCandles(true);
+                
+                const sweepDepth = sweepCandle.high - sweepLevel;
+                const reclaimStrength = sweepLevel - confirmCandle.close;
 
                 score += 20;
-                if (sweepDepth >= atr * config.minSweepAtrRatio) score += 15;
-                else { score -= 15; reason += 'shallow_sweep '; }
+                const confirms = [];
+                const penalties = [];
 
-                if (reclaimStrength >= atr * config.minReclaimAtrRatio) score += 20;
-                else { score -= 15; reason += 'weak_reclaim '; }
-
-                if (topWick >= candleSize * 0.35) score += 15;
-                if (curr.close < prev.low) score += 15; 
-                if (curr.close < curr.open && bodySize >= candleSize * 0.35) score += 15; 
-
-                if (candleSize > atr * config.maxImpulseAtrRatio) {
-                    score -= 25;
-                    reason += 'oversized_impulse ';
+                if (sweepDepth >= atr * config.minSweepAtrRatio) {
+                    score += 15; confirms.push('Deep Sweep');
+                } else {
+                    score -= 20; penalties.push('Shallow Sweep');
                 }
+
+                if (reclaimStrength >= atr * config.minReclaimAtrRatio) {
+                    score += 20; confirms.push('Strong Reclaim');
+                } else {
+                    score -= 20; penalties.push('Weak Reclaim');
+                }
+
+                const swCandleSize = Math.max(sweepCandle.high - sweepCandle.low, 0.0001);
+                const swTopWick = sweepCandle.high - Math.max(sweepCandle.open, sweepCandle.close);
+                if (swTopWick >= swCandleSize * 0.35) {
+                    score += 15; confirms.push('Rejection Wick');
+                }
+
+                if (validateConfirmationCandle(confirmCandle, 'PUT', config)) {
+                    score += 20; confirms.push('Valid Confirm');
+                } else {
+                    score -= 25; penalties.push('Bad Confirm Candle');
+                }
+
+                if (confirmCandle.close < prev.low || confirmCandle.close < prePrev.low) {
+                    score += 15; confirms.push('MSS');
+                }
+
+                if (detectImpulseTrap(sweepCandle, atr, config)) {
+                    score -= 30; penalties.push('Impulse Trap');
+                }
+
+                if (isChoppyRange) {
+                    score -= 25; penalties.push('Chop/Noisy');
+                }
+
+                reason = `[+] ${confirms.join(', ')} | [-] ${penalties.join(', ')}`;
 
                 if (score >= config.minScore) isPut = true;
             }
 
+            // ---------------- CALL ----------------
             if (callSweep && !isPut) {
                 sweepLevel = zone.lower;
-                const sweepDepth = curr.low < zone.lower ? zone.lower - curr.low : zone.lower - prev.low;
-                const reclaimStrength = curr.close - zone.lower;
+                const { sweepCandle, confirmCandle } = getSetupCandles(false);
+
+                const sweepDepth = sweepLevel - sweepCandle.low;
+                const reclaimStrength = confirmCandle.close - sweepLevel;
 
                 score += 20;
-                if (sweepDepth >= atr * config.minSweepAtrRatio) score += 15;
-                else { score -= 15; reason += 'shallow_sweep '; }
+                const confirms = [];
+                const penalties = [];
 
-                if (reclaimStrength >= atr * config.minReclaimAtrRatio) score += 20;
-                else { score -= 15; reason += 'weak_reclaim '; }
-
-                if (bottomWick >= candleSize * 0.35) score += 15;
-                if (curr.close > prev.high) score += 15; 
-                if (curr.close > curr.open && bodySize >= candleSize * 0.35) score += 15; 
-
-                if (candleSize > atr * config.maxImpulseAtrRatio) {
-                    score -= 25;
-                    reason += 'oversized_impulse ';
+                if (sweepDepth >= atr * config.minSweepAtrRatio) {
+                    score += 15; confirms.push('Deep Sweep');
+                } else {
+                    score -= 20; penalties.push('Shallow Sweep');
                 }
+
+                if (reclaimStrength >= atr * config.minReclaimAtrRatio) {
+                    score += 20; confirms.push('Strong Reclaim');
+                } else {
+                    score -= 20; penalties.push('Weak Reclaim');
+                }
+
+                const swCandleSize = Math.max(sweepCandle.high - sweepCandle.low, 0.0001);
+                const swBottomWick = Math.min(sweepCandle.open, sweepCandle.close) - sweepCandle.low;
+                if (swBottomWick >= swCandleSize * 0.35) {
+                    score += 15; confirms.push('Rejection Wick');
+                }
+
+                if (validateConfirmationCandle(confirmCandle, 'CALL', config)) {
+                    score += 20; confirms.push('Valid Confirm');
+                } else {
+                    score -= 25; penalties.push('Bad Confirm Candle');
+                }
+
+                if (confirmCandle.close > prev.high || confirmCandle.close > prePrev.high) {
+                    score += 15; confirms.push('MSS');
+                }
+
+                if (detectImpulseTrap(sweepCandle, atr, config)) {
+                    score -= 30; penalties.push('Impulse Trap');
+                }
+
+                if (isChoppyRange) {
+                    score -= 25; penalties.push('Chop/Noisy');
+                }
+
+                reason = `[+] ${confirms.join(', ')} | [-] ${penalties.join(', ')}`;
 
                 if (score >= config.minScore) isCall = true;
             }
 
             if (logCallback) {
-                if (isPut) logCallback(curr.time, 'PUT', 'ПРИНЯТ', `Score: ${score} | ${reason}`);
-                else if (isCall) logCallback(curr.time, 'CALL', 'ПРИНЯТ', `Score: ${score} | ${reason}`);
-                else if (putSweep || callSweep) logCallback(curr.time, putSweep ? 'PUT' : 'CALL', 'ОТКЛОНЁН', `Score: ${score} | ${reason}`);
+                if (isPut) logCallback(curr.time, 'PUT', 'ПРИНЯТ', `Score: ${score}/${config.minScore} | ${reason}`, config.modeId);
+                else if (isCall) logCallback(curr.time, 'CALL', 'ПРИНЯТ', `Score: ${score}/${config.minScore} | ${reason}`, config.modeId);
+                else if (putSweep || callSweep) logCallback(curr.time, putSweep ? 'PUT' : 'CALL', 'ОТКЛОНЁН', `Score: ${score}/${config.minScore} | ${reason}`, config.modeId);
             }
 
             return { isCall, isPut, score, reason, sweepLevel };
@@ -1178,7 +1278,6 @@
             let stats = { wins: 0, losses: 0, cancels: 0, pnl: 0 };
             
             let lastEvaluatedTimeLive = 0;
-            let lastCancelledTimeLive = 0; 
             let lastLoggedRejectTime = 0;
             let lastLiveTradeTime = 0;
             let lastBackgroundNewsTime = Date.now();
@@ -1228,7 +1327,7 @@
                 for (let idx = startEvalIdx; idx <= maxEvalIdx; idx++) {
                     const config = STRATEGY_1M_CONFIG[simStrategyMode];
                     
-                    if (idx - lastTradeIdx < config.cooldownCandles) continue; 
+                    if (suppressDuplicateSignals(lastTradeIdx, idx, config)) continue;
 
                     const backtestLogger = (t, dir, status, reason) => {};
 
@@ -1635,15 +1734,26 @@
                         const liqZones = calcLiquidityZones(data1mLive, 15); 
                         const atrSeries = calcATRSeries(data1mLive, 14);    
 
+                        const liqMap = new Map();
+                        liqZones.forEach(z => liqMap.set(z.time, z));
+                        const upperData = [];
+                        const lowerData = [];
+                        data1mLive.forEach(c => {
+                            const zone = liqMap.get(c.time);
+                            if (zone) {
+                                upperData.push({ time: c.time, value: zone.upper });
+                                lowerData.push({ time: c.time, value: zone.lower });
+                            }
+                        });
+
                         const currentClosedTime = data1mLive[closedIdx].time;
                         
                         let isCall = false;
                         let isPut = false;
 
                         const config = STRATEGY_1M_CONFIG[strategyMode.current];
-                        const isCooldownActive = (closedIdx - lastLiveTradeTime) < config.cooldownCandles;
-
-                        if (currentClosedTime !== lastEvaluatedTimeLive && !isCooldownActive) {
+                        
+                        if (currentClosedTime !== lastEvaluatedTimeLive && !suppressDuplicateSignals(lastLiveTradeTime, closedIdx, config)) {
                             lastEvaluatedTimeLive = currentClosedTime;
 
                             const liveLogger = (t, dir, status, reason) => {
@@ -1711,7 +1821,6 @@
             try {
                 await runBacktestPhase();
                 
-                // Переход в Live
                 mState = createMartingaleState(SESSION_CONFIG);
                 currentBalance = SESSION_CONFIG.startingBalance;
                 setSessionData({
