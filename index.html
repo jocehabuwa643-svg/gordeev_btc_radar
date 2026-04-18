@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Крипто Терминал Гордеева - PRO MAX (1M SMC + Ladder Martingale)</title>
+    <title>Крипто Терминал Гордеева - PRO MAX (SMC + Ledger Audit)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Зафиксирована стабильная версия 4.2.0 для избежания багов с маркерами -->
     <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 
     <style>
@@ -106,7 +105,6 @@
         @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         .ticker-wrapper { display: flex; width: max-content; animation: ticker 40s linear infinite; }
         
-        /* --- HORIZONTAL SCANNER ANIMATIONS --- */
         @keyframes scanner-beam-sweep {
             0% { left: 0%; transform: translateX(-100%); }
             100% { left: 100%; transform: translateX(0%); }
@@ -229,6 +227,39 @@
         .delay-300 { animation-delay: 0.4s; }
         .delay-400 { animation-delay: 0.5s; }
         .delay-500 { animation-delay: 0.6s; }
+
+        /* --- CTA REFERRAL BUTTON STYLES --- */
+        .referral-cta {
+            background: linear-gradient(135deg, #2563eb, #06b6d4);
+            box-shadow: 0 8px 25px -5px rgba(14, 165, 233, 0.4), inset 0 1px 2px rgba(255,255,255,0.4);
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .referral-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px -5px rgba(14, 165, 233, 0.5), inset 0 1px 2px rgba(255,255,255,0.5);
+            border-color: rgba(255,255,255,0.5);
+        }
+        .referral-cta:active {
+            transform: translateY(1px) scale(0.98);
+        }
+        .cta-cursor {
+            position: absolute;
+            right: 15%;
+            bottom: -8px;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 20;
+            animation: cursor-click-loop 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        @keyframes cursor-click-loop {
+            0%   { transform: translate(25px, 25px) scale(0.8); opacity: 0; }
+            20%  { transform: translate(0, 0) scale(1); opacity: 1; }
+            32%  { transform: translate(-2px, -2px) scale(0.95); opacity: 1; }
+            38%  { transform: translate(0, 0) scale(0.88); opacity: 1; }
+            55%  { transform: translate(0, 0) scale(1); opacity: 0; }
+            100% { transform: translate(25px, 25px) scale(0.8); opacity: 0; }
+        }
     </style>
 </head>
 <body>
@@ -802,6 +833,7 @@
         const App = () => {
           const [isStarted, setIsStarted] = useState(false);
           const [appPhase, setAppPhase] = useState('СИНХРОНИЗАЦИЯ...');
+          const [appStage, setAppStageState] = useState('boot'); 
           const [viewMode, setViewMode] = useState('SCREENER'); 
           const [scanIndex, setScanIndex] = useState(-1);
           const [asset, setAsset] = useState(ASSETS[0]);
@@ -823,8 +855,7 @@
           });
           
           const [metrics, setMetrics] = useState({ structure: 50, liquidity: 50, filterLevel: 60, smartMoney: 0, buyPressure: 50 });
-          const [tradeStats, setTradeStats] = useState({ wins: 0, losses: 0, winRate: 0 });
-
+          
           const [newsHeadlines, setNewsHeadlines] = useState(["ОБНОВЛЕНИЕ ДАННЫХ BTC..."]);
           const [statusColorClass, setStatusColorClass] = useState('text-slate-800');
           
@@ -834,6 +865,7 @@
           const candleSeries = useRef(null);
           const extraSeriesRef = useRef([]); 
           const priceLinesRef = useRef([]);
+          const activeLiveTradeRef = useRef(null);
           const tradesRef = useRef([]);
           
           const audioCtx = useRef(null);
@@ -841,12 +873,18 @@
           const currentPrice = useRef(null);
           const strategyMode = useRef('NORMAL'); 
           const markersRef = useRef([]); 
+          
+          const appStageRef = useRef('boot');
+          const setAppStage = useCallback((stage) => {
+              appStageRef.current = stage;
+              setAppStageState(stage);
+          }, []);
 
           const logsContainerRef = useRef(null); 
           const fullNewsPool = useRef([...FALLBACK_BTC_NEWS]);
           const readNewsHistory = useRef(new Set());
 
-          // --- SPEECH QUEUE ENGINE ---
+          // --- SPEECH QUEUE ENGINE (NEW & ROBUST) ---
           const speechQueueRef = useRef([]);
           const isSpeakingRef = useRef(false);
 
@@ -886,7 +924,7 @@
               setTimeout(finish, Math.max(3000, nextItem.text.length * 80));
           }, []);
 
-          const speak = useCallback((text) => {
+          const enqueueSpeech = useCallback((text) => {
               return new Promise(resolve => {
                   if (!window.speechSynthesis || !text) {
                       resolve();
@@ -896,7 +934,49 @@
                   processSpeechQueue();
               });
           }, [processSpeechQueue]);
-          // ---------------------------
+
+          const playSound = (type) => {
+            if (!audioCtx.current) return;
+            const ctx = audioCtx.current;
+            if (ctx.state === 'suspended') ctx.resume();
+            
+            const playTone = (freq, oscType, dur, vol, delay = 0) => {
+                try {
+                    const o = ctx.createOscillator();
+                    const g = ctx.createGain();
+                    o.type = oscType;
+                    o.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+                    g.gain.setValueAtTime(0, ctx.currentTime + delay);
+                    g.gain.linearRampToValueAtTime(vol, ctx.currentTime + delay + 0.02);
+                    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
+                    o.connect(g); g.connect(ctx.destination);
+                    o.start(ctx.currentTime + delay);
+                    o.stop(ctx.currentTime + delay + dur);
+                } catch (e) {}
+            };
+
+            if (type === 'scan') playTone(1200 + Math.random()*300, 'sine', 0.03, 0.005);
+            if (type === 'found') { playTone(600, 'triangle', 0.1, 0.03); playTone(800, 'triangle', 0.1, 0.03, 0.1); }
+            if (type === 'tf_change') playTone(800, 'sine', 0.1, 0.02);
+            if (type === 'start') { 
+                playTone(523.25, 'sine', 0.4, 0.03); 
+                playTone(659.25, 'sine', 0.5, 0.03, 0.1); 
+                playTone(783.99, 'sine', 0.6, 0.04, 0.2); 
+            }
+            if (type === 'win') { 
+                playTone(523.25, 'triangle', 0.4, 0.04); 
+                playTone(659.25, 'triangle', 0.5, 0.04, 0.1); 
+                playTone(783.99, 'triangle', 0.8, 0.05, 0.2); 
+            }
+            if (type === 'loss') { 
+                playTone(300, 'sawtooth', 0.4, 0.03); 
+                playTone(250, 'sawtooth', 0.6, 0.04, 0.2); 
+            }
+            if (type === 'cancel') {
+                playTone(400, 'square', 0.1, 0.04); 
+                playTone(300, 'square', 0.2, 0.04, 0.15); 
+            }
+          };
 
           const fetchNews = async () => {
               try {
@@ -959,49 +1039,6 @@
           const addLog = useCallback((msg, isAi = false) => {
             setLogs(p => [msg, ...p].slice(0, 15)); 
           }, []);
-
-          const playSound = (type) => {
-            if (!audioCtx.current) return;
-            const ctx = audioCtx.current;
-            if (ctx.state === 'suspended') ctx.resume();
-            
-            const playTone = (freq, oscType, dur, vol, delay = 0) => {
-                try {
-                    const o = ctx.createOscillator();
-                    const g = ctx.createGain();
-                    o.type = oscType;
-                    o.frequency.setValueAtTime(freq, ctx.currentTime + delay);
-                    g.gain.setValueAtTime(0, ctx.currentTime + delay);
-                    g.gain.linearRampToValueAtTime(vol, ctx.currentTime + delay + 0.02);
-                    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
-                    o.connect(g); g.connect(ctx.destination);
-                    o.start(ctx.currentTime + delay);
-                    o.stop(ctx.currentTime + delay + dur);
-                } catch (e) {}
-            };
-
-            if (type === 'scan') playTone(1200 + Math.random()*300, 'sine', 0.03, 0.005);
-            if (type === 'found') { playTone(600, 'triangle', 0.1, 0.03); playTone(800, 'triangle', 0.1, 0.03, 0.1); }
-            if (type === 'tf_change') playTone(800, 'sine', 0.1, 0.02);
-            if (type === 'start') { 
-                playTone(523.25, 'sine', 0.4, 0.03); 
-                playTone(659.25, 'sine', 0.5, 0.03, 0.1); 
-                playTone(783.99, 'sine', 0.6, 0.04, 0.2); 
-            }
-            if (type === 'win') { 
-                playTone(523.25, 'triangle', 0.4, 0.04); 
-                playTone(659.25, 'triangle', 0.5, 0.04, 0.1); 
-                playTone(783.99, 'triangle', 0.8, 0.05, 0.2); 
-            }
-            if (type === 'loss') { 
-                playTone(300, 'sawtooth', 0.4, 0.03); 
-                playTone(250, 'sawtooth', 0.6, 0.04, 0.2); 
-            }
-            if (type === 'cancel') {
-                playTone(400, 'square', 0.1, 0.04); 
-                playTone(300, 'square', 0.2, 0.04, 0.15); 
-            }
-          };
 
           // --- TRADE VISUALIZATION LOOP (OVERLAY) ---
           useEffect(() => {
@@ -1318,19 +1355,28 @@
               };
           };
 
-          const recalculateSessionData = (startBal, tradesArr) => {
-              let pnl = 0;
-              let wins = 0;
-              let losses = 0;
-              let cancels = 0;
+          // --- АУДИТ И ПОДСЧЕТ ЛЕДЖЕРА ---
+          const auditLedger = (startBal, tradesArr) => {
+              let calcPnl = 0;
+              let calcWins = 0;
+              let calcLosses = 0;
+              let calcCancels = 0;
               tradesArr.forEach(t => {
-                  pnl += t.pnl || 0;
-                  if (t.result === 'WIN') wins++;
-                  if (t.result === 'LOSS') losses++;
-                  if (t.result === 'CANCELLED') cancels++;
+                  calcPnl += t.pnl || 0;
+                  if (t.result === 'WIN') calcWins++;
+                  if (t.result === 'LOSS') calcLosses++;
+                  if (t.result === 'CANCELLED') calcCancels++;
               });
-              const balance = startBal + pnl;
-              return { balance, pnl, wins, losses, cancels };
+              
+              const isValid = (calcWins + calcLosses + calcCancels === tradesArr.length);
+              if (isValid) {
+                  addLog(`CONSISTENCY CHECK: OK | Сделок: ${tradesArr.length} | PnL: ${calcPnl} ₽`, true);
+              } else {
+                  addLog(`CONSISTENCY CHECK: FAIL | Несовпадение данных!`, true);
+              }
+
+              const balance = startBal + calcPnl;
+              return { balance, pnl: calcPnl, wins: calcWins, losses: calcLosses, cancels: calcCancels };
           };
 
           const logTradeToJournal = (trade, currentBal) => {
@@ -1361,7 +1407,8 @@
                     await audioCtx.current.resume();
                 }
 
-                await speak('Институциональный алгоритм активирован. Запущен анализ пулов ликвидности Smart Money на 1-минутном таймфрейме за последние 12 часов.');
+                setAppStage('backtest');
+                await enqueueSpeech('Институциональный алгоритм активирован. Запущен анализ пулов ликвидности Smart Money на 1-минутном таймфрейме за последние 12 часов.');
                 await new Promise(r => setTimeout(r, 500)); 
 
                 updateStatus('БЭКТЕСТ: АНАЛИЗ SMC ИСТОРИИ...', 'text-cyan-600');
@@ -1482,13 +1529,8 @@
                     }
                 }
                 
-                const stats = recalculateSessionData(SESSION_CONFIG.startingBalance, tradesRef.current);
+                const stats = auditLedger(SESSION_CONFIG.startingBalance, tradesRef.current);
 
-                console.log(`=== АУДИТ ПАЙПЛАЙНА ЗАВЕРШЕН ===`);
-                console.log(`Pnl: ${stats.pnl} | Wins: ${stats.wins} | Losses: ${stats.losses} | Canceled: ${stats.cancels}`);
-
-                const total = stats.wins + stats.losses;
-                
                 setSessionData({
                     balance: stats.balance,
                     stake: mState.currentStake,
@@ -1515,31 +1557,35 @@
                         }
                         drawIndicators(upperData, lowerData);
                         chartInstance.current.timeScale().fitContent();
-                    } catch(err) {
-                        console.error("Ошибка при установке истории:", err);
-                    }
+                    } catch(err) {}
                 }
 
+                setAppStage('backtest_summary');
+                const total = stats.wins + stats.losses;
                 if (total > 0) {
                     playSound('win');
                     const pnlText = stats.pnl > 0 ? `плюс ${stats.pnl}` : (stats.pnl < 0 ? `минус ${Math.abs(stats.pnl)}` : `ноль`);
-                    const announceText = `За последние 12 часов стратегия нашла ${total + stats.cancels} сделок. Плюсовых ${stats.wins}, убыточных ${stats.losses}, отменённых ${stats.cancels}. Если бы вы заходили в сделки по 300 рублей с текущей моделью ставок, итоговый результат составил бы ${pnlText} рублей. Итоговый баланс составил бы ${stats.balance} рублей. Перехожу к живому сканированию.`;
+                    const announceText = `За последние 12 часов стратегия нашла ${total + stats.cancels} сделок. Плюсовых ${stats.wins}, убыточных ${stats.losses}, отменённых ${stats.cancels}. Если бы вы заходили в сделки по 300 рублей с текущей моделью ставок, итоговый результат составил бы ${pnlText} рублей. Итоговый баланс составил бы ${stats.balance} рублей.`;
                     addLog(`БЭКТЕСТ ЗАВЕРШЕН. ИТОГ: ${pnlText} ₽`, true);
-                    await speak(announceText);
+                    await enqueueSpeech(announceText);
                 } else {
                     addLog(`БЭКТЕСТ ЗА 12H: СДЕЛКИ НЕ НАЙДЕНЫ.`, true);
-                    await speak(`Бэктест завершен. Перехожу к живому сканированию рынка.`);
+                    await enqueueSpeech(`Бэктест завершен. Сделок не найдено.`);
                 }
 
-                updateStatus('ИЗУЧЕНИЕ РЕАЛЬНОЙ ИСТОРИИ...', 'text-slate-500');
-                await new Promise(r => setTimeout(r, 6000));
+                setAppStage('waiting_voice_end');
+                await new Promise(r => setTimeout(r, 1000));
 
-                await speak('Запускаю радар поиска новой ликвидности.');
+                await enqueueSpeech('Перехожу к живому сканированию рынка.');
+                
+                updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ 1M...', 'text-slate-500');
                 setViewMode('SCREENER');
+                setAppStage('scanning');
                 await new Promise(r => setTimeout(r, 1000));
             };
 
             const handleConfirmedSignal = async (cur, data1mLive, closedIdx, isCall, isPut, liveSweepLvl, liveTradesArr) => {
+                setAppStage('signal_pending');
                 const directionText = isCall ? "повышение" : "понижение";
                 const currentClosedTime = data1mLive[closedIdx].time;
                 const lastIdx = data1mLive.length - 1;
@@ -1570,7 +1616,7 @@
                             size: 1
                         });
                         safeSetMarkers(markersRef.current);
-                    } catch (e) { console.error(e); }
+                    } catch (e) { }
                 }
 
                 const liqZones = calcLiquidityZones(data1mLive, 15); 
@@ -1591,7 +1637,7 @@
                 addLog(`ЗАФИКСИРОВАН ПАТТЕРН SFP (1M)`, true);
                 addLog(`ОКНО ПОДГОТОВКИ: ОЖИДАНИЕ 3 СЕК...`);
 
-                await speak(`Внимание. Успешно подтверждено снятие ликвидности. Направление на ${directionText}. Проверка отката...`);
+                await enqueueSpeech(`Внимание. Успешно подтверждено снятие ликвидности. Направление на ${directionText}. Проверка отката...`);
 
                 let tradeCancelled = false;
                 let cancelReason = "";
@@ -1601,7 +1647,6 @@
                     cancelReason = mState.reason;
                 }
                 
-                // ОКНО ПОДГОТОВКИ (Trade Execution 3 сек)
                 if (!tradeCancelled) {
                     for(let w=3; w>0; w--) {
                         if (!engineActive.current) break;
@@ -1611,9 +1656,7 @@
                         let prepData = null;
                         try {
                             prepData = await ScannerAPI.getCandles(cur.symbol, 2, '1m');
-                        } catch(e) {
-                            // ignore
-                        }
+                        } catch(e) {}
 
                         if (prepData && prepData.length > 0) {
                             const liveTick = prepData[prepData.length - 1];
@@ -1635,7 +1678,7 @@
                 if (tradeCancelled && engineActive.current) {
                     playSound('cancel');
                     updateStatus('ОТМЕНА: СИГНАЛ СБРОШЕН', 'text-slate-600 font-bold');
-                    await speak("Отмена сигнала. Импульс не удержался.");
+                    await enqueueSpeech("Отмена сигнала. Импульс не удержался.");
                     
                     if (activeLiveTradeRef.current) {
                         activeLiveTradeRef.current.result = 'CANCELLED';
@@ -1647,7 +1690,7 @@
                         
                         logTradeToJournal(activeLiveTradeRef.current, currentBalance);
 
-                        const lStats = recalculateSessionData(SESSION_CONFIG.startingBalance, liveTradesArr);
+                        const lStats = auditLedger(SESSION_CONFIG.startingBalance, liveTradesArr);
                         setSessionData({
                             balance: lStats.balance,
                             stake: mState.currentStake,
@@ -1662,6 +1705,7 @@
                     activeLiveTradeRef.current = null;
                     await new Promise(r => setTimeout(r, 4000));
                     setViewMode('SCREENER');
+                    setAppStage('scanning');
                     updateStatus('ПЕРЕЗАПУСК СКАНИРОВАНИЯ...', 'text-slate-600');
                     await new Promise(r => setTimeout(r, 2000));
                     return; 
@@ -1669,12 +1713,12 @@
 
                 if (!engineActive.current) return;
 
+                setAppStage('trade_active');
                 playSound('start');
                 updateStatus('СИГНАЛ АКТИВЕН', 'text-blue-700 font-bold');
                 
                 const expMins = 5; 
                 
-                // ФИКСАЦИЯ ВХОДА (ENTRY)
                 activeLiveTradeRef.current.entryTime = Math.floor(Date.now() / 1000);
                 activeLiveTradeRef.current.entryPrice = currentPrice.current;
                 activeLiveTradeRef.current.exitTime = Math.floor(Date.now() / 1000) + (expMins * 60);
@@ -1682,7 +1726,7 @@
                 setSignal({ type: isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice: currentPrice.current });
 
                 addLog(`ВХОД ВЫПОЛНЕН: ${isCall ? 'ВВЕРХ' : 'ВНИЗ'} НА 5 МИН.`, true);
-                speak(`Вход подтвержден. Время экспирации пять минут. Жмите кнопку!`);
+                await enqueueSpeech(`Вход подтвержден. Время экспирации пять минут. Жмите кнопку!`);
 
                 let expirySeconds = expMins * 60;
                 let isLive = true;
@@ -1725,6 +1769,7 @@
                 setCountdown(null);
                 if (!engineActive.current) return;
 
+                setAppStage('trade_result');
                 updateStatus('АНАЛИЗ РЕЗУЛЬТАТА', 'text-slate-500');
 
                 const finalData = await ScannerAPI.getCandles(cur.symbol, 1, '1m').catch(()=>null);
@@ -1750,7 +1795,7 @@
                 
                 logTradeToJournal(activeLiveTradeRef.current, currentBalance);
 
-                const lStats = recalculateSessionData(SESSION_CONFIG.startingBalance, liveTradesArr);
+                const lStats = auditLedger(SESSION_CONFIG.startingBalance, liveTradesArr);
                 setSessionData({
                     balance: lStats.balance,
                     stake: mState.currentStake,
@@ -1765,18 +1810,19 @@
                     playSound('win');
                     strategyMode.current = 'NORMAL';
                     setStrategyModeUI('NORMAL');
-                    await speak(`Плюс. Сделка успешно завершена.`);
+                    await enqueueSpeech(`Плюс. Сделка успешно завершена.`);
                 } else {
                     playSound('loss');
                     strategyMode.current = 'REINFORCED';
                     setStrategyModeUI('REINFORCED');
-                    await speak(`Минус. Ложный пробой. Шаг мартингейла увеличен.`);
+                    await enqueueSpeech(`Минус. Ложный пробой. Шаг мартингейла увеличен.`);
                 }
 
                 setSignal(null);
                 setMetrics(prev => ({ ...prev, smartMoney: 0 }));
                 activeLiveTradeRef.current = null;
                 await new Promise(r => setTimeout(r, 2000));
+                setAppStage('scanning');
             };
 
             const runLiveScanCycle = async (liveTradesArr) => {
@@ -1867,7 +1913,7 @@
                                 
                                 activeLiveTradeRef.current = buildTradeFinanceRecord(trade, currentBalance, mState, SESSION_CONFIG);
                                 liveTradesArr.push(activeLiveTradeRef.current);
-                                tradesRef.current.push(activeLiveTradeRef.current); // For global visual loop
+                                tradesRef.current.push(activeLiveTradeRef.current); 
                             }
                         }
 
@@ -1876,7 +1922,7 @@
                         }
                     }
                     
-                    if (!signalFound && engineActive.current) {
+                    if (!signalFound && engineActive.current && appStageRef.current === 'scanning') {
                         if (Date.now() - lastBackgroundNewsTime > 10 * 60 * 1000) {
                             lastBackgroundNewsTime = Date.now();
                             const availableNews = fullNewsPool.current.filter(n => n && n.length > 20 && !readNewsHistory.current.has(n));
@@ -1886,7 +1932,7 @@
                                 let cleanText = randomNews.replace(/(https?:\/\/[^\s]+)/g, '').replace(/[#_*~|><]/g, '').trim();
                                 if (cleanText.length > 150) cleanText = cleanText.substring(0, 150) + '...';
                                 addLog(`АУДИО СВОДКА: ${cleanText.substring(0, 45).toUpperCase()}...`, true);
-                                speak("Фоновая сводка рынка. " + cleanText).catch(()=>null);
+                                enqueueSpeech("Фоновая сводка рынка. " + cleanText);
                             }
                         }
                         await new Promise(r => setTimeout(r, 1500)); 
@@ -1911,7 +1957,6 @@
                     cancels: 0
                 });
 
-                // Изолируем liveTrades от history
                 const liveTradesArray = [];
 
                 while (engineActive.current) {
@@ -2151,6 +2196,29 @@
 
                   <div className="flex-1 flex flex-col p-3 md:p-4 gap-3 md:gap-4 overflow-y-hidden relative z-10">
                     
+                    {/* NEW CTA BUTTON */}
+                    <div className="shrink-0 flex flex-col w-full relative group">
+                        <a
+                            href="https://intrade31.bar/311164"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="referral-cta relative w-full flex items-center justify-center rounded-2xl py-3 px-4 font-bold tracking-widest uppercase overflow-hidden"
+                        >
+                            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
+                            <span className="relative z-10 flex flex-col items-center">
+                                <span className="text-[9px] text-white/80 tracking-[0.2em] mb-0.5">Брокер для входа</span>
+                                <span className="text-sm md:text-base text-white oswald-font drop-shadow-md">ТОРГОВАТЬ ЗДЕСЬ</span>
+                            </span>
+                            <span className="cta-cursor" aria-hidden="true">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white drop-shadow-lg transform -rotate-12">
+                                    <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
+                                    <path d="M13 13l6 6"></path>
+                                </svg>
+                            </span>
+                        </a>
+                    </div>
+                    {/* END NEW CTA BUTTON */}
+
                     <div className="grid grid-cols-4 gap-2 glass-card rounded-2xl p-2 shrink-0 border-white bg-white/80">
                        <Speedometer value={sessionData.balance / 100} label="БАЛАНС (₽)" colorHex="#10b981" glow={true} />
                        <Speedometer value={sessionData.stake} label="СТАВКА (₽)" colorHex="#f59e0b" />
