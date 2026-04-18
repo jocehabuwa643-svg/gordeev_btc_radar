@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Крипто Терминал Гордеева - PRO MAX (SMC + Ledger Audit)</title>
+    <title>Крипто Терминал Гордеева - PRO MAX (1M SMC + Ladder Martingale)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -105,6 +105,7 @@
         @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         .ticker-wrapper { display: flex; width: max-content; animation: ticker 40s linear infinite; }
         
+        /* --- HORIZONTAL SCANNER ANIMATIONS --- */
         @keyframes scanner-beam-sweep {
             0% { left: 0%; transform: translateX(-100%); }
             100% { left: 100%; transform: translateX(0%); }
@@ -287,7 +288,6 @@
           "Маркетмейкер собирает стопы розничных трейдеров перед разворотом."
         ];
 
-        // --- ADAPTIVE STRATEGY CONFIGURATION (1M SMC) ---
         const STRATEGY_1M_CONFIG = {
             NORMAL: {
                 modeId: 'NORMAL',
@@ -309,7 +309,6 @@
             }
         };
 
-        // --- UPDATED SESSION CONFIG (LADDER MARTINGALE: Base 300) ---
         const SESSION_CONFIG = {
             startingBalance: 10000,
             baseStake: 300, 
@@ -319,7 +318,6 @@
 
         const TRADE_LEDGER_KEY = 'gordeev_trade_ledger_v1';
 
-        // --- LEDGER STORAGE FUNCTIONS ---
         function loadTradeLedger() {
             try {
                 const raw = localStorage.getItem(TRADE_LEDGER_KEY);
@@ -357,7 +355,6 @@
 
             persistedTrades.forEach((trade) => {
                 const id = trade.tradeId || buildTradeId(trade);
-                // Real live trade always overwrites backtest simulation
                 map.set(id, { ...trade, tradeId: id, source: 'live' });
             });
 
@@ -447,7 +444,6 @@
             return p.toFixed(5);
         };
 
-        // --- CALC LIQUIDITY ZONES (Local Swing H/L) ---
         function calcLiquidityZones(data, period = 8) {
             let res = [];
             for (let i = 0; i < data.length; i++) {
@@ -491,7 +487,6 @@
             return res;
         }
 
-        // --- MARTINGALE STATE MANAGEMENT (LEDGER BASED) ---
         function createMartingaleState(config = SESSION_CONFIG) {
             return {
                 ladderIndex: 0,
@@ -502,9 +497,9 @@
         }
 
         function getTradePnL(result, stake, config = SESSION_CONFIG) {
-            if (result === 'WIN') return Math.round(stake * config.payoutPercent); // e.g. 300 * 0.7 = 210
-            if (result === 'LOSS') return -stake; // e.g. -300
-            return 0; // CANCELLED
+            if (result === 'WIN') return Math.round(stake * config.payoutPercent); 
+            if (result === 'LOSS') return -stake; 
+            return 0; 
         }
 
         function updateMartingaleAfterTrade(result, state, balance, config = SESSION_CONFIG) {
@@ -565,7 +560,6 @@
             };
         }
 
-        // --- ДОПОЛНИТЕЛЬНЫЕ ФИЛЬТРЫ СТРАТЕГИИ ---
         function detectImpulseTrap(candle, atr, config) {
             const candleSize = Math.max(candle.high - candle.low, 0.0001);
             return candleSize > atr * config.maxImpulseAtrRatio;
@@ -588,7 +582,6 @@
             return (currentIndex - lastSignalIndex) < config.cooldownCandles;
         }
 
-        // --- СТРОГАЯ 1M SMC СТРАТЕГИЯ ---
         function detectLiquiditySweep1M(data, idx, zonesArr, atrArr, config, logCallback = null) {
             if (idx < 2 || !data[idx] || !zonesArr[idx] || !atrArr[idx] || !zonesArr[idx - 1]) {
                 return { isCall: false, isPut: false, score: 0, reason: 'not_enough_data', sweepLevel: null };
@@ -1643,7 +1636,7 @@
                 await new Promise(r => setTimeout(r, 1000));
             };
 
-            const runLiveScanCycle = async () => {
+            const runLiveScanCycle = async (liveTradesArr) => {
                 try {
                     updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ 1M...', 'text-slate-700');
                     setViewMode('SCREENER');
@@ -1671,18 +1664,34 @@
                         const liqZones = calcLiquidityZones(data1mLive, 15); 
                         const atrSeries = calcATRSeries(data1mLive, 14);    
 
+                        const liqMap = new Map();
+                        liqZones.forEach(z => liqMap.set(z.time, z));
+                        const upperData = [];
+                        const lowerData = [];
+                        data1mLive.forEach(c => {
+                            const zone = liqMap.get(c.time);
+                            if (zone) {
+                                upperData.push({ time: c.time, value: zone.upper });
+                                lowerData.push({ time: c.time, value: zone.lower });
+                            }
+                        });
+
                         const currentClosedTime = data1mLive[closedIdx].time;
+                        
+                        let isCall = false;
+                        let isPut = false;
+
                         const config = STRATEGY_1M_CONFIG[strategyMode.current];
                         
-                        // Определяем последний трейд из Ledger для Cooldown
+                        // Determine last live trade index for duplicate suppression
+                        let lastLiveTradeIdx = -999;
                         const recentLiveTrades = tradesRef.current.filter(t => t.source === 'live');
-                        const lastTradeInLedgerTime = recentLiveTrades.length > 0 ? recentLiveTrades[recentLiveTrades.length-1].signalTime : 0;
-                        // Approximate index lookup for cooldown
-                        const candleW = 60;
-                        const candlesSinceLastTrade = (currentClosedTime - lastTradeInLedgerTime) / candleW;
-                        const isCooldownActive = lastTradeInLedgerTime > 0 && candlesSinceLastTrade < config.cooldownCandles;
+                        if (recentLiveTrades.length > 0) {
+                            const lastTradeTime = recentLiveTrades[recentLiveTrades.length - 1].signalTime;
+                            lastLiveTradeIdx = data1mLive.findIndex(c => c.time === lastTradeTime);
+                        }
 
-                        if (currentClosedTime !== lastEvaluatedTimeLive && !isCooldownActive) {
+                        if (currentClosedTime !== lastEvaluatedTimeLive && !suppressDuplicateSignals(lastLiveTradeIdx, closedIdx, config)) {
                             lastEvaluatedTimeLive = currentClosedTime;
 
                             const liveLogger = (t, dir, status, reason) => {
@@ -1692,11 +1701,14 @@
                                 }
                             };
 
-                            const { isCall, isPut, sweepLevel } = detectLiquiditySweep1M(
+                            const { isCall: callSignal, isPut: putSignal, sweepLevel } = detectLiquiditySweep1M(
                                 data1mLive, closedIdx, liqZones, atrSeries, config, liveLogger
                             );
 
                             if ((callSignal || putSignal)) {
+                                isCall = callSignal;
+                                isPut = putSignal;
+                                
                                 const tradeBase = {
                                     tradeId: buildTradeId({signalTime: currentClosedTime, direction: isCall ? 'CALL' : 'PUT'}),
                                     signalTime: currentClosedTime,
@@ -1706,7 +1718,7 @@
                                     minLow: data1mLive[lastIdx].low
                                 };
                                 
-                                await handleConfirmedSignal(cur, data1mLive, closedIdx, isCall, isPut, sweepLevel, tradeBase);
+                                await handleConfirmedSignal(cur, data1mLive, closedIdx, isCall, isPut, sweepLevel, tradeBase, liveTradesArr);
                             }
                         }
                     }
@@ -1731,7 +1743,7 @@
                 }
             };
 
-            const handleConfirmedSignal = async (cur, data1mLive, closedIdx, isCall, isPut, liveSweepLvl, tradeBase) => {
+            const handleConfirmedSignal = async (cur, data1mLive, closedIdx, isCall, isPut, liveSweepLvl, tradeBase, liveTradesArr) => {
                 setAppStage('signal_pending');
                 const directionText = isCall ? "повышение" : "понижение";
                 const currentClosedTime = data1mLive[closedIdx].time;
@@ -1807,6 +1819,7 @@
                         if (prepData && prepData.length > 0) {
                             const liveTick = prepData[prepData.length - 1];
                             currentPrice.current = liveTick.close;
+
                             tradeBase.maxHigh = Math.max(tradeBase.maxHigh, liveTick.high);
                             tradeBase.minLow = Math.min(tradeBase.minLow, liveTick.low);
 
@@ -1832,9 +1845,10 @@
                     mState = updateMartingaleAfterTrade('CANCELLED', mState, currentBalance, SESSION_CONFIG);
                     
                     tradesRef.current = appendCompletedTrade(tradesRef.current, cancelledRecord);
+                    liveTradesArr.push(cancelledRecord);
                     logTradeToJournal(cancelledRecord, currentBalance);
 
-                    const lStats = auditLedger(SESSION_CONFIG.startingBalance, tradesRef.current);
+                    const lStats = auditLedger(SESSION_CONFIG.startingBalance, liveTradesArr);
                     setSessionData({
                         balance: lStats.balance,
                         stake: mState.currentStake,
@@ -1939,9 +1953,10 @@
                 mState = updateMartingaleAfterTrade(tradeBase.result, mState, currentBalance, SESSION_CONFIG);
                 
                 tradesRef.current = appendCompletedTrade(tradesRef.current, finishedRecord);
+                liveTradesArr.push(finishedRecord);
                 logTradeToJournal(finishedRecord, currentBalance);
 
-                const lStats = auditLedger(SESSION_CONFIG.startingBalance, tradesRef.current);
+                const lStats = auditLedger(SESSION_CONFIG.startingBalance, liveTradesArr);
                 setSessionData({
                     balance: lStats.balance,
                     stake: mState.currentStake,
@@ -1977,25 +1992,20 @@
                 mState = createMartingaleState(SESSION_CONFIG);
                 currentBalance = SESSION_CONFIG.startingBalance;
                 
-                // Скрытый лайфхак: чтобы лайв не учитывал PnL истории, мы просто будем считать "новую" сессию 
-                // Но графики и бэктест остаются.
-                const liveTradesArray = tradesRef.current.filter(t => t.source === 'live');
-                const liveStats = auditLedger(SESSION_CONFIG.startingBalance, liveTradesArray);
-                
-                currentBalance = liveStats.balance;
+                const liveTradesArray = [];
                 
                 setSessionData({
                     balance: currentBalance,
                     stake: mState.currentStake,
                     step: mState.ladderIndex,
-                    pnl: liveStats.pnl,
-                    wins: liveStats.wins,
-                    losses: liveStats.losses,
-                    cancels: liveStats.cancels
+                    pnl: 0,
+                    wins: 0,
+                    losses: 0,
+                    cancels: 0
                 });
 
                 while (engineActive.current) {
-                    await runLiveScanCycle();
+                    await runLiveScanCycle(liveTradesArray);
                 }
             } catch (e) {
                 console.error("Critical Engine Error:", e);
