@@ -288,6 +288,7 @@
           "Маркетмейкер собирает стопы розничных трейдеров перед разворотом."
         ];
 
+        // --- ADAPTIVE STRATEGY CONFIGURATION (1M SMC) ---
         const STRATEGY_1M_CONFIG = {
             NORMAL: {
                 modeId: 'NORMAL',
@@ -296,7 +297,8 @@
                 minReclaimAtrRatio: 0.12,
                 maxImpulseAtrRatio: 1.5,
                 cooldownCandles: 4,
-                minConfirmBodyRatio: 0.35
+                minConfirmBodyRatio: 0.35,
+                maxEntryDriftAtrRatio: 0.22 
             },
             REINFORCED: {
                 modeId: 'REINFORCED',
@@ -305,10 +307,12 @@
                 minReclaimAtrRatio: 0.15,
                 maxImpulseAtrRatio: 1.35,
                 cooldownCandles: 6,
-                minConfirmBodyRatio: 0.40
+                minConfirmBodyRatio: 0.40,
+                maxEntryDriftAtrRatio: 0.22 
             }
         };
 
+        // --- UPDATED SESSION CONFIG (LADDER MARTINGALE: Base 300) ---
         const SESSION_CONFIG = {
             startingBalance: 10000,
             baseStake: 300, 
@@ -444,6 +448,7 @@
             return p.toFixed(5);
         };
 
+        // --- CALC LIQUIDITY ZONES (Local Swing H/L) ---
         function calcLiquidityZones(data, period = 8) {
             let res = [];
             for (let i = 0; i < data.length; i++) {
@@ -487,6 +492,7 @@
             return res;
         }
 
+        // --- MARTINGALE STATE MANAGEMENT (LEDGER BASED) ---
         function createMartingaleState(config = SESSION_CONFIG) {
             return {
                 ladderIndex: 0,
@@ -497,9 +503,9 @@
         }
 
         function getTradePnL(result, stake, config = SESSION_CONFIG) {
-            if (result === 'WIN') return Math.round(stake * config.payoutPercent); 
-            if (result === 'LOSS') return -stake; 
-            return 0; 
+            if (result === 'WIN') return Math.round(stake * config.payoutPercent); // e.g. 300 * 0.7 = 210
+            if (result === 'LOSS') return -stake; // e.g. -300
+            return 0; // CANCELLED
         }
 
         function updateMartingaleAfterTrade(result, state, balance, config = SESSION_CONFIG) {
@@ -560,6 +566,7 @@
             };
         }
 
+        // --- ДОПОЛНИТЕЛЬНЫЕ ФИЛЬТРЫ СТРАТЕГИИ ---
         function detectImpulseTrap(candle, atr, config) {
             const candleSize = Math.max(candle.high - candle.low, 0.0001);
             return candleSize > atr * config.maxImpulseAtrRatio;
@@ -582,6 +589,7 @@
             return (currentIndex - lastSignalIndex) < config.cooldownCandles;
         }
 
+        // --- СТРОГАЯ 1M SMC СТРАТЕГИЯ ---
         function detectLiquiditySweep1M(data, idx, zonesArr, atrArr, config, logCallback = null) {
             if (idx < 2 || !data[idx] || !zonesArr[idx] || !atrArr[idx] || !zonesArr[idx - 1]) {
                 return { isCall: false, isPut: false, score: 0, reason: 'not_enough_data', sweepLevel: null };
@@ -948,7 +956,6 @@
           const extraSeriesRef = useRef([]); 
           const priceLinesRef = useRef([]);
           
-          // Единый источник правды
           const tradesRef = useRef([]); 
           
           const audioCtx = useRef(null);
@@ -1369,7 +1376,10 @@
                   extraSeriesRef.current.push(upperSeries);
 
                   lowerSeries = chartInstance.current.addLineSeries({ 
-                      color: 'rgba(16, 185, 129, 0.5)', lineWidth: 2, lineStyle: 2, title: 'SELL LIQUIDITY' 
+                      color: 'rgba(16, 185, 129, 0.5)', 
+                      lineWidth: 2, 
+                      lineStyle: 2, 
+                      title: 'SELL LIQUIDITY' 
                   });
                   lowerSeries.setData(lowerData);
                   extraSeriesRef.current.push(lowerSeries);
@@ -1515,17 +1525,24 @@
                         let cancelled = false;
                         let cancelReason = "";
                         
-                        if (isPut && prepCandle.high > sweepLevel) {
-                            cancelled = true; cancelReason = "Импульс против сигнала в 1M окне";
+                        const atr = atrSeries[idx].value || 0.0001;
+                        const maxDrift = atr * config.maxEntryDriftAtrRatio;
+                        const signalPrice = data1m[idx].close;
+                        const entryPrice = prepCandle.open;
+                        
+                        if (isPut) {
+                            if (prepCandle.high > sweepLevel) { cancelled = true; cancelReason = "Импульс против сигнала в 1M окне"; }
+                            else if ((signalPrice - entryPrice) > maxDrift) { cancelled = true; cancelReason = "Цена ушла слишком далеко (Late Entry)"; }
                         }
-                        if (isCall && prepCandle.low < sweepLevel) {
-                            cancelled = true; cancelReason = "Импульс против сигнала в 1M окне";
+                        if (isCall) {
+                            if (prepCandle.low < sweepLevel) { cancelled = true; cancelReason = "Импульс против сигнала в 1M окне"; }
+                            else if ((entryPrice - signalPrice) > maxDrift) { cancelled = true; cancelReason = "Цена ушла слишком далеко (Late Entry)"; }
                         }
+                        
                         if (mState.blocked) {
                             cancelled = true; cancelReason = mState.reason;
                         }
 
-                        const entryPrice = prepCandle.open;
                         let exitPrice = data1m[idx + 6].close; 
                         
                         let result = 'CANCELLED';
@@ -1552,7 +1569,7 @@
                             signalTime: signalTime,
                             entryTime: prepCandle.time, 
                             exitTime: data1m[idx + 6].time, 
-                            signalPrice: data1m[idx].close,
+                            signalPrice: signalPrice,
                             entryPrice: entryPrice, 
                             exitPrice: cancelled ? null : exitPrice,
                             direction: isCall ? 'CALL' : 'PUT',
@@ -1683,7 +1700,6 @@
 
                         const config = STRATEGY_1M_CONFIG[strategyMode.current];
                         
-                        // Determine last live trade index for duplicate suppression
                         let lastLiveTradeIdx = -999;
                         const recentLiveTrades = tradesRef.current.filter(t => t.source === 'live');
                         if (recentLiveTrades.length > 0) {
@@ -1718,7 +1734,7 @@
                                     minLow: data1mLive[lastIdx].low
                                 };
                                 
-                                await handleConfirmedSignal(cur, data1mLive, closedIdx, isCall, isPut, sweepLevel, tradeBase, liveTradesArr);
+                                await handleConfirmedSignal(cur, data1mLive, closedIdx, isCall, isPut, sweepLevel, tradeBase, liveTradesArr, atrSeries[closedIdx].value);
                             }
                         }
                     }
@@ -1743,10 +1759,13 @@
                 }
             };
 
-            const handleConfirmedSignal = async (cur, data1mLive, closedIdx, isCall, isPut, liveSweepLvl, tradeBase, liveTradesArr) => {
+            const handleConfirmedSignal = async (cur, data1mLive, closedIdx, isCall, isPut, liveSweepLvl, tradeBase, liveTradesArr, currentAtr) => {
                 setAppStage('signal_pending');
                 const directionText = isCall ? "повышение" : "понижение";
                 const currentClosedTime = data1mLive[closedIdx].time;
+                const config = STRATEGY_1M_CONFIG[strategyMode.current];
+                const maxDrift = currentAtr * config.maxEntryDriftAtrRatio;
+                const signalPrice = tradeBase.signalPrice;
                 
                 setAsset(cur);
                 setViewMode('DETAIL');
@@ -1793,7 +1812,7 @@
                 
                 updateStatus(`ГОТОВЬТЕ: BTC (1 МИН)`, 'text-cyan-600 font-bold animate-pulse');
                 addLog(`ЗАФИКСИРОВАН ПАТТЕРН SFP (1M)`, true);
-                addLog(`ОКНО ПОДГОТОВКИ: ОЖИДАНИЕ 3 СЕК...`);
+                addLog(`ОКНО ПОДГОТОВКИ: ОЖИДАНИЕ 7 СЕК...`);
 
                 await enqueueSpeech(`Внимание. Успешно подтверждено снятие ликвидности. Направление на ${directionText}. Проверка отката...`);
 
@@ -1806,7 +1825,7 @@
                 }
                 
                 if (!tradeCancelled) {
-                    for(let w=3; w>0; w--) {
+                    for(let w=7; w>0; w--) {
                         if (!engineActive.current) break;
                         updateStatus(`СНАЙПЕР: ПРОВЕРКА ПРОБОЯ... ${w}С`, 'text-amber-600 font-bold');
                         playSound('scan');
@@ -1823,8 +1842,14 @@
                             tradeBase.maxHigh = Math.max(tradeBase.maxHigh, liveTick.high);
                             tradeBase.minLow = Math.min(tradeBase.minLow, liveTick.low);
 
-                            if (isPut && liveTick.high > liveSweepLvl) { tradeCancelled = true; cancelReason = "Импульс против сигнала"; }
-                            if (isCall && liveTick.low < liveSweepLvl) { tradeCancelled = true; cancelReason = "Импульс против сигнала"; }
+                            if (isPut) {
+                                if (liveTick.high > liveSweepLvl) { tradeCancelled = true; cancelReason = "Импульс против сигнала"; }
+                                else if ((signalPrice - liveTick.close) > maxDrift) { tradeCancelled = true; cancelReason = "Цена ушла слишком далеко (Late Entry)"; }
+                            }
+                            if (isCall) {
+                                if (liveTick.low < liveSweepLvl) { tradeCancelled = true; cancelReason = "Импульс против сигнала"; }
+                                else if ((liveTick.close - signalPrice) > maxDrift) { tradeCancelled = true; cancelReason = "Цена ушла слишком далеко (Late Entry)"; }
+                            }
                         }
 
                         await new Promise(r => setTimeout(r, 1000));
@@ -1834,7 +1859,13 @@
                 if (tradeCancelled && engineActive.current) {
                     playSound('cancel');
                     updateStatus('ОТМЕНА: СИГНАЛ СБРОШЕН', 'text-slate-600 font-bold');
-                    await enqueueSpeech("Отмена сигнала. Сделка отбракована.");
+                    addLog(`СИГНАЛ ОТМЕНЕН: ${cancelReason}`, true);
+                    
+                    let voiceMsg = "Отмена сигнала. Импульс не удержался.";
+                    if (cancelReason.includes("Late Entry")) {
+                        voiceMsg = "Сигнал отменён. Цена ушла слишком далеко, вход уже невыгоден.";
+                    }
+                    await enqueueSpeech(voiceMsg);
                     
                     tradeBase.result = 'CANCELLED';
                     tradeBase.cancelReason = cancelReason;
@@ -1881,7 +1912,6 @@
 
                 setSignal({ type: isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice: currentPrice.current });
                 
-                // Временно кладем PENDING сделку в массив для отрисовки бокса
                 tradeBase.result = 'PENDING';
                 const pendingRecord = buildTradeFinanceRecord(tradeBase, currentBalance, mState, SESSION_CONFIG);
                 tradesRef.current.push(pendingRecord);
@@ -1930,7 +1960,6 @@
                 setAppStage('trade_result');
                 updateStatus('АНАЛИЗ РЕЗУЛЬТАТА', 'text-slate-500');
 
-                // Убираем временный PENDING из массива
                 tradesRef.current = tradesRef.current.filter(t => t.tradeId !== pendingRecord.tradeId);
 
                 const finalData = await ScannerAPI.getCandles(cur.symbol, 1, '1m').catch(()=>null);
@@ -1988,7 +2017,6 @@
             try {
                 await runBacktestPhase();
                 
-                // Полный сброс перед чистым лайвом (Ledger не сбрасываем, сбрасываем State)
                 mState = createMartingaleState(SESSION_CONFIG);
                 currentBalance = SESSION_CONFIG.startingBalance;
                 
