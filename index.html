@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Крипто Терминал Гордеева - PRO MAX (SMC)</title>
+    <title>Крипто Терминал Гордеева - PRO MAX (SMC + Martingale)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -257,24 +257,36 @@
           "Маркетмейкер собирает стопы розничных трейдеров перед разворотом."
         ];
 
-        // --- ADAPTIVE STRATEGY CONFIGURATION (CLEAN CORE SMC) ---
-        const STRATEGY_CONFIG = {
+        // --- ADAPTIVE STRATEGY CONFIGURATION (1M SMC) ---
+        const STRATEGY_1M_CONFIG = {
             NORMAL: {
                 modeId: 'NORMAL',
-                minScore: 55,
-                requireMSS: false,         // Слом структуры желателен, но не обязателен при сильном rejection
-                impulseTrapThreshold: 1.5, // Порог импульса (в ATR), после которого нужен сильный Reject
+                minScore: 60,
+                minSweepAtrRatio: 0.10,
+                minReclaimAtrRatio: 0.12,
+                maxImpulseAtrRatio: 1.5,
+                cooldownCandles: 4
             },
             REINFORCED: {
                 modeId: 'REINFORCED',
-                minScore: 70,
-                requireMSS: true,          // В усиленном режиме СЛОМ СТРУКТУРЫ ОБЯЗАТЕЛЕН
-                impulseTrapThreshold: 1.3, // В усиленном режиме мы боимся резких пробоев сильнее
+                minScore: 72,
+                minSweepAtrRatio: 0.12,
+                minReclaimAtrRatio: 0.15,
+                maxImpulseAtrRatio: 1.35,
+                cooldownCandles: 6
             }
         };
 
+        const SESSION_CONFIG = {
+            startingBalance: 10000,
+            baseStake: 500,
+            payoutPercent: 0.70,
+            martingaleMultiplier: 2.6,
+            maxMartingaleSteps: 2
+        };
+
         const ScannerAPI = {
-          async getCandles(symbol, count = 250, interval = '5m') { 
+          async getCandles(symbol, count = 1000, interval = '1m') { 
             const urls = [
                 `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
                 `https://api1.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
@@ -357,276 +369,160 @@
             return res;
         }
 
-        // --- ЧИСТОЕ ЯДРО SMC (Liquidity Sweep, Reclaim & Confirmation) ---
-        function evaluateSweepSetup(data, idx, zonesArr, atrArr, config, logCallback = null) {
-            if (idx < 2 || !zonesArr || !atrArr || !zonesArr[idx] || !zonesArr[idx - 1] || !atrArr[idx]) {
-                return { isCall: false, isPut: false };
+        // --- MARTINGALE STATE MANAGEMENT ---
+        function createMartingaleState(config = SESSION_CONFIG) {
+            return {
+                currentStake: config.baseStake,
+                martingaleStep: 0,
+                blocked: false,
+                reason: null
+            };
+        }
+
+        function getTradePnL(result, stake, config = SESSION_CONFIG) {
+            if (result === 'WIN') return Math.round(stake * config.payoutPercent);
+            if (result === 'LOSS') return -stake;
+            return 0;
+        }
+
+        function updateMartingaleAfterTrade(result, state, balance, config = SESSION_CONFIG) {
+            if (result === 'WIN' || result === 'CANCELLED') {
+                return {
+                    currentStake: config.baseStake,
+                    martingaleStep: 0,
+                    blocked: false,
+                    reason: null
+                };
+            }
+
+            if (result === 'LOSS') {
+                const nextStep = state.martingaleStep + 1;
+
+                if (nextStep > config.maxMartingaleSteps) {
+                    return {
+                        currentStake: config.baseStake,
+                        martingaleStep: 0,
+                        blocked: true,
+                        reason: 'Достигнут лимит шагов мартингейла'
+                    };
+                }
+
+                const nextStake = Math.round(state.currentStake * config.martingaleMultiplier);
+
+                if (nextStake > balance) {
+                    return {
+                        currentStake: config.baseStake,
+                        martingaleStep: 0,
+                        blocked: true,
+                        reason: 'Недостаточно баланса для следующего шага'
+                    };
+                }
+
+                return {
+                    currentStake: nextStake,
+                    martingaleStep: nextStep,
+                    blocked: false,
+                    reason: null
+                };
+            }
+            return state;
+        }
+
+        function buildTradeFinanceRecord(trade, balanceBefore, martingaleState, sessionConfig = SESSION_CONFIG) {
+            const stake = martingaleState.currentStake;
+            const pnl = getTradePnL(trade.result, stake, sessionConfig);
+            const balanceAfter = balanceBefore + pnl;
+
+            return {
+                ...trade,
+                stake,
+                martingaleStep: martingaleState.martingaleStep,
+                pnl,
+                balanceBefore,
+                balanceAfter
+            };
+        }
+
+        // --- СТРОГАЯ 1M SMC СТРАТЕГИЯ ---
+        function detectLiquiditySweep1M(data, idx, zonesArr, atrArr, config, logCallback = null) {
+            if (idx < 2 || !data[idx] || !zonesArr[idx] || !atrArr[idx] || !zonesArr[idx - 1]) {
+                return { isCall: false, isPut: false, score: 0, reason: 'not_enough_data', sweepLevel: null };
             }
 
             const curr = data[idx];
             const prev = data[idx - 1];
-            const prePrev = data[idx - 2];
+            const zone = zonesArr[idx - 1]; 
+            const atr = atrArr[idx].value || 0.0001;
 
-            const currZones = zonesArr[idx];
-            const prevZones = zonesArr[idx - 1];
-            const cAtr = atrArr[idx].value || 0.0001;
+            const candleSize = Math.max(curr.high - curr.low, 0.0001);
+            const bodySize = Math.abs(curr.close - curr.open);
+            const topWick = curr.high - Math.max(curr.open, curr.close);
+            const bottomWick = Math.min(curr.open, curr.close) - curr.low;
 
-            const candleStats = (c) => {
-                const size = Math.max(c.high - c.low, 0.0001);
-                const body = Math.abs(c.close - c.open);
-                const topWick = c.high - Math.max(c.open, c.close);
-                const bottomWick = Math.min(c.open, c.close) - c.low;
+            const putSweep = (curr.high > zone.upper && curr.close < zone.upper) || (prev.high > zone.upper && prev.close >= zone.upper && curr.close < zone.upper);
+            const callSweep = (curr.low < zone.lower && curr.close > zone.lower) || (prev.low < zone.lower && prev.close <= zone.lower && curr.close > zone.lower);
 
-                return {
-                    size,
-                    body,
-                    topWick,
-                    bottomWick,
-                    isBull: c.close > c.open,
-                    isBear: c.close < c.open,
-                };
-            };
-
-            const isChoppyRange = (currZones.upper - currZones.lower) < cAtr * 0.55;
-
-            let putCandidate = null;
-            let callCandidate = null;
-
-            // --- PUT: same candle sweep + reclaim
-            if (curr.high > currZones.upper && curr.close < currZones.upper) {
-                putCandidate = {
-                    sweepCandle: curr,
-                    confirmCandle: curr,
-                    sweepLevel: currZones.upper,
-                    mode: 'same_candle'
-                };
-            }
-            // --- PUT: previous candle swept old pool, current candle reclaimed old level
-            else if (
-                prev.high > prevZones.upper &&
-                prev.close >= prevZones.upper &&
-                curr.close < prevZones.upper
-            ) {
-                putCandidate = {
-                    sweepCandle: prev,
-                    confirmCandle: curr,
-                    sweepLevel: prevZones.upper,
-                    mode: 'two_candle_reclaim'
-                };
-            }
-
-            // --- CALL: same candle sweep + reclaim
-            if (curr.low < currZones.lower && curr.close > currZones.lower) {
-                callCandidate = {
-                    sweepCandle: curr,
-                    confirmCandle: curr,
-                    sweepLevel: currZones.lower,
-                    mode: 'same_candle'
-                };
-            }
-            // --- CALL: previous candle swept old pool, current candle reclaimed old level
-            else if (
-                prev.low < prevZones.lower &&
-                prev.close <= prevZones.lower &&
-                curr.close > prevZones.lower
-            ) {
-                callCandidate = {
-                    sweepCandle: prev,
-                    confirmCandle: curr,
-                    sweepLevel: prevZones.lower,
-                    mode: 'two_candle_reclaim'
-                };
-            }
-
-            const threshold = config.minScore;
-            let isPut = false;
+            let score = 0;
             let isCall = false;
+            let isPut = false;
+            let reason = '';
+            let sweepLevel = null;
 
-            const logResult = (time, dir, status, confirms, penalties, score, modeId) => {
-                if (!logCallback) return;
-                logCallback(
-                    time,
-                    dir,
-                    status,
-                    `[${modeId}] Score: ${score}/${threshold} | [+] ${confirms.join(', ') || '—'} | [-] ${penalties.join(', ') || '—'}`
-                );
-            };
+            if (putSweep) {
+                sweepLevel = zone.upper;
+                const sweepDepth = curr.high > zone.upper ? curr.high - zone.upper : prev.high - zone.upper;
+                const reclaimStrength = zone.upper - curr.close;
 
-            // ---------------- PUT ----------------
-            if (putCandidate) {
-                const sweepStats = candleStats(putCandidate.sweepCandle);
-                const confirmStats = candleStats(putCandidate.confirmCandle);
+                score += 20;
+                if (sweepDepth >= atr * config.minSweepAtrRatio) score += 15;
+                else { score -= 15; reason += 'shallow_sweep '; }
 
-                const sweepDepth = putCandidate.sweepCandle.high - putCandidate.sweepLevel;
-                const reclaimDistance = putCandidate.sweepLevel - putCandidate.confirmCandle.close;
-                const structureShift =
-                    putCandidate.confirmCandle.close < prev.low ||
-                    putCandidate.confirmCandle.close < prePrev.low;
+                if (reclaimStrength >= atr * config.minReclaimAtrRatio) score += 20;
+                else { score -= 15; reason += 'weak_reclaim '; }
 
-                // Защита от импульсной ловушки (Анти-импульс)
-                const isImpulseTrap = sweepStats.size > cAtr * config.impulseTrapThreshold;
+                if (topWick >= candleSize * 0.35) score += 15;
+                if (curr.close < prev.low) score += 15; 
+                if (curr.close < curr.open && bodySize >= candleSize * 0.35) score += 15; 
 
-                let score = 20;
-                const confirms = ['Sweep+Reclaim'];
-                const penalties = [];
-
-                if (sweepDepth >= cAtr * 0.08) {
-                    score += 10;
-                    confirms.push('SweepDepth');
-                } else {
-                    score -= 10;
-                    penalties.push('Мелкий sweep');
-                }
-
-                if (sweepStats.topWick >= sweepStats.size * 0.35) {
-                    score += 20;
-                    confirms.push('Rejection');
-                }
-
-                if (confirmStats.isBear && confirmStats.body >= confirmStats.size * 0.35) {
-                    score += 20;
-                    confirms.push('BearDisplacement');
-                }
-
-                if (reclaimDistance >= cAtr * 0.10) {
-                    score += 15;
-                    confirms.push('SolidReclaim');
-                } else {
-                    score -= 10;
-                    penalties.push('Слабый возврат');
-                }
-
-                if (structureShift) {
-                    score += 20;
-                    confirms.push('MSS');
-                } else {
-                    if (config.requireMSS) {
-                        score -= 40;
-                        penalties.push('Нет слома (Обязательно в REINFORCED)');
-                    } else {
-                        score -= 10;
-                        penalties.push('Нет слома');
-                    }
-                }
-
-                // Логика защиты от ловушки на резких выстрелах вверх
-                if (isImpulseTrap) {
-                    if (sweepStats.topWick < sweepStats.size * 0.4 && confirmStats.body < confirmStats.size * 0.4) {
-                        score -= 40;
-                        penalties.push('ИМПУЛЬСНАЯ ЛОВУШКА (опасно)');
-                    } else {
-                        score += 10;
-                        confirms.push('Импульс поглощен');
-                    }
-                }
-
-                // Дополнительные штрафы для REINFORCED
-                if (config.modeId === 'REINFORCED' && putCandidate.mode === 'two_candle_reclaim' && !confirmStats.isBear) {
+                if (candleSize > atr * config.maxImpulseAtrRatio) {
                     score -= 25;
-                    penalties.push('Слабое подтверждение (REINFORCED)');
+                    reason += 'oversized_impulse ';
                 }
 
-                if (isChoppyRange) {
-                    score -= 20;
-                    penalties.push('Шум/узкий канал');
-                }
-
-                if (score >= threshold) {
-                    isPut = true;
-                    logResult(curr.time, 'PUT', 'ПРИНЯТ', confirms, penalties, score, config.modeId);
-                } else {
-                    logResult(curr.time, 'PUT', 'ОТКЛОНЁН', confirms, penalties, score, config.modeId);
-                }
+                if (score >= config.minScore) isPut = true;
             }
 
-            // ---------------- CALL ----------------
-            if (callCandidate && !isPut) {
-                const sweepStats = candleStats(callCandidate.sweepCandle);
-                const confirmStats = candleStats(callCandidate.confirmCandle);
+            if (callSweep && !isPut) {
+                sweepLevel = zone.lower;
+                const sweepDepth = curr.low < zone.lower ? zone.lower - curr.low : zone.lower - prev.low;
+                const reclaimStrength = curr.close - zone.lower;
 
-                const sweepDepth = callCandidate.sweepLevel - callCandidate.sweepCandle.low;
-                const reclaimDistance = callCandidate.confirmCandle.close - callCandidate.sweepLevel;
-                const structureShift =
-                    callCandidate.confirmCandle.close > prev.high ||
-                    callCandidate.confirmCandle.close > prePrev.high;
+                score += 20;
+                if (sweepDepth >= atr * config.minSweepAtrRatio) score += 15;
+                else { score -= 15; reason += 'shallow_sweep '; }
 
-                // Защита от импульсной ловушки (Анти-импульс)
-                const isImpulseTrap = sweepStats.size > cAtr * config.impulseTrapThreshold;
+                if (reclaimStrength >= atr * config.minReclaimAtrRatio) score += 20;
+                else { score -= 15; reason += 'weak_reclaim '; }
 
-                let score = 20;
-                const confirms = ['Sweep+Reclaim'];
-                const penalties = [];
+                if (bottomWick >= candleSize * 0.35) score += 15;
+                if (curr.close > prev.high) score += 15; 
+                if (curr.close > curr.open && bodySize >= candleSize * 0.35) score += 15; 
 
-                if (sweepDepth >= cAtr * 0.08) {
-                    score += 10;
-                    confirms.push('SweepDepth');
-                } else {
-                    score -= 10;
-                    penalties.push('Мелкий sweep');
-                }
-
-                if (sweepStats.bottomWick >= sweepStats.size * 0.35) {
-                    score += 20;
-                    confirms.push('Rejection');
-                }
-
-                if (confirmStats.isBull && confirmStats.body >= confirmStats.size * 0.35) {
-                    score += 20;
-                    confirms.push('BullDisplacement');
-                }
-
-                if (reclaimDistance >= cAtr * 0.10) {
-                    score += 15;
-                    confirms.push('SolidReclaim');
-                } else {
-                    score -= 10;
-                    penalties.push('Слабый возврат');
-                }
-
-                if (structureShift) {
-                    score += 20;
-                    confirms.push('MSS');
-                } else {
-                    if (config.requireMSS) {
-                        score -= 40;
-                        penalties.push('Нет слома (Обязательно в REINFORCED)');
-                    } else {
-                        score -= 10;
-                        penalties.push('Нет слома');
-                    }
-                }
-
-                // Логика защиты от ловушки на резких проливах вниз
-                if (isImpulseTrap) {
-                    if (sweepStats.bottomWick < sweepStats.size * 0.4 && confirmStats.body < confirmStats.size * 0.4) {
-                        score -= 40;
-                        penalties.push('ИМПУЛЬСНАЯ ЛОВУШКА (опасно)');
-                    } else {
-                        score += 10;
-                        confirms.push('Импульс поглощен');
-                    }
-                }
-
-                // Дополнительные штрафы для REINFORCED
-                if (config.modeId === 'REINFORCED' && callCandidate.mode === 'two_candle_reclaim' && !confirmStats.isBull) {
+                if (candleSize > atr * config.maxImpulseAtrRatio) {
                     score -= 25;
-                    penalties.push('Слабое подтверждение (REINFORCED)');
+                    reason += 'oversized_impulse ';
                 }
 
-                if (isChoppyRange) {
-                    score -= 20;
-                    penalties.push('Шум/узкий канал');
-                }
-
-                if (score >= threshold) {
-                    isCall = true;
-                    logResult(curr.time, 'CALL', 'ПРИНЯТ', confirms, penalties, score, config.modeId);
-                } else {
-                    logResult(curr.time, 'CALL', 'ОТКЛОНЁН', confirms, penalties, score, config.modeId);
-                }
+                if (score >= config.minScore) isCall = true;
             }
 
-            return { isCall, isPut };
+            if (logCallback) {
+                if (isPut) logCallback(curr.time, 'PUT', 'ПРИНЯТ', `Score: ${score} | ${reason}`);
+                else if (isCall) logCallback(curr.time, 'CALL', 'ПРИНЯТ', `Score: ${score} | ${reason}`);
+                else if (putSweep || callSweep) logCallback(curr.time, putSweep ? 'PUT' : 'CALL', 'ОТКЛОНЁН', `Score: ${score} | ${reason}`);
+            }
+
+            return { isCall, isPut, score, reason, sweepLevel };
         }
 
         const LiveClock = () => {
@@ -817,13 +713,23 @@
           const [signal, setSignal] = useState(null);
           const [countdown, setCountdown] = useState(null);
           const [logs, setLogs] = useState([]);
-          const [currentTF, setCurrentTF] = useState('5M');
+          const [currentTF, setCurrentTF] = useState('1M'); 
           const [strategyModeUI, setStrategyModeUI] = useState('NORMAL');
           
-          const [metrics, setMetrics] = useState({ structure: 50, liquidity: 50, filterLevel: 60, smartMoney: 0, buyPressure: 50 });
-          const [newsHeadlines, setNewsHeadlines] = useState(["ОБНОВЛЕНИЕ ДАННЫХ BTC..."]);
-          const [tradeStats, setTradeStats] = useState({ wins: 0, losses: 0, winRate: 0 });
+          const [sessionData, setSessionData] = useState({
+              balance: SESSION_CONFIG.startingBalance,
+              stake: SESSION_CONFIG.baseStake,
+              step: 0,
+              pnl: 0,
+              wins: 0,
+              losses: 0,
+              cancels: 0
+          });
           
+          const [metrics, setMetrics] = useState({ structure: 50, liquidity: 50, filterLevel: 60, smartMoney: 0, buyPressure: 50 });
+          const [tradeStats, setTradeStats] = useState({ wins: 0, losses: 0, winRate: 0 });
+
+          const [newsHeadlines, setNewsHeadlines] = useState(["ОБНОВЛЕНИЕ ДАННЫХ BTC..."]);
           const [statusColorClass, setStatusColorClass] = useState('text-slate-800');
           
           const chartContainerRef = useRef(null);
@@ -831,32 +737,19 @@
           const chartInstance = useRef(null);
           const candleSeries = useRef(null);
           const extraSeriesRef = useRef([]); 
-          const priceLinesRef = useRef([]); // ВОССТАНОВЛЕНО
+          const priceLinesRef = useRef([]);
           const activeLiveTradeRef = useRef(null);
           const tradesRef = useRef([]);
           
           const audioCtx = useRef(null);
           const engineActive = useRef(false);
           const currentPrice = useRef(null);
-          const statsRef = useRef({ wins: 0, losses: 0 });
           const strategyMode = useRef('NORMAL'); 
           const markersRef = useRef([]); 
 
           const logsContainerRef = useRef(null); 
           const fullNewsPool = useRef([...FALLBACK_BTC_NEWS]);
           const readNewsHistory = useRef(new Set());
-
-          useEffect(() => {
-              if(!isStarted || viewMode === 'DETAIL') return;
-              const interval = setInterval(() => {
-                  setMetrics(prev => ({
-                      ...prev,
-                      liquidity: Math.max(30, Math.min(70, 50 + (Math.random() * 10 - 5))),
-                      buyPressure: Math.max(40, Math.min(60, 50 + (Math.random() * 8 - 4)))
-                  }));
-              }, 1500);
-              return () => clearInterval(interval);
-          }, [isStarted, viewMode]);
 
           const fetchNews = async () => {
               try {
@@ -867,16 +760,18 @@
                   
                   let btcItems = [];
                   for(let u of urls) {
-                      let res = await fetch(u).catch(()=>null);
-                      if(res && res.ok) {
-                          let data = await res.json();
-                          if (data && data.items) {
-                              let filtered = data.items
-                                  .filter(item => /биткоин|btc|bitcoin/i.test(item.title))
-                                  .map(item => item.title.replace(/<\/?[^>]+(>|$)/g, "").trim());
-                              btcItems = [...btcItems, ...filtered];
+                      try {
+                          let res = await fetch(u);
+                          if(res && res.ok) {
+                              let data = await res.json();
+                              if (data && data.items) {
+                                  let filtered = data.items
+                                      .filter(item => /биткоин|btc|bitcoin/i.test(item.title))
+                                      .map(item => item.title.replace(/<\/?[^>]+(>|$)/g, "").trim());
+                                  btcItems = [...btcItems, ...filtered];
+                              }
                           }
-                      }
+                      } catch (e) {}
                   }
                   
                   if (btcItems.length > 0) {
@@ -896,7 +791,7 @@
           useEffect(() => {
               const loadSparklines = async () => {
                   try {
-                      const data = await ScannerAPI.getCandles('BTCUSDT', 50, '5m'); 
+                      const data = await ScannerAPI.getCandles('BTCUSDT', 50, '1m'); 
                       if (data && data.length > 0) {
                           setSparklines({'BTCUSDT': data});
                           currentPrice.current = data[data.length - 1].close;
@@ -991,7 +886,7 @@
             fallbackTimer = setTimeout(resolveOnce, Math.max(3000, text.length * 80)); 
           });
 
-          // --- TRADE VISUALIZATION LOOP ---
+          // --- TRADE VISUALIZATION LOOP (OVERLAY) ---
           useEffect(() => {
             if (!isStarted) return;
             let animationFrameId;
@@ -1011,10 +906,10 @@
                         if (endX === null) {
                             const timeDiff = trade.exitTime - trade.signalTime;
                             const p1 = timeScale.timeToCoordinate(trade.signalTime);
-                            const p2 = timeScale.timeToCoordinate(trade.signalTime - 300);
+                            const p2 = timeScale.timeToCoordinate(trade.signalTime - 60); 
                             if (p1 !== null && p2 !== null) {
                                 const candleW = Math.abs(p1 - p2);
-                                endX = startX + (timeDiff / 300) * candleW;
+                                endX = startX + (timeDiff / 60) * candleW;
                             } else {
                                 endX = startX + 40; 
                             }
@@ -1032,29 +927,28 @@
 
                         const boxHeight = Math.max(bottomY - topY, 4);
                         const isWin = trade.result === 'WIN';
+                        const isCancelled = trade.result === 'CANCELLED';
                         const isPending = trade.result === 'PENDING';
                         
-                        let baseColor = '148, 163, 184'; // slate
-                        if (isWin) baseColor = '14, 165, 233'; // cyan
-                        if (trade.result === 'LOSS') baseColor = '244, 63, 94'; // rose
-                        if (isPending) baseColor = '245, 158, 11'; // amber
+                        let baseColor = '148, 163, 184'; 
+                        let tagText = 'C';
+                        if (isWin) { baseColor = '14, 165, 233'; tagText = 'W'; } 
+                        if (trade.result === 'LOSS') { baseColor = '244, 63, 94'; tagText = 'L'; } 
+                        if (isPending) { baseColor = '245, 158, 11'; tagText = '...'; } 
 
-                        let entryX = timeScale.timeToCoordinate(trade.entryTime) || (startX + boxWidth * 0.2);
+                        let entryX = timeScale.timeToCoordinate(trade.entryTime) || (startX + boxWidth * 0.05);
 
                         trade.screenLeft = boxLeft;
                         trade.screenRight = boxRight;
                         trade.screenTop = topY;
                         trade.screenBottom = bottomY;
 
-                        // МИНИМАЛИСТИЧНЫЙ ДИЗАЙН РАМКИ
                         html += `
-                            <div class="trade-box" data-id="${trade.id}" style="position:absolute; left:${boxLeft}px; top:${topY}px; width:${boxWidth}px; height:${boxHeight}px; background: rgba(${baseColor}, 0.08); border: 1px solid rgba(${baseColor}, 0.5); border-radius: 4px; pointer-events: none; z-index: 5; transition: background 0.3s;">
-                                <!-- Dotted Entry Line -->
-                                <div style="position:absolute; left:${Math.max(0, entryX - boxLeft)}px; top:0; bottom:0; border-left: 1px dotted rgba(${baseColor}, 0.8);"></div>
-                                
-                                <!-- Clean Compact Tag -->
-                                <div style="position:absolute; right: 2px; bottom: 2px; font-size: 10px; font-weight: 800; color: rgba(${baseColor}, 1); font-family: 'JetBrains Mono', monospace; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">
-                                    ${isPending ? '...' : (isWin ? 'W' : 'L')}
+                            <div class="trade-box" data-id="${trade.id}" style="position:absolute; left:${boxLeft}px; top:${topY}px; width:${boxWidth}px; height:${boxHeight}px; background: rgba(${baseColor}, 0.1); border: 1px solid rgba(${baseColor}, 0.6); border-radius: 4px; pointer-events: none; z-index: 5; transition: background 0.3s; box-shadow: 0 0 10px rgba(${baseColor}, 0.1);">
+                                <div style="position:absolute; left:-3px; top:50%; transform:translateY(-50%); width:6px; height:6px; border-radius:50%; background:rgb(${baseColor}); box-shadow: 0 0 5px rgb(${baseColor});"></div>
+                                ${!isCancelled ? `<div style="position:absolute; left:${Math.max(0, entryX - boxLeft)}px; top:0; bottom:0; border-left: 1px dashed rgba(${baseColor}, 0.8);"></div>` : ''}
+                                <div style="position:absolute; right: -6px; top: -10px; font-size: 9px; font-weight: 800; color: white; background: rgb(${baseColor}); padding: 2px 5px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
+                                    ${tagText}
                                 </div>
                             </div>
                         `;
@@ -1092,6 +986,8 @@
                 if (hoveredTrade) {
                     const isWin = hoveredTrade.result === 'WIN';
                     const isPending = hoveredTrade.result === 'PENDING';
+                    const isCancelled = hoveredTrade.result === 'CANCELLED';
+                    
                     let colorClass = 'text-slate-400';
                     if (isWin) colorClass = 'text-cyan-400';
                     if (hoveredTrade.result === 'LOSS') colorClass = 'text-rose-400';
@@ -1104,17 +1000,31 @@
                     tooltip.innerHTML = `
                         <div class="font-bold border-b border-slate-600/50 pb-1 mb-2 text-center ${colorClass} uppercase tracking-widest text-[11px]">${hoveredTrade.direction} • ${hoveredTrade.result}</div>
                         <div class="flex justify-between gap-6 mt-1">
-                            <span class="text-slate-400">Сигнал:</span>
+                            <span class="text-slate-400">Сигнал (1M):</span>
                             <span class="font-mono font-bold text-slate-200">${sigTime}</span>
                         </div>
+                        ${!isCancelled ? `
                         <div class="flex justify-between gap-6 mt-1">
-                            <span class="text-slate-400">Вход:</span>
+                            <span class="text-slate-400">Вход (1M):</span>
                             <span class="font-mono font-bold text-slate-200">${entTime} @ ${formatPrice(hoveredTrade.entryPrice)}</span>
                         </div>
                         <div class="flex justify-between gap-6 mt-1">
-                            <span class="text-slate-400">Выход:</span>
+                            <span class="text-slate-400">Выход (1M):</span>
                             <span class="font-mono font-bold text-slate-200">${isPending ? '--:--' : extTime} @ ${formatPrice(hoveredTrade.exitPrice)}</span>
                         </div>
+                        <div class="border-t border-slate-600/50 pt-1 mt-2 flex justify-between gap-6">
+                            <span class="text-slate-400">Ставка:</span>
+                            <span class="font-mono font-bold text-slate-200">${hoveredTrade.stake} ₽ (Шаг ${hoveredTrade.martingaleStep})</span>
+                        </div>
+                        <div class="flex justify-between gap-6 mt-1">
+                            <span class="text-slate-400">PnL:</span>
+                            <span class="font-mono font-bold ${hoveredTrade.pnl > 0 ? 'text-emerald-400' : (hoveredTrade.pnl < 0 ? 'text-rose-400' : 'text-slate-400')}">${hoveredTrade.pnl > 0 ? '+' : ''}${hoveredTrade.pnl} ₽</span>
+                        </div>
+                        ` : `
+                        <div class="flex justify-between gap-6 mt-1">
+                            <span class="text-slate-400">Отмена:</span>
+                            <span class="font-mono font-bold text-rose-300 text-right w-32 break-words leading-tight">${hoveredTrade.cancelReason}</span>
+                        </div>`}
                     `;
                     
                     tooltip.style.left = `${x}px`;
@@ -1224,21 +1134,6 @@
               return { upperSeries, lowerSeries };
           };
 
-          const drawEntryLine = (price) => {
-            if (!candleSeries.current) return;
-            try {
-                const line = candleSeries.current.createPriceLine({
-                    price: price,
-                    color: '#1d4ed8',
-                    lineWidth: 2,
-                    lineStyle: 3,
-                    axisLabelVisible: true,
-                    title: `ВХОД 5M`
-                });
-                priceLinesRef.current.push(line);
-            } catch(e) {}
-          };
-
           const updateStatus = (phase, colorClass) => {
               setAppPhase(phase);
               setStatusColorClass(colorClass);
@@ -1278,144 +1173,168 @@
             engineActive.current = true;
             tradesRef.current = [];
 
-            if (audioCtx.current && audioCtx.current.state === 'suspended') {
-                await audioCtx.current.resume();
-            }
-
-            let lastCancelledTime = 0;
-            let lastEvaluatedTime = 0;
-
-            await speak('Институциональный алгоритм активирован. Запущен анализ пулов ликвидности Smart Money на 5-минутном таймфрейме за последние 12 часов.');
-            await new Promise(r => setTimeout(r, 500)); 
-
-            updateStatus('БЭКТЕСТ: АНАЛИЗ SMC ИСТОРИИ...', 'text-cyan-600');
-            addLog(`ЗАПУСК ПОИСКА: СНЯТИЕ ЛИКВИДНОСТИ ЗА 12 ЧАСОВ (5M)...`, true);
-
-            const curAsset = ASSETS[0];
-            let initialData;
-            try {
-                initialData = await ScannerAPI.getCandles(curAsset.symbol, 200, '5m');
-            } catch (err) {
-                addLog("ОШИБКА: " + err.message, true);
-                updateStatus('ОШИБКА API BINANCE', 'text-rose-600');
-                await speak('Ошибка связи с криптобиржей Бинанс. Соединение прервано.');
-                engineActive.current = false;
-                setIsStarted(false);
-                return;
-            }
+            let currentBalance = SESSION_CONFIG.startingBalance;
+            let mState = createMartingaleState(SESSION_CONFIG);
+            let stats = { wins: 0, losses: 0, cancels: 0, pnl: 0 };
             
-            if (initialData && initialData.length > 150) {
-                setSparklines(prev => ({...prev, [curAsset.symbol]: initialData}));
-                currentPrice.current = initialData[initialData.length - 1].close;
+            let lastEvaluatedTimeLive = 0;
+            let lastCancelledTimeLive = 0; 
+            let lastLoggedRejectTime = 0;
+            let lastLiveTradeTime = 0;
+            let lastBackgroundNewsTime = Date.now();
 
-                const liqZones = calcLiquidityZones(initialData, 15); 
-                const atrSeries = calcATRSeries(initialData, 14); 
+            const runBacktestPhase = async () => {
+                if (audioCtx.current && audioCtx.current.state === 'suspended') {
+                    await audioCtx.current.resume();
+                }
+
+                await speak('Институциональный алгоритм активирован. Запущен анализ пулов ликвидности Smart Money на 1-минутном таймфрейме за последние 12 часов.');
+                await new Promise(r => setTimeout(r, 500)); 
+
+                updateStatus('БЭКТЕСТ: АНАЛИЗ SMC ИСТОРИИ...', 'text-cyan-600');
+                addLog(`ЗАПУСК ПОИСКА: СНЯТИЕ ЛИКВИДНОСТИ ЗА 12 ЧАСОВ (1M)...`, true);
+
+                const curAsset = ASSETS[0];
+                let data1m;
+                
+                try {
+                    data1m = await ScannerAPI.getCandles(curAsset.symbol, 1000, '1m');
+                } catch (err) {
+                    throw new Error("Ошибка загрузки истории: " + err.message);
+                }
+                
+                if (!data1m || data1m.length < 150) {
+                    throw new Error("Недостаточно данных от биржи.");
+                }
+
+                setSparklines(prev => ({...prev, [curAsset.symbol]: data1m}));
+                currentPrice.current = data1m[data1m.length - 1].close;
+
+                const liqZones = calcLiquidityZones(data1m, 15); 
+                const atrSeries = calcATRSeries(data1m, 14); 
 
                 const upperData = liqZones.map(i => ({time: i.time, value: i.upper}));
                 const lowerData = liqZones.map(i => ({time: i.time, value: i.lower}));
 
-                let historicalWins = 0;
-                let historicalLosses = 0;
-                let rawCandidatesCount = 0;
-                let acceptedSignalsCount = 0;
-
-                const maxEvalIdx = initialData.length - 3;
-                const startEvalIdx = Math.max(15, maxEvalIdx - 144 + 1); 
+                const maxEvalIdx = data1m.length - 7; 
+                const startEvalIdx = Math.max(15, maxEvalIdx - 720 + 1); 
 
                 strategyMode.current = 'NORMAL';
                 let simStrategyMode = 'NORMAL';
-                let lastTradeTime = 0; // Инициализация Cooldown-трекера
+                let lastTradeIdx = -999; 
 
-                console.log("=== ЗАПУСК АУДИТА БЭКТЕСТА (PURE SMC) ===");
+                console.log("=== ЗАПУСК АУДИТА БЭКТЕСТА (1M SMC + MARTINGALE) ===");
 
                 for (let idx = startEvalIdx; idx <= maxEvalIdx; idx++) {
-                    const currTime = initialData[idx].time;
+                    const config = STRATEGY_1M_CONFIG[simStrategyMode];
+                    
+                    if (idx - lastTradeIdx < config.cooldownCandles) continue; 
 
-                    // DUPLICATE SUPPRESSION (Охлаждение 4 свечи = 20 минут)
-                    if (currTime - lastTradeTime < 4 * 300) {
-                        continue; 
-                    }
+                    const backtestLogger = (t, dir, status, reason) => {};
 
-                    const backtestLogger = (t, dir, status, reason) => {
-                        rawCandidatesCount++;
-                        if (status === 'ПРИНЯТ') acceptedSignalsCount++;
-                        const dateStr = new Date(t * 1000).toLocaleTimeString('ru-RU');
-                        console.log(`[BACKTEST PIPELINE] ${dateStr} | ${dir} | ${status} | ${reason}`);
-                    };
-
-                    const { isCall, isPut } = evaluateSweepSetup(
-                        initialData,
-                        idx,
-                        liqZones,
-                        atrSeries,
-                        STRATEGY_CONFIG[simStrategyMode],
-                        backtestLogger
+                    const { isCall, isPut, sweepLevel } = detectLiquiditySweep1M(
+                        data1m, idx, liqZones, atrSeries, config, backtestLogger
                     );
 
                     if (isCall || isPut) {
-                        lastTradeTime = currTime; // ФИКСИРУЕМ ВРЕМЯ ПОСЛЕДНЕЙ СДЕЛКИ
-
-                        const entryPrice = initialData[idx].close;
-                        const exitPrice = initialData[idx + 1].close; 
-                        let isWin = false;
-
-                        if ((isCall && exitPrice > entryPrice) || (isPut && exitPrice < entryPrice) || exitPrice === entryPrice) {
-                            isWin = true;
+                        lastTradeIdx = idx;
+                        
+                        const signalTime = data1m[idx].time; 
+                        const prepCandle = data1m[idx + 1];
+                        
+                        let cancelled = false;
+                        let cancelReason = "";
+                        
+                        if (isPut && prepCandle.high > sweepLevel) {
+                            cancelled = true; cancelReason = "Пробой против сигнала в окне подготовки";
+                        }
+                        if (isCall && prepCandle.low < sweepLevel) {
+                            cancelled = true; cancelReason = "Пробой против сигнала в окне подготовки";
+                        }
+                        if (mState.blocked) {
+                            cancelled = true; cancelReason = mState.reason;
                         }
 
-                        const maxH = Math.max(initialData[idx].high, initialData[idx+1].high);
-                        const minL = Math.min(initialData[idx].low, initialData[idx+1].low);
+                        const entryPrice = prepCandle.open;
+                        let exitPrice = data1m[idx + 6].close; 
+                        
+                        let result = 'CANCELLED';
+                        let maxH = prepCandle.high;
+                        let minL = prepCandle.low;
 
-                        // КОМПАКТНЫЙ МАРКЕР НА ГРАФИКЕ БЕЗ ТЕКСТА
+                        if (!cancelled) {
+                            const executionCandles = data1m.slice(idx + 1, idx + 7);
+                            if (executionCandles.length > 0) {
+                                maxH = Math.max(...executionCandles.map(c => c.high));
+                                minL = Math.min(...executionCandles.map(c => c.low));
+                                
+                                const isWin = (isCall && exitPrice > entryPrice) || (isPut && exitPrice < entryPrice) || (exitPrice === entryPrice);
+                                result = isWin ? 'WIN' : 'LOSS';
+                                
+                                simStrategyMode = isWin ? 'NORMAL' : 'REINFORCED';
+                            }
+                        } else {
+                            simStrategyMode = 'NORMAL'; 
+                        }
+                        
+                        const trade = {
+                            id: Math.random(),
+                            signalTime: signalTime,
+                            entryTime: prepCandle.time, 
+                            exitTime: data1m[idx + 6].time, 
+                            signalPrice: data1m[idx].close,
+                            entryPrice: entryPrice, 
+                            exitPrice: cancelled ? null : exitPrice,
+                            direction: isCall ? 'CALL' : 'PUT',
+                            result: result,
+                            cancelReason,
+                            maxHigh: maxH,
+                            minLow: minL
+                        };
+
+                        const financeRecord = buildTradeFinanceRecord(trade, currentBalance, mState, SESSION_CONFIG);
+                        currentBalance = financeRecord.balanceAfter;
+                        mState = updateMartingaleAfterTrade(result, mState, currentBalance, SESSION_CONFIG);
+
+                        tradesRef.current.push(financeRecord);
+                        
+                        if (result === 'WIN') { stats.wins++; stats.pnl += financeRecord.pnl; }
+                        if (result === 'LOSS') { stats.losses++; stats.pnl += financeRecord.pnl; }
+                        if (result === 'CANCELLED') { stats.cancels++; }
+
                         markersRef.current.push({
-                            time: currTime,
+                            time: signalTime,
                             position: isCall ? 'belowBar' : 'aboveBar',
                             color: isCall ? '#0ea5e9' : '#f43f5e',
                             shape: isCall ? 'arrowUp' : 'arrowDown',
                             size: 1
                         });
-
-                        tradesRef.current.push({
-                            id: Math.random(),
-                            signalTime: currTime,
-                            entryTime: initialData[idx+1].time, 
-                            exitTime: initialData[idx+1].time + 300, 
-                            entryPrice,
-                            exitPrice,
-                            direction: isCall ? 'CALL' : 'PUT',
-                            result: isWin ? 'WIN' : 'LOSS',
-                            maxHigh: maxH,
-                            minLow: minL
-                        });
-
-                        if (isWin) {
-                            historicalWins++;
-                            simStrategyMode = 'NORMAL';
-                        } else {
-                            historicalLosses++;
-                            simStrategyMode = 'REINFORCED';
-                        }
                     }
                 }
                 
                 console.log(`=== АУДИТ ПАЙПЛАЙНА ЗАВЕРШЕН ===`);
-                console.log(`Кандидатов найдено (Sweep + Reclaim): ${rawCandidatesCount}`);
-                console.log(`Прошли скоринг-фильтр (Accepted): ${acceptedSignalsCount}`);
+                console.log(`Pnl: ${stats.pnl} | Wins: ${stats.wins} | Losses: ${stats.losses}`);
 
-                const total = historicalWins + historicalLosses;
-                const wr = total > 0 ? Math.round((historicalWins / total) * 100) : 0;
+                const total = stats.wins + stats.losses;
+                const wr = total > 0 ? Math.round((stats.wins / total) * 100) : 0;
                 
-                statsRef.current.wins = historicalWins;
-                statsRef.current.losses = historicalLosses;
-                setTradeStats({ wins: historicalWins, losses: historicalLosses, winRate: wr });
+                setSessionData({
+                    balance: currentBalance,
+                    stake: mState.currentStake,
+                    step: mState.martingaleStep,
+                    pnl: stats.pnl,
+                    wins: stats.wins,
+                    losses: stats.losses,
+                    cancels: stats.cancels
+                });
 
                 strategyMode.current = simStrategyMode;
                 setStrategyModeUI(simStrategyMode);
                 
-                lastEvaluatedTime = initialData[initialData.length - 2].time; 
+                lastEvaluatedTimeLive = data1m[data1m.length - 2].time; 
 
                 if (total > 0) {
-                    addLog(`БЭКТЕСТ (ДЕТЕРМИНИРОВАННЫЙ): НАЙДЕНО ПАТТЕРНОВ ${total}, ВИНРЕЙТ ${wr}%`, true);
+                    addLog(`БЭКТЕСТ (1M): НАЙДЕНО ПАТТЕРНОВ ${total}, ВИНРЕЙТ ${wr}%`, true);
                 } else {
                     addLog(`БЭКТЕСТ ЗА 12H: SFP ПАТТЕРНЫ НЕ НАЙДЕНЫ.`, true);
                 }
@@ -1425,7 +1344,7 @@
                 await initChart();
                 if (candleSeries.current) {
                     try {
-                        candleSeries.current.setData(initialData);
+                        candleSeries.current.setData(data1m); 
                         if (markersRef.current.length > 0) {
                             safeSetMarkers(markersRef.current);
                         }
@@ -1438,9 +1357,9 @@
 
                 if (total > 0) {
                     playSound('win');
-                    await speak(`Бэктест 12 часов завершен. Чистая стратегия SFP на 5 минутах отработала ${total} раз. Винрейт ${wr} процентов. Перехожу к живому сканированию рынка.`);
+                    await speak(`Бэктест 12 часов завершен. Стратегия S F P на минутном графике совершила ${total} входов. Винрейт ${wr} процентов. Перехожу к лайв сканированию.`);
                 } else {
-                    await speak(`Бэктест завершен. За последние 12 часов подтвержденных SFP паттернов не найдено. Перехожу к живому сканированию рынка.`);
+                    await speak(`Бэктест завершен. Перехожу к живому сканированию рынка.`);
                 }
 
                 updateStatus('ИЗУЧЕНИЕ РЕАЛЬНОЙ ИСТОРИИ...', 'text-slate-500');
@@ -1449,388 +1368,377 @@
                 await speak('Запускаю радар поиска новой ликвидности.');
                 setViewMode('SCREENER');
                 await new Promise(r => setTimeout(r, 1000));
-            } else {
-                addLog("ОШИБКА: НЕТ ДАННЫХ ОТ БИРЖИ", true);
-                updateStatus('ОШИБКА API BINANCE', 'text-rose-600');
-                await speak('Недостаточно данных для запуска. Попробуйте перезапустить.');
-                engineActive.current = false;
-                setIsStarted(false);
-                return;
-            }
-            
-            // ОСНОВНОЙ ЛАЙВ-ЦИКЛ
-            let logsThrottle = 0;
-            let lastBackgroundNewsTime = Date.now();
-            let lastLoggedRejectTime = 0;
-            let lastLiveTradeTime = lastEvaluatedTime; // Перенос счетчика Cooldown в Лайв
+            };
 
-            while (engineActive.current) {
-              try {
-                  updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ 5M...', 'text-slate-700');
-                  setViewMode('SCREENER');
-                  setSignal(null);
-                  setCurrentTF('5M');
-                  
-                  setMetrics(prev => ({ ...prev, filterLevel: strategyMode.current === 'NORMAL' ? 55 : 70, smartMoney: 15 }));
+            const handleConfirmedSignal = async (cur, data1mLive, closedIdx, isCall, isPut, liveSweepLvl) => {
+                const directionText = isCall ? "повышение" : "понижение";
+                const currentClosedTime = data1mLive[closedIdx].time;
+                const lastIdx = data1mLive.length - 1;
+                
+                setAsset(cur);
+                setViewMode('DETAIL');
+                
+                const realMetrics = calculateMetricsReal(data1mLive, isCall);
+                setMetrics(prev => ({ 
+                    ...prev, 
+                    structure: realMetrics.structure, 
+                    liquidity: realMetrics.liquidity, 
+                    smartMoney: 85, 
+                    buyPressure: realMetrics.buyPressure 
+                }));
 
-                  let signalFound = false;
+                await initChart();
+                playSound('found');
+                
+                if(candleSeries.current) {
+                    try { 
+                        candleSeries.current.setData(data1mLive);
+                        markersRef.current.push({
+                            time: currentClosedTime,
+                            position: isCall ? 'belowBar' : 'aboveBar',
+                            color: isCall ? '#0ea5e9' : '#f43f5e',
+                            shape: isCall ? 'arrowUp' : 'arrowDown',
+                            size: 1
+                        });
+                        safeSetMarkers(markersRef.current);
+                    } catch (e) { console.error(e); }
+                }
 
-                  for(let cur of ASSETS) {
-                    if (!engineActive.current) break;
+                const liqZones = calcLiquidityZones(data1mLive, 15); 
+                const liqMap = new Map();
+                liqZones.forEach(z => liqMap.set(z.time, z));
+                const upperData = [];
+                const lowerData = [];
+                data1mLive.forEach(c => {
+                    const zone = liqMap.get(c.time);
+                    if (zone) {
+                        upperData.push({ time: c.time, value: zone.upper });
+                        lowerData.push({ time: c.time, value: zone.lower });
+                    }
+                });
+                drawIndicators(upperData, lowerData);
+                
+                updateStatus(`ГОТОВЬТЕ: BTC (1 МИН)`, 'text-cyan-600 font-bold animate-pulse');
+                addLog(`ЗАФИКСИРОВАН ПАТТЕРН SFP (1M)`, true);
+                addLog(`ОКНО ПОДГОТОВКИ: ОЖИДАНИЕ 3 СЕК...`, true);
+
+                await speak(`Внимание. Успешно подтверждено снятие ликвидности. Направление на ${directionText}. Проверка отката...`);
+
+                let tradeCancelled = false;
+                let cancelReason = "";
+
+                if (mState.blocked) {
+                    tradeCancelled = true;
+                    cancelReason = mState.reason;
+                }
+                
+                // ОКНО ПОДГОТОВКИ (Trade Execution 3 сек)
+                if (!tradeCancelled) {
+                    for(let w=3; w>0; w--) {
+                        if (!engineActive.current) break;
+                        updateStatus(`СНАЙПЕР: ПРОВЕРКА ПРОБОЯ... ${w}С`, 'text-amber-600 font-bold');
+                        playSound('scan');
+                        
+                        let prepData = null;
+                        try {
+                            prepData = await ScannerAPI.getCandles(cur.symbol, 2, '1m');
+                        } catch(e) {
+                            // ignore
+                        }
+
+                        if (prepData && prepData.length > 0) {
+                            const liveTick = prepData[prepData.length - 1];
+                            currentPrice.current = liveTick.close;
+
+                            if (activeLiveTradeRef.current) {
+                                activeLiveTradeRef.current.maxHigh = Math.max(activeLiveTradeRef.current.maxHigh, liveTick.high);
+                                activeLiveTradeRef.current.minLow = Math.min(activeLiveTradeRef.current.minLow, liveTick.low);
+                                tradesRef.current = [...tradesRef.current.filter(t => t.id !== activeLiveTradeRef.current.id), activeLiveTradeRef.current];
+                            }
+
+                            if (isPut && liveTick.high > liveSweepLvl) { tradeCancelled = true; cancelReason = "Импульс против сигнала"; }
+                            if (isCall && liveTick.low < liveSweepLvl) { tradeCancelled = true; cancelReason = "Импульс против сигнала"; }
+                        }
+
+                        await new Promise(r => setTimeout(r, 1000));
+                    }
+                }
+
+                if (tradeCancelled && engineActive.current) {
+                    playSound('cancel');
+                    updateStatus('ОТМЕНА: СИГНАЛ СБРОШЕН', 'text-slate-600 font-bold');
+                    addLog(`СИГНАЛ ОТМЕНЕН: ${cancelReason}`, true);
+                    await speak("Отмена сигнала. Возвращаюсь к радару.");
+                    
+                    if (activeLiveTradeRef.current) {
+                        activeLiveTradeRef.current.result = 'CANCELLED';
+                        activeLiveTradeRef.current.cancelReason = cancelReason;
+                        activeLiveTradeRef.current.exitTime = Date.now() / 1000;
+                        activeLiveTradeRef.current.pnl = 0; 
+                        
+                        mState = updateMartingaleAfterTrade('CANCELLED', mState, currentBalance, SESSION_CONFIG);
+                        setSessionData(prev => ({
+                            ...prev,
+                            cancels: prev.cancels + 1,
+                            stake: mState.currentStake,
+                            step: mState.martingaleStep
+                        }));
+                    }
+                    
+                    activeLiveTradeRef.current = null;
+                    await new Promise(r => setTimeout(r, 4000));
+                    setViewMode('SCREENER');
+                    updateStatus('ПЕРЕЗАПУСК СКАНИРОВАНИЯ...', 'text-slate-600');
+                    await new Promise(r => setTimeout(r, 2000));
+                    return; 
+                }
+
+                if (!engineActive.current) return;
+
+                playSound('start');
+                updateStatus('СИГНАЛ АКТИВЕН', 'text-blue-700 font-bold');
+                
+                const expMins = 5; 
+                
+                // ФИКСАЦИЯ ВХОДА (ENTRY)
+                activeLiveTradeRef.current.entryTime = Date.now() / 1000;
+                activeLiveTradeRef.current.entryPrice = currentPrice.current;
+                activeLiveTradeRef.current.exitTime = (Date.now() / 1000) + (expMins * 60);
+
+                setSignal({ type: isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice: currentPrice.current });
+
+                addLog(`ВХОД ВЫПОЛНЕН: ${isCall ? 'ВВЕРХ' : 'ВНИЗ'} НА 5 МИН.`, true);
+                speak(`Вход подтвержден. Время экспирации пять минут. Жмите кнопку!`);
+
+                let expirySeconds = expMins * 60;
+                let isLive = true;
+                
+                const liveChartTask = (async () => {
+                  let localLastTime = data1mLive[data1mLive.length - 1].time;
+                  while (isLive && engineActive.current) {
+                    await new Promise(r => setTimeout(r, 2000));
+                    if (!isLive) break;
+                    try {
+                      const liveTickArray = await ScannerAPI.getCandles(cur.symbol, 2, '1m');
+                      if (liveTickArray && liveTickArray.length > 0 && candleSeries.current) {
+                        liveTickArray.forEach(tick => {
+                          if (tick.time >= localLastTime && !isNaN(tick.close)) {
+                            try {
+                                candleSeries.current.update(tick);
+                                currentPrice.current = tick.close;
+                                localLastTime = Math.max(localLastTime, tick.time);
+                                
+                                if (activeLiveTradeRef.current) {
+                                    activeLiveTradeRef.current.maxHigh = Math.max(activeLiveTradeRef.current.maxHigh, tick.high);
+                                    activeLiveTradeRef.current.minLow = Math.min(activeLiveTradeRef.current.minLow, tick.low);
+                                    activeLiveTradeRef.current.exitPrice = tick.close;
+                                }
+                            } catch (err) {}
+                          }
+                        });
+                      }
+                    } catch (e) {}
+                  }
+                })();
+
+                while(expirySeconds > 0 && engineActive.current) {
+                  setCountdown(expirySeconds);
+                  await new Promise(r => setTimeout(r, 1000));
+                  expirySeconds--;
+                }
+                
+                isLive = false;
+                setCountdown(null);
+                if (!engineActive.current) return;
+
+                updateStatus('АНАЛИЗ РЕЗУЛЬТАТА', 'text-slate-500');
+
+                const finalData = await ScannerAPI.getCandles(cur.symbol, 1, '1m').catch(()=>null);
+                let finalPrice = currentPrice.current;
+                if (finalData && finalData.length > 0) {
+                    finalPrice = finalData[finalData.length - 1].close;
+                }
+                
+                const entryPrice = activeLiveTradeRef.current.entryPrice;
+                let isWin = false;
+                if ((isCall && finalPrice > entryPrice) || (isPut && finalPrice < entryPrice)) isWin = true;
+                else if (finalPrice === entryPrice) isWin = true; 
+
+                if (activeLiveTradeRef.current) {
+                    activeLiveTradeRef.current.exitTime = Date.now() / 1000;
+                    activeLiveTradeRef.current.exitPrice = finalPrice;
+                    activeLiveTradeRef.current.result = isWin ? 'WIN' : 'LOSS';
+                    activeLiveTradeRef.current.pnl = getTradePnL(isWin ? 'WIN' : 'LOSS', activeLiveTradeRef.current.stake, SESSION_CONFIG);
+                }
+
+                currentBalance += activeLiveTradeRef.current.pnl;
+                mState = updateMartingaleAfterTrade(isWin ? 'WIN' : 'LOSS', mState, currentBalance, SESSION_CONFIG);
+                
+                setSessionData(prev => ({
+                    balance: currentBalance,
+                    stake: mState.currentStake,
+                    step: mState.martingaleStep,
+                    pnl: prev.pnl + activeLiveTradeRef.current.pnl,
+                    wins: prev.wins + (isWin ? 1 : 0),
+                    losses: prev.losses + (!isWin ? 1 : 0),
+                    cancels: prev.cancels
+                }));
+
+                if (isWin) {
+                    playSound('win');
+                    strategyMode.current = 'NORMAL';
+                    setStrategyModeUI('NORMAL');
+                    addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
+                    await speak(`Плюс. Сделка успешно завершена. Баланс обновлен.`);
+                } else {
+                    playSound('loss');
+                    strategyMode.current = 'REINFORCED';
+                    setStrategyModeUI('REINFORCED');
+                    addLog(`РЕЗУЛЬТАТ: МИНУС (-). АКТИВИРОВАН REINFORCED MODE`);
+                    await speak(`Минус. Ложный пробой. Шаг мартингейла увеличен. Активирован усиленный режим анализа.`);
+                }
+
+                setSignal(null);
+                setMetrics(prev => ({ ...prev, smartMoney: 0 }));
+                activeLiveTradeRef.current = null;
+                await new Promise(r => setTimeout(r, 2000));
+            };
+
+            const runLiveScanCycle = async () => {
+                try {
+                    updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ 1M...', 'text-slate-700');
+                    setViewMode('SCREENER');
+                    setSignal(null);
+                    
+                    let signalFound = false;
+                    let liveSweepLvl = null;
+
+                    const cur = ASSETS[0];
+                    if (!engineActive.current) return;
                     setScanIndex(0); 
                     playSound('scan');
                     
-                    const data = await ScannerAPI.getCandles(cur.symbol, 200, '5m'); 
-                    
-                    if (data && data.length > 150) {
-                      setSparklines(prev => ({...prev, [cur.symbol]: data}));
-
-                      const lastIdx = data.length - 1;
-                      const closedIdx = lastIdx - 1; 
-                      currentPrice.current = data[lastIdx].close; 
-
-                      const liqZones = calcLiquidityZones(data, 15); 
-                      const atrSeries = calcATRSeries(data, 14);    
-
-                      const upperData = liqZones.map(i => ({time: i.time, value: i.upper}));
-                      const lowerData = liqZones.map(i => ({time: i.time, value: i.lower}));
-
-                      const currentClosedTime = data[closedIdx].time;
-                      
-                      let isCall = false;
-                      let isPut = false;
-                      let triggerCandleIdx = closedIdx;
-
-                      // Duplicate Suppression in Live (Охлаждение 4 свечи)
-                      const isCooldownActive = (currentClosedTime - lastLiveTradeTime) < (4 * 300);
-
-                      if (currentClosedTime !== lastEvaluatedTime && !isCooldownActive) {
-                          lastEvaluatedTime = currentClosedTime;
-
-                          const currTime = data[closedIdx].time;
-                          
-                          const liveLogger = (t, dir, status, reason) => {
-                              if (status === 'ОТКЛОНЁН' && t !== lastLoggedRejectTime) {
-                                  addLog(`ПРОПУСК (${dir}): ${reason.substring(0, 45)}...`, true);
-                                  lastLoggedRejectTime = t;
-                              }
-                          };
-
-                          const { isCall: callSignal, isPut: putSignal } = evaluateSweepSetup(
-                              data,
-                              closedIdx,
-                              liqZones,
-                              atrSeries,
-                              STRATEGY_CONFIG[strategyMode.current],
-                              liveLogger
-                          );
-
-                          if ((callSignal || putSignal) && currTime !== lastCancelledTime) {
-                              signalFound = true;
-                              isCall = callSignal;
-                              isPut = putSignal;
-                              triggerCandleIdx = closedIdx;
-                              lastLiveTradeTime = currentClosedTime; // Обновляем время последней сделки
-                              
-                              activeLiveTradeRef.current = {
-                                  id: Math.random(),
-                                  signalTime: currTime,
-                                  entryTime: Date.now() / 1000, 
-                                  exitTime: (Date.now() / 1000) + 300, 
-                                  entryPrice: currentPrice.current,
-                                  exitPrice: currentPrice.current,
-                                  direction: isCall ? 'CALL' : 'PUT',
-                                  result: 'PENDING',
-                                  maxHigh: data[closedIdx].high,
-                                  minLow: data[closedIdx].low
-                              };
-                          }
-                      }
-
-                      if (signalFound) {
-                          setAsset(cur);
-                          setViewMode('DETAIL');
-                          
-                          const realMetrics = calculateMetricsReal(data, isCall);
-                          setMetrics(prev => ({ 
-                              ...prev, 
-                              structure: realMetrics.structure, 
-                              liquidity: realMetrics.liquidity, 
-                              smartMoney: 85, 
-                              buyPressure: realMetrics.buyPressure 
-                          }));
-
-                          await initChart();
-                          playSound('found');
-                          
-                          if(candleSeries.current) {
-                              try { 
-                                  candleSeries.current.setData(data);
-                                  
-                                  // КОМПАКТНЫЙ МАРКЕР БЕЗ ТЕКСТА
-                                  markersRef.current.push({
-                                      time: data[triggerCandleIdx].time,
-                                      position: isCall ? 'belowBar' : 'aboveBar',
-                                      color: isCall ? '#0ea5e9' : '#f43f5e',
-                                      shape: isCall ? 'arrowUp' : 'arrowDown',
-                                      size: 1
-                                  });
-                                  if (markersRef.current.length > 0) {
-                                      safeSetMarkers(markersRef.current);
-                                  }
-                              } catch (e) { console.error(e); }
-                          }
-
-                          drawIndicators(upperData, lowerData);
-                          currentPrice.current = data[lastIdx].close;
-                          
-                          const directionText = isCall ? "повышение" : "понижение";
-                          
-                          updateStatus(`ГОТОВЬТЕ: BTC (5 МИН)`, 'text-cyan-600 font-bold animate-pulse');
-                          addLog(`ЗАФИКСИРОВАН СИЛЬНЫЙ ПАТТЕРН SFP (5M)`, true);
-                          addLog(`УСЛОВИЯ СКОРРИНГА ВЫПОЛНЕНЫ`, true);
-
-                          await speak(`Внимание. Успешно подтверждено снятие ликвидности. Подготовьте Биткоин. Время экспирации пять минут. Направление на ${directionText}.`);
-
-                          for(let w=6; w>0; w--) {
-                              if (!engineActive.current) break;
-                              updateStatus(`ОТКРЫВАЙТЕ БРОКЕРА... ${w}С`, 'text-cyan-600 font-bold');
-                              playSound('scan');
-                              await new Promise(r => setTimeout(r, 1000));
-                          }
-
-                          let tradeCancelled = false;
-                          updateStatus('СНАЙПЕР: 1M ПОДТВЕРЖДЕНИЕ', 'text-slate-800 font-bold animate-pulse');
-                          addLog(`ПРОВЕРКА ТЕХНИЧЕСКОГО СЛОЯ 1M...`, true);
-
-                          for(let w=3; w>0; w--) {
-                              if (!engineActive.current) break;
-                              await new Promise(r => setTimeout(r, 1000));
-                              try {
-                                  const liveTechData = await ScannerAPI.getCandles(cur.symbol, 2, '1m');
-                                  const liveTick = liveTechData[liveTechData.length - 1];
-                                  if (liveTick) {
-                                      currentPrice.current = liveTick.close;
-                                      const currentZones = calcLiquidityZones(data, 15);
-                                      const liveUpper = currentZones[currentZones.length-1].upper;
-                                      const liveLower = currentZones[currentZones.length-1].lower;
-
-                                      if (isPut && liveTick.close > liveUpper) tradeCancelled = true;
-                                      if (isCall && liveTick.close < liveLower) tradeCancelled = true;
-                                  }
-                              } catch(e) {}
-                          }
-
-                          if (tradeCancelled && engineActive.current) {
-                              lastCancelledTime = data[triggerCandleIdx].time; 
-                              playSound('cancel');
-                              updateStatus('ОТМЕНА: ИСТИННЫЙ ПРОБОЙ', 'text-rose-600 font-bold');
-                              addLog(`СИГНАЛ ОТМЕНЕН: ЦЕНА ВЕРНУЛАСЬ (ФИЛЬТР 1M)`, true);
-                              await speak("Внимание. Отмена сигнала. Зафиксировано резкое движение против нас на техническом слое. Возвращаюсь к радару.");
-                              
-                              activeLiveTradeRef.current = null; // Очищаем незапущенный трейд
-                              await new Promise(r => setTimeout(r, 4000));
-                              setViewMode('SCREENER');
-                              updateStatus('ПЕРЕЗАПУСК СКАНИРОВАНИЯ...', 'text-slate-600');
-                              await new Promise(r => setTimeout(r, 2000));
-                              break; 
-                          }
-
-                          if (!engineActive.current) break;
-
-                          lastCancelledTime = data[triggerCandleIdx].time;
-
-                          playSound('start');
-                          updateStatus('СИГНАЛ АКТИВЕН', 'text-blue-700 font-bold');
-                          
-                          const expMins = 5; 
-                          
-                          // ЗАПУСК LIVE TRADE ВИЗУАЛИЗАЦИИ
-                          activeLiveTradeRef.current.entryTime = Date.now() / 1000;
-                          activeLiveTradeRef.current.entryPrice = currentPrice.current;
-                          activeLiveTradeRef.current.exitTime = (Date.now() / 1000) + (expMins * 60);
-                          tradesRef.current.push(activeLiveTradeRef.current);
-
-                          setSignal({ type: isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice: currentPrice.current });
-
-                          addLog(`СИГНАЛ ВЫПОЛНЕН: ВХОД ${isCall ? 'ВВЕРХ' : 'ВНИЗ'} НА 5 МИН.`, true);
-                          speak(`Позиция подтверждена. Вход на ${directionText}! Время экспирации пять минут. Жмите кнопку!`);
-
-                          let newsReadInThisTrade = false;
-                          const readOneRealBtcNews = () => {
-                             if(fullNewsPool.current.length === 0) {
-                                 fetchNews(); 
-                                 return;
-                             }
-                             const idx = Math.floor(Math.random() * fullNewsPool.current.length);
-                             const textToRead = fullNewsPool.current.splice(idx, 1)[0].toLowerCase(); 
-                             
-                             try {
-                                 if(window.speechSynthesis && !window.speechSynthesis.speaking) {
-                                     const u = new SpeechSynthesisUtterance("Сводка: " + textToRead);
-                                     u.lang = 'ru-RU'; u.rate = 1.1; u.pitch = 0.95;
-                                     window.speechSynthesis.speak(u);
-                                 }
-                             } catch(e){}
-                          };
-
-                          let expirySeconds = expMins * 60;
-                          let isLive = true;
-                          
-                          const liveChartTask = (async () => {
-                            let localLastTime = data[data.length - 1].time;
-                            while (isLive && engineActive.current) {
-                              await new Promise(r => setTimeout(r, 2000));
-                              if (!isLive) break;
-                              try {
-                                const liveTickArray = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
-                                if (liveTickArray && liveTickArray.length > 0 && candleSeries.current) {
-                                  liveTickArray.forEach(tick => {
-                                    if (tick.time >= localLastTime && !isNaN(tick.close)) {
-                                      try {
-                                          candleSeries.current.update(tick);
-                                          currentPrice.current = tick.close;
-                                          localLastTime = Math.max(localLastTime, tick.time);
-                                          
-                                          if (activeLiveTradeRef.current) {
-                                              activeLiveTradeRef.current.maxHigh = Math.max(activeLiveTradeRef.current.maxHigh, tick.high);
-                                              activeLiveTradeRef.current.minLow = Math.min(activeLiveTradeRef.current.minLow, tick.low);
-                                              activeLiveTradeRef.current.exitPrice = tick.close;
-                                          }
-                                      } catch (err) {}
-                                    }
-                                  });
-                                }
-                              } catch (e) {}
-                            }
-                          })();
-
-                          while(expirySeconds > 0 && engineActive.current) {
-                            setCountdown(expirySeconds);
-                            
-                            if (expirySeconds === Math.floor((expMins * 60) / 2) && !newsReadInThisTrade) {
-                                 readOneRealBtcNews();
-                                 newsReadInThisTrade = true;
-                            }
-
-                            await new Promise(r => setTimeout(r, 1000));
-                            expirySeconds--;
-                          }
-                          
-                          isLive = false;
-                          setCountdown(null);
-                          if (!engineActive.current) break;
-
-                          updateStatus('АНАЛИЗ РЕЗУЛЬТАТА', 'text-slate-500');
-
-                          const finalData = await ScannerAPI.getCandles(cur.symbol, 1, '1m').catch(()=>null);
-                          let finalPrice = currentPrice.current;
-                          if (finalData && finalData.length > 0) {
-                              finalPrice = finalData[finalData.length - 1].close;
-                          }
-                          
-                          const entryPrice = activeLiveTradeRef.current.entryPrice;
-                          let isWin = false;
-                          if ((isCall && finalPrice > entryPrice) || (isPut && finalPrice < entryPrice)) isWin = true;
-                          else if (finalPrice === entryPrice) isWin = true; 
-
-                          if (activeLiveTradeRef.current) {
-                              activeLiveTradeRef.current.exitTime = Date.now() / 1000;
-                              activeLiveTradeRef.current.exitPrice = finalPrice;
-                              activeLiveTradeRef.current.result = isWin ? 'WIN' : 'LOSS';
-                          }
-
-                          const wasReinforced = strategyMode.current === 'REINFORCED';
-
-                          if (isWin) {
-                              playSound('win');
-                              statsRef.current.wins++;
-                              
-                              let winText = `Плюс. Сделка успешно завершена. Текущий винрейт: ${Math.round((statsRef.current.wins / (statsRef.current.wins + statsRef.current.losses)) * 100)} процентов.`;
-                              
-                              if (wasReinforced) {
-                                  strategyMode.current = 'NORMAL';
-                                  setStrategyModeUI('NORMAL');
-                                  addLog(`РЕЖИМ СТРАТЕГИИ: ВОЗВРАТ К NORMAL MODE`, true);
-                                  winText += " Усиленный режим отработал успешно. Возврат к базовой стратегии.";
-                              }
-                              
-                              addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
-                              await speak(winText);
-                          } else {
-                              playSound('loss');
-                              statsRef.current.losses++;
-                              
-                              let lossText = `Минус. Ложный пробой.`;
-                              
-                              if (!wasReinforced) {
-                                  strategyMode.current = 'REINFORCED';
-                                  setStrategyModeUI('REINFORCED');
-                                  addLog(`РЕЖИМ СТРАТЕГИИ: АКТИВИРОВАН REINFORCED MODE`, true);
-                                  lossText += " Сигнал не подтвердился. Активирован усиленный режим анализа.";
-                              } else {
-                                  addLog(`РЕЖИМ СТРАТЕГИИ: СОХРАНЕН REINFORCED MODE`, true);
-                                  lossText += " Режим усиленного анализа сохранен.";
-                              }
-                              
-                              addLog(`РЕЗУЛЬТАТ: МИНУС (-).`);
-                              await speak(lossText);
-                          }
-
-                          const newTotal = statsRef.current.wins + statsRef.current.losses;
-                          const newWinRate = Math.round((statsRef.current.wins / newTotal) * 100);
-                          setTradeStats({ wins: statsRef.current.wins, losses: statsRef.current.losses, winRate: newWinRate });
-
-                          setSignal(null);
-                          setMetrics(prev => ({ ...prev, smartMoney: 0 }));
-                          activeLiveTradeRef.current = null;
-                          await new Promise(r => setTimeout(r, 2000));
-                          break; 
-                      }
+                    let data1mLive = null;
+                    try {
+                        data1mLive = await ScannerAPI.getCandles(cur.symbol, 1000, '1m'); 
+                    } catch(e) {
+                        return;
                     }
-                  }
-                  
-                  if (!signalFound && engineActive.current) {
-                      logsThrottle++;
-                      if (logsThrottle % 4 === 0) {
-                          addLog('ОЖИДАНИЕ ФОРМИРОВАНИЯ SFP ПАТТЕРНА...', true);
-                      }
+                    
+                    if (data1mLive && data1mLive.length > 150) {
+                        setSparklines(prev => ({...prev, [cur.symbol]: data1mLive}));
 
-                      if (Date.now() - lastBackgroundNewsTime > 10 * 60 * 1000) {
-                          lastBackgroundNewsTime = Date.now();
-                          const unreadNews = fullNewsPool.current.filter(n => n && n.length > 20 && !readNewsHistory.current.has(n));
-                          if (unreadNews.length === 0 && fullNewsPool.current.length > 0) readNewsHistory.current.clear();
-                          
-                          const availableNews = fullNewsPool.current.filter(n => n && n.length > 20 && !readNewsHistory.current.has(n));
-                          if (availableNews.length > 0) {
-                              const randomNews = availableNews[Math.floor(Math.random() * availableNews.length)];
-                              readNewsHistory.current.add(randomNews);
-                              let cleanText = randomNews.replace(/(https?:\/\/[^\s]+)/g, '').replace(/[#_*~|><]/g, '').trim();
-                              if (cleanText.length > 150) {
-                                  const lastDot = cleanText.substring(0, 150).lastIndexOf('.');
-                                  cleanText = lastDot > 50 ? cleanText.substring(0, lastDot + 1) : cleanText.substring(0, 150) + '...';
-                              }
-                              addLog(`АУДИО СВОДКА: ${cleanText.substring(0, 45).toUpperCase()}...`, true);
-                              speak("Фоновая сводка рынка. " + cleanText).catch(()=>null);
-                          }
-                      }
+                        const lastIdx = data1mLive.length - 1;
+                        const closedIdx = lastIdx - 1; 
+                        currentPrice.current = data1mLive[lastIdx].close; 
 
-                      await new Promise(r => setTimeout(r, 1500)); 
-                  }
-              } catch (e) {
-                  console.error(e);
-                  if (engineActive.current) {
-                      addLog("ОШИБКА АНАЛИЗА, ПЕРЕЗАПУСК РАДАРА...", true);
-                      await new Promise(r => setTimeout(r, 3000));
-                  }
-              }
+                        const liqZones = calcLiquidityZones(data1mLive, 15); 
+                        const atrSeries = calcATRSeries(data1mLive, 14);    
+
+                        const currentClosedTime = data1mLive[closedIdx].time;
+                        
+                        let isCall = false;
+                        let isPut = false;
+
+                        const config = STRATEGY_1M_CONFIG[strategyMode.current];
+                        const isCooldownActive = (closedIdx - lastLiveTradeTime) < config.cooldownCandles;
+
+                        if (currentClosedTime !== lastEvaluatedTimeLive && !isCooldownActive) {
+                            lastEvaluatedTimeLive = currentClosedTime;
+
+                            const liveLogger = (t, dir, status, reason) => {
+                                if (status === 'ОТКЛОНЁН' && t !== lastLoggedRejectTime) {
+                                    addLog(`ПРОПУСК 1M (${dir}): ${reason.substring(0, 45)}...`, true);
+                                    lastLoggedRejectTime = t;
+                                }
+                            };
+
+                            const { isCall: callSignal, isPut: putSignal, sweepLevel } = detectLiquiditySweep1M(
+                                data1mLive, closedIdx, liqZones, atrSeries, config, liveLogger
+                            );
+
+                            if ((callSignal || putSignal)) {
+                                signalFound = true;
+                                isCall = callSignal;
+                                isPut = putSignal;
+                                liveSweepLvl = sweepLevel;
+                                lastLiveTradeTime = closedIdx; 
+                                
+                                const trade = {
+                                    id: Math.random(),
+                                    signalTime: currentClosedTime,
+                                    entryTime: null, 
+                                    exitTime: null, 
+                                    signalPrice: data1mLive[closedIdx].close,
+                                    entryPrice: null,
+                                    exitPrice: null,
+                                    direction: isCall ? 'CALL' : 'PUT',
+                                    result: 'PENDING',
+                                    cancelReason: null,
+                                    maxHigh: data1mLive[lastIdx].high,
+                                    minLow: data1mLive[lastIdx].low
+                                };
+                                
+                                activeLiveTradeRef.current = buildTradeFinanceRecord(trade, currentBalance, mState, SESSION_CONFIG);
+                            }
+                        }
+
+                        if (signalFound) {
+                            await handleConfirmedSignal(cur, data1mLive, closedIdx, isCall, isPut, liveSweepLvl);
+                        }
+                    }
+                    
+                    if (!signalFound && engineActive.current) {
+                        if (Date.now() - lastBackgroundNewsTime > 10 * 60 * 1000) {
+                            lastBackgroundNewsTime = Date.now();
+                            const availableNews = fullNewsPool.current.filter(n => n && n.length > 20 && !readNewsHistory.current.has(n));
+                            if (availableNews.length > 0) {
+                                const randomNews = availableNews[Math.floor(Math.random() * availableNews.length)];
+                                readNewsHistory.current.add(randomNews);
+                                let cleanText = randomNews.replace(/(https?:\/\/[^\s]+)/g, '').replace(/[#_*~|><]/g, '').trim();
+                                if (cleanText.length > 150) cleanText = cleanText.substring(0, 150) + '...';
+                                addLog(`АУДИО СВОДКА: ${cleanText.substring(0, 45).toUpperCase()}...`, true);
+                                speak("Фоновая сводка рынка. " + cleanText).catch(()=>null);
+                            }
+                        }
+                        await new Promise(r => setTimeout(r, 1500)); 
+                    }
+                } catch (e) {
+                    throw e; 
+                }
+            };
+
+            try {
+                await runBacktestPhase();
+                
+                // Переход в Live
+                mState = createMartingaleState(SESSION_CONFIG);
+                currentBalance = SESSION_CONFIG.startingBalance;
+                setSessionData({
+                    balance: currentBalance,
+                    stake: mState.currentStake,
+                    step: mState.martingaleStep,
+                    pnl: 0,
+                    wins: 0,
+                    losses: 0,
+                    cancels: 0
+                });
+
+                while (engineActive.current) {
+                    await runLiveScanCycle();
+                }
+            } catch (e) {
+                console.error("Critical Engine Error:", e);
+                addLog("ОШИБКА ДВИЖКА: Сбой выполнения", true);
+            } finally {
+                engineActive.current = false;
+                setIsStarted(false);
             }
           };
 
           const startTerminal = () => {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             audioCtx.current = new AudioContext();
-            
             try {
                 const osc = audioCtx.current.createOscillator();
                 osc.connect(audioCtx.current.destination);
@@ -1846,7 +1754,6 @@
             runTerminalEngine();
           };
 
-          // Предотвращение двойных запусков и очистка при анмаунте
           useEffect(() => {
               return () => {
                   engineActive.current = false;
@@ -1869,7 +1776,7 @@
                     КРИПТО ЯДРО <br/><span className="text-gradient font-black drop-shadow-[0_0_15px_rgba(14,165,233,0.3)]">PRO MAX</span>
                   </h1>
                   <p className="text-sm md:text-base text-slate-500 tracking-[0.2em] mb-10 font-bold leading-tight uppercase animate-item-stagger delay-300">
-                    Smart Money Concepts (5M)
+                    SMC 1M • Martingale Risk Engine
                   </p>
                   <button 
                     onClick={startTerminal} 
@@ -1930,7 +1837,7 @@
                       </div>
                   </div>
                   <div className="text-[9px] md:text-xs text-slate-500 tracking-[0.2em] mt-1 font-bold leading-none uppercase flex items-center flex-wrap gap-2">
-                    Алгоритм SMC • Анализ Ликвидности
+                    Алгоритм SMC • 1M Analysis
                     <span className={`inline-block sm:hidden ml-2 px-1.5 py-0.5 rounded text-white ${strategyModeUI === 'NORMAL' ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`}>
                         {strategyModeUI}
                     </span>
@@ -2055,10 +1962,10 @@
                   <div className="flex-1 flex flex-col p-3 md:p-4 gap-3 md:gap-4 overflow-y-hidden relative z-10">
                     
                     <div className="grid grid-cols-4 gap-2 glass-card rounded-2xl p-2 shrink-0 border-white bg-white/80">
-                       <Speedometer value={metrics.structure} label="СТРУКТУРА" colorHex="#d97706" />
-                       <Speedometer value={metrics.liquidity} label="ЛИКВИДНОСТЬ" colorHex="#2563eb" glow={true} />
-                       <Speedometer value={metrics.filterLevel} label="SCORE ПОРОГ" colorHex={strategyModeUI === 'REINFORCED' ? '#f43f5e' : '#6366f1'} />
-                       <Speedometer value={metrics.smartMoney} label="SMART MONEY" colorHex="#06b6d4" />
+                       <Speedometer value={sessionData.balance / 100} label="БАЛАНС (₽)" colorHex="#10b981" glow={true} />
+                       <Speedometer value={sessionData.stake} label="СТАВКА (₽)" colorHex="#f59e0b" />
+                       <Speedometer value={sessionData.step * 50} label="ШАГ МАРТИНГЕЙЛА" colorHex={sessionData.step > 0 ? '#f43f5e' : '#6366f1'} />
+                       <Speedometer value={Math.abs(sessionData.pnl) / 100} label="PNL (₽)" colorHex={sessionData.pnl >= 0 ? "#0ea5e9" : "#f43f5e"} glow={sessionData.pnl !== 0} />
                     </div>
 
                     <div className="glass-card border border-white rounded-2xl p-3 flex flex-col gap-1 shrink-0 bg-white/80 shadow-sm">
@@ -2076,7 +1983,9 @@
                     <div className="flex gap-3 h-28 md:h-32 shrink-0">
                       <div className={`w-[35%] border rounded-2xl flex flex-col items-center justify-center relative transition-all duration-500 glass-card bg-white/90 ${appPhase === 'СИГНАЛ АКТИВЕН' ? 'border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.4)]' : 'border-white'}`}>
                         {signal ? (
-                          <VolumetricArrow type={signal.type} />
+                          <div className="flex flex-col items-center">
+                              <VolumetricArrow type={signal.type} />
+                          </div>
                         ) : (
                           <div className="flex flex-col items-center opacity-40">
                               <Radar size={32} className="text-slate-600 mb-2" />
@@ -2092,20 +2001,20 @@
                     </div>
 
                     <div className={`glass-card border rounded-3xl p-4 md:p-5 flex flex-col gap-3 shrink-0 relative overflow-hidden transition-all duration-700 bg-white/90 ${
-                        (tradeStats.wins + tradeStats.losses) > 0 
-                            ? (tradeStats.winRate >= 50 ? 'border-cyan-400 shadow-[0_10px_30px_rgba(14,165,233,0.2)]' : 'border-rose-400 shadow-[0_10px_30px_rgba(225,29,72,0.15)]') 
+                        (sessionData.wins + sessionData.losses) > 0 
+                            ? (sessionData.wins > sessionData.losses ? 'border-cyan-400 shadow-[0_10px_30px_rgba(14,165,233,0.2)]' : 'border-rose-400 shadow-[0_10px_30px_rgba(225,29,72,0.15)]') 
                             : 'border-white'
                     }`}>
                        <div className="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full blur-2xl pointer-events-none"></div>
                        <div className="flex justify-between items-center z-10 relative">
                            <span className="text-xs md:text-sm text-slate-600 tracking-widest font-bold flex items-center gap-2 leading-none oswald-font">
-                              <TrendingUp size={18} className={(tradeStats.wins + tradeStats.losses) > 0 ? (tradeStats.winRate >= 50 ? "text-cyan-600" : "text-rose-600") : "text-slate-500"} /> 
-                              ВИНРЕЙТ СИСТЕМЫ
+                              <TrendingUp size={18} className={(sessionData.wins + sessionData.losses) > 0 ? (sessionData.wins > sessionData.losses ? "text-cyan-600" : "text-rose-600") : "text-slate-500"} /> 
+                              СЕССИЯ
                            </span>
                            <span className={`text-3xl md:text-4xl font-black tracking-wider ios-text leading-none oswald-font ${
-                               (tradeStats.wins + tradeStats.losses) > 0 ? (tradeStats.winRate >= 50 ? "text-cyan-600" : "text-rose-600") : "text-slate-800"
+                               sessionData.pnl > 0 ? "text-cyan-600" : (sessionData.pnl < 0 ? "text-rose-600" : "text-slate-800")
                            }`}>
-                             {tradeStats.winRate}%
+                             {sessionData.pnl > 0 ? '+' : ''}{sessionData.pnl} ₽
                            </span>
                        </div>
                        
@@ -2113,31 +2022,31 @@
                            <div 
                              className="h-full bg-gradient-to-r from-blue-600 to-cyan-400 transition-all duration-1000 ease-out relative"
                              style={{ 
-                                 width: `${(tradeStats.wins + tradeStats.losses) > 0 ? (tradeStats.wins / (tradeStats.wins + tradeStats.losses)) * 100 : 50}%`,
-                                 boxShadow: tradeStats.winRate >= 50 ? '0 0 15px rgba(14,165,233,0.6)' : 'none'
+                                 width: `${(sessionData.wins + sessionData.losses) > 0 ? (sessionData.wins / (sessionData.wins + sessionData.losses)) * 100 : 50}%`,
+                                 boxShadow: sessionData.wins > sessionData.losses ? '0 0 15px rgba(14,165,233,0.6)' : 'none'
                              }}
-                           >
-                              {tradeStats.winRate >= 50 && <div className="absolute inset-0 bg-white/40 w-full animate-pulse"></div>}
-                           </div>
+                           ></div>
                            <div 
                              className="h-full bg-gradient-to-r from-rose-600 to-rose-400 transition-all duration-1000 ease-out relative"
                              style={{ 
-                                 width: `${(tradeStats.wins + tradeStats.losses) > 0 ? (tradeStats.losses / (tradeStats.wins + tradeStats.losses)) * 100 : 50}%`,
-                                 boxShadow: tradeStats.winRate < 50 && (tradeStats.wins + tradeStats.losses) > 0 ? '0 0 15px rgba(225,29,72,0.6)' : 'none'
+                                 width: `${(sessionData.wins + sessionData.losses) > 0 ? (sessionData.losses / (sessionData.wins + sessionData.losses)) * 100 : 50}%`,
+                                 boxShadow: sessionData.losses > sessionData.wins ? '0 0 15px rgba(225,29,72,0.6)' : 'none'
                              }}
-                           >
-                              {tradeStats.winRate < 50 && (tradeStats.wins + tradeStats.losses) > 0 && <div className="absolute inset-0 bg-white/40 w-full animate-pulse"></div>}
-                           </div>
+                           ></div>
                        </div>
 
                        <div className="flex justify-between items-center z-10 relative mt-2 oswald-font">
                            <div className="flex flex-col bg-slate-100/80 px-3 py-1.5 rounded-lg border border-slate-200">
-                               <span className="text-[9px] md:text-[10px] text-slate-500 tracking-widest font-bold uppercase">ПРОФИТ</span>
-                               <span className="text-xl md:text-2xl text-cyan-700 font-black ios-text leading-none mt-0.5">{tradeStats.wins}</span>
+                               <span className="text-[9px] md:text-[10px] text-slate-500 tracking-widest font-bold uppercase">ПРОФИТНЫХ</span>
+                               <span className="text-xl md:text-2xl text-cyan-700 font-black ios-text leading-none mt-0.5">{sessionData.wins}</span>
+                           </div>
+                           <div className="flex flex-col items-center bg-slate-100/80 px-3 py-1.5 rounded-lg border border-slate-200">
+                               <span className="text-[9px] md:text-[10px] text-slate-500 tracking-widest font-bold uppercase">ОТМЕН (СЕЙФ)</span>
+                               <span className="text-xl md:text-2xl text-slate-600 font-black ios-text leading-none mt-0.5">{sessionData.cancels}</span>
                            </div>
                            <div className="flex flex-col items-end bg-slate-100/80 px-3 py-1.5 rounded-lg border border-slate-200">
-                               <span className="text-[9px] md:text-[10px] text-slate-500 tracking-widest font-bold uppercase">УБЫТОК</span>
-                               <span className="text-xl md:text-2xl text-rose-600 font-black ios-text leading-none mt-0.5">{tradeStats.losses}</span>
+                               <span className="text-[9px] md:text-[10px] text-slate-500 tracking-widest font-bold uppercase">УБЫТОЧНЫХ</span>
+                               <span className="text-xl md:text-2xl text-rose-600 font-black ios-text leading-none mt-0.5">{sessionData.losses}</span>
                            </div>
                        </div>
                     </div>
