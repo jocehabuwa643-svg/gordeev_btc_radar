@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Крипто Терминал Гордеева - PRO MAX (SMC + Martingale)</title>
+    <title>Крипто Терминал Гордеева - PRO MAX (1M SMC + Ladder Martingale)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -229,7 +229,6 @@
         .delay-300 { animation-delay: 0.4s; }
         .delay-400 { animation-delay: 0.5s; }
         .delay-500 { animation-delay: 0.6s; }
-        /* --------------------------- */
     </style>
 </head>
 <body>
@@ -247,7 +246,7 @@
         const Zap = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
 
         const ASSETS = [
-          { pair: 'BTC/USDT', symbol: 'BTCUSDT', name: 'Bitcoin', voiceName: 'биткоин' }
+          { pair: 'BTC/USDT', symbol: 'BTCUSDT', name: 'Bitcoin' }
         ];
 
         const FALLBACK_BTC_NEWS = [
@@ -279,12 +278,12 @@
             }
         };
 
+        // --- UPDATED SESSION CONFIG (LADDER MARTINGALE: Base 300) ---
         const SESSION_CONFIG = {
             startingBalance: 10000,
-            baseStake: 500,
+            baseStake: 300, 
             payoutPercent: 0.70,
-            martingaleMultiplier: 2.6,
-            maxMartingaleSteps: 2
+            martingaleLadder: [300, 750, 1830]
         };
 
         const ScannerAPI = {
@@ -328,7 +327,8 @@
             return p.toFixed(5);
         };
 
-        function calcLiquidityZones(data, period = 15) {
+        // --- CALC LIQUIDITY ZONES (Local Swing H/L) ---
+        function calcLiquidityZones(data, period = 8) {
             let res = [];
             for (let i = 0; i < data.length; i++) {
                 if (i < period) {
@@ -371,58 +371,58 @@
             return res;
         }
 
-        // --- MARTINGALE STATE MANAGEMENT ---
+        // --- MARTINGALE STATE MANAGEMENT (LEDGER BASED) ---
         function createMartingaleState(config = SESSION_CONFIG) {
             return {
-                currentStake: config.baseStake,
-                martingaleStep: 0,
+                ladderIndex: 0,
+                currentStake: config.martingaleLadder[0],
                 blocked: false,
                 reason: null
             };
         }
 
         function getTradePnL(result, stake, config = SESSION_CONFIG) {
-            if (result === 'WIN') return Math.round(stake * config.payoutPercent);
-            if (result === 'LOSS') return -stake;
-            return 0;
+            if (result === 'WIN') return Math.round(stake * config.payoutPercent); // e.g. 300 * 0.7 = 210
+            if (result === 'LOSS') return -stake; // e.g. -300
+            return 0; // CANCELLED
         }
 
         function updateMartingaleAfterTrade(result, state, balance, config = SESSION_CONFIG) {
             if (result === 'WIN' || result === 'CANCELLED') {
                 return {
-                    currentStake: config.baseStake,
-                    martingaleStep: 0,
+                    ladderIndex: 0,
+                    currentStake: config.martingaleLadder[0],
                     blocked: false,
                     reason: null
                 };
             }
 
             if (result === 'LOSS') {
-                const nextStep = state.martingaleStep + 1;
+                const nextIndex = state.ladderIndex + 1;
 
-                if (nextStep > config.maxMartingaleSteps) {
+                if (nextIndex >= config.martingaleLadder.length) {
                     return {
-                        currentStake: config.baseStake,
-                        martingaleStep: 0,
+                        ladderIndex: 0,
+                        currentStake: config.martingaleLadder[0],
                         blocked: true,
-                        reason: 'Достигнут лимит шагов мартингейла'
+                        reason: 'Достигнут лимит лестницы мартингейла'
                     };
                 }
 
-                const nextStake = Math.round(state.currentStake * config.martingaleMultiplier);
+                const nextStake = config.martingaleLadder[nextIndex];
 
                 if (nextStake > balance) {
                     return {
-                        currentStake: config.baseStake,
-                        martingaleStep: 0,
+                        ladderIndex: 0,
+                        currentStake: config.martingaleLadder[0],
                         blocked: true,
-                        reason: 'Недостаточно баланса для следующего шага'
+                        reason: 'Недостаточно баланса для шага мартингейла'
                     };
                 }
 
                 return {
+                    ladderIndex: nextIndex,
                     currentStake: nextStake,
-                    martingaleStep: nextStep,
                     blocked: false,
                     reason: null
                 };
@@ -438,7 +438,7 @@
             return {
                 ...trade,
                 stake,
-                martingaleStep: martingaleState.martingaleStep,
+                martingaleStep: martingaleState.ladderIndex,
                 pnl,
                 balanceBefore,
                 balanceAfter
@@ -468,7 +468,6 @@
             return (currentIndex - lastSignalIndex) < config.cooldownCandles;
         }
 
-
         // --- СТРОГАЯ 1M SMC СТРАТЕГИЯ ---
         function detectLiquiditySweep1M(data, idx, zonesArr, atrArr, config, logCallback = null) {
             if (idx < 2 || !data[idx] || !zonesArr[idx] || !atrArr[idx] || !zonesArr[idx - 1]) {
@@ -478,7 +477,7 @@
             const curr = data[idx];
             const prev = data[idx - 1];
             const prePrev = data[idx - 2];
-            const zone = zonesArr[idx - 1]; // Берем зону с предыдущей свечи для избежания Look-ahead
+            const zone = zonesArr[idx - 1]; 
             const atr = atrArr[idx].value || 0.0001;
 
             const candleSize = Math.max(curr.high - curr.low, 0.0001);
@@ -510,7 +509,6 @@
                 }
             };
 
-            // ---------------- PUT ----------------
             if (putSweep) {
                 sweepLevel = zone.upper;
                 const { sweepCandle, confirmCandle } = getSetupCandles(true);
@@ -563,7 +561,6 @@
                 if (score >= config.minScore) isPut = true;
             }
 
-            // ---------------- CALL ----------------
             if (callSweep && !isPut) {
                 sweepLevel = zone.lower;
                 const { sweepCandle, confirmCandle } = getSetupCandles(false);
@@ -619,7 +616,6 @@
             if (logCallback) {
                 if (isPut) logCallback(curr.time, 'PUT', 'ПРИНЯТ', `Score: ${score}/${config.minScore} | ${reason}`, config.modeId);
                 else if (isCall) logCallback(curr.time, 'CALL', 'ПРИНЯТ', `Score: ${score}/${config.minScore} | ${reason}`, config.modeId);
-                else if (putSweep || callSweep) logCallback(curr.time, putSweep ? 'PUT' : 'CALL', 'ОТКЛОНЁН', `Score: ${score}/${config.minScore} | ${reason}`, config.modeId);
             }
 
             return { isCall, isPut, score, reason, sweepLevel };
@@ -838,7 +834,6 @@
           const candleSeries = useRef(null);
           const extraSeriesRef = useRef([]); 
           const priceLinesRef = useRef([]);
-          const activeLiveTradeRef = useRef(null);
           const tradesRef = useRef([]);
           
           const audioCtx = useRef(null);
@@ -850,6 +845,58 @@
           const logsContainerRef = useRef(null); 
           const fullNewsPool = useRef([...FALLBACK_BTC_NEWS]);
           const readNewsHistory = useRef(new Set());
+
+          // --- SPEECH QUEUE ENGINE ---
+          const speechQueueRef = useRef([]);
+          const isSpeakingRef = useRef(false);
+
+          const processSpeechQueue = useCallback(() => {
+              if (!window.speechSynthesis) return;
+              if (isSpeakingRef.current) return;
+              if (speechQueueRef.current.length === 0) return;
+
+              const nextItem = speechQueueRef.current.shift();
+              if (!nextItem) return;
+
+              isSpeakingRef.current = true;
+
+              const utterance = new SpeechSynthesisUtterance(nextItem.text);
+              utterance.lang = 'ru-RU';
+              utterance.rate = 0.95; 
+              utterance.pitch = 0.95;
+
+              let resolved = false;
+              const finish = () => {
+                  if (resolved) return;
+                  resolved = true;
+                  isSpeakingRef.current = false;
+                  if (nextItem.resolve) nextItem.resolve();
+                  setTimeout(() => processSpeechQueue(), 300);
+              };
+
+              utterance.onend = finish;
+              utterance.onerror = finish;
+
+              try {
+                  window.speechSynthesis.speak(utterance);
+              } catch (e) {
+                  finish();
+              }
+
+              setTimeout(finish, Math.max(3000, nextItem.text.length * 80));
+          }, []);
+
+          const speak = useCallback((text) => {
+              return new Promise(resolve => {
+                  if (!window.speechSynthesis || !text) {
+                      resolve();
+                      return;
+                  }
+                  speechQueueRef.current.push({ text, resolve });
+                  processSpeechQueue();
+              });
+          }, [processSpeechQueue]);
+          // ---------------------------
 
           const fetchNews = async () => {
               try {
@@ -910,8 +957,7 @@
           }, []);
 
           const addLog = useCallback((msg, isAi = false) => {
-            const prefix = isAi ? 'SMC АНАЛИЗ:' : 'СИСТЕМА:';
-            setLogs(p => [`${prefix} ${msg}`, ...p].slice(0, 8)); 
+            setLogs(p => [msg, ...p].slice(0, 15)); 
           }, []);
 
           const playSound = (type) => {
@@ -957,35 +1003,6 @@
             }
           };
 
-          const speak = (text) => new Promise(res => {
-            if (!window.speechSynthesis) return res();
-            window.speechSynthesis.cancel(); 
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'ru-RU'; 
-            u.rate = 1.05; 
-            u.pitch = 0.95; 
-            
-            let resolved = false;
-            let fallbackTimer;
-
-            const resolveOnce = () => {
-                if (!resolved) {
-                    resolved = true;
-                    clearTimeout(fallbackTimer);
-                    setTimeout(res, 200); 
-                }
-            };
-
-            u.onend = resolveOnce; 
-            u.onerror = resolveOnce;
-            
-            try {
-                window.speechSynthesis.speak(u);
-            } catch(e) { resolveOnce(); }
-            
-            fallbackTimer = setTimeout(resolveOnce, Math.max(3000, text.length * 80)); 
-          });
-
           // --- TRADE VISUALIZATION LOOP (OVERLAY) ---
           useEffect(() => {
             if (!isStarted) return;
@@ -998,15 +1015,31 @@
 
                     let html = '';
                     tradesRef.current.forEach(trade => {
-                        const startX = timeScale.timeToCoordinate(trade.signalTime);
-                        let endX = timeScale.timeToCoordinate(trade.exitTime);
+                        let startX = null;
+                        let endX = null;
+                        let confirmX = null;
+
+                        try {
+                            if (trade.signalTime) startX = timeScale.timeToCoordinate(trade.signalTime);
+                            if (trade.exitTime) endX = timeScale.timeToCoordinate(trade.exitTime);
+                            if (trade.confirmTime) confirmX = timeScale.timeToCoordinate(trade.confirmTime);
+                        } catch (e) {}
 
                         if (startX === null) return; 
 
                         if (endX === null) {
-                            const timeDiff = trade.exitTime - trade.signalTime;
-                            const p1 = timeScale.timeToCoordinate(trade.signalTime);
-                            const p2 = timeScale.timeToCoordinate(trade.signalTime - 60); 
+                            let currentExitTime = trade.exitTime;
+                            if (!currentExitTime) {
+                                currentExitTime = trade.signalTime + 300;
+                            }
+                            const timeDiff = currentExitTime - trade.signalTime;
+                            
+                            let p1 = null, p2 = null;
+                            try {
+                                p1 = timeScale.timeToCoordinate(trade.signalTime);
+                                p2 = timeScale.timeToCoordinate(trade.signalTime - 60); 
+                            } catch(e) {}
+
                             if (p1 !== null && p2 !== null) {
                                 const candleW = Math.abs(p1 - p2);
                                 endX = startX + (timeDiff / 60) * candleW;
@@ -1036,7 +1069,24 @@
                         if (trade.result === 'LOSS') { baseColor = '244, 63, 94'; tagText = 'L'; } 
                         if (isPending) { baseColor = '245, 158, 11'; tagText = '...'; } 
 
-                        let entryX = timeScale.timeToCoordinate(trade.entryTime) || (startX + boxWidth * 0.05);
+                        let entryX = null;
+                        try {
+                            if (trade.entryTime) entryX = timeScale.timeToCoordinate(trade.entryTime);
+                        } catch(e) {}
+                        
+                        if (entryX === null) {
+                            let p1 = null, p2 = null;
+                            try {
+                                p1 = timeScale.timeToCoordinate(trade.signalTime);
+                                p2 = timeScale.timeToCoordinate(trade.signalTime - 60); 
+                            } catch(e) {}
+                            if (p1 !== null && p2 !== null) {
+                                const candleW = Math.abs(p1 - p2);
+                                entryX = startX + 2 * candleW;
+                            } else {
+                                entryX = startX + boxWidth * 0.2;
+                            }
+                        }
 
                         trade.screenLeft = boxLeft;
                         trade.screenRight = boxRight;
@@ -1093,9 +1143,9 @@
                     if (hoveredTrade.result === 'LOSS') colorClass = 'text-rose-400';
                     if (isPending) colorClass = 'text-amber-400';
 
-                    const sigTime = new Date(hoveredTrade.signalTime * 1000).toLocaleTimeString('ru-RU');
-                    const entTime = new Date(hoveredTrade.entryTime * 1000).toLocaleTimeString('ru-RU');
-                    const extTime = new Date(hoveredTrade.exitTime * 1000).toLocaleTimeString('ru-RU');
+                    const sigTime = hoveredTrade.signalTime ? new Date(hoveredTrade.signalTime * 1000).toLocaleTimeString('ru-RU') : '--:--';
+                    const entTime = hoveredTrade.entryTime ? new Date(hoveredTrade.entryTime * 1000).toLocaleTimeString('ru-RU') : '--:--';
+                    const extTime = hoveredTrade.exitTime ? new Date(hoveredTrade.exitTime * 1000).toLocaleTimeString('ru-RU') : '--:--';
 
                     tooltip.innerHTML = `
                         <div class="font-bold border-b border-slate-600/50 pb-1 mb-2 text-center ${colorClass} uppercase tracking-widest text-[11px]">${hoveredTrade.direction} • ${hoveredTrade.result}</div>
@@ -1106,11 +1156,11 @@
                         ${!isCancelled ? `
                         <div class="flex justify-between gap-6 mt-1">
                             <span class="text-slate-400">Вход (1M):</span>
-                            <span class="font-mono font-bold text-slate-200">${entTime} @ ${formatPrice(hoveredTrade.entryPrice)}</span>
+                            <span class="font-mono font-bold text-slate-200">${entTime} @ ${hoveredTrade.entryPrice ? formatPrice(hoveredTrade.entryPrice) : '---'}</span>
                         </div>
                         <div class="flex justify-between gap-6 mt-1">
                             <span class="text-slate-400">Выход (1M):</span>
-                            <span class="font-mono font-bold text-slate-200">${isPending ? '--:--' : extTime} @ ${formatPrice(hoveredTrade.exitPrice)}</span>
+                            <span class="font-mono font-bold text-slate-200">${isPending ? '--:--' : extTime} @ ${hoveredTrade.exitPrice ? formatPrice(hoveredTrade.exitPrice) : '---'}</span>
                         </div>
                         <div class="border-t border-slate-600/50 pt-1 mt-2 flex justify-between gap-6">
                             <span class="text-slate-400">Ставка:</span>
@@ -1268,6 +1318,31 @@
               };
           };
 
+          const recalculateSessionData = (startBal, tradesArr) => {
+              let pnl = 0;
+              let wins = 0;
+              let losses = 0;
+              let cancels = 0;
+              tradesArr.forEach(t => {
+                  pnl += t.pnl || 0;
+                  if (t.result === 'WIN') wins++;
+                  if (t.result === 'LOSS') losses++;
+                  if (t.result === 'CANCELLED') cancels++;
+              });
+              const balance = startBal + pnl;
+              return { balance, pnl, wins, losses, cancels };
+          };
+
+          const logTradeToJournal = (trade, currentBal) => {
+              const timeStr = new Date(trade.signalTime * 1000).toLocaleTimeString('ru-RU');
+              if (trade.result === 'WIN' || trade.result === 'LOSS') {
+                  const sign = trade.pnl > 0 ? '+' : '';
+                  addLog(`[${timeStr}] ${trade.result}: ${sign}${trade.pnl} ₽ | Баланс: ${currentBal} ₽`);
+              } else {
+                  addLog(`[${timeStr}] CANCELLED: ${trade.cancelReason}`);
+              }
+          };
+
           const runTerminalEngine = async () => {
             if (engineActive.current) return;
             engineActive.current = true;
@@ -1275,11 +1350,10 @@
 
             let currentBalance = SESSION_CONFIG.startingBalance;
             let mState = createMartingaleState(SESSION_CONFIG);
-            let stats = { wins: 0, losses: 0, cancels: 0, pnl: 0 };
             
             let lastEvaluatedTimeLive = 0;
             let lastLoggedRejectTime = 0;
-            let lastLiveTradeTime = 0;
+            let lastLiveTradeIdx = -999;
             let lastBackgroundNewsTime = Date.now();
 
             const runBacktestPhase = async () => {
@@ -1291,7 +1365,7 @@
                 await new Promise(r => setTimeout(r, 500)); 
 
                 updateStatus('БЭКТЕСТ: АНАЛИЗ SMC ИСТОРИИ...', 'text-cyan-600');
-                addLog(`ЗАПУСК ПОИСКА: СНЯТИЕ ЛИКВИДНОСТИ ЗА 12 ЧАСОВ (1M)...`, true);
+                addLog(`ЗАПУСК ПОИСКА: СНЯТИЕ ЛИКВИДНОСТИ ЗА 12 ЧАСОВ (1M)...`);
 
                 const curAsset = ASSETS[0];
                 let data1m;
@@ -1320,14 +1394,14 @@
 
                 strategyMode.current = 'NORMAL';
                 let simStrategyMode = 'NORMAL';
-                let lastTradeIdx = -999; 
+                let simLastTradeIdx = -999; 
 
                 console.log("=== ЗАПУСК АУДИТА БЭКТЕСТА (1M SMC + MARTINGALE) ===");
 
                 for (let idx = startEvalIdx; idx <= maxEvalIdx; idx++) {
                     const config = STRATEGY_1M_CONFIG[simStrategyMode];
                     
-                    if (suppressDuplicateSignals(lastTradeIdx, idx, config)) continue;
+                    if (suppressDuplicateSignals(simLastTradeIdx, idx, config)) continue;
 
                     const backtestLogger = (t, dir, status, reason) => {};
 
@@ -1336,7 +1410,7 @@
                     );
 
                     if (isCall || isPut) {
-                        lastTradeIdx = idx;
+                        simLastTradeIdx = idx;
                         
                         const signalTime = data1m[idx].time; 
                         const prepCandle = data1m[idx + 1];
@@ -1345,10 +1419,10 @@
                         let cancelReason = "";
                         
                         if (isPut && prepCandle.high > sweepLevel) {
-                            cancelled = true; cancelReason = "Пробой против сигнала в окне подготовки";
+                            cancelled = true; cancelReason = "Импульс против сигнала в 1M окне";
                         }
                         if (isCall && prepCandle.low < sweepLevel) {
-                            cancelled = true; cancelReason = "Пробой против сигнала в окне подготовки";
+                            cancelled = true; cancelReason = "Импульс против сигнала в 1M окне";
                         }
                         if (mState.blocked) {
                             cancelled = true; cancelReason = mState.reason;
@@ -1396,10 +1470,7 @@
                         mState = updateMartingaleAfterTrade(result, mState, currentBalance, SESSION_CONFIG);
 
                         tradesRef.current.push(financeRecord);
-                        
-                        if (result === 'WIN') { stats.wins++; stats.pnl += financeRecord.pnl; }
-                        if (result === 'LOSS') { stats.losses++; stats.pnl += financeRecord.pnl; }
-                        if (result === 'CANCELLED') { stats.cancels++; }
+                        logTradeToJournal(financeRecord, currentBalance);
 
                         markersRef.current.push({
                             time: signalTime,
@@ -1411,16 +1482,17 @@
                     }
                 }
                 
+                const stats = recalculateSessionData(SESSION_CONFIG.startingBalance, tradesRef.current);
+
                 console.log(`=== АУДИТ ПАЙПЛАЙНА ЗАВЕРШЕН ===`);
-                console.log(`Pnl: ${stats.pnl} | Wins: ${stats.wins} | Losses: ${stats.losses}`);
+                console.log(`Pnl: ${stats.pnl} | Wins: ${stats.wins} | Losses: ${stats.losses} | Canceled: ${stats.cancels}`);
 
                 const total = stats.wins + stats.losses;
-                const wr = total > 0 ? Math.round((stats.wins / total) * 100) : 0;
                 
                 setSessionData({
-                    balance: currentBalance,
+                    balance: stats.balance,
                     stake: mState.currentStake,
-                    step: mState.martingaleStep,
+                    step: mState.ladderIndex,
                     pnl: stats.pnl,
                     wins: stats.wins,
                     losses: stats.losses,
@@ -1431,12 +1503,6 @@
                 setStrategyModeUI(simStrategyMode);
                 
                 lastEvaluatedTimeLive = data1m[data1m.length - 2].time; 
-
-                if (total > 0) {
-                    addLog(`БЭКТЕСТ (1M): НАЙДЕНО ПАТТЕРНОВ ${total}, ВИНРЕЙТ ${wr}%`, true);
-                } else {
-                    addLog(`БЭКТЕСТ ЗА 12H: SFP ПАТТЕРНЫ НЕ НАЙДЕНЫ.`, true);
-                }
 
                 setAsset(curAsset);
                 setViewMode('DETAIL');
@@ -1456,8 +1522,12 @@
 
                 if (total > 0) {
                     playSound('win');
-                    await speak(`Бэктест 12 часов завершен. Стратегия S F P на минутном графике совершила ${total} входов. Винрейт ${wr} процентов. Перехожу к лайв сканированию.`);
+                    const pnlText = stats.pnl > 0 ? `плюс ${stats.pnl}` : (stats.pnl < 0 ? `минус ${Math.abs(stats.pnl)}` : `ноль`);
+                    const announceText = `За последние 12 часов стратегия нашла ${total + stats.cancels} сделок. Плюсовых ${stats.wins}, убыточных ${stats.losses}, отменённых ${stats.cancels}. Если бы вы заходили в сделки по 300 рублей с текущей моделью ставок, итоговый результат составил бы ${pnlText} рублей. Итоговый баланс составил бы ${stats.balance} рублей. Перехожу к живому сканированию.`;
+                    addLog(`БЭКТЕСТ ЗАВЕРШЕН. ИТОГ: ${pnlText} ₽`, true);
+                    await speak(announceText);
                 } else {
+                    addLog(`БЭКТЕСТ ЗА 12H: СДЕЛКИ НЕ НАЙДЕНЫ.`, true);
                     await speak(`Бэктест завершен. Перехожу к живому сканированию рынка.`);
                 }
 
@@ -1469,7 +1539,7 @@
                 await new Promise(r => setTimeout(r, 1000));
             };
 
-            const handleConfirmedSignal = async (cur, data1mLive, closedIdx, isCall, isPut, liveSweepLvl) => {
+            const handleConfirmedSignal = async (cur, data1mLive, closedIdx, isCall, isPut, liveSweepLvl, liveTradesArr) => {
                 const directionText = isCall ? "повышение" : "понижение";
                 const currentClosedTime = data1mLive[closedIdx].time;
                 const lastIdx = data1mLive.length - 1;
@@ -1519,7 +1589,7 @@
                 
                 updateStatus(`ГОТОВЬТЕ: BTC (1 МИН)`, 'text-cyan-600 font-bold animate-pulse');
                 addLog(`ЗАФИКСИРОВАН ПАТТЕРН SFP (1M)`, true);
-                addLog(`ОКНО ПОДГОТОВКИ: ОЖИДАНИЕ 3 СЕК...`, true);
+                addLog(`ОКНО ПОДГОТОВКИ: ОЖИДАНИЕ 3 СЕК...`);
 
                 await speak(`Внимание. Успешно подтверждено снятие ликвидности. Направление на ${directionText}. Проверка отката...`);
 
@@ -1552,7 +1622,6 @@
                             if (activeLiveTradeRef.current) {
                                 activeLiveTradeRef.current.maxHigh = Math.max(activeLiveTradeRef.current.maxHigh, liveTick.high);
                                 activeLiveTradeRef.current.minLow = Math.min(activeLiveTradeRef.current.minLow, liveTick.low);
-                                tradesRef.current = [...tradesRef.current.filter(t => t.id !== activeLiveTradeRef.current.id), activeLiveTradeRef.current];
                             }
 
                             if (isPut && liveTick.high > liveSweepLvl) { tradeCancelled = true; cancelReason = "Импульс против сигнала"; }
@@ -1566,22 +1635,28 @@
                 if (tradeCancelled && engineActive.current) {
                     playSound('cancel');
                     updateStatus('ОТМЕНА: СИГНАЛ СБРОШЕН', 'text-slate-600 font-bold');
-                    addLog(`СИГНАЛ ОТМЕНЕН: ${cancelReason}`, true);
-                    await speak("Отмена сигнала. Возвращаюсь к радару.");
+                    await speak("Отмена сигнала. Импульс не удержался.");
                     
                     if (activeLiveTradeRef.current) {
                         activeLiveTradeRef.current.result = 'CANCELLED';
                         activeLiveTradeRef.current.cancelReason = cancelReason;
-                        activeLiveTradeRef.current.exitTime = Date.now() / 1000;
+                        activeLiveTradeRef.current.exitTime = Math.floor(Date.now() / 1000);
                         activeLiveTradeRef.current.pnl = 0; 
                         
                         mState = updateMartingaleAfterTrade('CANCELLED', mState, currentBalance, SESSION_CONFIG);
-                        setSessionData(prev => ({
-                            ...prev,
-                            cancels: prev.cancels + 1,
+                        
+                        logTradeToJournal(activeLiveTradeRef.current, currentBalance);
+
+                        const lStats = recalculateSessionData(SESSION_CONFIG.startingBalance, liveTradesArr);
+                        setSessionData({
+                            balance: lStats.balance,
                             stake: mState.currentStake,
-                            step: mState.martingaleStep
-                        }));
+                            step: mState.ladderIndex,
+                            pnl: lStats.pnl,
+                            wins: lStats.wins,
+                            losses: lStats.losses,
+                            cancels: lStats.cancels
+                        });
                     }
                     
                     activeLiveTradeRef.current = null;
@@ -1600,9 +1675,9 @@
                 const expMins = 5; 
                 
                 // ФИКСАЦИЯ ВХОДА (ENTRY)
-                activeLiveTradeRef.current.entryTime = Date.now() / 1000;
+                activeLiveTradeRef.current.entryTime = Math.floor(Date.now() / 1000);
                 activeLiveTradeRef.current.entryPrice = currentPrice.current;
-                activeLiveTradeRef.current.exitTime = (Date.now() / 1000) + (expMins * 60);
+                activeLiveTradeRef.current.exitTime = Math.floor(Date.now() / 1000) + (expMins * 60);
 
                 setSignal({ type: isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice: currentPrice.current });
 
@@ -1664,7 +1739,7 @@
                 else if (finalPrice === entryPrice) isWin = true; 
 
                 if (activeLiveTradeRef.current) {
-                    activeLiveTradeRef.current.exitTime = Date.now() / 1000;
+                    activeLiveTradeRef.current.exitTime = Math.floor(Date.now() / 1000);
                     activeLiveTradeRef.current.exitPrice = finalPrice;
                     activeLiveTradeRef.current.result = isWin ? 'WIN' : 'LOSS';
                     activeLiveTradeRef.current.pnl = getTradePnL(isWin ? 'WIN' : 'LOSS', activeLiveTradeRef.current.stake, SESSION_CONFIG);
@@ -1673,28 +1748,29 @@
                 currentBalance += activeLiveTradeRef.current.pnl;
                 mState = updateMartingaleAfterTrade(isWin ? 'WIN' : 'LOSS', mState, currentBalance, SESSION_CONFIG);
                 
-                setSessionData(prev => ({
-                    balance: currentBalance,
+                logTradeToJournal(activeLiveTradeRef.current, currentBalance);
+
+                const lStats = recalculateSessionData(SESSION_CONFIG.startingBalance, liveTradesArr);
+                setSessionData({
+                    balance: lStats.balance,
                     stake: mState.currentStake,
-                    step: mState.martingaleStep,
-                    pnl: prev.pnl + activeLiveTradeRef.current.pnl,
-                    wins: prev.wins + (isWin ? 1 : 0),
-                    losses: prev.losses + (!isWin ? 1 : 0),
-                    cancels: prev.cancels
-                }));
+                    step: mState.ladderIndex,
+                    pnl: lStats.pnl,
+                    wins: lStats.wins,
+                    losses: lStats.losses,
+                    cancels: lStats.cancels
+                });
 
                 if (isWin) {
                     playSound('win');
                     strategyMode.current = 'NORMAL';
                     setStrategyModeUI('NORMAL');
-                    addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
-                    await speak(`Плюс. Сделка успешно завершена. Баланс обновлен.`);
+                    await speak(`Плюс. Сделка успешно завершена.`);
                 } else {
                     playSound('loss');
                     strategyMode.current = 'REINFORCED';
                     setStrategyModeUI('REINFORCED');
-                    addLog(`РЕЗУЛЬТАТ: МИНУС (-). АКТИВИРОВАН REINFORCED MODE`);
-                    await speak(`Минус. Ложный пробой. Шаг мартингейла увеличен. Активирован усиленный режим анализа.`);
+                    await speak(`Минус. Ложный пробой. Шаг мартингейла увеличен.`);
                 }
 
                 setSignal(null);
@@ -1703,7 +1779,7 @@
                 await new Promise(r => setTimeout(r, 2000));
             };
 
-            const runLiveScanCycle = async () => {
+            const runLiveScanCycle = async (liveTradesArr) => {
                 try {
                     updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ 1M...', 'text-slate-700');
                     setViewMode('SCREENER');
@@ -1753,7 +1829,7 @@
 
                         const config = STRATEGY_1M_CONFIG[strategyMode.current];
                         
-                        if (currentClosedTime !== lastEvaluatedTimeLive && !suppressDuplicateSignals(lastLiveTradeTime, closedIdx, config)) {
+                        if (currentClosedTime !== lastEvaluatedTimeLive && !suppressDuplicateSignals(lastLiveTradeIdx, closedIdx, config)) {
                             lastEvaluatedTimeLive = currentClosedTime;
 
                             const liveLogger = (t, dir, status, reason) => {
@@ -1772,7 +1848,7 @@
                                 isCall = callSignal;
                                 isPut = putSignal;
                                 liveSweepLvl = sweepLevel;
-                                lastLiveTradeTime = closedIdx; 
+                                lastLiveTradeIdx = closedIdx; 
                                 
                                 const trade = {
                                     id: Math.random(),
@@ -1790,11 +1866,13 @@
                                 };
                                 
                                 activeLiveTradeRef.current = buildTradeFinanceRecord(trade, currentBalance, mState, SESSION_CONFIG);
+                                liveTradesArr.push(activeLiveTradeRef.current);
+                                tradesRef.current.push(activeLiveTradeRef.current); // For global visual loop
                             }
                         }
 
                         if (signalFound) {
-                            await handleConfirmedSignal(cur, data1mLive, closedIdx, isCall, isPut, liveSweepLvl);
+                            await handleConfirmedSignal(cur, data1mLive, closedIdx, isCall, isPut, liveSweepLvl, liveTradesArr);
                         }
                     }
                     
@@ -1826,15 +1904,18 @@
                 setSessionData({
                     balance: currentBalance,
                     stake: mState.currentStake,
-                    step: mState.martingaleStep,
+                    step: mState.ladderIndex,
                     pnl: 0,
                     wins: 0,
                     losses: 0,
                     cancels: 0
                 });
 
+                // Изолируем liveTrades от history
+                const liveTradesArray = [];
+
                 while (engineActive.current) {
-                    await runLiveScanCycle();
+                    await runLiveScanCycle(liveTradesArray);
                 }
             } catch (e) {
                 console.error("Critical Engine Error:", e);
@@ -2060,7 +2141,7 @@
                   
                   <div className="border-b border-white/80 p-3 bg-gradient-to-r from-blue-100/60 to-transparent flex justify-center items-center shrink-0 min-h-[48px] shadow-sm relative z-10">
                     <div className={`text-base md:text-lg oswald-font tracking-widest flex items-center gap-2 text-center leading-none transition-all duration-300 w-full justify-center font-bold ${statusColorClass}`}>
-                      {appPhase.includes('ПОДГОТОВ') ? (
+                      {appPhase.includes('ПОДГОТОВ') || appPhase.includes('ОЖИДАНИЕ') ? (
                         <span className="text-amber-600 drop-shadow-[0_0_12px_rgba(217,119,6,0.4)] animate-pulse">{appPhase}</span>
                       ) : appPhase.includes('СНАЙПЕР:') ? (
                         <span className="text-blue-700 drop-shadow-[0_0_12px_rgba(29,78,216,0.4)] animate-pulse">{appPhase}</span>
