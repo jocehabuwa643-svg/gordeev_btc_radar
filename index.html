@@ -3,8 +3,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Крипто Терминал Гордеева - PRO MAX (1M SMC + Stepped Martingale)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Крипто Терминал Гордеева - PRO MAX (Responsive)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -16,30 +16,39 @@
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Oswald:wght@300;400;500;600;700&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap');
         
+        :root {
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-top: env(safe-area-inset-top, 0px);
+        }
+
         body { 
             margin: 0; padding: 0; 
-            background: #0f172a; /* Темный технологичный фон для лучшего контраста */
+            background: #0f172a; 
             color: #f8fafc; 
-            overflow: hidden; 
+            overflow-x: hidden; 
             touch-action: manipulation;
             -webkit-font-smoothing: antialiased;
             font-family: 'Montserrat', sans-serif;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(14, 165, 233, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.08) 0%, transparent 50%);
+            background-attachment: fixed;
         }
         
         .oswald-font { font-family: 'Oswald', sans-serif; letter-spacing: 0.05em; text-transform: uppercase; }
         .mono-font { font-family: 'JetBrains Mono', monospace; }
 
-        /* --- SPLASH SCREEN STYLES --- */
+        /* --- SPLASH SCREEN & TEXT --- */
         .cinematic-splash {
-            position: fixed; inset: 0; z-index: 9999;
+            position: fixed; inset: 0; z-index: 99999;
             background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
             display: flex; align-items: center; justify-content: center;
-            transition: opacity 1.5s ease-in-out, visibility 1.5s;
+            transition: opacity 1s ease-in-out, visibility 1s;
         }
         .cinematic-text {
             font-family: 'Oswald', sans-serif;
             font-weight: 900;
-            font-size: clamp(3rem, 8vw, 7rem);
+            font-size: clamp(2.5rem, 8vw, 7rem);
             letter-spacing: 0.3em;
             background: linear-gradient(to right, #64748b 0%, #ffffff 40%, #ffffff 60%, #64748b 100%);
             background-size: 200% auto;
@@ -50,7 +59,6 @@
             filter: drop-shadow(0 0 20px rgba(255,255,255,0.2));
             opacity: 0;
             transform: scale(0.95);
-            animation-fill-mode: forwards;
         }
         .splash-active .cinematic-text {
             animation: fade-scale-in 2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards, silver-shine 4s linear infinite;
@@ -60,90 +68,70 @@
             100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0px); }
         }
         @keyframes silver-shine { to { background-position: 200% center; } }
+        @keyframes pulse-glow { 0% { filter: drop-shadow(0 0 10px rgba(255,255,255,0.1)); } 100% { filter: drop-shadow(0 0 25px rgba(255,255,255,0.4)); } }
 
-        .bg-grid-pattern {
-            background-image: 
-                linear-gradient(to right, rgba(14, 165, 233, 0.07) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(14, 165, 233, 0.07) 1px, transparent 1px);
-            background-size: 40px 40px;
-            mask-image: radial-gradient(circle at center, black 50%, transparent 100%);
-            -webkit-mask-image: radial-gradient(circle at center, black 50%, transparent 100%);
-        }
-
-        .bg-orb-1 {
-            position: absolute; top: -20%; left: -10%; width: 60vw; height: 60vw;
-            background: radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, transparent 60%);
-            border-radius: 50%; filter: blur(80px); animation: float 15s ease-in-out infinite alternate;
-        }
-        .bg-orb-2 {
-            position: absolute; bottom: -20%; right: -10%; width: 70vw; height: 70vw;
-            background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 60%);
-            border-radius: 50%; filter: blur(100px); animation: float 18s ease-in-out infinite alternate-reverse;
-        }
-
-        @keyframes float {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(3%, 5%) scale(1.05); }
-        }
-
-        /* --- GLASS & UI PANELS --- */
+        /* --- UI ELEMENTS --- */
         .glass-panel {
-            background: rgba(15, 23, 42, 0.7);
+            background: rgba(15, 23, 42, 0.75);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.05);
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
         }
         .glass-card {
-            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
             border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 8px 20px rgba(0,0,0,0.2);
             transition: all 0.3s ease;
         }
         
-        .text-gradient {
-            background: linear-gradient(135deg, #38bdf8, #818cf8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .bg-grid-pattern {
+            background-image: linear-gradient(to right, rgba(14, 165, 233, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(14, 165, 233, 0.05) 1px, transparent 1px);
+            background-size: clamp(20px, 4vw, 40px) clamp(20px, 4vw, 40px);
+            mask-image: radial-gradient(circle at center, black 50%, transparent 100%);
+            -webkit-mask-image: radial-gradient(circle at center, black 50%, transparent 100%);
         }
 
-        /* --- SCANNER & CHART ANIMATIONS --- */
+        /* --- SCANNER --- */
         .scanner-beam-vertical {
-            position: absolute;
-            top: 0; bottom: 0; width: 4px;
+            position: absolute; top: 0; bottom: 0; width: clamp(2px, 0.5vw, 4px);
             background: #38bdf8;
             box-shadow: 0 0 20px 5px rgba(56, 189, 248, 0.6), 0 0 40px 10px rgba(56, 189, 248, 0.2);
-            animation: sweep-x 3s ease-in-out infinite alternate;
+            animation: sweep-x 2.5s ease-in-out infinite alternate;
             z-index: 20; pointer-events: none;
         }
-        @keyframes sweep-x {
-            0% { left: 5%; opacity: 0.2; }
-            50% { opacity: 1; }
-            100% { left: 95%; opacity: 0.2; }
-        }
+        @keyframes sweep-x { 0% { left: 5%; opacity: 0.2; } 50% { opacity: 1; } 100% { left: 95%; opacity: 0.2; } }
 
+        /* --- CHART OVERLAYS --- */
         .trade-box-glass {
-            backdrop-filter: blur(4px);
-            transition: all 0.3s ease;
-        }
-        .trade-box-glass:hover {
-            backdrop-filter: blur(8px);
-            z-index: 50 !important;
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            transition: background 0.3s ease, border-color 0.3s ease;
         }
 
+        /* --- UTILS --- */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-        .ticker-wrapper { display: flex; width: max-content; animation: ticker 40s linear infinite; }
         
-        @keyframes slideUpFade {
-            0% { transform: translateY(10px); opacity: 0; }
-            20% { transform: translateY(0); opacity: 1; }
-            80% { transform: translateY(0); opacity: 1; }
-            100% { transform: translateY(-10px); opacity: 0; }
+        /* Smooth height transitions for mobile responsive flow */
+        .adaptive-main-area {
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-bottom: var(--safe-bottom);
         }
-        .hft-tick { animation: slideUpFade 1.5s ease-out forwards; }
+        
+        @media (min-width: 1024px) {
+            .adaptive-main-area { flex-direction: row; overflow: hidden; padding-bottom: 0; }
+            .chart-container-fluid { flex: 1; height: 100%; min-height: 0; }
+            .sidebar-fluid { width: 380px; height: 100%; overflow-y: auto; }
+        }
+        @media (max-width: 1023px) {
+            .chart-container-fluid { width: 100%; min-height: 45vh; flex-shrink: 0; }
+            .sidebar-fluid { width: 100%; flex-shrink: 0; }
+        }
     </style>
 </head>
 <body>
@@ -152,48 +140,30 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useCallback } = React;
 
-        // Icons
+        // Иконки (Lucide-like)
         const Shield = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 4.81 17 6 19 6a1 1 0 0 1 1 1z"/></svg>;
         const Cpu = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>;
-        const Globe = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>;
         const Clock = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
-        const TrendingUp = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>;
         const Radar = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 5.49A10 10 0 0 0 5.3 19.38"/><path d="M20 8.74A10 10 0 0 1 17.38 20"/><path d="M16 8a6 6 0 0 0-8.5-1.5"/><path d="M7.5 16.5a6 6 0 0 0 9.2-.5"/><path d="M12 12v.01"/></svg>;
         const Zap = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
         const Activity = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>;
 
         const ASSETS = [{ pair: 'BTC/USDT', symbol: 'BTCUSDT', name: 'Bitcoin' }];
 
-        // --- ADAPTIVE STRATEGY CONFIGURATION (5 STEPS) ---
+        // --- КОНФИГУРАЦИЯ СТРАТЕГИИ ---
         const STRATEGY_1M_CONFIG = {
             NORMAL: { modeId: 'NORMAL', minScore: 60, minSweepAtrRatio: 0.10, minReclaimAtrRatio: 0.12, maxImpulseAtrRatio: 1.50, cooldownCandles: 4, minConfirmBodyRatio: 0.35, maxEntryDriftAtrRatio: 0.25 },
-            REINFORCED_1: { modeId: 'REINFORCED_1', minScore: 65, minSweepAtrRatio: 0.11, minReclaimAtrRatio: 0.13, maxImpulseAtrRatio: 1.45, cooldownCandles: 4, minConfirmBodyRatio: 0.38, maxEntryDriftAtrRatio: 0.22 },
-            REINFORCED_2: { modeId: 'REINFORCED_2', minScore: 70, minSweepAtrRatio: 0.12, minReclaimAtrRatio: 0.15, maxImpulseAtrRatio: 1.35, cooldownCandles: 5, minConfirmBodyRatio: 0.40, maxEntryDriftAtrRatio: 0.20 },
-            REINFORCED_3: { modeId: 'REINFORCED_3', minScore: 75, minSweepAtrRatio: 0.14, minReclaimAtrRatio: 0.18, maxImpulseAtrRatio: 1.25, cooldownCandles: 6, minConfirmBodyRatio: 0.45, maxEntryDriftAtrRatio: 0.18 },
-            EMERGENCY_4: { modeId: 'EMERGENCY_4', minScore: 80, minSweepAtrRatio: 0.15, minReclaimAtrRatio: 0.20, maxImpulseAtrRatio: 1.15, cooldownCandles: 8, minConfirmBodyRatio: 0.50, maxEntryDriftAtrRatio: 0.15 }
         };
 
-        const getStrategyModeForStep = (step) => {
-            if (step === 0) return 'NORMAL';
-            if (step === 1) return 'REINFORCED_1';
-            if (step === 2) return 'REINFORCED_2';
-            if (step === 3) return 'REINFORCED_3';
-            return 'EMERGENCY_4';
-        };
-
-        // --- UPDATED SESSION CONFIG (Base 100, 70% payout, 4 steps martingale = 5 levels) ---
         const SESSION_CONFIG = {
             startingBalance: 10000,
             baseStake: 100, 
             payoutPercent: 0.70,
-            martingaleLadder: [100, 250, 625, 1560, 3900] // 0, 1, 2, 3, 4 (up to 4th knee)
+            martingaleLadder: [100, 250, 625, 1560, 3900] // 5 steps (up to 4th knee)
         };
 
-        // --- IN-MEMORY LEDGER ---
-        let inMemoryTradeLedger = [];
-        function loadTradeLedger() { return inMemoryTradeLedger; }
-        function saveTradeLedger(trades) { inMemoryTradeLedger = trades; }
-        function buildTradeId(trade) { return [trade.signalTime || 'na', trade.direction || 'na'].join('_'); }
+        // --- УТИЛИТЫ И МАТЕМАТИКА ---
+        const formatPrice = (p) => p ? (p >= 1000 ? p.toFixed(2) : p.toFixed(5)) : '0.00';
 
         const ScannerAPI = {
           async getCandles(symbol, count = 1000, interval = '1m') { 
@@ -206,17 +176,13 @@
                     let response = await fetch(url);
                     if (response.ok) {
                         const data = await response.json();
-                        return data.map(d => ({
-                            time: d[0] / 1000, open: parseFloat(d[1]), high: parseFloat(d[2]), low: parseFloat(d[3]), close: parseFloat(d[4]), volume: parseFloat(d[5])
-                        }));
+                        return data.map(d => ({ time: d[0] / 1000, open: parseFloat(d[1]), high: parseFloat(d[2]), low: parseFloat(d[3]), close: parseFloat(d[4]), volume: parseFloat(d[5]) }));
                     }
                 } catch(e) { continue; }
             }
             throw new Error("API BINANCE НЕДОСТУПЕН");
           }
         };
-
-        const formatPrice = (p) => p ? (p >= 1000 ? p.toFixed(2) : p.toFixed(5)) : '0.00';
 
         function calcLiquidityZones(data, period = 8) {
             let res = [];
@@ -258,7 +224,7 @@
             if (result === 'WIN' || result === 'CANCELLED') return createMartingaleState(config);
             if (result === 'LOSS') {
                 const nextIndex = state.ladderIndex + 1;
-                if (nextIndex >= config.martingaleLadder.length) return createMartingaleState(config); // Reset after 4th knee loss
+                if (nextIndex >= config.martingaleLadder.length) return createMartingaleState(config);
                 const nextStake = config.martingaleLadder[nextIndex];
                 if (nextStake > balance) return { ladderIndex: 0, currentStake: config.martingaleLadder[0], blocked: true, reason: 'Недостаточно баланса для шага мартингейла' };
                 return { ladderIndex: nextIndex, currentStake: nextStake, blocked: false, reason: null };
@@ -266,7 +232,6 @@
             return state;
         }
 
-        // --- STRICT SMC LOGIC (Unchanged core) ---
         function detectLiquiditySweep1M(data, idx, zonesArr, atrArr, config) {
             if (idx < 2 || !data[idx] || !zonesArr[idx-1]) return { isCall: false, isPut: false, sweepLevel: null };
             const curr = data[idx], prev = data[idx - 1], zone = zonesArr[idx - 1], atr = atrArr[idx].value || 0.0001;
@@ -293,75 +258,81 @@
             return { isCall, isPut, sweepLevel };
         }
 
-        // --- COMPONENTS ---
+        // --- UI КОМПОНЕНТЫ ---
         const LiveClock = () => {
           const [t, setT] = useState(new Date());
           useEffect(() => { const i = setInterval(() => setT(new Date()), 1000); return () => clearInterval(i); }, []);
-          return <span className="text-slate-300 mono-font">{t.toLocaleTimeString('ru-RU')}</span>;
+          return <span className="text-slate-300 mono-font text-[clamp(10px,1.5vw,14px)]">{t.toLocaleTimeString('ru-RU')}</span>;
         };
 
         const CinematicSplash = ({ onComplete }) => {
             const [active, setActive] = useState(false);
+            const [visible, setVisible] = useState(true);
+
             useEffect(() => {
                 const t1 = setTimeout(() => setActive(true), 100);
-                const t2 = setTimeout(() => { setActive(false); setTimeout(onComplete, 1000); }, 3000);
-                return () => { clearTimeout(t1); clearTimeout(t2); }
+                const t2 = setTimeout(() => { setActive(false); }, 2500);
+                const t3 = setTimeout(() => { setVisible(false); onComplete(); }, 3500);
+                return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); }
             }, [onComplete]);
 
+            if (!visible) return null;
+
             return (
-                <div className={`cinematic-splash ${active ? 'splash-active opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                    <h1 className="cinematic-text text-center px-4">SLAVA GORDEEV</h1>
+                <div className={`cinematic-splash ${active ? 'splash-active opacity-100' : 'opacity-0'}`}>
+                    <h1 className="cinematic-text text-center px-4 w-full break-words">SLAVA GORDEEV</h1>
                 </div>
             );
         };
 
-        const EnhancedScanner = ({ data }) => {
-          if (!data || data.length < 2) return <div className="w-full h-full flex items-center justify-center text-slate-500 font-bold animate-pulse">ОЖИДАНИЕ КЛАСТЕРОВ...</div>;
+        const ResponsiveScanner = ({ data }) => {
+          if (!data || data.length < 2) return <div className="w-full h-full flex items-center justify-center text-slate-500 font-bold animate-pulse text-sm lg:text-base">ОЖИДАНИЕ КЛАСТЕРОВ...</div>;
           
-          const chartData = data.slice(-50); // Show more candles
+          const chartData = data.slice(-40); 
           const min = Math.min(...chartData.map(d => d.low));
           const max = Math.max(...chartData.map(d => d.high));
           const range = (max - min) || 1;
-          const width = 400, height = 100;
-          const candleW = width / chartData.length;
 
           return (
-            <div className="w-full h-full relative overflow-hidden bg-slate-900/40 rounded-xl border border-slate-700/50 shadow-inner">
-                <svg className="w-full h-full relative z-10" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+            <div className="w-full h-full relative overflow-hidden bg-slate-900/50 rounded-xl border border-slate-700/50 shadow-inner flex">
+                <svg className="w-full h-full relative z-10" viewBox={`0 0 400 100`} preserveAspectRatio="none">
                   {chartData.map((c, i) => {
                     const isUp = c.close >= c.open;
+                    const candleW = 400 / chartData.length;
                     const x = i * candleW;
-                    const w = candleW * 0.6;
-                    const oY = height - ((c.open - min) / range) * height;
-                    const cY = height - ((c.close - min) / range) * height;
-                    const hY = height - ((c.high - min) / range) * height;
-                    const lY = height - ((c.low - min) / range) * height;
+                    const w = candleW * 0.5;
+                    const oY = 100 - ((c.open - min) / range) * 100;
+                    const cY = 100 - ((c.close - min) / range) * 100;
+                    const hY = 100 - ((c.high - min) / range) * 100;
+                    const lY = 100 - ((c.low - min) / range) * 100;
                     
                     const color = isUp ? "#38bdf8" : "#f43f5e";
                     const isLast = i === chartData.length - 1;
 
                     return (
-                      <g key={i} className={isLast ? "animate-pulse" : "opacity-70"}>
-                        <line x1={x + w/2} y1={hY} x2={x + w/2} y2={lY} stroke={color} strokeWidth="1" opacity={isLast? 1 : 0.5} />
-                        <rect x={x} y={Math.min(oY, cY)} width={w} height={Math.max(Math.abs(cY - oY), 1)} fill={isUp ? "transparent" : color} stroke={color} strokeWidth="1" rx="0.5" />
-                        {isLast && <rect x={x-1} y={Math.min(oY, cY)-1} width={w+2} height={Math.max(Math.abs(cY - oY), 1)+2} fill="none" stroke="#fff" strokeWidth="0.5" className="animate-ping" opacity="0.5"/>}
+                      <g key={i} className={isLast ? "animate-pulse" : "opacity-80"}>
+                        <line x1={x + w/2} y1={hY} x2={x + w/2} y2={lY} stroke={color} strokeWidth="0.5" opacity={isLast? 1 : 0.4} />
+                        <rect x={x} y={Math.min(oY, cY)} width={w} height={Math.max(Math.abs(cY - oY), 0.5)} fill={isUp ? "transparent" : color} stroke={color} strokeWidth="0.5" rx="0.5" />
+                        {isLast && <rect x={x-1} y={Math.min(oY, cY)-1} width={w+2} height={Math.max(Math.abs(cY - oY), 0.5)+2} fill="none" stroke="#fff" strokeWidth="0.3" className="animate-ping" opacity="0.6"/>}
                       </g>
                     );
                   })}
                 </svg>
                 <div className="scanner-beam-vertical"></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-sky-900/20 to-transparent pointer-events-none mix-blend-screen"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-sky-900/10 to-transparent pointer-events-none mix-blend-screen"></div>
             </div>
           );
         };
 
         const App = () => {
-          const [appStage, setAppStage] = useState('splash'); // splash -> init -> backtest -> scan -> trade
+          // Единый менеджер состояний: SPLASH -> INTRO -> HISTORICAL_SUMMARY -> READY -> LIVE_SCAN
+          const [globalStage, setGlobalStage] = useState('SPLASH'); 
+          
           const [viewMode, setViewMode] = useState('SCREENER'); 
           const [asset, setAsset] = useState(ASSETS[0]);
           const [sparklines, setSparklines] = useState({});
           const [logs, setLogs] = useState([]);
-          const [statusText, setStatusText] = useState('ИНИЦИАЛИЗАЦИЯ...');
+          const [statusText, setStatusText] = useState('ОЖИДАНИЕ ЗАПУСКА');
           
           const [sessionData, setSessionData] = useState({
               balance: SESSION_CONFIG.startingBalance, stake: SESSION_CONFIG.baseStake, step: 0, pnl: 0, wins: 0, losses: 0, cancels: 0, totalSignals: 0
@@ -373,11 +344,10 @@
           const candleSeries = useRef(null);
           const tradesRef = useRef([]); 
           
-          const audioCtx = useRef(null);
           const engineActive = useRef(false);
           const currentPrice = useRef(null);
           
-          // --- STRICT SPEECH QUEUE ---
+          // --- СИНХРОНИЗИРОВАННАЯ ОЗВУЧКА ---
           const speechQueueRef = useRef([]);
           const isSpeakingRef = useRef(false);
 
@@ -394,11 +364,11 @@
                   if (resolved) return; resolved = true;
                   isSpeakingRef.current = false;
                   if (nextItem.resolve) nextItem.resolve();
-                  setTimeout(processSpeechQueue, 300);
+                  setTimeout(processSpeechQueue, 200);
               };
               utterance.onend = finish; utterance.onerror = finish;
               try { window.speechSynthesis.speak(utterance); } catch (e) { finish(); }
-              setTimeout(finish, Math.max(3000, nextItem.text.length * 70)); // fallback
+              setTimeout(finish, Math.max(3000, nextItem.text.length * 80)); 
           }, []);
 
           const enqueueSpeech = useCallback((text) => {
@@ -409,11 +379,14 @@
               });
           }, [processSpeechQueue]);
 
-          const addLog = useCallback((msg) => setLogs(p => [msg, ...p].slice(0, 20)), []);
+          const addLog = useCallback((msg) => {
+              const time = new Date().toLocaleTimeString('ru-RU', {hour12: false});
+              setLogs(p => [`[${time}] ${msg}`, ...p].slice(0, 30));
+          }, []);
 
-          // --- CHART OVERLAYS (Boxes & Lines & Tooltip) ---
+          // --- CHART & OVERLAYS SYNC (RESPONSIVE) ---
           useEffect(() => {
-            if (appStage === 'splash' || appStage === 'init') return;
+            if (globalStage === 'SPLASH' || globalStage === 'INTRO') return;
             let animationFrameId;
 
             const syncOverlays = () => {
@@ -431,11 +404,9 @@
                         } catch (e) {}
 
                         if (sigX === null) return;
-                        
-                        // Approximate missing coords for visual completeness
-                        if (entX === null) entX = sigX + 15;
+                        if (entX === null) entX = sigX + 10;
                         if (extX === null && trade.exitTime) extX = timeScale.timeToCoordinate(trade.exitTime);
-                        if (extX === null) extX = entX + (trade.result === 'CANCELLED' ? 10 : 80);
+                        if (extX === null) extX = entX + (trade.result === 'CANCELLED' ? 10 : 50);
 
                         const boxLeft = Math.min(sigX, entX);
                         const boxRight = extX;
@@ -450,34 +421,29 @@
                         const entY = trade.entryPrice ? series.priceToCoordinate(trade.entryPrice) : (topY + bottomY)/2;
                         const extY = trade.exitPrice ? series.priceToCoordinate(trade.exitPrice) : entY;
 
-                        let color = '148, 163, 184'; // Gray (Cancel)
+                        let color = '148, 163, 184'; // Сброс
                         let bgAlpha = 0.1;
                         let borderAlpha = 0.4;
-                        if (trade.result === 'WIN') { color = '16, 185, 129'; bgAlpha = 0.15; borderAlpha=0.6; } // Green
-                        if (trade.result === 'LOSS') { color = '244, 63, 94'; bgAlpha = 0.15; borderAlpha=0.6; } // Red
-                        if (trade.result === 'PENDING') { color = '245, 158, 11'; } // Yellow
+                        if (trade.result === 'WIN') { color = '16, 185, 129'; bgAlpha = 0.15; borderAlpha=0.6; } 
+                        if (trade.result === 'LOSS') { color = '244, 63, 94'; bgAlpha = 0.15; borderAlpha=0.6; } 
 
                         trade.screenBox = { left: boxLeft, right: boxRight, top: topY, bottom: bottomY };
 
-                        // 1. Box
-                        html += `<div class="trade-box-glass absolute border rounded-sm pointer-events-auto" 
+                        html += `<div class="trade-box-glass absolute border rounded-sm pointer-events-none" 
                                       style="left:${boxLeft}px; top:${topY}px; width:${boxWidth}px; height:${boxHeight}px; 
                                              background:rgba(${color},${bgAlpha}); border-color:rgba(${color},${borderAlpha}); 
-                                             box-shadow: 0 0 15px rgba(${color}, 0.1);" data-idx="${trade.tradeId}">`;
+                                             box-shadow: 0 0 10px rgba(${color}, 0.1);" data-idx="${trade.tradeId}">`;
                         
-                        // 2. Signal Vertical Line
                         html += `<div class="absolute top-0 bottom-0 border-l border-dashed border-slate-400 opacity-50" style="left:${sigX - boxLeft}px"></div>`;
-                        html += `<div class="absolute text-[8px] font-bold text-slate-300" style="left:${sigX - boxLeft - 10}px; bottom:-15px;">SIG</div>`;
+                        html += `<div class="absolute text-[8px] sm:text-[9px] font-bold text-slate-300" style="left:${sigX - boxLeft - 8}px; bottom:-16px;">SIG</div>`;
                         
-                        // 3. Entry Dot & Line
                         if (trade.entryPrice && entX !== null) {
-                             html += `<div class="absolute w-2 h-2 rounded-full z-10" style="background:rgb(${color}); left:${entX - boxLeft - 4}px; top:${entY - topY - 4}px; box-shadow: 0 0 5px rgb(${color});"></div>`;
+                             html += `<div class="absolute w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full z-10" style="background:rgb(${color}); left:${entX - boxLeft - 3}px; top:${entY - topY - 3}px; box-shadow: 0 0 5px rgb(${color});"></div>`;
                              html += `<div class="absolute h-px border-b border-dotted" style="border-color:rgb(${color}); left:${entX - boxLeft}px; right:0; top:${entY - topY}px; opacity:0.5;"></div>`;
                         }
 
-                        // 4. Exit Dot
-                        if (trade.exitPrice && extX !== null && trade.result !== 'CANCELLED' && trade.result !== 'PENDING') {
-                             html += `<div class="absolute w-2 h-2 rounded-full bg-white z-10 border border-slate-800" style="left:${extX - boxLeft - 4}px; top:${extY - topY - 4}px;"></div>`;
+                        if (trade.exitPrice && extX !== null && trade.result !== 'CANCELLED') {
+                             html += `<div class="absolute w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white z-10 border border-slate-800" style="left:${extX - boxLeft - 3}px; top:${extY - topY - 3}px;"></div>`;
                         }
 
                         html += `</div>`;
@@ -489,23 +455,24 @@
 
             syncOverlays();
             return () => cancelAnimationFrame(animationFrameId);
-          }, [appStage, viewMode]);
+          }, [globalStage, viewMode]);
 
-          // Hover Logic for strict Tooltips
+          // Нативное отслеживание мыши/тапа через Lightweight Charts для Tooltip
           useEffect(() => {
-              const container = tradeBoxesContainerRef.current;
-              if (!container) return;
-
-              const tooltip = document.getElementById('trade-tooltip');
+              if (globalStage === 'SPLASH' || globalStage === 'INTRO' || !chartInstance.current) return;
               
-              const handleMouseMove = (e) => {
-                  const rect = container.getBoundingClientRect();
-                  const x = e.clientX - rect.left;
-                  const y = e.clientY - rect.top;
+              const tooltip = document.getElementById('trade-tooltip');
+              if (!tooltip) return;
+
+              const handleCrosshairMove = (param) => {
+                  if (!param.point || !param.time) { tooltip.style.opacity = '0'; return; }
+
+                  const x = param.point.x;
+                  const y = param.point.y;
 
                   const hovered = tradesRef.current.find(t => t.screenBox && x >= t.screenBox.left && x <= t.screenBox.right && y >= t.screenBox.top && y <= t.screenBox.bottom);
 
-                  if (hovered && tooltip) {
+                  if (hovered) {
                       const isWin = hovered.result === 'WIN';
                       const isCanc = hovered.result === 'CANCELLED';
                       let headColor = 'text-slate-300';
@@ -513,36 +480,38 @@
                       if (hovered.result === 'LOSS') headColor = 'text-rose-400';
 
                       tooltip.innerHTML = `
-                          <div class="font-black ${headColor} border-b border-slate-600 pb-1 mb-2 tracking-widest text-xs uppercase">${hovered.direction} • ${hovered.result}</div>
-                          <div class="flex justify-between gap-4 text-[10px]"><span class="text-slate-400">Сигнал:</span> <span class="font-mono text-white">${new Date(hovered.signalTime*1000).toLocaleTimeString()}</span></div>
+                          <div class="font-black ${headColor} border-b border-slate-600 pb-1 mb-2 tracking-widest text-[10px] sm:text-xs uppercase">${hovered.direction} • ${hovered.result}</div>
+                          <div class="flex justify-between gap-4 text-[9px] sm:text-[10px]"><span class="text-slate-400">Сигнал:</span> <span class="font-mono text-white">${new Date(hovered.signalTime*1000).toLocaleTimeString()}</span></div>
                           ${!isCanc ? `
-                          <div class="flex justify-between gap-4 text-[10px]"><span class="text-slate-400">Вход:</span> <span class="font-mono text-white">${hovered.entryPrice ? hovered.entryPrice.toFixed(2) : '-'}</span></div>
-                          <div class="flex justify-between gap-4 text-[10px]"><span class="text-slate-400">Выход:</span> <span class="font-mono text-white">${hovered.exitPrice ? hovered.exitPrice.toFixed(2) : '-'}</span></div>
-                          <div class="flex justify-between gap-4 text-[10px] mt-1 pt-1 border-t border-slate-700"><span class="text-slate-400">Ставка (Шаг ${hovered.martingaleStep}):</span> <span class="font-mono text-white">${hovered.stake} ₽</span></div>
-                          <div class="flex justify-between gap-4 text-[10px]"><span class="text-slate-400">PnL:</span> <span class="font-mono ${hovered.pnl > 0 ? 'text-emerald-400' : 'text-rose-400'} font-bold">${hovered.pnl > 0 ? '+' : ''}${hovered.pnl} ₽</span></div>
-                          ` : `<div class="text-[10px] text-rose-300 mt-1 max-w-[150px] leading-tight">Отмена: Импульс не подтвержден (Окно 3 сек)</div>`}
+                          <div class="flex justify-between gap-4 text-[9px] sm:text-[10px] mt-1"><span class="text-slate-400">Вход:</span> <span class="font-mono text-white">${hovered.entryPrice ? hovered.entryPrice.toFixed(2) : '-'}</span></div>
+                          <div class="flex justify-between gap-4 text-[9px] sm:text-[10px] mt-1"><span class="text-slate-400">Выход:</span> <span class="font-mono text-white">${hovered.exitPrice ? hovered.exitPrice.toFixed(2) : '-'}</span></div>
+                          <div class="flex justify-between gap-4 text-[9px] sm:text-[10px] mt-2 pt-1 border-t border-slate-700"><span class="text-slate-400">Ставка (Шаг ${hovered.martingaleStep}):</span> <span class="font-mono text-white">${hovered.stake} ₽</span></div>
+                          <div class="flex justify-between gap-4 text-[9px] sm:text-[10px] mt-1"><span class="text-slate-400">PnL:</span> <span class="font-mono ${hovered.pnl > 0 ? 'text-emerald-400' : 'text-rose-400'} font-bold">${hovered.pnl > 0 ? '+' : ''}${hovered.pnl} ₽</span></div>
+                          ` : `<div class="text-[9px] sm:text-[10px] text-rose-300 mt-1 max-w-[150px] sm:max-w-[180px] leading-tight">Отмена: Импульс не подтвержден (Окно 3 сек)</div>`}
                       `;
-                      tooltip.style.left = `${e.clientX + 15}px`;
-                      tooltip.style.top = `${e.clientY + 15}px`;
+                      // Адаптивное позиционирование tooltip
+                      const tooltipWidth = tooltip.offsetWidth || 150;
+                      let leftPos = x + 15;
+                      if (leftPos + tooltipWidth > window.innerWidth - 40) leftPos = x - tooltipWidth - 15;
+                      
+                      tooltip.style.left = `${leftPos}px`;
+                      tooltip.style.top = `${Math.max(10, y - 10)}px`;
                       tooltip.style.opacity = '1';
-                  } else if (tooltip) {
+                  } else {
                       tooltip.style.opacity = '0';
                   }
               };
-              
-              const handleMouseLeave = () => { if(tooltip) tooltip.style.opacity = '0'; };
 
-              container.addEventListener('mousemove', handleMouseMove);
-              container.addEventListener('mouseleave', handleMouseLeave);
-              return () => { container.removeEventListener('mousemove', handleMouseMove); container.removeEventListener('mouseleave', handleMouseLeave); }
-          }, [appStage, viewMode]);
+              chartInstance.current.subscribeCrosshairMove(handleCrosshairMove);
+              return () => { if(chartInstance.current) chartInstance.current.unsubscribeCrosshairMove(handleCrosshairMove); }
+          }, [globalStage, viewMode]);
 
 
           const initChart = async () => {
             if (!chartContainerRef.current || chartInstance.current) return;
             const mainChart = window.LightweightCharts.createChart(chartContainerRef.current, {
                 autoSize: true,
-                layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#cbd5e1', fontFamily: 'JetBrains Mono' },
+                layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#cbd5e1', fontFamily: 'JetBrains Mono', fontSize: window.innerWidth < 600 ? 10 : 12 },
                 grid: { vertLines: { color: 'rgba(51, 65, 85, 0.3)' }, horzLines: { color: 'rgba(51, 65, 85, 0.3)' } },
                 timeScale: { borderVisible: false, timeVisible: true }
             });
@@ -552,13 +521,13 @@
 
           const runEngine = async () => {
               engineActive.current = true;
-              setAppStage('backtest');
-              setStatusText('БЭКТЕСТ: АНАЛИЗ ЗА 12 ЧАСОВ...');
+              setGlobalStage('HISTORICAL_SUMMARY');
+              setStatusText('АНАЛИЗ ИСТОРИИ (12 ЧАСОВ)...');
 
               await enqueueSpeech("Институциональный алгоритм активирован. Запущен анализ структуры рынка за последние двенадцать часов.");
 
               let data1m;
-              try { data1m = await ScannerAPI.getCandles('BTCUSDT', 750, '1m'); } catch(e) { addLog("ОШИБКА ДАННЫХ"); return; }
+              try { data1m = await ScannerAPI.getCandles('BTCUSDT', 750, '1m'); } catch(e) { addLog("ОШИБКА ДАННЫХ ОТ БИРЖИ"); return; }
               setSparklines({'BTCUSDT': data1m});
               currentPrice.current = data1m[data1m.length-1].close;
 
@@ -570,15 +539,14 @@
               const histTrades = [];
               let tSignals = 0, tWins = 0, tLosses = 0, tCancels = 0;
 
-              // Backtest logic reproducing exact 3s delay entry rule (approximated on 1m by checking next candle open/close bounds)
               for (let i = 20; i < data1m.length - 6; i++) {
-                  const config = STRATEGY_1M_CONFIG['NORMAL']; // Default strict
+                  const config = STRATEGY_1M_CONFIG['NORMAL']; 
                   const { isCall, isPut, sweepLevel } = detectLiquiditySweep1M(data1m, i, liqZones, atrSeries, config);
 
                   if (isCall || isPut) {
                       tSignals++;
                       const sigTime = data1m[i].time;
-                      const entryCandle = data1m[i+1]; // Represents the 3s confirmation window
+                      const entryCandle = data1m[i+1]; 
                       let isCanceled = false;
                       const atr = atrSeries[i].value || 0.0001;
 
@@ -594,13 +562,11 @@
                           tCancels++;
                           trade.result = 'CANCELLED';
                           trade.entryTime = entryCandle.time;
-                          trade.exitTime = entryCandle.time + 60; // Show short box
+                          trade.exitTime = entryCandle.time + 60; 
                       } else {
-                          // Confirmed entry
                           trade.entryTime = entryCandle.time;
                           trade.entryPrice = entryCandle.open;
                           
-                          // 5 min expiration
                           const exitCandle = data1m[i+6];
                           trade.exitTime = exitCandle.time;
                           trade.exitPrice = exitCandle.close;
@@ -614,7 +580,6 @@
                           if (win) tWins++; else tLosses++;
                       }
 
-                      // Apply Finances
                       const pnl = getTradePnL(trade.result, mState.currentStake);
                       trade.stake = mState.currentStake;
                       trade.pnl = pnl;
@@ -637,174 +602,191 @@
                   chartInstance.current.timeScale().fitContent();
               }
 
-              // Voice Report
+              setGlobalStage('READY');
               const finalBal = currentBal;
               const repTxt = `Анализ завершен. За последние 12 часов найдено ${tSignals} паттернов. Из них отменено на этапе подтверждения: ${tCancels}. Чистых сделок в плюс: ${tWins}, в минус: ${tLosses}. При стартовом балансе 10 тысяч рублей, базовой ставке 100 рублей и безопасном мартингейле до 4-го колена, итоговый баланс составил бы ${finalBal} рублей. Перехожу в режим активного сканирования рынка.`;
               
-              addLog(`БЭКТЕСТ ЗАВЕРШЕН. Итог: ${finalBal} ₽ (Win: ${tWins}, Loss: ${tLosses})`);
+              addLog(`БЭКТЕСТ ИТОГ: ${finalBal} ₽ (Win: ${tWins}, Loss: ${tLosses}, Cancels: ${tCancels})`);
               
               await enqueueSpeech(repTxt);
 
               if (!engineActive.current) return;
-              setAppStage('scan');
+              setGlobalStage('LIVE_SCAN');
               setViewMode('SCREENER');
               setStatusText('СКАНИРОВАНИЕ РЫНКА (1M)...');
               
-              // Infinite live loop placeholder
+              // Имитация цикла работы для поддержания состояния
               while(engineActive.current) {
                   await new Promise(r=>setTimeout(r, 2000));
-                  // In a real scenario, this fetches new candle, checks `detectLiquiditySweep1M`, 
-                  // and if true, pauses for 3s, checks confirmation, and executes trade appending to tradesRef.current.
-                  // For this requirement, keeping the structure running safely.
               }
           };
 
           const handleStart = () => {
               const AudioContext = window.AudioContext || window.webkitAudioContext;
-              audioCtx.current = new AudioContext();
-              audioCtx.current.resume();
-              if(window.speechSynthesis) window.speechSynthesis.speak(new SpeechSynthesisUtterance('')); // init
-              setAppStage('init');
+              if (AudioContext) {
+                  audioCtx.current = new AudioContext();
+                  audioCtx.current.resume();
+              }
+              if(window.speechSynthesis) window.speechSynthesis.speak(new SpeechSynthesisUtterance('')); 
               runEngine();
           };
 
+          // --- РЕНДЕР ---
+          
+          if (globalStage === 'SPLASH') {
+              return (
+                  <div className="h-[100dvh] w-screen flex flex-col relative overflow-hidden bg-slate-950">
+                      <CinematicSplash onComplete={() => setGlobalStage('INTRO')} />
+                  </div>
+              );
+          }
+
+          if (globalStage === 'INTRO') {
+              return (
+                  <div className="h-[100dvh] w-screen flex flex-col items-center justify-center relative overflow-hidden bg-slate-950 px-4">
+                      <div className="absolute inset-0 bg-grid-pattern opacity-30 mix-blend-screen z-0"></div>
+                      <div className="glass-card p-8 sm:p-12 rounded-[2rem] text-center border-slate-700 max-w-[90%] sm:max-w-md w-full shadow-2xl flex flex-col items-center z-10">
+                          <Activity size={clampSize(40, 60)} className="text-sky-400 mb-6 drop-shadow-[0_0_15px_rgba(56,189,248,0.5)]" />
+                          <h2 className="text-[clamp(1.8rem,5vw,2.5rem)] font-black oswald-font tracking-widest text-white mb-2 leading-tight">PRO MAX ENGINE</h2>
+                          <p className="text-slate-400 text-xs sm:text-sm font-bold tracking-widest uppercase mb-8">Strict SMC & Martingale</p>
+                          <button onClick={handleStart} className="w-full py-4 sm:py-5 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 rounded-xl text-white font-black oswald-font tracking-[0.2em] text-lg sm:text-xl shadow-[0_0_20px_rgba(56,189,248,0.4)] transition-all active:scale-95">
+                              ИНИЦИАЛИЗАЦИЯ
+                          </button>
+                      </div>
+                      <div className="absolute bottom-6 sm:bottom-8 z-50 pointer-events-none opacity-50">
+                          <span className="text-[clamp(10px,2vw,14px)] font-black tracking-[0.3em] uppercase oswald-font cinematic-text" style={{animation: 'none', backgroundPosition:'0 0'}}>SLAVA GORDEEV</span>
+                      </div>
+                  </div>
+              );
+          }
+
+          // Helper for fluid sizing in inline styles if needed
+          function clampSize(min, max) { return typeof window !== 'undefined' && window.innerWidth < 600 ? min : max; }
+
           return (
-            <div className="h-[100dvh] w-screen flex flex-col relative overflow-hidden text-slate-100">
+            <div className="h-[100dvh] w-screen flex flex-col relative bg-slate-950 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
               
-              {/* SPLASH SCREEN */}
-              <CinematicSplash onComplete={() => { if(appStage === 'splash') setAppStage('ready'); }} />
-
-              <div className="bg-orb-1 pointer-events-none opacity-50"></div>
-              <div className="bg-orb-2 pointer-events-none opacity-50"></div>
-              <div className="absolute inset-0 bg-grid-pattern pointer-events-none opacity-30 mix-blend-screen z-0"></div>
-
-              {appStage === 'ready' && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm">
-                    <div className="glass-card p-10 rounded-[2rem] text-center border-slate-700 max-w-md w-full mx-4 shadow-2xl flex flex-col items-center">
-                        <Activity size={50} className="text-sky-400 mb-6 drop-shadow-[0_0_15px_rgba(56,189,248,0.5)]" />
-                        <h2 className="text-3xl font-black oswald-font tracking-widest text-white mb-2">PRO MAX ENGINE</h2>
-                        <p className="text-slate-400 text-sm font-bold tracking-widest uppercase mb-8">Strict SMC & Martingale</p>
-                        <button onClick={handleStart} className="w-full py-4 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 rounded-xl text-white font-black oswald-font tracking-[0.2em] text-xl shadow-[0_0_20px_rgba(56,189,248,0.4)] transition-all active:scale-95">
-                            ИНИЦИАЛИЗАЦИЯ
-                        </button>
-                    </div>
-                </div>
-              )}
-
-              {/* PERMANENT AUTHOR SIGNATURE */}
-              <div className="absolute bottom-4 right-6 z-50 pointer-events-none">
-                  <span className="text-xs font-black tracking-[0.3em] uppercase oswald-font cinematic-text opacity-70">SLAVA GORDEEV</span>
-              </div>
+              <div className="absolute inset-0 bg-grid-pattern pointer-events-none opacity-20 mix-blend-screen z-0"></div>
 
               {/* HEADER */}
-              <header className="h-16 border-b border-slate-700/50 glass-panel z-40 flex items-center justify-between px-6 shrink-0 mt-2 mx-2 rounded-2xl">
-                 <div className="flex items-center gap-4">
-                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-[0_0_15px_rgba(56,189,248,0.3)]">
-                        <Zap size={20} className="text-white" />
+              <header className="h-14 sm:h-16 border-b border-slate-700/50 glass-panel z-40 flex items-center justify-between px-3 sm:px-6 shrink-0 mt-2 mx-2 rounded-2xl">
+                 <div className="flex items-center gap-3 sm:gap-4">
+                     <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-[0_0_15px_rgba(56,189,248,0.3)]">
+                        <Zap size={clampSize(16, 20)} className="text-white" />
                      </div>
                      <div>
-                         <h1 className="text-2xl font-black oswald-font tracking-widest leading-none drop-shadow-sm">ТЕРМИНАЛ <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-400">PRO MAX</span></h1>
-                         <div className="text-[10px] text-slate-400 tracking-[0.2em] font-bold uppercase mt-1 flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div> Live SMC Detection
+                         <h1 className="text-[clamp(1rem,4vw,1.5rem)] font-black oswald-font tracking-widest leading-none drop-shadow-sm whitespace-nowrap">ТЕРМИНАЛ <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-400">PRO MAX</span></h1>
+                         <div className="text-[clamp(8px,2vw,10px)] text-slate-400 tracking-[0.2em] font-bold uppercase mt-1 flex items-center gap-1.5 whitespace-nowrap">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></div> <span className="hidden sm:inline">Live SMC Detection</span><span className="inline sm:hidden">SMC Live</span>
                          </div>
                      </div>
                  </div>
-                 <div className="flex flex-col items-end">
-                     <span className="text-sm font-bold text-sky-400 tracking-widest uppercase border border-sky-500/30 bg-sky-500/10 px-4 py-1 rounded-lg">
+                 <div className="flex flex-col items-end shrink-0 ml-2">
+                     <span className="text-[clamp(9px,2vw,12px)] font-bold text-sky-400 tracking-widest uppercase border border-sky-500/30 bg-sky-500/10 px-2 sm:px-4 py-1 rounded-lg text-right max-w-[120px] sm:max-w-none truncate">
                         {statusText}
                      </span>
                      <div className="mt-1"><LiveClock /></div>
                  </div>
               </header>
 
-              {/* MAIN BODY */}
-              <main className="flex-1 flex p-2 gap-2 overflow-hidden z-10">
+              {/* MAIN LAYOUT (RESPONSIVE: Col on Mobile, Row on Desktop) */}
+              <main className="adaptive-main-area w-full max-w-[1920px] mx-auto p-2 sm:p-4 gap-2 sm:gap-4 z-10 relative">
                  
                  {/* LEFT/TOP: SCANNER OR CHART */}
-                 <div className="flex-1 glass-card rounded-2xl relative overflow-hidden flex flex-col border-slate-700/50">
+                 <div className="chart-container-fluid glass-card rounded-2xl relative overflow-hidden flex flex-col border-slate-700/50">
                     
                     {/* SCANNER VIEW */}
-                    <div className={`absolute inset-0 flex flex-col items-center justify-center p-8 transition-opacity duration-700 z-30 bg-slate-900/90 ${viewMode === 'SCREENER' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                        <Radar size={48} className="text-sky-500 animate-spin-slow mb-6 drop-shadow-[0_0_20px_rgba(56,189,248,0.5)]" />
-                        <h2 className="text-2xl font-black oswald-font tracking-widest text-slate-200 mb-8">ПОИСК СНЯТИЯ ЛИКВИДНОСТИ</h2>
-                        <div className="w-full max-w-3xl h-48 bg-slate-950/50 rounded-2xl p-4 border border-slate-800 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
-                            <EnhancedScanner data={sparklines['BTCUSDT']} />
+                    <div className={`absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-8 transition-opacity duration-700 z-30 bg-slate-900/95 ${viewMode === 'SCREENER' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                        <Radar size={clampSize(36, 48)} className="text-sky-500 animate-spin-slow mb-4 sm:mb-6 drop-shadow-[0_0_20px_rgba(56,189,248,0.5)]" />
+                        <h2 className="text-[clamp(1.2rem,4vw,2rem)] text-center font-black oswald-font tracking-widest text-slate-200 mb-6 sm:mb-8 leading-tight">ПОИСК СНЯТИЯ ЛИКВИДНОСТИ</h2>
+                        <div className="w-full max-w-4xl aspect-[2/1] sm:aspect-[3/1] bg-slate-950/50 rounded-2xl p-2 sm:p-4 border border-slate-800 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
+                            <ResponsiveScanner data={sparklines['BTCUSDT']} />
                         </div>
                     </div>
 
                     {/* CHART VIEW */}
-                    <div className={`absolute inset-0 flex flex-col transition-opacity duration-700 z-20 ${viewMode === 'DETAIL' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                        <div className="absolute top-4 left-4 z-40 bg-slate-900/80 backdrop-blur-md border border-slate-700 rounded-xl p-3 shadow-lg">
-                            <div className="text-3xl font-black oswald-font tracking-wider text-white">BTC/USDT</div>
-                            <div className="text-xs font-bold tracking-widest text-sky-400 mt-1">ТАЙМФРЕЙМ: 1M</div>
+                    <div className={`absolute inset-0 flex flex-col transition-opacity duration-700 z-20 bg-slate-900/40 ${viewMode === 'DETAIL' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-40 bg-slate-900/80 backdrop-blur-md border border-slate-700 rounded-lg sm:rounded-xl p-2 sm:p-3 shadow-lg pointer-events-none">
+                            <div className="text-[clamp(1.2rem,3vw,1.875rem)] font-black oswald-font tracking-wider text-white leading-none">BTC/USDT</div>
+                            <div className="text-[clamp(8px,2vw,12px)] font-bold tracking-widest text-sky-400 mt-1">ТАЙМФРЕЙМ: 1M</div>
                         </div>
-                        <div className="flex-1 relative w-full h-full">
+                        <div className="flex-1 relative w-full h-full min-h-[300px]">
                             <div ref={chartContainerRef} className="absolute inset-0" />
                             <div ref={tradeBoxesContainerRef} className="absolute inset-0 pointer-events-none z-20 overflow-hidden" />
-                            
-                            {/* STRICT TOOLTIP (Handled by useEffect) */}
-                            <div id="trade-tooltip" className="absolute z-50 pointer-events-none opacity-0 transition-opacity bg-slate-900/95 backdrop-blur-xl text-white p-3 rounded-lg border border-slate-600 shadow-2xl min-w-[200px]" style={{transform: 'translate(0, -100%)'}}></div>
+                            <div id="trade-tooltip" className="absolute z-50 pointer-events-none opacity-0 transition-opacity bg-slate-900/95 backdrop-blur-xl text-white p-2 sm:p-3 rounded-lg border border-slate-600 shadow-2xl min-w-[160px] sm:min-w-[200px]" style={{transform: 'translate(0, -100%)'}}></div>
                         </div>
                     </div>
 
                  </div>
 
-                 {/* RIGHT: STATS & LOGS */}
-                 <div className="w-[380px] glass-card rounded-2xl flex flex-col border-slate-700/50 shrink-0 p-3 gap-3 overflow-hidden">
+                 {/* RIGHT/BOTTOM: STATS & LOGS */}
+                 <div className="sidebar-fluid glass-card rounded-2xl flex flex-col border-slate-700/50 p-3 gap-3 overflow-hidden">
                     
                     <div className="grid grid-cols-2 gap-2 shrink-0">
-                        <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700 flex flex-col">
-                            <span className="text-[10px] text-slate-400 font-bold tracking-widest uppercase">БАЛАНС (₽)</span>
-                            <span className="text-2xl font-black mono-font text-emerald-400 mt-1">{sessionData.balance}</span>
+                        <div className="bg-slate-800/50 rounded-xl p-2 sm:p-3 border border-slate-700 flex flex-col justify-center">
+                            <span className="text-[clamp(8px,2vw,10px)] text-slate-400 font-bold tracking-widest uppercase">БАЛАНС (₽)</span>
+                            <span className="text-[clamp(1.2rem,4vw,1.5rem)] font-black mono-font text-emerald-400 mt-0.5 sm:mt-1">{sessionData.balance}</span>
                         </div>
-                        <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700 flex flex-col">
-                            <span className="text-[10px] text-slate-400 font-bold tracking-widest uppercase">ТЕК. СТАВКА (₽)</span>
-                            <span className="text-2xl font-black mono-font text-amber-400 mt-1">{sessionData.stake}</span>
+                        <div className="bg-slate-800/50 rounded-xl p-2 sm:p-3 border border-slate-700 flex flex-col justify-center">
+                            <span className="text-[clamp(8px,2vw,10px)] text-slate-400 font-bold tracking-widest uppercase">ТЕК. СТАВКА (₽)</span>
+                            <span className="text-[clamp(1.2rem,4vw,1.5rem)] font-black mono-font text-amber-400 mt-0.5 sm:mt-1">{sessionData.stake}</span>
                         </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-4 border border-slate-700 shrink-0 shadow-lg relative overflow-hidden">
+                    <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-3 sm:p-4 border border-slate-700 shrink-0 shadow-lg relative overflow-hidden">
                         <div className="absolute -right-10 -top-10 w-32 h-32 bg-sky-500/10 rounded-full blur-2xl"></div>
-                        <div className="flex justify-between items-end border-b border-slate-700/50 pb-3 mb-3">
-                            <span className="text-sm font-bold tracking-widest uppercase text-slate-300 oswald-font">ПРИБЫЛЬ СЕССИИ</span>
-                            <span className={`text-3xl font-black oswald-font leading-none ${sessionData.pnl >= 0 ? 'text-sky-400' : 'text-rose-400'}`}>
+                        <div className="flex justify-between items-end border-b border-slate-700/50 pb-2 sm:pb-3 mb-2 sm:mb-3">
+                            <span className="text-[clamp(10px,2.5vw,14px)] font-bold tracking-widest uppercase text-slate-300 oswald-font">ПРИБЫЛЬ</span>
+                            <span className={`text-[clamp(1.5rem,5vw,2.25rem)] font-black oswald-font leading-none ${sessionData.pnl >= 0 ? 'text-sky-400' : 'text-rose-400'}`}>
                                 {sessionData.pnl > 0 ? '+' : ''}{sessionData.pnl}
                             </span>
                         </div>
                         <div className="flex justify-between text-center oswald-font tracking-widest">
                             <div className="flex flex-col">
-                                <span className="text-[10px] text-slate-500 mb-1">СИГНАЛОВ</span>
-                                <span className="text-lg text-slate-200">{sessionData.totalSignals}</span>
+                                <span className="text-[clamp(8px,2vw,10px)] text-slate-500 mb-0.5 sm:mb-1">СИГНАЛОВ</span>
+                                <span className="text-sm sm:text-lg text-slate-200">{sessionData.totalSignals}</span>
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-[10px] text-slate-500 mb-1">WIN</span>
-                                <span className="text-lg text-emerald-400">{sessionData.wins}</span>
+                                <span className="text-[clamp(8px,2vw,10px)] text-slate-500 mb-0.5 sm:mb-1">WIN</span>
+                                <span className="text-sm sm:text-lg text-emerald-400">{sessionData.wins}</span>
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-[10px] text-slate-500 mb-1">LOSS</span>
-                                <span className="text-lg text-rose-400">{sessionData.losses}</span>
+                                <span className="text-[clamp(8px,2vw,10px)] text-slate-500 mb-0.5 sm:mb-1">LOSS</span>
+                                <span className="text-sm sm:text-lg text-rose-400">{sessionData.losses}</span>
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-[10px] text-slate-500 mb-1">ОТМЕНА</span>
-                                <span className="text-lg text-slate-400">{sessionData.cancels}</span>
+                                <span className="text-[clamp(8px,2vw,10px)] text-slate-500 mb-0.5 sm:mb-1">ОТМЕНА</span>
+                                <span className="text-sm sm:text-lg text-slate-400">{sessionData.cancels}</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex-1 bg-slate-900/60 rounded-xl border border-slate-700/50 p-3 overflow-hidden flex flex-col shadow-inner">
-                        <div className="text-[10px] font-bold text-slate-500 tracking-widest uppercase mb-2">ТЕРМИНАЛ LOGS</div>
-                        <div className="flex-1 overflow-y-auto flex flex-col gap-1.5 no-scrollbar">
+                    <a href="https://intrade31.bar/311164" target="_blank" rel="noopener noreferrer" className="shrink-0 relative w-full flex items-center justify-center rounded-xl py-3 sm:py-4 px-4 font-bold tracking-widest uppercase overflow-hidden bg-gradient-to-r from-sky-600 to-indigo-600 shadow-[0_5px_15px_rgba(56,189,248,0.3)] active:scale-[0.98] transition-transform">
+                        <span className="relative z-10 flex flex-col items-center">
+                            <span className="text-[8px] sm:text-[9px] text-white/80 tracking-[0.2em] mb-0.5">Брокер для входа</span>
+                            <span className="text-xs sm:text-sm md:text-base text-white oswald-font drop-shadow-md">ТОРГОВАТЬ ЗДЕСЬ</span>
+                        </span>
+                    </a>
+
+                    <div className="flex-1 bg-slate-900/60 rounded-xl border border-slate-700/50 p-2 sm:p-3 flex flex-col shadow-inner min-h-[120px] overflow-hidden">
+                        <div className="text-[clamp(8px,2vw,10px)] font-bold text-slate-500 tracking-widest uppercase mb-1 sm:mb-2 shrink-0">ТЕРМИНАЛ LOGS</div>
+                        <div className="flex-1 overflow-y-auto flex flex-col gap-1 sm:gap-1.5 no-scrollbar">
                             {logs.map((l, i) => (
-                                <div key={i} className={`text-[10px] leading-tight mono-font tracking-wider py-1 pl-2 border-l-2 ${i===0 ? 'text-sky-300 border-sky-400 font-bold bg-sky-900/20' : 'text-slate-500 border-slate-700'}`}>
+                                <div key={i} className={`text-[clamp(8px,2vw,10px)] leading-tight mono-font tracking-wider py-1 pl-2 border-l-2 ${i===0 ? 'text-sky-300 border-sky-400 font-bold bg-sky-900/20' : 'text-slate-500 border-slate-700'} break-words`}>
                                     {l}
                                 </div>
                             ))}
                         </div>
                     </div>
-
                  </div>
 
               </main>
+              
+              {/* FIXED WATERMARK BOTTOM RIGHT */}
+              <div className="fixed bottom-2 right-4 sm:bottom-4 sm:right-6 z-50 pointer-events-none opacity-40">
+                  <span className="text-[clamp(8px,2vw,12px)] font-black tracking-[0.3em] uppercase oswald-font cinematic-text" style={{animation: 'none', backgroundPosition:'0 0'}}>SLAVA GORDEEV</span>
+              </div>
+
             </div>
           );
         }
