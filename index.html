@@ -1,179 +1,570 @@
-```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Крипто Терминал Гордеева - PRO MAX (Responsive)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Крипто Терминал Гордеева - PRO MAX (SMC)</title>
     
-    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
-    <script crossorigin src="[https://unpkg.com/react@18/umd/react.production.min.js](https://unpkg.com/react@18/umd/react.production.min.js)"></script>
-    <script crossorigin src="[https://unpkg.com/react-dom@18/umd/react-dom.production.min.js](https://unpkg.com/react-dom@18/umd/react-dom.production.min.js)"></script>
-    <script src="[https://unpkg.com/@babel/standalone/babel.min.js](https://unpkg.com/@babel/standalone/babel.min.js)"></script>
-    <script src="[https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js](https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js)"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 
     <style>
-        @import url('[https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Oswald:wght@300;400;500;600;700&display=swap](https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Oswald:wght@300;400;500;600;700&display=swap)');
-        @import url('[https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap](https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap)');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Oswald:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap');
         
-        :root {
-            --safe-bottom: env(safe-area-inset-bottom, 0px);
-            --safe-top: env(safe-area-inset-top, 0px);
-        }
+        *, *::before, *::after { box-sizing: border-box; }
 
-        body { 
+        html, body { 
             margin: 0; padding: 0; 
-            background: #0f172a; 
-            color: #f8fafc; 
+            background: #f8fafc;
+            color: #0f172a; 
+            max-width: 100%;
             overflow-x: hidden; 
             touch-action: manipulation;
             -webkit-font-smoothing: antialiased;
             font-family: 'Montserrat', sans-serif;
-            background-image: 
-                radial-gradient(circle at 15% 50%, rgba(14, 165, 233, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.08) 0%, transparent 50%);
-            background-attachment: fixed;
+        }
+
+        .app-shell {
+            width: 100%; max-width: 1600px; margin: 0 auto;
+            padding: clamp(6px, 1.5vw, 16px);
+            display: flex; flex-direction: column; height: 100dvh;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.8fr) minmax(320px, 0.9fr);
+            gap: clamp(12px, 1.5vw, 20px);
+            flex: 1; min-height: 0; margin-top: 10px; margin-bottom: 10px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-layout { display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+            .chart-card { min-height: 55vh; flex-shrink: 0; }
         }
         
         .oswald-font { font-family: 'Oswald', sans-serif; letter-spacing: 0.05em; text-transform: uppercase; }
         .mono-font { font-family: 'JetBrains Mono', monospace; }
 
-        /* --- SPLASH SCREEN & TEXT --- */
-        .cinematic-splash {
-            position: fixed; inset: 0; z-index: 99999;
-            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
-            display: flex; align-items: center; justify-content: center;
-            transition: opacity 1s ease-in-out, visibility 1s;
+        .cinematic-author {
+            font-family: 'Rajdhani', sans-serif; font-weight: 700; letter-spacing: 0.35em;
+            background: linear-gradient(90deg, #94a3b8 0%, #f1f5f9 25%, #475569 50%, #f1f5f9 75%, #94a3b8 100%);
+            background-size: 200% auto; color: transparent; -webkit-background-clip: text;
+            animation: cinematicShimmer 7s linear infinite; text-transform: uppercase;
         }
-        .cinematic-text {
-            font-family: 'Oswald', sans-serif;
-            font-weight: 900;
-            font-size: clamp(2.5rem, 8vw, 7rem);
-            letter-spacing: 0.3em;
-            background: linear-gradient(to right, #64748b 0%, #ffffff 40%, #ffffff 60%, #64748b 100%);
-            background-size: 200% auto;
-            color: transparent;
-            -webkit-background-clip: text;
-            background-clip: text;
-            animation: silver-shine 4s linear infinite, pulse-glow 3s ease-in-out infinite alternate;
-            filter: drop-shadow(0 0 20px rgba(255,255,255,0.2));
-            opacity: 0;
-            transform: scale(0.95);
-        }
-        .splash-active .cinematic-text {
-            animation: fade-scale-in 2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards, silver-shine 4s linear infinite;
-        }
-        @keyframes fade-scale-in {
-            0% { opacity: 0; transform: scale(0.9) translateY(20px); filter: blur(10px); }
-            100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0px); }
-        }
-        @keyframes silver-shine { to { background-position: 200% center; } }
-        @keyframes pulse-glow { 0% { filter: drop-shadow(0 0 10px rgba(255,255,255,0.1)); } 100% { filter: drop-shadow(0 0 25px rgba(255,255,255,0.4)); } }
+        @keyframes cinematicShimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
 
-        /* --- UI ELEMENTS --- */
-        .glass-panel {
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
-        }
-        .glass-card {
-            background: linear-gradient(145deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 8px 20px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-        }
-        
         .bg-grid-pattern {
-            background-image: linear-gradient(to right, rgba(14, 165, 233, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(14, 165, 233, 0.05) 1px, transparent 1px);
-            background-size: clamp(20px, 4vw, 40px) clamp(20px, 4vw, 40px);
-            mask-image: radial-gradient(circle at center, black 50%, transparent 100%);
-            -webkit-mask-image: radial-gradient(circle at center, black 50%, transparent 100%);
+            background-image: linear-gradient(to right, rgba(14, 165, 233, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(14, 165, 233, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px; mask-image: radial-gradient(circle at center, black 50%, transparent 100%); -webkit-mask-image: radial-gradient(circle at center, black 50%, transparent 100%);
         }
 
-        /* --- SCANNER --- */
-        .scanner-beam-vertical {
-            position: absolute; top: 0; bottom: 0; width: clamp(2px, 0.5vw, 4px);
-            background: #38bdf8;
-            box-shadow: 0 0 20px 5px rgba(56, 189, 248, 0.6), 0 0 40px 10px rgba(56, 189, 248, 0.2);
-            animation: sweep-x 2.5s ease-in-out infinite alternate;
-            z-index: 20; pointer-events: none;
+        .bg-orb-1 {
+            position: absolute; top: -10%; left: -5%; width: 50vw; height: 50vw;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, rgba(226, 232, 240, 0.05) 50%, transparent 70%);
+            border-radius: 50%; filter: blur(60px); animation: float 12s ease-in-out infinite alternate;
         }
-        @keyframes sweep-x { 0% { left: 5%; opacity: 0.2; } 50% { opacity: 1; } 100% { left: 95%; opacity: 0.2; } }
-
-        /* --- CHART OVERLAYS --- */
-        .trade-box-glass {
-            backdrop-filter: blur(2px);
-            -webkit-backdrop-filter: blur(2px);
-            transition: background 0.3s ease, border-color 0.3s ease;
+        .bg-orb-2 {
+            position: absolute; bottom: -15%; right: -10%; width: 60vw; height: 60vw;
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.1) 0%, rgba(241, 245, 249, 0.05) 50%, transparent 70%);
+            border-radius: 50%; filter: blur(80px); animation: float 15s ease-in-out infinite alternate-reverse;
         }
 
-        /* --- UTILS --- */
+        @keyframes float { 0% { transform: translate(0, 0) scale(1); } 50% { transform: translate(2%, 4%) scale(1.02); } 100% { transform: translate(-2%, -3%) scale(0.98); } }
+
+        .card-3d-wrapper { perspective: 2000px; width: 100%; }
+        .card-3d {
+            transform-style: preserve-3d; animation: float-3d 14s ease-in-out infinite;
+            box-shadow: 0 30px 60px -15px rgba(15, 23, 42, 0.08), 0 15px 30px -10px rgba(14, 165, 233, 0.1), inset 0 1px 3px rgba(255, 255, 255, 1);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(241, 245, 249, 0.8) 100%);
+            backdrop-filter: blur(25px); position: relative;
+        }
+        .card-3d::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.7) 25%, transparent 30%);
+            border-radius: inherit; pointer-events: none; z-index: 50; animation: glare 8s infinite linear;
+        }
+
+        @keyframes glare { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        @keyframes float-3d { 0% { transform: translateY(0px) rotateX(1deg) rotateY(-1deg); } 50% { transform: translateY(-8px) rotateX(-0.5deg) rotateY(1.5deg); } 100% { transform: translateY(0px) rotateX(1deg) rotateY(-1deg); } }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        .ticker-wrapper { display: flex; width: max-content; animation: ticker 40s linear infinite; }
         
-        /* Smooth height transitions for mobile responsive flow */
-        .adaptive-main-area {
-            flex: 1 1 auto;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-            overflow-x: hidden;
-            padding-bottom: var(--safe-bottom);
+        /* PREMIUM SCANNER CSS */
+        .scanner-premium-beam {
+            position: absolute; top: 0; bottom: 0; left: 0; width: 25%;
+            background: linear-gradient(to right, transparent, rgba(6, 182, 212, 0.05) 40%, rgba(34, 211, 238, 0.3) 100%);
+            border-right: 2px solid rgba(34, 211, 238, 0.8);
+            box-shadow: 2px 0 15px rgba(34, 211, 238, 0.4);
+            animation: scannerBeamSweep 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            pointer-events: none; z-index: 20;
+        }
+        @keyframes scannerBeamSweep { 0% { transform: translateX(-100%); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateX(400%); opacity: 0; } }
+        @keyframes candleReact {
+            0%, 85%, 100% { opacity: 0.65; filter: brightness(0.9); transform: translateY(0) scaleY(1); }
+            90% { opacity: 1; filter: brightness(1.6) drop-shadow(0 0 4px rgba(34,211,238,0.7)); transform: translateY(-1px) scaleY(1.05); }
+            95% { opacity: 0.9; filter: brightness(1.2); transform: translateY(0) scaleY(1); }
         }
         
-        @media (min-width: 1024px) {
-            .adaptive-main-area { flex-direction: row; overflow: hidden; padding-bottom: 0; }
-            .chart-container-fluid { flex: 1; height: 100%; min-height: 0; }
-            .sidebar-fluid { width: 380px; height: 100%; overflow-y: auto; }
+        .glass-panel { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border-bottom: 1px solid rgba(255, 255, 255, 1); box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03); z-index: 40; }
+        .glass-panel-heavy { background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.7) 100%); backdrop-filter: blur(35px); -webkit-backdrop-filter: blur(35px); border: 1px solid rgba(255, 255, 255, 1); box-shadow: 0 15px 40px -10px rgba(15, 23, 42, 0.08), inset 0 2px 10px rgba(255, 255, 255, 1); }
+        .glass-card { background: linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.6) 100%); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 1); box-shadow: 0 4px 20px -5px rgba(15, 23, 42, 0.04), inset 0 1px 4px rgba(255, 255, 255, 1); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .glass-card:hover { border-color: rgba(226, 232, 240, 1); background: linear-gradient(145deg, rgba(255, 255, 255, 1) 0%, rgba(248, 250, 252, 0.85) 100%); box-shadow: 0 10px 30px -5px rgba(14, 165, 233, 0.1), inset 0 1px 6px rgba(255, 255, 255, 1); transform: translateY(-1px); }
+        .text-gradient { background: linear-gradient(135deg, #1d4ed8, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        @keyframes slideUpFade { 0% { transform: translateY(10px); opacity: 0; } 20% { transform: translateY(0); opacity: 1; } 80% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-10px); opacity: 0; } }
+        .hft-tick { animation: slideUpFade 1.5s ease-out forwards; }
+
+        /* Premium Startup Splash Screen */
+        .author-splash {
+            position: fixed; inset: 0; z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(248, 250, 252, 0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+            animation: splashFadeOut 0.6s ease-in-out 2.2s forwards; pointer-events: auto;
         }
-        @media (max-width: 1023px) {
-            .chart-container-fluid { width: 100%; min-height: 45vh; flex-shrink: 0; }
-            .sidebar-fluid { width: 100%; flex-shrink: 0; }
+        @keyframes splashFadeOut { 0% { opacity: 1; pointer-events: auto; } 100% { opacity: 0; pointer-events: none; } }
+        @keyframes loadingBar { 0% { width: 0%; } 40% { width: 60%; } 100% { width: 100%; } }
+
+        /* BROKER REFERRAL BUTTON & CURSOR */
+        .broker-button-wrap { position: relative; overflow: hidden; border-radius: 22px; width: 100%; }
+        .broker-ref-button {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+            width: 100%; min-height: 78px; padding: 14px 18px; text-decoration: none; color: #ffffff;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.96), rgba(6, 182, 212, 0.92));
+            border: 1px solid rgba(255,255,255,0.42); box-shadow: 0 14px 34px rgba(14,165,233,0.28), inset 0 1px 0 rgba(255,255,255,0.35);
+            backdrop-filter: blur(18px); transition: transform 0.2s ease, box-shadow 0.2s ease;
+            animation: brokerBtnDesktopPress 4s infinite; /* Syncs with cursor click */
         }
+        .broker-ref-button:hover {
+            animation: none; transform: translateY(-1px) scale(1.01);
+            box-shadow: 0 18px 42px rgba(14,165,233,0.38), inset 0 1px 0 rgba(255,255,255,0.42);
+        }
+        .broker-ref-button__small { position: relative; z-index: 2; font-size: 10px; letter-spacing: .22em; text-transform: uppercase; font-weight: 800; opacity: .88; }
+        .broker-ref-button__main { position: relative; z-index: 2; font-size: clamp(17px, 2vw, 24px); line-height: 1; letter-spacing: .04em; text-transform: uppercase; font-weight: 900; }
+        .broker-ref-button__sub { position: relative; z-index: 2; font-size: 13px; font-weight: 700; opacity: .95; }
+        
+        .broker-demo-cursor {
+            position: absolute; right: 15px; bottom: 5px; font-size: 32px; line-height: 1;
+            pointer-events: none; opacity: 0; z-index: 10; filter: drop-shadow(0 4px 8px rgba(0,0,0,.4));
+            animation: brokerCursorMove 4s infinite; transform-origin: top left; color: #fff;
+        }
+
+        @keyframes brokerBtnDesktopPress {
+            0%, 23%, 30%, 100% { transform: scale(1); box-shadow: 0 14px 34px rgba(14,165,233,0.28), inset 0 1px 0 rgba(255,255,255,0.35); }
+            26% { transform: scale(0.96); box-shadow: 0 5px 15px rgba(14,165,233,0.4), inset 0 1px 0 rgba(255,255,255,0.2); }
+        }
+        @keyframes brokerCursorMove {
+            0% { transform: translate(50px, 40px) scale(1); opacity: 0; }
+            15% { transform: translate(0px, 0px) scale(1); opacity: 1; }
+            23% { transform: translate(0px, 0px) scale(1); opacity: 1; }
+            26% { transform: translate(0px, 0px) scale(0.85); opacity: 1; } /* click down */
+            29% { transform: translate(0px, 0px) scale(1); opacity: 1; } /* click release */
+            45% { transform: translate(20px, 20px) scale(1); opacity: 0; }
+            100% { transform: translate(50px, 40px) scale(1); opacity: 0; }
+        }
+        
+        @media (hover: none), (pointer: coarse) { 
+            .broker-demo-cursor { display: none !important; } 
+            .broker-ref-button { animation: brokerBtnMobilePulse 3s ease-in-out infinite !important; }
+        }
+        @keyframes brokerBtnMobilePulse {
+            0%, 100% { box-shadow: 0 10px 25px rgba(14, 165, 233, 0.25), inset 0 1px 0 rgba(255,255,255,0.3); transform: scale(1); }
+            50% { box-shadow: 0 10px 40px rgba(14, 165, 233, 0.6), inset 0 1px 0 rgba(255,255,255,0.6); transform: scale(1.02); }
+        }
+
+        /* TRADE OVERLAY MARKERS, BOXES & RESULT BADGES */
+        .trade-overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 30; }
+        
+        .trade-box {
+            position: absolute; border-radius: 4px; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+            border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 4px 15px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.4);
+            pointer-events: auto; transition: filter 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer;
+        }
+        .trade-box:hover, .chart-pt-entry:hover, .chart-pt-exit:hover, .chart-pt-signal:hover, .chart-result-badge:hover, .chart-arrow-signal:hover { z-index: 50; filter: brightness(1.15); }
+        
+        .trade-box.win.call { background: linear-gradient(180deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.05)); border-color: rgba(16, 185, 129, 0.4); }
+        .trade-box.loss.call { background: linear-gradient(180deg, rgba(244, 63, 94, 0.15), rgba(244, 63, 94, 0.05)); border-color: rgba(244, 63, 94, 0.4); }
+        .trade-box.win.put { background: linear-gradient(180deg, rgba(14, 165, 233, 0.2), rgba(14, 165, 233, 0.05)); border-color: rgba(14, 165, 233, 0.5); }
+        .trade-box.loss.put { background: linear-gradient(180deg, rgba(244, 63, 94, 0.15), rgba(244, 63, 94, 0.05)); border-color: rgba(244, 63, 94, 0.4); }
+        .trade-box.cancelled { background: linear-gradient(180deg, rgba(148, 163, 184, 0.2), rgba(148, 163, 184, 0.05)); border-color: rgba(148, 163, 184, 0.4); }
+        
+        /* Points */
+        .chart-pt-signal, .chart-pt-entry, .chart-pt-exit {
+            position: absolute; border-radius: 50%; pointer-events: auto; cursor: pointer; transform: translate(-50%, -50%);
+        }
+        .chart-pt-signal { width: 6px; height: 6px; background: #0ea5e9; box-shadow: 0 0 10px #0ea5e9; z-index: 35; }
+        .chart-pt-signal.put { background: #f43f5e; box-shadow: 0 0 10px #f43f5e; }
+        
+        .chart-pt-entry { width: 8px; height: 8px; background: #f8fafc; border: 2px solid #3b82f6; box-shadow: 0 0 10px rgba(59,130,246,0.6); z-index: 36; }
+        .chart-pt-exit { width: 8px; height: 8px; background: #f8fafc; border: 2px solid #8b5cf6; box-shadow: 0 0 10px rgba(139,92,246,0.6); z-index: 37; }
+        
+        /* Arrows */
+        .chart-arrow-signal {
+            position: absolute; pointer-events: auto; cursor: pointer; z-index: 34; display: flex; align-items: center; justify-content: center;
+            width: 26px; height: 26px; border-radius: 50%; background: rgba(255,255,255,0.85); backdrop-filter: blur(4px); transition: transform 0.2s;
+        }
+        .chart-arrow-signal:hover { transform: translate(-50%, -50%) scale(1.15) !important; z-index: 100; }
+        .chart-arrow-signal.call { box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); border: 1px solid rgba(16, 185, 129, 0.6); }
+        .chart-arrow-signal.put { box-shadow: 0 4px 12px rgba(244, 63, 94, 0.4); border: 1px solid rgba(244, 63, 94, 0.6); }
+
+        .chart-pt-label {
+            position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+            font-size: 9px; font-weight: 800; color: #0f172a; background: rgba(255,255,255,0.95);
+            padding: 2px 6px; border-radius: 4px; pointer-events: none; opacity: 0; transition: opacity 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(226,232,240,1); white-space: nowrap;
+        }
+        .chart-pt-signal:hover .chart-pt-label, .chart-pt-entry:hover .chart-pt-label, .chart-pt-exit:hover .chart-pt-label { opacity: 1; z-index: 100; }
+
+        /* Outcome Badge */
+        .chart-result-badge {
+            position: absolute; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 800;
+            padding: 3px 6px; border-radius: 6px; color: white; pointer-events: auto; cursor: pointer;
+            white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.25); z-index: 38; opacity: 0.95;
+            transition: transform 0.2s, filter 0.2s;
+        }
+        .chart-result-badge.call { transform: translate(-50%, 15px); }
+        .chart-result-badge.put { transform: translate(-50%, calc(-100% - 15px)); }
+        .chart-result-badge:hover { filter: brightness(1.1); z-index: 100; }
+        .chart-result-badge.win { background: rgba(16, 185, 129, 0.95); border: 1px solid #34d399; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+        .chart-result-badge.loss { background: rgba(244, 63, 94, 0.95); border: 1px solid #fb7185; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+        .chart-result-badge.cancelled { background: rgba(100, 116, 139, 0.95); border: 1px solid #cbd5e1; }
+
+        /* DETAILED HOVER TOOLTIP */
+        .trade-tooltip {
+            position: absolute; z-index: 9999; pointer-events: none;
+            min-width: 240px; padding: 14px 16px; border-radius: 16px; color: #0f172a;
+            background: rgba(255, 255, 255, 0.92); border: 1px solid rgba(226, 232, 240, 1);
+            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255,255,255,1);
+            backdrop-filter: blur(18px); font-size: 12px; font-family: 'Montserrat', sans-serif;
+            transform: translate(-50%, -110%); transition: opacity 0.15s, transform 0.1s;
+        }
+        .trade-tooltip__title { margin-bottom: 8px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 6px; font-family: 'Oswald', sans-serif;}
+        .trade-tooltip__row { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
+        .trade-tooltip__row span { color: rgba(51, 65, 85, .78); font-weight: 500; }
+        .trade-tooltip__row b { color: #0f172a; text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+        .trade-tooltip .positive { color: #059669; }
+        .trade-tooltip .negative { color: #e11d48; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
+        // --- UTILS (Globally Available) ---
+        function safeNumber(value, fallback = 0) {
+            const n = Number(value);
+            return Number.isFinite(n) ? n : fallback;
+        }
+        function formatRub(value) {
+            const n = safeNumber(value, 0);
+            return `${Math.round(n).toLocaleString("ru-RU")} ₽`;
+        }
+        function formatPrice(p) {
+            const num = safeNumber(p, 0);
+            if (num === 0) return '0.00';
+            if (num >= 1000) return num.toFixed(2);
+            if (num >= 10) return num.toFixed(3);
+            if (num >= 1) return num.toFixed(4);
+            return num.toFixed(5);
+        }
+        function formatDateTimeFull(value) {
+            if (!value) return "нет данных";
+            const date = new Date(safeNumber(value, 0) * 1000); 
+            if (Number.isNaN(date.getTime())) return "нет данных";
+            return date.toLocaleString("ru-RU", {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'});
+        }
+
         const { useState, useEffect, useRef, useCallback } = React;
 
-        // Строгая стейт-машина (Startup Flow)
-        const APP_STAGE = {
-            SPLASH: "SPLASH",
-            INIT_SCREEN: "INIT_SCREEN",
-            BOOT: "BOOT",
-            HISTORICAL_SUMMARY: "HISTORICAL_SUMMARY",
-            READY: "READY",
-            LIVE_SCAN: "LIVE_SCAN"
+        // --- APP & PINE SCRIPT EXACT CONFIGURATION (5M/25M) ---
+        const STRATEGY_5M_25M_CONFIG = {
+            mode: "TV_EXACT_5M_25M",
+            signalTimeframe: "5m",
+            chartTimeframe: "5m",
+            expiryMinutes: 25,
+            expiryCandles: 5,
+            preparationDelaySeconds: 3,
+            historicalLookbackHours: 12,
+
+            lookback: 20,
+            atrLen: 14,
+            useChoch: false,
+            chochLookback: 3,
+            chochMode: "Close",
+            confirmOnClose: true,
+
+            minSweepATR: 0.03,
+            minReclaimATR: 0.03,
+            minBodyRatio: 0.10,
+            maxRangeATR: 3.50,
+            requireBodyDir: false,
+            blockDoubleSweep: false,
+            cooldownBars: 1,
+
+            demoBalance: 50000,
+            baseStake: 500,
+            payout: 0.70,
+            martingaleLadder: [500, 1215, 2950, 7165],
+            maxMartingaleSteps: 4,
+            
+            referralUrl: "https://intrade31.bar/311164",
+            authorName: "SLAVA GORDEEV"
         };
 
-        // Иконки
-        const Zap = ({ size = 24, className = "" }) => <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
-        const Activity = ({ size = 24, className = "" }) => <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>;
-        const Radar = ({ size = 24, className = "" }) => <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 5.49A10 10 0 0 0 5.3 19.38"/><path d="M20 8.74A10 10 0 0 1 17.38 20"/><path d="M16 8a6 6 0 0 0-8.5-1.5"/><path d="M7.5 16.5a6 6 0 0 0 9.2-.5"/><path d="M12 12v.01"/></svg>;
-
-        const ASSETS = [{ pair: 'BTC/USDT', symbol: 'BTCUSDT', name: 'Bitcoin' }];
-
-        // --- КОНФИГУРАЦИЯ СТРАТЕГИИ И МАРТИНГЕЙЛА ---
-        const STRATEGY_1M_CONFIG = {
-            NORMAL: { modeId: 'NORMAL', minScore: 60, minSweepAtrRatio: 0.10, minReclaimAtrRatio: 0.12, maxImpulseAtrRatio: 1.50, cooldownCandles: 4, minConfirmBodyRatio: 0.35, maxEntryDriftAtrRatio: 0.25 },
-        };
-        const SESSION_CONFIG = {
-            startingBalance: 10000,
-            baseStake: 100, 
-            payoutPercent: 0.70,
-            martingaleLadder: [100, 250, 625, 1560, 3900]
+        // Strict State Machine
+        const APP_STAGE = { 
+            IDLE: "IDLE", 
+            SPLASH: "SPLASH", 
+            INIT: "INIT", 
+            HISTORICAL_ANALYSIS_RENDER: "HISTORICAL_ANALYSIS_RENDER",
+            HISTORICAL_ANALYSIS_VOICE: "HISTORICAL_ANALYSIS_VOICE",
+            TRANSITION_TO_SCANNER: "TRANSITION_TO_SCANNER",
+            LIVE_SCAN: "LIVE_SCAN" 
         };
 
-        // --- УТИЛИТЫ ---
+        function clamp(val, min, max) {
+            return Math.max(min, Math.min(max, safeNumber(val, 0)));
+        }
+
+        function calculateTradePnl(result, stake, payout = STRATEGY_5M_25M_CONFIG.payout) {
+            const safeStake = safeNumber(stake, STRATEGY_5M_25M_CONFIG.baseStake);
+            if (result === "WIN") return Math.round(safeStake * payout);
+            if (result === "LOSS") return -safeStake;
+            return 0; 
+        }
+
+        function getStakeByMartingaleIndex(index) {
+            const safeIndex = Math.max(0, Math.min(STRATEGY_5M_25M_CONFIG.martingaleLadder.length - 1, safeNumber(index, 0)));
+            return STRATEGY_5M_25M_CONFIG.martingaleLadder[safeIndex];
+        }
+
+        function getNextMartingaleIndex(result, currentIndex) {
+            const safeIndex = safeNumber(currentIndex, 0);
+            if (result === "WIN") return 0;
+            if (result === "LOSS") {
+                if (safeIndex < STRATEGY_5M_25M_CONFIG.martingaleLadder.length - 1) return safeIndex + 1;
+                return 0; 
+            }
+            if (result === "CANCELLED") return 0; 
+            return 0;
+        }
+
+        function evaluateTradeResult(direction, entryPrice, exitPrice) {
+            const entry = Number(entryPrice);
+            const exit = Number(exitPrice);
+            if (!Number.isFinite(entry) || !Number.isFinite(exit)) return "CANCELLED";
+            if (direction === "BUY" || direction === "CALL") return exit > entry ? "WIN" : "LOSS";
+            if (direction === "SELL" || direction === "PUT") return exit < entry ? "WIN" : "LOSS";
+            return "CANCELLED";
+        }
+
+        function createTradeObject({ signalId, direction, signalTime, signalPrice, entryTime, entryPrice, exitTime, exitPrice, result, martingaleStep, stake, cancelReason = "", balanceBefore = 0, entrySource = "live_tick" }) {
+            const pnl = calculateTradePnl(result, stake);
+            const safeBalBefore = safeNumber(balanceBefore, 0);
+            
+            return {
+                tradeId: signalId, 
+                timeframe: STRATEGY_5M_25M_CONFIG.signalTimeframe,
+                expiryMinutes: STRATEGY_5M_25M_CONFIG.expiryMinutes,
+                direction, signalTime, signalPrice, entryTime, entryPrice, entrySource, exitTime, exitPrice, result,
+                martingaleStep: safeNumber(martingaleStep, 0) + 1, 
+                stake: safeNumber(stake, STRATEGY_5M_25M_CONFIG.baseStake), 
+                cancelReason,
+                pnl,
+                balanceBefore: safeBalBefore,
+                balanceAfter: safeBalBefore + pnl
+            };
+        }
+
+        function calculateSessionStats(trades) {
+            const confirmedTrades = trades.filter(t => t.result !== "CANCELLED");
+            const totalPnL = trades.reduce((sum, t) => sum + safeNumber(t.pnl, 0), 0);
+            
+            const stats = {
+                totalSignals: trades.length, 
+                confirmedTrades: confirmedTrades.length,
+                cancelled: trades.filter(t => t.result === "CANCELLED").length, 
+                wins: confirmedTrades.filter(t => t.result === "WIN").length,
+                losses: confirmedTrades.filter(t => t.result === "LOSS").length, 
+                pnl: totalPnL,
+                finalBalance: safeNumber(STRATEGY_5M_25M_CONFIG.demoBalance + totalPnL, STRATEGY_5M_25M_CONFIG.demoBalance)
+            };
+            return stats;
+        }
+
+        function buildTradeTooltipHtml(trade) {
+            const result = trade.result || "нет данных";
+            const pnl = safeNumber(trade.pnl, 0);
+            const pnlText = pnl > 0 ? `+${formatRub(pnl)}` : formatRub(pnl);
+            const directionText = (trade.direction === "CALL" || trade.direction === "BUY") ? "BUY" : "SELL";
+
+            return `
+                <div class="trade-tooltip__title">${directionText}</div>
+                <div class="trade-tooltip__row"><span>Ставка:</span><b>${formatRub(trade.stake)}</b></div>
+                <div class="trade-tooltip__row"><span>Шаг MG:</span><b>${trade.martingaleStep || 1}</b></div>
+                <div class="trade-tooltip__row mt-1 pt-1 border-t border-slate-100"><span>Сигнал:</span><b>${formatDateTimeFull(trade.signalTime)}</b></div>
+                <div class="trade-tooltip__row"><span>Вход:</span><b>${formatDateTimeFull(trade.entryTime)}</b></div>
+                <div class="trade-tooltip__row"><span>Выход:</span><b>${formatDateTimeFull(trade.exitTime)}</b></div>
+                <div class="trade-tooltip__row mt-1 pt-1 border-t border-slate-100"><span>Цена входа:</span><b>${formatPrice(trade.entryPrice)}</b></div>
+                <div class="trade-tooltip__row"><span>Цена выхода:</span><b>${formatPrice(trade.exitPrice)}</b></div>
+                <div class="trade-tooltip__row mt-1 pt-1 border-t border-slate-200"><span>Результат:</span><b class="${result === 'WIN' ? 'positive' : (result === 'LOSS' ? 'negative' : '')}">${result === 'CANCELLED' ? 'ОТМЕНА' : result}</b></div>
+                ${result === 'CANCELLED' 
+                    ? `<div class="trade-tooltip__row"><span>Причина:</span><b class="text-slate-400">${trade.cancelReason || "Сброс"}</b></div>`
+                    : `<div class="trade-tooltip__row"><span>Профит:</span><b class="${pnl > 0 ? 'positive' : 'negative'}">${pnlText}</b></div>`
+                }
+                <div class="trade-tooltip__row border-t border-slate-100 mt-1 pt-1"><span>Баланс после:</span><b>${formatRub(trade.balanceAfter)}</b></div>
+            `;
+        }
+
+        function calcAtrAtIndex(data, idx, period) {
+            if (idx < period) return 0;
+            let sumTR = 0;
+            for (let j = 0; j < period; j++) {
+                const c = data[idx - j];
+                const prevC = data[idx - j - 1];
+                if (!prevC) continue;
+                const tr = Math.max(c.high - c.low, Math.abs(c.high - prevC.close), Math.abs(c.low - prevC.close));
+                sumTR += tr;
+            }
+            return sumTR / period;
+        }
+
+        // Pine Script Translation: EXACT Logic Wrapper & Realistic Gauge Scores
+        function evaluateTVExactSignal(data, idx, cfg, lastSignalIdx = null) {
+            if (idx < cfg.lookback + cfg.atrLen + 2) {
+                return { isBuy: false, isSell: false, reason: "NOT_ENOUGH_DATA", scores: { structure: 50, liquidity: 50, atr: 50, confidence: 50 } };
+            }
+
+            const candle = data[idx];
+            const prevBars = data.slice(idx - cfg.lookback, idx); 
+
+            const upperPool = Math.max(...prevBars.map(c => c.high));
+            const lowerPool = Math.min(...prevBars.map(c => c.low));
+
+            const atr = calcAtrAtIndex(data, idx, cfg.atrLen);
+            const safeRange = Math.max(candle.high - candle.low, 0.0000001);
+            const bodySize = Math.abs(candle.close - candle.open);
+            const bodyRatio = bodySize / safeRange;
+
+            const rawSell = candle.high > upperPool && candle.close < upperPool;
+            const rawBuy = candle.low < lowerPool && candle.close > lowerPool;
+
+            const sweepUpDepth = candle.high - upperPool;
+            const reclaimDown = upperPool - candle.close;
+            const sweepDownDepth = lowerPool - candle.low;
+            const reclaimUp = candle.close - lowerPool;
+
+            const rangeOk = safeRange <= atr * cfg.maxRangeATR;
+            const sellBodyOk = !cfg.requireBodyDir || candle.close < candle.open;
+            const buyBodyOk = !cfg.requireBodyDir || candle.close > candle.open;
+            const doubleSweep = rawSell && rawBuy;
+            const sideOk = !(cfg.blockDoubleSweep && doubleSweep);
+            const cooldownOk = lastSignalIdx === null || (idx - lastSignalIdx) >= cfg.cooldownBars;
+
+            const sellFilters = sweepUpDepth >= atr * cfg.minSweepATR && reclaimDown >= atr * cfg.minReclaimATR && bodyRatio >= cfg.minBodyRatio && rangeOk && sellBodyOk && sideOk && cooldownOk;
+            const buyFilters = sweepDownDepth >= atr * cfg.minSweepATR && reclaimUp >= atr * cfg.minReclaimATR && bodyRatio >= cfg.minBodyRatio && rangeOk && buyBodyOk && sideOk && cooldownOk;
+
+            let sellChoch = true; let buyChoch = true;
+
+            if (cfg.useChoch) {
+                const chochBars = data.slice(idx - cfg.chochLookback, idx);
+                const prevLowestLow = Math.min(...chochBars.map(c => c.low));
+                const prevHighestHigh = Math.max(...chochBars.map(c => c.high));
+                if (cfg.chochMode === "Close") { sellChoch = candle.close < prevLowestLow; buyChoch = candle.close > prevHighestHigh; } 
+                else { sellChoch = candle.low < prevLowestLow; buyChoch = candle.high > prevHighestHigh; }
+            }
+
+            // Real-time Gauge Scores Computation (Clamped)
+            let strScore = 50, liqScore = 50, atrSc = 50, confScore = 50;
+            const sweepD = Math.max(0, rawSell ? sweepUpDepth : rawBuy ? sweepDownDepth : 0);
+            const reclaimD = Math.max(0, rawSell ? reclaimDown : rawBuy ? reclaimUp : 0);
+            
+            strScore = Math.floor(clamp((bodyRatio / cfg.minBodyRatio) * 50, 20, 100));
+            if (atr > 0) {
+                liqScore = Math.floor(clamp(((sweepD / (atr * cfg.minSweepATR)) + (reclaimD / (atr * cfg.minReclaimATR))) * 25, 10, 100));
+                atrSc = Math.floor(clamp(100 - (safeRange / (atr * cfg.maxRangeATR)) * 100, 10, 100));
+            }
+            if (!rawSell && !rawBuy) {
+                liqScore = Math.floor(clamp(liqScore * 0.5, 0, 50)); 
+                strScore = Math.floor(clamp(strScore * 0.8, 0, 80));
+            }
+            confScore = Math.floor(clamp((strScore * 0.3 + liqScore * 0.4 + atrSc * 0.3), 0, 100));
+
+            return {
+                isSell: rawSell && sellFilters && sellChoch,
+                isBuy: rawBuy && buyFilters && buyChoch,
+                rawSell, rawBuy, upperPool, lowerPool, atr, bodyRatio,
+                scores: { structure: strScore, liquidity: liqScore, atr: atrSc, confidence: confScore },
+                reason: rawSell && sellFilters ? "TV_EXACT_SELL" : rawBuy && buyFilters ? "TV_EXACT_BUY" : "FILTERED"
+            };
+        }
+
+        // --- ASYNC VOICE SYSTEM (Strict Sync) ---
+        const speakTextAsync = (text, isEngineActive) => new Promise(resolve => {
+            if (!window.speechSynthesis || !isEngineActive()) {
+                return resolve();
+            }
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = "ru-RU";
+            utterance.rate = 0.95;
+            utterance.pitch = 0.95;
+            
+            // Failsafe if speech API hangs
+            const fallbackTimer = setTimeout(() => { resolve(); }, text.length * 100 + 2000); 
+
+            utterance.onend = () => { clearTimeout(fallbackTimer); setTimeout(resolve, 300); };
+            utterance.onerror = () => { clearTimeout(fallbackTimer); setTimeout(resolve, 300); };
+
+            try { window.speechSynthesis.speak(utterance); } catch(e) { clearTimeout(fallbackTimer); resolve(); }
+        });
+
+        const announceStatsAsync = async (stats, isEngineActive) => {
+            const safeSignals = safeNumber(stats.totalSignals, 0);
+            const safeTrades = safeNumber(stats.confirmedTrades, 0);
+            const safeWins = safeNumber(stats.wins, 0);
+            const safeLosses = safeNumber(stats.losses, 0);
+            const safePnl = safeNumber(stats.pnl, 0);
+            const safeBal = safeNumber(stats.finalBalance, STRATEGY_5M_25M_CONFIG.demoBalance);
+
+            await speakTextAsync(`Запущен режим 5 минут. Экспирация сделки 25 минут. Анализирую историю за последние 12 часов.`, isEngineActive);
+            if (!isEngineActive()) return;
+            await speakTextAsync(`За последние 12 часов стратегия на 5-минутном графике нашла ${safeSignals} сигналов. Исполнено ${safeTrades} сделок.`, isEngineActive);
+            if (!isEngineActive()) return;
+            await speakTextAsync(`Прибыльных ${safeWins}, убыточных ${safeLosses}. Итоговый результат составил ${safePnl} рублей. Итоговый баланс составил ${safeBal} рублей.`, isEngineActive);
+            if (!isEngineActive()) return;
+            await speakTextAsync(`Перехожу к сканированию рынка 5 Минут в реальном времени.`, isEngineActive);
+        };
+
+
+        // --- ICONS ---
+        const Shield = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 4.81 17 6 19 6a1 1 0 0 1 1 1z"/></svg>;
+        const Cpu = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>;
+        const Globe = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>;
+        const Clock = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+        const TrendingUp = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>;
+        const Radar = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 5.49A10 10 0 0 0 5.3 19.38"/><path d="M20 8.74A10 10 0 0 1 17.38 20"/><path d="M16 8a6 6 0 0 0-8.5-1.5"/><path d="M7.5 16.5a6 6 0 0 0 9.2-.5"/><path d="M12 12v.01"/></svg>;
+        const Zap = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
+
+        const ASSETS = [{ pair: 'BTC/USDT', symbol: 'BTCUSDT', name: 'Bitcoin', voiceName: 'биткоин' }];
+        const FALLBACK_BTC_NEWS = [
+          "Крупный капитал формирует пулы ликвидности за локальными экстремумами.",
+          "Паттерн снятия ликвидности подтверждает смену структуры рынка.",
+          "Активирован точный режим TV EXACT 5M (Pine Script Engine)."
+        ];
+
         const ScannerAPI = {
-          async getCandles(symbol, count = 1000, interval = '1m') { 
+          async getCandles(symbol, count = 300, interval = '5m') { 
             const urls = [
-                `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
-                `https://api1.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`
+                `https://api.mexc.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
+                `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`
             ];
             for (let url of urls) {
                 try {
@@ -182,635 +573,1009 @@
                         const data = await response.json();
                         return data.map(d => ({ time: d[0] / 1000, open: parseFloat(d[1]), high: parseFloat(d[2]), low: parseFloat(d[3]), close: parseFloat(d[4]), volume: parseFloat(d[5]) }));
                     }
-                } catch(e) { console.warn("[API] Binance error:", e); continue; }
+                } catch(e) { continue; }
             }
-            throw new Error("API BINANCE НЕДОСТУПЕН");
+            return [];
           }
         };
 
-        function calcLiquidityZones(data, period = 8) {
-            let res = [];
-            for (let i = 0; i < data.length; i++) {
-                if (i < period) { res.push({ time: data[i].time, upper: data[i].high, lower: data[i].low }); continue; }
-                let high = -Infinity, low = Infinity;
-                for (let j = 1; j <= period; j++) { high = Math.max(high, data[i - j].high); low = Math.min(low, data[i - j].low); }
-                res.push({ time: data[i].time, upper: high, lower: low });
-            }
-            return res;
-        }
-
-        function calcATRSeries(data, period = 14) {
-            let res = [];
-            for (let i = 0; i < data.length; i++) {
-                if (i === 0) { res.push({time: data[i].time, value: data[i].high - data[i].low}); continue; }
-                let sumTR = 0, count = 0;
-                for(let j = 0; j < period && (i - j) > 0; j++) {
-                    const c = data[i - j], prevC = data[i - j - 1];
-                    sumTR += Math.max(c.high - c.low, Math.abs(c.high - prevC.close), Math.abs(c.low - prevC.close));
-                    count++;
-                }
-                res.push({time: data[i].time, value: count > 0 ? sumTR / count : 0});
-            }
-            return res;
-        }
-
-        function createMartingaleState(config = SESSION_CONFIG) {
-            return { ladderIndex: 0, currentStake: config.martingaleLadder[0], blocked: false, reason: null };
-        }
-
-        function getTradePnL(result, stake, config = SESSION_CONFIG) {
-            if (result === 'WIN') return Math.round(stake * config.payoutPercent);
-            if (result === 'LOSS') return -stake;
-            return 0;
-        }
-
-        function updateMartingaleAfterTrade(result, state, balance, config = SESSION_CONFIG) {
-            if (result === 'WIN' || result === 'CANCELLED') return createMartingaleState(config);
-            if (result === 'LOSS') {
-                const nextIndex = state.ladderIndex + 1;
-                if (nextIndex >= config.martingaleLadder.length) return createMartingaleState(config);
-                const nextStake = config.martingaleLadder[nextIndex];
-                if (nextStake > balance) return { ladderIndex: 0, currentStake: config.martingaleLadder[0], blocked: true, reason: 'Недостаточно баланса для шага мартингейла' };
-                return { ladderIndex: nextIndex, currentStake: nextStake, blocked: false, reason: null };
-            }
-            return state;
-        }
-
-        function detectLiquiditySweep1M(data, idx, zonesArr, atrArr, config) {
-            if (idx < 2 || !data[idx] || !zonesArr[idx-1]) return { isCall: false, isPut: false, sweepLevel: null };
-            const curr = data[idx], prev = data[idx - 1], zone = zonesArr[idx - 1], atr = atrArr[idx].value || 0.0001;
-
-            const putSweep = (curr.high > zone.upper && curr.close < zone.upper) || (prev.high > zone.upper && prev.close >= zone.upper && curr.close < zone.upper);
-            const callSweep = (curr.low < zone.lower && curr.close > zone.lower) || (prev.low < zone.lower && prev.close <= zone.lower && curr.close > zone.lower);
-
-            let score = 0, isCall = false, isPut = false, sweepLevel = null;
-
-            if (putSweep) {
-                sweepLevel = zone.upper;
-                const sweepCandle = (curr.high > zone.upper && curr.close < zone.upper) ? curr : prev;
-                if ((sweepCandle.high - sweepLevel) >= atr * config.minSweepAtrRatio && (sweepLevel - curr.close) >= atr * config.minReclaimAtrRatio) {
-                    if (Math.abs(curr.close - curr.open) / Math.max(curr.high - curr.low, 0.0001) >= config.minConfirmBodyRatio && curr.close < curr.open) isPut = true;
-                }
-            }
-            if (callSweep && !isPut) {
-                sweepLevel = zone.lower;
-                const sweepCandle = (curr.low < zone.lower && curr.close > zone.lower) ? curr : prev;
-                if ((sweepLevel - sweepCandle.low) >= atr * config.minSweepAtrRatio && (curr.close - sweepLevel) >= atr * config.minReclaimAtrRatio) {
-                    if (Math.abs(curr.close - curr.open) / Math.max(curr.high - curr.low, 0.0001) >= config.minConfirmBodyRatio && curr.close > curr.open) isCall = true;
-                }
-            }
-            return { isCall, isPut, sweepLevel };
-        }
-
-        // --- UI КОМПОНЕНТЫ ---
         const LiveClock = () => {
           const [t, setT] = useState(new Date());
           useEffect(() => { const i = setInterval(() => setT(new Date()), 1000); return () => clearInterval(i); }, []);
-          return <span className="text-slate-300 mono-font text-[clamp(10px,1.5vw,14px)]">{t.toLocaleTimeString('ru-RU')}</span>;
+          return <span className="text-slate-800 text-sm md:text-base mono-font font-bold">{t.toLocaleTimeString('ru-RU')}</span>;
         };
 
-        const CinematicSplash = ({ onComplete }) => {
-            const [active, setActive] = useState(false);
-            
-            useEffect(() => {
-                const t1 = setTimeout(() => setActive(true), 100);
-                const t2 = setTimeout(() => { setActive(false); onComplete(); }, 2500);
-                return () => { clearTimeout(t1); clearTimeout(t2); }
-            }, [onComplete]);
-
-            return (
-                <div className={`cinematic-splash ${active ? 'splash-active opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                    <h1 className="cinematic-text text-center px-4 w-full break-words">SLAVA GORDEEV</h1>
-                </div>
-            );
-        };
-
-        const ResponsiveScanner = ({ data }) => {
-          if (!data || data.length < 2) return <div className="w-full h-full flex items-center justify-center text-slate-500 font-bold animate-pulse text-sm lg:text-base">ОЖИДАНИЕ КЛАСТЕРОВ...</div>;
-          
+        // Premium Cinematic Scanner
+        const PremiumScannerChart = ({ data, scanPhase, isScanning }) => {
+          if (!data || !Array.isArray(data) || data.length < 2) return <div className="w-full h-full flex items-center justify-center opacity-60 text-lg tracking-widest text-slate-500 font-bold animate-pulse oswald-font">ЗАГРУЗКА...</div>;
           const chartData = data.slice(-40); 
-          const min = Math.min(...chartData.map(d => d.low));
-          const max = Math.max(...chartData.map(d => d.high));
-          const range = (max - min) || 1;
+          const min = Math.min(...chartData.map(d => d.low)); const max = Math.max(...chartData.map(d => d.high));
+          const maxVol = Math.max(...chartData.map(d => d.volume || 1)); const range = (max - min) || 1;
+          const width = 200, height = 80; const candleWidth = width / chartData.length;
 
           return (
-            <div className="w-full h-full relative overflow-hidden bg-slate-900/50 rounded-xl border border-slate-700/50 shadow-inner flex">
-                <svg className="w-full h-full relative z-10" viewBox={`0 0 400 100`} preserveAspectRatio="none">
+            <div className="relative w-full h-full bg-slate-800/5 rounded-[1.25rem] overflow-hidden border border-slate-200/50 shadow-[inset_0_0_20px_rgba(0,0,0,0.02)]">
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(14,165,233,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(14,165,233,0.05)_1px,transparent_1px)] bg-[size:10px_10px] pointer-events-none" />
+                
+                <svg className="relative w-full h-full opacity-90 z-10 overflow-visible" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
                   {chartData.map((c, i) => {
-                    const isUp = c.close >= c.open;
-                    const candleW = 400 / chartData.length;
-                    const x = i * candleW;
-                    const w = candleW * 0.5;
-                    const oY = 100 - ((c.open - min) / range) * 100;
-                    const cY = 100 - ((c.close - min) / range) * 100;
-                    const hY = 100 - ((c.high - min) / range) * 100;
-                    const lY = 100 - ((c.low - min) / range) * 100;
+                    const isUp = c.close >= c.open; const x = i * candleWidth; const w = candleWidth * 0.7;
+                    const oY = height - ((c.open - min) / range) * height; const cY = height - ((c.close - min) / range) * height;
+                    const hY = height - ((c.high - min) / range) * height; const lY = height - ((c.low - min) / range) * height;
+                    const volH = ((c.volume || 0) / maxVol) * 15; const volY = height - volH;
                     
-                    const color = isUp ? "#38bdf8" : "#f43f5e";
-                    const isLast = i === chartData.length - 1;
+                    const animDelay = (i / chartData.length) * 2.5; 
+                    const candleStyle = isScanning ? { animation: 'candleReact 2.5s infinite linear', animationDelay: `${animDelay}s` } : {};
 
                     return (
-                      <g key={i} className={isLast ? "animate-pulse" : "opacity-80"}>
-                        <line x1={x + w/2} y1={hY} x2={x + w/2} y2={lY} stroke={color} strokeWidth="0.5" opacity={isLast? 1 : 0.4} />
-                        <rect x={x} y={Math.min(oY, cY)} width={w} height={Math.max(Math.abs(cY - oY), 0.5)} fill={isUp ? "transparent" : color} stroke={color} strokeWidth="0.5" rx="0.5" />
+                      <g key={i} style={candleStyle}>
+                        <line x1={x + w / 2} y1={hY} x2={x + w / 2} y2={lY} stroke={isUp ? "#38bdf8" : "#94a3b8"} strokeWidth="1" />
+                        <rect x={x} y={isUp ? cY : oY} width={w} height={Math.max(Math.abs(cY - oY), 1.2)} fill={isUp ? "#38bdf8" : "transparent"} stroke={isUp ? "none" : "#94a3b8"} strokeWidth="1" rx="0.5" />
+                        <rect x={x} y={volY} width={w} height={volH} fill={isUp ? "rgba(14, 165, 233, 0.15)" : "rgba(148, 163, 184, 0.15)"} />
                       </g>
                     );
                   })}
                 </svg>
-                <div className="scanner-beam-vertical"></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-sky-900/10 to-transparent pointer-events-none mix-blend-screen"></div>
+                
+                {isScanning && (
+                    <div className="scanner-premium-beam">
+                        <div className="absolute bottom-2 right-1 text-[6px] md:text-[7px] text-cyan-500 font-mono font-bold tracking-widest drop-shadow-sm">
+                           CHK_{Math.floor(Math.random()*99)}
+                        </div>
+                    </div>
+                )}
+                
+                <div className="absolute top-3 left-4 flex flex-col gap-0.5 z-20">
+                   <span className="text-[8px] md:text-[9px] text-cyan-600 font-mono tracking-widest uppercase opacity-90 font-bold drop-shadow-sm">
+                      {scanPhase}
+                   </span>
+                   <span className="text-[7px] md:text-[8px] text-slate-400 font-mono tracking-widest uppercase">
+                      {data.length} BARS SYNCED • 5M INTERVAL
+                   </span>
+                </div>
             </div>
           );
         };
 
+        const Speedometer = ({ value, label, colorHex = "#0284c7", glow = false }) => {
+          const safeValue = isNaN(value) ? 50 : Math.max(0, Math.min(100, value));
+          const angle = -90 + (safeValue / 100) * 180;
+          const circumference = Math.PI * 40; const strokeDashoffset = circumference - (safeValue / 100) * circumference;
+
+          return (
+            <div className="flex flex-col items-center flex-1 relative px-0.5 group pt-1">
+              <svg viewBox="0 0 100 55" className="w-10 h-6 md:w-12 md:h-7 overflow-visible mt-1">
+                <defs><filter id={`glow-${label.replace(/\s+/g, '')}`}><feGaussianBlur stdDeviation="3.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+                {[0, 25, 50, 75, 100].map(tick => {
+                   const a = -Math.PI + (tick/100)*Math.PI;
+                   return <line key={tick} x1={50 + 36 * Math.cos(a)} y1={50 + 36 * Math.sin(a)} x2={50 + 44 * Math.cos(a)} y2={50 + 44 * Math.sin(a)} stroke="rgba(148, 163, 184, 0.4)" strokeWidth="2" strokeLinecap="round" />
+                })}
+                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="rgba(226, 232, 240, 1)" strokeWidth="5" strokeLinecap="round" />
+                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke={colorHex} strokeWidth="5" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)' }} filter={glow ? `url(#glow-${label.replace(/\s+/g, '')})` : "none"} />
+                <g style={{ transform: `rotate(${angle}deg)`, transformOrigin: '50px 50px', transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)' }}><polygon points="48,50 52,50 50,12" fill={colorHex} /><circle cx="50" cy="50" r="6" fill={colorHex} /><circle cx="50" cy="50" r="2.5" fill="#ffffff" /></g>
+              </svg>
+              <div className={`text-base md:text-lg mt-1.5 font-black leading-none oswald-font ${glow ? 'text-cyan-600 drop-shadow-[0_0_8px_rgba(6,182,212,0.3)]' : 'text-slate-700'}`} style={{color: glow ? colorHex : ''}}>{Math.round(safeValue)}</div>
+              <div className="text-[8px] md:text-[9px] text-slate-400 tracking-widest leading-none text-center font-bold mt-1 uppercase whitespace-nowrap">{label}</div>
+            </div>
+          );
+        };
+        
+        const VolumetricArrow = ({ type }) => {
+          const isUp = type === 'CALL';
+          return (
+            <div className="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center">
+               <svg viewBox="0 0 24 24" className={`w-full h-full fill-current ${isUp ? 'text-[#0ea5e9] drop-shadow-[0_5px_15px_rgba(14,165,233,0.4)]' : 'text-[#f43f5e] drop-shadow-[0_5px_15px_rgba(244,63,94,0.4)]'}`}>
+                  <path d={isUp ? "M12 2l-10 11h7v9h6v-9h7z" : "M12 22l10-11h-7v-9h-6v9h-7z"} />
+               </svg>
+            </div>
+          );
+        };
+
+        const HftTape = ({ price }) => {
+          const [ticks, setTicks] = useState([]);
+          const priceRef = useRef(price);
+          useEffect(() => { priceRef.current = price; }, [price]);
+          useEffect(() => {
+            const int = setInterval(() => {
+                if (!priceRef.current) return;
+                const isBuy = Math.random() > 0.5;
+                const offset = (Math.random() * 2 - 1);
+                // Safe formatting locally
+                const p = priceRef.current + offset;
+                const tickPrice = (!p && p !== 0) ? '0.00' : (p >= 1000 ? p.toFixed(2) : p.toFixed(4));
+                
+                setTicks(prev => [{id: Date.now(), buy: isBuy, amt: (Math.random() * 2 + 0.1).toFixed(2), price: tickPrice}, ...prev].slice(0, 4));
+            }, 600);
+            return () => clearInterval(int);
+          }, []);
+          return (
+             <div className="flex flex-col gap-1 w-[85px] md:w-[95px] pl-2 border-l border-slate-200/50 overflow-hidden justify-end pb-1 h-full shrink-0">
+                {ticks.map(t => (
+                    <div key={t.id} className={`hft-tick text-[9px] md:text-[10px] font-bold mono-font flex justify-between w-full ${t.buy ? 'text-emerald-500' : 'text-rose-500'}`}>
+                        <span className="opacity-80 text-slate-500">{t.price.slice(-2)}</span><span>{t.buy ? '▲' : '▼'}{t.amt}</span>
+                    </div>
+                ))}
+             </div>
+          )
+        };
+
         const App = () => {
-          const [appStage, setAppStage] = useState(APP_STAGE.SPLASH); 
-          const [viewMode, setViewMode] = useState('SCREENER'); 
-          
-          const [sparklines, setSparklines] = useState({});
-          const [logs, setLogs] = useState([]);
-          const [statusText, setStatusText] = useState('ОЖИДАНИЕ ЗАПУСКА');
-          
-          const [sessionData, setSessionData] = useState({
-              balance: SESSION_CONFIG.startingBalance, stake: SESSION_CONFIG.baseStake, step: 0, pnl: 0, wins: 0, losses: 0, cancels: 0, totalSignals: 0
-          });
-          
+          // --- REFS DECLARATION ---
           const chartContainerRef = useRef(null);
-          const tradeBoxesContainerRef = useRef(null);
+          const overlayRef = useRef(null);
           const chartInstance = useRef(null);
           const candleSeries = useRef(null);
-          const tradesRef = useRef([]); 
-          
+          const extraSeriesRef = useRef([]); 
           const audioCtx = useRef(null);
           const engineActive = useRef(false);
+          const currentPrice = useRef(null);
+          const markersRef = useRef([]); 
+          const tradesHistoryRef = useRef([]);
+          const lastChartTimeRef = useRef(0);
+          const fullNewsPool = useRef([...FALLBACK_BTC_NEWS]);
+          const logsContainerRef = useRef(null);
 
-          // Диагностика состояний
+          // --- STATE DECLARATION ---
+          const [appStage, setAppStage] = useState(APP_STAGE.IDLE);
+          const [appPhase, setAppPhase] = useState('ОЖИДАНИЕ ЗАПУСКА...');
+          const [viewMode, setViewMode] = useState('SCREENER'); 
+          const [asset, setAsset] = useState(ASSETS[0]);
+          const [sparklines, setSparklines] = useState({});
+          const [signal, setSignal] = useState(null);
+          const [countdown, setCountdown] = useState(null);
+          const [logs, setLogs] = useState([]);
+          const [metrics, setMetrics] = useState({ structure: 50, liquidity: 50, filterLevel: 50, smartMoney: 50 });
+          const [newsHeadlines, setNewsHeadlines] = useState(["ОБНОВЛЕНИЕ ДАННЫХ BTC..."]);
+          const [sessionStats, setSessionStats] = useState({
+              totalSignals: 0, confirmedTrades: 0, cancelled: 0, wins: 0, losses: 0, pnl: 0, finalBalance: STRATEGY_5M_25M_CONFIG.demoBalance
+          });
+          const [statusColorClass, setStatusColorClass] = useState('text-slate-800');
+          const [hoveredTooltip, setHoveredTooltip] = useState(null);
+          const [htmlTooltipHtml, setHtmlTooltipHtml] = useState("");
+
+          const appStageRef = useRef(appStage);
+          const splashDoneRef = useRef(false);
+
           useEffect(() => {
-              console.log("[STATE MACHINE] Transitioned to:", appStage);
+              appStageRef.current = appStage;
           }, [appStage]);
 
-          // --- СИНХРОНИЗИРОВАННАЯ ОЗВУЧКА ---
-          const speechQueueRef = useRef([]);
-          const isSpeakingRef = useRef(false);
+          // --- SPLASH SCREEN TIMERS ---
+          useEffect(() => {
+              if (appStage === APP_STAGE.SPLASH) {
+                  if (splashDoneRef.current) return;
+                  splashDoneRef.current = true;
 
-          const processSpeechQueue = useCallback(() => {
-              if (!window.speechSynthesis || isSpeakingRef.current || speechQueueRef.current.length === 0) return;
-              const nextItem = speechQueueRef.current.shift();
-              
-              isSpeakingRef.current = true;
-              const utterance = new SpeechSynthesisUtterance(nextItem.text);
-              utterance.lang = 'ru-RU'; utterance.rate = 0.95; utterance.pitch = 0.95;
+                  const timer = setTimeout(() => {
+                      setAppStage(APP_STAGE.INIT);
+                  }, 2800); 
 
-              let resolved = false;
-              const finish = () => {
-                  if (resolved) return; 
-                  resolved = true;
-                  isSpeakingRef.current = false;
-                  if (nextItem.resolve) nextItem.resolve();
-                  setTimeout(processSpeechQueue, 200);
-              };
-              
-              utterance.onend = finish; 
-              utterance.onerror = finish;
-              
-              try { 
-                  window.speechSynthesis.speak(utterance); 
-              } catch (e) { 
-                  console.error("[SPEECH] Speak error:", e);
-                  finish(); 
+                  const failSafe = setTimeout(() => {
+                      if (appStageRef.current === APP_STAGE.SPLASH) setAppStage(APP_STAGE.INIT);
+                  }, 4500);
+
+                  return () => { clearTimeout(timer); clearTimeout(failSafe); };
               }
-          }, []);
+          }, [appStage]);
 
-          const enqueueSpeech = useCallback((text) => {
-              return new Promise(resolve => {
-                  if (!window.speechSynthesis) { resolve(); return; }
+          useEffect(() => {
+              if (appStage === APP_STAGE.INIT && !engineActive.current) {
+                  runTerminalEngine();
+              }
+          }, [appStage]);
+
+          // Redraw trade boxes & custom markers overlay
+          const redrawOverlay = useCallback(() => {
+              if (!chartInstance.current || !candleSeries.current || !overlayRef.current) return;
+              const chart = chartInstance.current;
+              const series = candleSeries.current;
+              overlayRef.current.innerHTML = '';
+
+              tradesHistoryRef.current.forEach(t => {
+                  if (!t.entryTime || !t.exitTime || !t.signalTime) return;
                   
-                  // Защитный таймер (Fallback timeout), чтобы приложение не зависло навсегда
-                  const maxDuration = Math.max(3000, text.length * 100);
-                  const safetyTimer = setTimeout(() => {
-                      console.warn("[SPEECH] Fallback timer triggered for:", text);
-                      resolve();
-                  }, maxDuration);
+                  const xSig = chart.timeScale().timeToCoordinate(t.signalTime);
+                  const xEnt = chart.timeScale().timeToCoordinate(t.entryTime);
+                  const xEx = chart.timeScale().timeToCoordinate(t.exitTime);
 
-                  speechQueueRef.current.push({ 
-                      text, 
-                      resolve: () => {
-                          clearTimeout(safetyTimer);
-                          resolve();
-                      } 
+                  const ySig = series.priceToCoordinate(t.signalPrice);
+                  const yEnt = series.priceToCoordinate(t.entryPrice);
+                  const yEx = series.priceToCoordinate(t.exitPrice);
+
+                  if (xEnt === null || xEx === null || yEnt === null || yEx === null) return;
+
+                  // 1. Transparent Box
+                  const yTop = Math.min(yEnt, yEx) - 15; 
+                  const yBot = Math.max(yEnt, yEx) + 15;
+                  const boxWidth = Math.max(8, Math.abs(xEx - xEnt));
+                  
+                  const box = document.createElement("div");
+                  const isCall = t.direction === "CALL" || t.direction === "BUY";
+                  const isWin = t.result === 'WIN';
+                  const isCancelled = t.result === 'CANCELLED';
+                  const resClass = isCancelled ? 'cancelled' : (isWin ? 'win' : 'loss');
+                  const dirClass = isCall ? 'call' : 'put';
+                  
+                  box.className = `trade-box ${resClass} ${dirClass}`;
+                  box.style.left = `${Math.min(xEnt, xEx)}px`; 
+                  box.style.top = `${yTop}px`;
+                  box.style.width = `${boxWidth}px`; 
+                  box.style.height = `${Math.max(16, yBot - yTop)}px`;
+                  
+                  // 2. Entry Point
+                  const entryPt = document.createElement("div");
+                  entryPt.className = `chart-pt-entry`;
+                  entryPt.style.left = `${xEnt}px`; 
+                  entryPt.style.top = `${yEnt}px`;
+                  entryPt.innerHTML = `<span class="chart-pt-label">ВХОД</span>`;
+
+                  // 3. Exit Point
+                  const exitPt = document.createElement("div");
+                  exitPt.className = `chart-pt-exit`;
+                  exitPt.style.left = `${xEx}px`; 
+                  exitPt.style.top = `${yEx}px`;
+                  exitPt.innerHTML = `<span class="chart-pt-label">ВЫХОД</span>`;
+
+                  // 4. Result Badge (Outcome)
+                  const pnlValue = safeNumber(t.pnl, 0);
+                  const pnlText = isCancelled ? '' : (pnlValue > 0 ? `+${formatRub(pnlValue)}` : `${formatRub(pnlValue)}`);
+                  const dirText = isCall ? "BUY" : "SELL";
+                  const resText = isCancelled ? 'ОТМЕНА' : `${isWin ? 'WIN' : 'LOSS'} | ${dirText} ${pnlText}`;
+                  
+                  const resBadge = document.createElement("div");
+                  resBadge.className = `chart-result-badge ${isCancelled ? 'cancelled' : (isWin ? 'win' : 'loss')} ${dirClass}`;
+                  resBadge.style.left = `${xEx}px`;
+                  resBadge.style.top = `${yEx}px`; 
+                  resBadge.innerHTML = resText;
+
+                  // Tooltip bindings
+                  const tooltipContent = buildTradeTooltipHtml(t);
+                  const showTooltip = () => {
+                      setHtmlTooltipHtml(tooltipContent);
+                      setHoveredTooltip({ x: xEnt + boxWidth / 2, y: yTop - 10 });
+                  };
+                  const hideTooltip = () => setHoveredTooltip(null);
+                  
+                  const elements = [box, entryPt, exitPt, resBadge];
+                  
+                  // 5. Arrow Signal Element
+                  if (xSig !== null && ySig !== null) {
+                      const arrowEl = document.createElement("div");
+                      arrowEl.className = `chart-arrow-signal ${isCall ? 'call' : 'put'}`;
+                      arrowEl.style.left = `${xSig}px`; 
+                      // Place arrow slightly away from the candle close price to not overlap it heavily
+                      const yOffset = isCall ? 20 : -20;
+                      arrowEl.style.top = `calc(${ySig}px + ${yOffset}px)`;
+                      arrowEl.innerHTML = isCall 
+                        ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>`
+                        : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>`;
+                      
+                      const sigPt = document.createElement("div");
+                      sigPt.className = `chart-pt-signal ${!isCall ? 'put' : ''}`;
+                      sigPt.style.left = `${xSig}px`; 
+                      sigPt.style.top = `${ySig}px`;
+                      
+                      elements.push(arrowEl);
+                      elements.push(sigPt);
+                      
+                      overlayRef.current.appendChild(arrowEl);
+                      overlayRef.current.appendChild(sigPt);
+                  }
+
+                  elements.forEach(el => {
+                      el.onmouseenter = showTooltip;
+                      el.onmouseleave = hideTooltip;
+                      el.onclick = () => { showTooltip(); setTimeout(hideTooltip, 5000); };
                   });
-                  processSpeechQueue();
+                  
+                  overlayRef.current.appendChild(box);
+                  overlayRef.current.appendChild(entryPt);
+                  overlayRef.current.appendChild(exitPt);
+                  overlayRef.current.appendChild(resBadge);
               });
-          }, [processSpeechQueue]);
-
-          const addLog = useCallback((msg) => {
-              const time = new Date().toLocaleTimeString('ru-RU', {hour12: false});
-              setLogs(p => [`[${time}] ${msg}`, ...p].slice(0, 30));
           }, []);
 
-          // --- CHART & OVERLAYS SYNC (RESPONSIVE) ---
           useEffect(() => {
-            if (appStage === APP_STAGE.SPLASH || appStage === APP_STAGE.INIT_SCREEN) return;
-            let animationFrameId;
-
-            const syncOverlays = () => {
-                if (chartInstance.current && candleSeries.current && tradeBoxesContainerRef.current) {
-                    const timeScale = chartInstance.current.timeScale();
-                    const series = candleSeries.current;
-                    let html = '';
-
-                    tradesRef.current.forEach(trade => {
-                        let sigX = null, entX = null, extX = null;
-                        try {
-                            if (trade.signalTime) sigX = timeScale.timeToCoordinate(trade.signalTime);
-                            if (trade.entryTime) entX = timeScale.timeToCoordinate(trade.entryTime);
-                            if (trade.exitTime) extX = timeScale.timeToCoordinate(trade.exitTime);
-                        } catch (e) {}
-
-                        if (sigX === null) return;
-                        if (entX === null) entX = sigX + 10;
-                        if (extX === null && trade.exitTime) extX = timeScale.timeToCoordinate(trade.exitTime);
-                        if (extX === null) extX = entX + (trade.result === 'CANCELLED' ? 10 : 50);
-
-                        const boxLeft = Math.min(sigX, entX);
-                        const boxRight = extX;
-                        const boxWidth = Math.max(boxRight - boxLeft, 2);
-
-                        const pad = (trade.maxHigh - trade.minLow) * 0.1;
-                        const topY = series.priceToCoordinate(trade.maxHigh + pad);
-                        const bottomY = series.priceToCoordinate(trade.minLow - pad);
-                        if (topY === null || bottomY === null) return;
-                        const boxHeight = Math.max(bottomY - topY, 4);
-
-                        let color = '148, 163, 184'; // Gray
-                        if (trade.result === 'WIN') color = '16, 185, 129'; 
-                        if (trade.result === 'LOSS') color = '244, 63, 94'; 
-
-                        trade.screenBox = { left: boxLeft, right: boxRight, top: topY, bottom: bottomY };
-
-                        html += `<div class="trade-box-glass absolute border rounded-sm pointer-events-none" 
-                                      style="left:${boxLeft}px; top:${topY}px; width:${boxWidth}px; height:${boxHeight}px; 
-                                             background:rgba(${color},0.15); border-color:rgba(${color},0.6); 
-                                             box-shadow: 0 0 10px rgba(${color}, 0.1);">`;
-                        html += `<div class="absolute top-0 bottom-0 border-l border-dashed border-slate-400 opacity-50" style="left:${sigX - boxLeft}px"></div>`;
-                        html += `</div>`;
-                    });
-                    tradeBoxesContainerRef.current.innerHTML = html;
-                }
-                animationFrameId = requestAnimationFrame(syncOverlays);
-            };
-
-            syncOverlays();
-            return () => cancelAnimationFrame(animationFrameId);
-          }, [appStage, viewMode]);
-
-          // Hover Tooltip
-          useEffect(() => {
-              if (appStage === APP_STAGE.SPLASH || appStage === APP_STAGE.INIT_SCREEN || !chartInstance.current) return;
-              
-              const tooltip = document.getElementById('trade-tooltip');
-              if (!tooltip) return;
-
-              const handleCrosshairMove = (param) => {
-                  if (!param.point || !param.time) { tooltip.style.opacity = '0'; return; }
-
-                  const x = param.point.x;
-                  const y = param.point.y;
-
-                  const hovered = tradesRef.current.find(t => t.screenBox && x >= t.screenBox.left && x <= t.screenBox.right && y >= t.screenBox.top && y <= t.screenBox.bottom);
-
-                  if (hovered) {
-                      const isWin = hovered.result === 'WIN';
-                      const isCanc = hovered.result === 'CANCELLED';
-                      let headColor = 'text-slate-300';
-                      if (isWin) headColor = 'text-emerald-400';
-                      if (hovered.result === 'LOSS') headColor = 'text-rose-400';
-
-                      tooltip.innerHTML = `
-                          <div class="font-black ${headColor} border-b border-slate-600 pb-1 mb-2 tracking-widest text-[10px] uppercase">${hovered.direction} • ${hovered.result}</div>
-                          <div class="flex justify-between gap-4 text-[9px]"><span class="text-slate-400">Сигнал:</span> <span class="font-mono text-white">${new Date(hovered.signalTime*1000).toLocaleTimeString()}</span></div>
-                          ${!isCanc ? `
-                          <div class="flex justify-between gap-4 text-[9px] mt-1"><span class="text-slate-400">Вход:</span> <span class="font-mono text-white">${hovered.entryPrice ? hovered.entryPrice.toFixed(2) : '-'}</span></div>
-                          <div class="flex justify-between gap-4 text-[9px] mt-1"><span class="text-slate-400">Выход:</span> <span class="font-mono text-white">${hovered.exitPrice ? hovered.exitPrice.toFixed(2) : '-'}</span></div>
-                          <div class="flex justify-between gap-4 text-[9px] mt-2 pt-1 border-t border-slate-700"><span class="text-slate-400">Ставка (Шаг ${hovered.martingaleStep}):</span> <span class="font-mono text-white">${hovered.stake} ₽</span></div>
-                          <div class="flex justify-between gap-4 text-[9px] mt-1"><span class="text-slate-400">PnL:</span> <span class="font-mono ${hovered.pnl > 0 ? 'text-emerald-400' : 'text-rose-400'} font-bold">${hovered.pnl > 0 ? '+' : ''}${hovered.pnl} ₽</span></div>
-                          ` : `<div class="text-[9px] text-rose-300 mt-1">Отмена по фильтру 3 сек</div>`}
-                      `;
-                      const tooltipWidth = 150;
-                      let leftPos = x + 15;
-                      if (leftPos + tooltipWidth > window.innerWidth - 40) leftPos = x - tooltipWidth - 15;
-                      
-                      tooltip.style.left = `${leftPos}px`;
-                      tooltip.style.top = `${Math.max(10, y - 10)}px`;
-                      tooltip.style.opacity = '1';
-                  } else {
-                      tooltip.style.opacity = '0';
+              if (chartInstance.current) {
+                  chartInstance.current.timeScale().subscribeVisibleLogicalRangeChange(redrawOverlay);
+                  chartInstance.current.timeScale().subscribeSizeChange(redrawOverlay);
+                  chartInstance.current.timeScale().subscribeVisibleLogicalRangeChange(() => setHoveredTooltip(null));
+              }
+              return () => {
+                  if (chartInstance.current) {
+                      chartInstance.current.timeScale().unsubscribeVisibleLogicalRangeChange(redrawOverlay);
+                      chartInstance.current.timeScale().unsubscribeSizeChange(redrawOverlay);
                   }
               };
+          }, [redrawOverlay]);
 
-              chartInstance.current.subscribeCrosshairMove(handleCrosshairMove);
-              return () => { if(chartInstance.current) chartInstance.current.unsubscribeCrosshairMove(handleCrosshairMove); }
-          }, [appStage, viewMode]);
+          const fetchNews = async () => {
+              try {
+                  const urls = ['https://api.rss2json.com/v1/api.json?rss_url=https://forklog.com/feed/'];
+                  let btcItems = [];
+                  for(let u of urls) {
+                      let res = await fetch(u).catch(()=>null);
+                      if(res && res.ok) {
+                          let data = await res.json();
+                          if (data && data.items) btcItems = [...btcItems, ...data.items.filter(item => /биткоин|btc|bitcoin/i.test(item.title)).map(item => item.title.replace(/<\/?[^>]+(>|$)/g, "").trim())];
+                      }
+                  }
+                  if (btcItems.length > 0) {
+                      btcItems = [...new Set(btcItems)]; fullNewsPool.current = btcItems; setNewsHeadlines(btcItems);
+                  } else { fullNewsPool.current = [...FALLBACK_BTC_NEWS]; setNewsHeadlines(FALLBACK_BTC_NEWS); }
+              } catch (error) { fullNewsPool.current = [...FALLBACK_BTC_NEWS]; setNewsHeadlines(FALLBACK_BTC_NEWS); }
+          };
 
+          useEffect(() => {
+            if(appStage !== APP_STAGE.IDLE && appStage !== APP_STAGE.SPLASH) return; // ONLY run randomizer in IDLE
+            const interval = setInterval(() => {
+                setMetrics(prev => ({
+                    ...prev,
+                    structure: prev.structure > 0 ? Math.max(0, Math.min(100, prev.structure + (Math.random() * 4 - 2))) : 50,
+                    liquidity: Math.max(0, Math.min(100, prev.liquidity + (Math.random() - 0.5) * 4)),
+                    filterLevel: Math.max(20, Math.min(80, prev.filterLevel + (Math.random() - 0.5) * 6)),
+                    smartMoney: 50
+                }));
+            }, 1000);
+            return () => clearInterval(interval);
+          }, [appStage]);
+
+          useEffect(() => {
+              const loadSparklines = async () => {
+                  const data = await ScannerAPI.getCandles('BTCUSDT', 50, '5m'); 
+                  if (data && data.length > 0) { setSparklines({'BTCUSDT': data}); currentPrice.current = data[data.length - 1].close; }
+              };
+              loadSparklines();
+          }, []);
+
+          useEffect(() => { fetchNews(); const newsInterval = setInterval(fetchNews, 20 * 60 * 1000); return () => clearInterval(newsInterval); }, []);
+
+          const addLog = (msg, isAi = false) => {
+            const prefix = isAi ? 'SMC PINE:' : 'СИСТЕМА:';
+            setLogs(p => [`${prefix} ${msg}`, ...p].slice(0, 5)); 
+          };
+
+          const playSound = (type) => {
+            if (!audioCtx.current) return; const ctx = audioCtx.current;
+            if (ctx.state === 'suspended') ctx.resume();
+            const playTone = (freq, oscType, dur, vol, delay = 0) => {
+                try {
+                    const o = ctx.createOscillator(); const g = ctx.createGain(); o.type = oscType;
+                    o.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+                    g.gain.setValueAtTime(0, ctx.currentTime + delay);
+                    g.gain.linearRampToValueAtTime(vol, ctx.currentTime + delay + 0.02);
+                    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
+                    o.connect(g); g.connect(ctx.destination);
+                    o.start(ctx.currentTime + delay); o.stop(ctx.currentTime + delay + dur);
+                } catch (e) {}
+            };
+            if (type === 'scan') playTone(1200 + Math.random()*300, 'sine', 0.03, 0.005);
+            if (type === 'found') { playTone(600, 'triangle', 0.1, 0.03); playTone(800, 'triangle', 0.1, 0.03, 0.1); }
+            if (type === 'start') { playTone(523.25, 'sine', 0.4, 0.03); playTone(659.25, 'sine', 0.5, 0.03, 0.1); playTone(783.99, 'sine', 0.6, 0.04, 0.2); }
+            if (type === 'win') { playTone(523.25, 'triangle', 0.4, 0.04); playTone(659.25, 'triangle', 0.5, 0.04, 0.1); playTone(783.99, 'triangle', 0.8, 0.05, 0.2); }
+            if (type === 'loss') { playTone(300, 'sawtooth', 0.4, 0.03); playTone(250, 'sawtooth', 0.6, 0.04, 0.2); }
+            if (type === 'cancel') { playTone(400, 'square', 0.1, 0.04); playTone(300, 'square', 0.2, 0.04, 0.15); }
+          };
 
           const initChart = async () => {
-            if (!chartContainerRef.current || chartInstance.current) return;
-            const mainChart = window.LightweightCharts.createChart(chartContainerRef.current, {
-                autoSize: true,
-                layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#cbd5e1', fontFamily: 'JetBrains Mono', fontSize: 10 },
-                grid: { vertLines: { color: 'rgba(51, 65, 85, 0.3)' }, horzLines: { color: 'rgba(51, 65, 85, 0.3)' } },
-                timeScale: { borderVisible: false, timeVisible: true }
-            });
-            candleSeries.current = mainChart.addCandlestickSeries({ upColor: '#38bdf8', downColor: '#f43f5e', borderVisible: false, wickUpColor: '#38bdf8', wickDownColor: '#f43f5e' });
-            chartInstance.current = mainChart;
+            if (!chartContainerRef.current) return;
+            if (!window.LightweightCharts) {
+              await new Promise(resolve => {
+                const script = document.createElement('script'); script.src = 'https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js'; script.onload = resolve; document.head.appendChild(script);
+              });
+            }
+            if (chartInstance.current) return;
+            try {
+                const mainChart = window.LightweightCharts.createChart(chartContainerRef.current, {
+                  autoSize: true, layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#475569', fontFamily: 'JetBrains Mono' },
+                  grid: { vertLines: { color: 'rgba(148, 163, 184, 0.1)' }, horzLines: { color: 'rgba(148, 163, 184, 0.1)' } },
+                  timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false }, rightPriceScale: { borderVisible: false }
+                });
+                candleSeries.current = mainChart.addCandlestickSeries({ upColor: '#38bdf8', downColor: '#fb7185', borderVisible: true, borderUpColor: '#38bdf8', borderDownColor: '#fb7185', wickUpColor: '#38bdf8', wickDownColor: '#fb7185' });
+                chartInstance.current = mainChart;
+                
+                chartInstance.current.timeScale().subscribeVisibleLogicalRangeChange(redrawOverlay);
+                chartInstance.current.timeScale().subscribeSizeChange(redrawOverlay);
+            } catch(e) {}
           };
 
-          const runEngine = async () => {
-              console.log("[ENGINE] Starting engine cycle...");
-              engineActive.current = true;
-              setAppStage(APP_STAGE.HISTORICAL_SUMMARY);
-              setStatusText('АНАЛИЗ ИСТОРИИ (12 ЧАСОВ)...');
+          const clearChartExtras = () => {
+              if (!chartInstance.current || !candleSeries.current) return;
+              extraSeriesRef.current.forEach(s => { try { chartInstance.current.removeSeries(s); } catch(e){} }); extraSeriesRef.current = [];
+          };
 
-              await enqueueSpeech("Институциональный алгоритм активирован. Запущен анализ структуры рынка за последние двенадцать часов.");
-
-              let data1m;
-              try { 
-                  data1m = await ScannerAPI.getCandles('BTCUSDT', 750, '1m'); 
-              } catch(e) { 
-                  console.error("[ENGINE] Failed to fetch data:", e);
-                  addLog("ОШИБКА ДАННЫХ ОТ БИРЖИ. Перезапустите приложение."); 
-                  setAppStage(APP_STAGE.READY);
-                  return; 
+          const drawIndicators = (data) => {
+              clearChartExtras();
+              let upperSeries, lowerSeries;
+              
+              const upperData = []; const lowerData = [];
+              for(let i=STRATEGY_5M_25M_CONFIG.lookback; i<data.length; i++) {
+                  let up = -Infinity; let dn = Infinity;
+                  for(let k=1; k<=STRATEGY_5M_25M_CONFIG.lookback; k++) {
+                      if(data[i-k].high > up) up = data[i-k].high;
+                      if(data[i-k].low < dn) dn = data[i-k].low;
+                  }
+                  upperData.push({time: data[i].time, value: up});
+                  lowerData.push({time: data[i].time, value: dn});
               }
+
+              try {
+                  upperSeries = chartInstance.current.addLineSeries({ color: 'rgba(244, 63, 94, 0.5)', lineWidth: 1, lineStyle: 2, title: 'UPPER POOL', lastValueVisible: false, priceLineVisible: false });
+                  upperSeries.setData(upperData); extraSeriesRef.current.push(upperSeries);
+                  lowerSeries = chartInstance.current.addLineSeries({ color: 'rgba(16, 185, 129, 0.5)', lineWidth: 1, lineStyle: 2, title: 'LOWER POOL', lastValueVisible: false, priceLineVisible: false });
+                  lowerSeries.setData(lowerData); extraSeriesRef.current.push(lowerSeries);
+              } catch(e) {}
+          };
+
+          const performHistoricalBacktest = (data) => {
+              let currentBalance = STRATEGY_5M_25M_CONFIG.demoBalance;
+              let currentMgStep = 0;
+              let lastSignalIdx = null;
               
-              setSparklines({'BTCUSDT': data1m});
+              const lookbackCandles = Math.round(STRATEGY_5M_25M_CONFIG.historicalLookbackHours * 60 / 5);
+              const startIdx = data.length - lookbackCandles;
+              const endIdx = data.length - 1 - STRATEGY_5M_25M_CONFIG.expiryCandles; 
               
-              const liqZones = calcLiquidityZones(data1m, 15);
-              const atrSeries = calcATRSeries(data1m, 14);
-              
-              let currentBal = SESSION_CONFIG.startingBalance;
-              let mState = createMartingaleState();
-              const histTrades = [];
-              let tSignals = 0, tWins = 0, tLosses = 0, tCancels = 0;
+              const simulatedTrades = [];
 
-              for (let i = 20; i < data1m.length - 6; i++) {
-                  const config = STRATEGY_1M_CONFIG['NORMAL']; 
-                  const { isCall, isPut, sweepLevel } = detectLiquiditySweep1M(data1m, i, liqZones, atrSeries, config);
+              // Prime metrics with real first values
+              let lastScores = { structure: 50, liquidity: 50, atr: 50, confidence: 50 };
 
-                  if (isCall || isPut) {
-                      tSignals++;
-                      const sigTime = data1m[i].time;
-                      const entryCandle = data1m[i+1]; 
-                      let isCanceled = false;
-                      const atr = atrSeries[i].value || 0.0001;
+              for (let idx = Math.max(STRATEGY_5M_25M_CONFIG.lookback + STRATEGY_5M_25M_CONFIG.atrLen, startIdx); idx <= endIdx; idx++) {
+                  const signalInfo = evaluateTVExactSignal(data, idx, STRATEGY_5M_25M_CONFIG, lastSignalIdx);
+                  
+                  if (signalInfo.scores) {
+                      lastScores = signalInfo.scores;
+                  }
 
-                      if (isPut && entryCandle.high > sweepLevel) isCanceled = true;
-                      if (isCall && entryCandle.low < sweepLevel) isCanceled = true;
-                      
-                      const trade = {
-                          tradeId: `bt_${sigTime}`, signalTime: sigTime, direction: isCall?'CALL':'PUT',
-                          signalPrice: data1m[i].close, maxHigh: entryCandle.high, minLow: entryCandle.low
-                      };
+                  if (signalInfo.isSell || signalInfo.isBuy) {
+                      const isCall = signalInfo.isBuy;
+                      const currCandle = data[idx];
+                      const currTime = currCandle.time;
 
-                      if (isCanceled) {
-                          tCancels++;
-                          trade.result = 'CANCELLED';
-                          trade.entryTime = entryCandle.time;
-                          trade.exitTime = entryCandle.time + 60; 
-                      } else {
-                          trade.entryTime = entryCandle.time;
-                          trade.entryPrice = entryCandle.open;
+                      // Entry is next candle open (simulating +3 sec delay after signal candle close)
+                      const entryCandle = data[idx + 1];
+                      const exitCandle = data[idx + 1 + STRATEGY_5M_25M_CONFIG.expiryCandles];
+
+                      if (entryCandle && exitCandle) {
+                          lastSignalIdx = idx;
+                          const signalPrice = currCandle.close;
+                          const entryPrice = entryCandle.open; 
+                          const exitPrice = exitCandle.close;
                           
-                          const exitCandle = data1m[i+6];
-                          trade.exitTime = exitCandle.time;
-                          trade.exitPrice = exitCandle.close;
+                          const stake = getStakeByMartingaleIndex(currentMgStep);
+                          const result = evaluateTradeResult(isCall ? "CALL" : "PUT", entryPrice, exitPrice);
+                          
+                          const trade = createTradeObject({
+                              signalId: currTime, direction: isCall ? 'CALL' : 'PUT',
+                              signalTime: currTime, signalPrice: signalPrice,
+                              entryTime: entryCandle.time, entryPrice,
+                              exitTime: exitCandle.time, exitPrice, 
+                              result, martingaleStep: currentMgStep, stake,
+                              balanceBefore: currentBalance, entrySource: "approx_next_5m_open"
+                          });
+                          
+                          simulatedTrades.push(trade);
+                          currentBalance = trade.balanceAfter;
 
-                          const executionWindow = data1m.slice(i+1, i+7);
-                          trade.maxHigh = Math.max(...executionWindow.map(c=>c.high));
-                          trade.minLow = Math.min(...executionWindow.map(c=>c.low));
-
-                          const win = (isCall && trade.exitPrice > trade.entryPrice) || (isPut && trade.exitPrice < trade.entryPrice) || (trade.exitPrice === trade.entryPrice);
-                          trade.result = win ? 'WIN' : 'LOSS';
-                          if (win) tWins++; else tLosses++;
+                          currentMgStep = getNextMartingaleIndex(result, currentMgStep);
+                          idx += STRATEGY_5M_25M_CONFIG.expiryCandles; 
                       }
-
-                      const pnl = getTradePnL(trade.result, mState.currentStake);
-                      trade.stake = mState.currentStake;
-                      trade.pnl = pnl;
-                      trade.martingaleStep = mState.ladderIndex;
-                      
-                      currentBal += pnl;
-                      mState = updateMartingaleAfterTrade(trade.result, mState, currentBal);
-                      
-                      histTrades.push(trade);
                   }
               }
-
-              tradesRef.current = histTrades;
-              setSessionData({ balance: currentBal, stake: mState.currentStake, step: mState.ladderIndex, pnl: currentBal - SESSION_CONFIG.startingBalance, wins: tWins, losses: tLosses, cancels: tCancels, totalSignals: tSignals });
-
-              setViewMode('DETAIL');
-              await initChart();
-              if (candleSeries.current) {
-                  candleSeries.current.setData(data1m);
-                  chartInstance.current.timeScale().fitContent();
-              }
-
-              setAppStage(APP_STAGE.READY);
-              const repTxt = `Анализ завершен. Найдено ${tSignals} паттернов. Отменено фильтром: ${tCancels}. Плюсов: ${tWins}, Минусов: ${tLosses}. Итоговый баланс составил бы ${currentBal} рублей. Перехожу в режим сканирования.`;
-              addLog(`БЭКТЕСТ ИТОГ: ${currentBal} ₽ (Win: ${tWins}, Loss: ${tLosses}, Cancels: ${tCancels})`);
               
-              await enqueueSpeech(repTxt);
-
-              if (!engineActive.current) return;
-              setAppStage(APP_STAGE.LIVE_SCAN);
-              setViewMode('SCREENER');
-              setStatusText('СКАНИРОВАНИЕ РЫНКА (1M)...');
+              return { simulatedTrades, currentMgStep, lastScores };
           };
 
-          // --- ЗАЩИЩЕННАЯ ФУНКЦИЯ КНОПКИ ---
-          const handleStart = () => {
-              console.log("[INIT] Start Button clicked.");
-              
-              // Защита AudioContext
+          const runTerminalEngine = async () => {
+            if (engineActive.current) return;
+            engineActive.current = true;
+
+            if (audioCtx.current && audioCtx.current.state === 'suspended') await audioCtx.current.resume();
+
+            // PHASE: HISTORICAL ANALYSIS FETCH & RENDER
+            setAppStage(APP_STAGE.HISTORICAL_ANALYSIS_RENDER);
+            setAppPhase('АНАЛИЗ 12 ЧАСОВ (5M PINE)...');
+            addLog(`ЗАПУСК: TV EXACT MODE (5M PINE SCRIPT)...`, true);
+            setViewMode('DETAIL');
+
+            const curAsset = ASSETS[0];
+            const initialData = await ScannerAPI.getCandles(curAsset.symbol, 400, '5m');
+            
+            let currentMgStepLive = 0;
+
+            if (initialData && initialData.length > 200) {
+                setSparklines(prev => ({...prev, [curAsset.symbol]: initialData}));
+                currentPrice.current = initialData[initialData.length - 1].close;
+
+                const { simulatedTrades, currentMgStep, lastScores } = performHistoricalBacktest(initialData);
+                
+                tradesHistoryRef.current = simulatedTrades;
+                currentMgStepLive = currentMgStep;
+                
+                setMetrics({ 
+                    structure: lastScores.structure, 
+                    liquidity: lastScores.liquidity, 
+                    filterLevel: lastScores.atr, 
+                    smartMoney: lastScores.confidence 
+                });
+                
+                const stats = calculateSessionStats(simulatedTrades);
+                setSessionStats(stats);
+                
+                addLog(`БЭКТЕСТ 12 ЧАСОВ: СИГНАЛОВ ${safeNumber(stats.totalSignals)}, PNL: ${safeNumber(stats.pnl)} RUB`, true);
+
+                setAsset(curAsset);
+                await initChart();
+                
+                if (candleSeries.current) {
+                    candleSeries.current.setData(initialData);
+                    lastChartTimeRef.current = initialData[initialData.length - 1].time;
+                    drawIndicators(initialData);
+                    redrawOverlay();
+                    try { chartInstance.current.timeScale().fitContent(); } catch(e) {}
+                }
+
+                await new Promise(r => setTimeout(r, 500));
+
+                // PHASE: HISTORICAL ANALYSIS VOICE (Strict Sync)
+                setAppStage(APP_STAGE.HISTORICAL_ANALYSIS_VOICE);
+                setAppPhase('ОТЧЁТ АНАЛИТИКИ...');
+                await announceStatsAsync(stats, () => engineActive.current);
+
+                // PHASE: TRANSITION
+                if (!engineActive.current) return;
+                setAppStage(APP_STAGE.TRANSITION_TO_SCANNER);
+                setAppPhase('ПОДГОТОВКА СКАНЕРА...');
+                await new Promise(r => setTimeout(r, 800)); 
+
+                // PHASE: LIVE SCAN
+                if (!engineActive.current) return;
+                setAppStage(APP_STAGE.LIVE_SCAN);
+                setViewMode('SCREENER');
+
+            } else {
+                addLog("ОШИБКА: НЕТ СВЯЗИ С БИРЖЕЙ", true);
+                setAppPhase('ОШИБКА API');
+                await speakTextAsync('Ошибка связи с биржей. Проверьте соединение.', () => engineActive.current);
+                return; 
+            }
+            
+            let lastSignalIdxLive = null;
+
+            while (engineActive.current) {
               try {
-                  const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                  if (AudioCtx) {
-                      audioCtx.current = new AudioCtx();
-                      audioCtx.current.resume().catch(e => console.warn("[AUDIO] Auto-play blocked:", e));
+                  setAppPhase('СКАНИРОВАНИЕ ЛИКВИДНОСТИ (5M)...');
+                  setViewMode('SCREENER');
+                  setSignal(null);
+
+                  let signalFound = false;
+
+                  for(let cur of ASSETS) {
+                    if (!engineActive.current) break;
+                    playSound('scan');
+                    
+                    const data = await ScannerAPI.getCandles(cur.symbol, 400, '5m'); 
+                    
+                    if (data && data.length > 50) {
+                      setSparklines(prev => ({...prev, [cur.symbol]: data}));
+
+                      const lastIdx = data.length - 1;
+                      currentPrice.current = data[lastIdx].close; 
+
+                      let triggerCandleIdx = lastIdx - 1; 
+
+                      // Get real-time metric scores for the gauges based on current data
+                      const signalInfo = evaluateTVExactSignal(data, triggerCandleIdx, STRATEGY_5M_25M_CONFIG, lastSignalIdxLive);
+                      
+                      setMetrics({ 
+                          structure: signalInfo.scores.structure, 
+                          liquidity: signalInfo.scores.liquidity, 
+                          filterLevel: signalInfo.scores.atr, 
+                          smartMoney: signalInfo.scores.confidence 
+                      });
+
+                      if (signalInfo && (signalInfo.isSell || signalInfo.isBuy)) {
+                          
+                          signalFound = true;
+                          lastSignalIdxLive = triggerCandleIdx;
+                          const isCall = signalInfo.isBuy;
+                          
+                          setAsset(cur); setViewMode('DETAIL');
+
+                          await initChart(); playSound('found');
+                          
+                          if(candleSeries.current) {
+                              try { 
+                                  data.forEach(d => {
+                                      if (d.time >= lastChartTimeRef.current) {
+                                          candleSeries.current.update(d);
+                                          lastChartTimeRef.current = Math.max(lastChartTimeRef.current, d.time);
+                                      }
+                                  });
+                              } catch (e) {}
+                          }
+
+                          drawIndicators(data); redrawOverlay(); // ensure pools update
+                          
+                          const signalTime = data[triggerCandleIdx].time;
+                          const signalPrice = data[triggerCandleIdx].close;
+                          const directionText = isCall ? "повышение" : "понижение";
+                          
+                          setAppPhase(`ГОТОВЬТЕ: BTC (5 МИН)`);
+                          addLog(`ЗАФИКСИРОВАН СИГНАЛ: PINE EXACT`, true);
+                          await speakTextAsync(`Качественный сигнал подтвержден. Направление на ${directionText}. Подготовка 3 секунды.`, () => engineActive.current);
+
+                          setAppPhase('СНАЙПЕР: ЗАДЕРЖКА 3 СЕК');
+                          
+                          await new Promise(r => setTimeout(r, STRATEGY_5M_25M_CONFIG.preparationDelaySeconds * 1000));
+
+                          playSound('start'); setAppPhase('СИГНАЛ АКТИВЕН');
+                          
+                          const entryTime = Math.floor(Date.now() / 1000); 
+                          const entryPrice = currentPrice.current; 
+                          
+                          setSignal({ type: isCall ? 'CALL' : 'PUT', exp: STRATEGY_5M_25M_CONFIG.expiryMinutes, entryPrice });
+
+                          const liveStake = getStakeByMartingaleIndex(currentMgStepLive);
+                          addLog(`ВХОД ${isCall ? 'ВВЕРХ' : 'ВНИЗ'} НА 25 МИН. СТАВКА: ${liveStake}₽`, true);
+                          speakTextAsync(`Открываю сделку. Экспирация 25 минут.`, () => engineActive.current);
+
+                          let expirySeconds = STRATEGY_5M_25M_CONFIG.expiryMinutes * 60;
+                          let isLive = true;
+                          
+                          const liveChartTask = (async () => {
+                            let localLastTime = lastChartTimeRef.current; 
+                            while (isLive && engineActive.current) {
+                              await new Promise(r => setTimeout(r, 2000));
+                              if (!isLive) break;
+                              try {
+                                const liveTickArray = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
+                                if (liveTickArray && liveTickArray.length > 0 && candleSeries.current) {
+                                  liveTickArray.forEach(tick => {
+                                    if (tick.time >= localLastTime && !isNaN(tick.close)) {
+                                      try {
+                                          candleSeries.current.update(tick); currentPrice.current = tick.close;
+                                          localLastTime = Math.max(localLastTime, tick.time); lastChartTimeRef.current = localLastTime;
+                                      } catch (err) {}
+                                    }
+                                  });
+                                }
+                              } catch (e) {}
+                            }
+                          })();
+
+                          while(expirySeconds > 0 && engineActive.current) {
+                            setCountdown(expirySeconds);
+                            await new Promise(r => setTimeout(r, 1000));
+                            expirySeconds--;
+                          }
+                          
+                          isLive = false; setCountdown(null); setAppPhase('АНАЛИЗ РЕЗУЛЬТАТА');
+
+                          const resultData = await ScannerAPI.getCandles(cur.symbol, 1, '5m');
+                          let finalPrice = entryPrice;
+                          if (resultData && resultData.length > 0) finalPrice = resultData[resultData.length - 1].close;
+                          
+                          const result = evaluateTradeResult(isCall ? "CALL" : "PUT", entryPrice, finalPrice);
+                          let isWin = result === 'WIN';
+
+                          if (isWin) {
+                            playSound('win');
+                          } else {
+                            playSound('loss');
+                          }
+
+                          const exitTime = Math.floor(Date.now() / 1000);
+                          
+                          const liveStatsBefore = calculateSessionStats(tradesHistoryRef.current);
+                          const liveBalanceBefore = liveStatsBefore.finalBalance;
+
+                          const liveTradeResult = createTradeObject({
+                              signalId: signalTime, direction: isCall ? 'CALL' : 'PUT',
+                              signalTime, signalPrice, entryTime, entryPrice, exitTime: exitTime, exitPrice: finalPrice,
+                              result: result, martingaleStep: currentMgStepLive, stake: liveStake,
+                              balanceBefore: liveBalanceBefore, entrySource: "live_tick"
+                          });
+                          
+                          tradesHistoryRef.current.push(liveTradeResult);
+                          const newStats = calculateSessionStats(tradesHistoryRef.current);
+                          setSessionStats(newStats);
+                          redrawOverlay();
+
+                          if (isWin) {
+                            addLog(`ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}. PNL: +${liveTradeResult.pnl}₽`);
+                            await speakTextAsync(`Плюс. Прибыль ${liveTradeResult.pnl} рублей.`, () => engineActive.current);
+                          } else {
+                            addLog(`МИНУС (-). УБЫТОК: ${liveTradeResult.pnl}₽`);
+                            await speakTextAsync(`Минус. Увеличиваю шаг мартингейла.`, () => engineActive.current);
+                          }
+
+                          currentMgStepLive = getNextMartingaleIndex(result, currentMgStepLive);
+
+                          setSignal(null); setMetrics(prev => ({ ...prev, smartMoney: 0 }));
+                          await new Promise(r => setTimeout(r, 2000));
+                          break; 
+                      }
+                    }
                   }
-              } catch (e) { console.error("[AUDIO] Init failed", e); }
-              
-              // Защита Speech API
-              try {
-                  if(window.speechSynthesis) window.speechSynthesis.speak(new SpeechSynthesisUtterance('')); 
-              } catch (e) { console.error("[SPEECH] Init failed", e); }
-
-              setAppStage(APP_STAGE.BOOT);
-              console.log("[INIT] Moving to BOOT stage.");
-              
-              // Даем React 100мс на обновление DOM, чтобы экран инициализации исчез
-              setTimeout(() => {
-                  runEngine();
-              }, 100);
+                  
+                  if (!signalFound && engineActive.current) await new Promise(r => setTimeout(r, 1500)); 
+              } catch (e) {
+                  addLog("ПЕРЕЗАПУСК РАДАРА...", true);
+                  await new Promise(r => setTimeout(r, 3000));
+              }
+            }
           };
 
-          // --- ИЗОЛИРОВАННЫЙ РЕНДЕРИНГ ЭКРАНОВ ---
-          
-          if (appStage === APP_STAGE.SPLASH) {
-              return (
-                  <div className="h-[100dvh] w-screen flex flex-col relative overflow-hidden bg-slate-950">
-                      <CinematicSplash onComplete={() => setAppStage(APP_STAGE.INIT_SCREEN)} />
+          const startTerminal = () => {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx.current = new AudioContext();
+            const osc = audioCtx.current.createOscillator(); osc.connect(audioCtx.current.destination);
+            osc.start(0); osc.stop(0.01);
+            if (window.speechSynthesis) {
+                window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+            }
+            
+            setAppStage(APP_STAGE.SPLASH);
+          };
+
+          if (appStage === APP_STAGE.IDLE) {
+            return (
+              <div className="app-shell relative items-center justify-center bg-slate-50/50">
+                <div className="bg-orb-1 pointer-events-none opacity-40"></div><div className="bg-orb-2 pointer-events-none opacity-40"></div>
+                <div className="absolute inset-0 bg-grid-pattern pointer-events-none opacity-30"></div>
+                
+                <div className="max-w-[90%] sm:max-w-md w-full p-8 md:p-12 text-center relative z-10 glass-panel-heavy rounded-[2.5rem] flex flex-col items-center">
+                  
+                  <div className="cinematic-author text-lg md:text-xl mb-6">SLAVA GORDEEV</div>
+
+                  <div className="w-20 h-20 mb-6 bg-gradient-to-br from-slate-50 to-slate-200 rounded-2xl flex items-center justify-center shadow-md border border-white relative overflow-hidden">
+                      <Zap size={36} className="text-cyan-500 drop-shadow-sm" />
                   </div>
-              );
+                  <h1 className="text-4xl md:text-5xl text-slate-800 leading-none mb-3 oswald-font font-bold tracking-wide drop-shadow-sm">
+                    КРИПТО ЯДРО <br/><span className="text-gradient font-black">PRO MAX</span>
+                  </h1>
+                  <p className="text-[10px] md:text-xs text-slate-400 tracking-[0.25em] mb-10 font-bold leading-tight uppercase">SMC Pine Exact • 5M Engine</p>
+                  
+                  <button onClick={startTerminal} className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 border border-white/80 shadow-[0_10px_25px_rgba(14,165,233,0.3)] text-white text-xl md:text-2xl transition-all duration-300 oswald-font font-bold active:scale-95 rounded-2xl cursor-pointer flex items-center justify-center gap-3 group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
+                    <Cpu size={24} className="text-blue-50 group-hover:animate-spin relative z-10" /> 
+                    <span className="relative z-10 tracking-widest drop-shadow-sm">ЗАПУСК СИСТЕМЫ</span>
+                  </button>
+                </div>
+              </div>
+            );
           }
 
-          if (appStage === APP_STAGE.INIT_SCREEN) {
-              return (
-                  <div className="h-[100dvh] w-screen flex flex-col items-center justify-center relative overflow-hidden bg-slate-950 px-4">
-                      <div className="absolute inset-0 bg-grid-pattern opacity-30 mix-blend-screen z-0"></div>
-                      <div className="glass-card p-8 sm:p-12 rounded-[2rem] text-center border-slate-700 max-w-[90%] sm:max-w-md w-full shadow-2xl flex flex-col items-center z-10">
-                          <Activity size={48} className="text-sky-400 mb-6 drop-shadow-[0_0_15px_rgba(56,189,248,0.5)]" />
-                          <h2 className="text-[clamp(1.5rem,5vw,2.5rem)] font-black oswald-font tracking-widest text-white mb-2 leading-tight">PRO MAX ENGINE</h2>
-                          <p className="text-slate-400 text-xs sm:text-sm font-bold tracking-widest uppercase mb-8">Strict SMC & Martingale</p>
-                          <button 
-                              onClick={handleStart} 
-                              className="w-full py-4 sm:py-5 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 rounded-xl text-white font-black oswald-font tracking-[0.2em] text-lg sm:text-xl shadow-[0_0_20px_rgba(56,189,248,0.4)] transition-all active:scale-95"
-                          >
-                              ИНИЦИАЛИЗАЦИЯ
-                          </button>
+          return (
+            <div className="app-shell relative">
+
+              {appStage === APP_STAGE.SPLASH && (
+                  <div className="author-splash">
+                      <div className="w-16 h-16 mb-6 bg-gradient-to-br from-slate-50 to-slate-200 rounded-2xl flex items-center justify-center shadow-lg border border-white">
+                          <Zap size={32} className="text-cyan-500" />
+                      </div>
+                      <div className="cinematic-author text-4xl md:text-6xl text-slate-800 drop-shadow-sm">SLAVA GORDEEV</div>
+                      <div className="mt-4 text-[10px] tracking-[0.3em] text-slate-500 font-semibold uppercase">SMC Pine Exact / Smart Money Engine</div>
+                      <div className="mt-8 w-48 h-[3px] bg-slate-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-cyan-400 animate-[loadingBar_2.2s_ease-in-out_forwards]"></div>
                       </div>
                   </div>
-              );
-          }
+              )}
 
-          function clampSize(min, max) { return typeof window !== 'undefined' && window.innerWidth < 600 ? min : max; }
+              <div className="bg-orb-1 pointer-events-none opacity-40 z-0"></div><div className="bg-orb-2 pointer-events-none opacity-40 z-0"></div>
+              <div className="absolute inset-0 bg-grid-pattern pointer-events-none z-0 opacity-30"></div>
 
-          // Основной терминал (рендерится для стадий BOOT, HISTORICAL_SUMMARY, READY, LIVE_SCAN)
-          return (
-            <div className="h-[100dvh] w-screen flex flex-col relative bg-slate-950 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-              
-              <div className="absolute inset-0 bg-grid-pattern pointer-events-none opacity-20 mix-blend-screen z-0"></div>
+              {hoveredTooltip && (
+                  <div className="trade-tooltip font-mono text-[10px] md:text-xs" style={{ left: hoveredTooltip.x, top: hoveredTooltip.y }} dangerouslySetInnerHTML={{ __html: htmlTooltipHtml }} />
+              )}
 
-              {/* HEADER */}
-              <header className="h-14 sm:h-16 border-b border-slate-700/50 glass-panel z-40 flex items-center justify-between px-3 sm:px-6 shrink-0 mt-2 mx-2 rounded-2xl">
-                 <div className="flex items-center gap-3 sm:gap-4">
-                     <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-[0_0_15px_rgba(56,189,248,0.3)]">
-                        <Zap size={clampSize(16, 20)} className="text-white" />
-                     </div>
-                     <div>
-                         <h1 className="text-[clamp(1rem,4vw,1.5rem)] font-black oswald-font tracking-widest leading-none drop-shadow-sm whitespace-nowrap">ТЕРМИНАЛ <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-400">PRO MAX</span></h1>
-                         <div className="text-[clamp(8px,2vw,10px)] text-slate-400 tracking-[0.2em] font-bold uppercase mt-1 flex items-center gap-1.5 whitespace-nowrap">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></div> <span className="hidden sm:inline">Live SMC Detection</span><span className="inline sm:hidden">SMC Live</span>
-                         </div>
-                     </div>
-                 </div>
-                 <div className="flex flex-col items-end shrink-0 ml-2">
-                     <span className="text-[clamp(9px,2vw,12px)] font-bold text-sky-400 tracking-widest uppercase border border-sky-500/30 bg-sky-500/10 px-2 sm:px-4 py-1 rounded-lg text-right max-w-[120px] sm:max-w-none truncate">
-                        {statusText}
-                     </span>
-                     <div className="mt-1"><LiveClock /></div>
-                 </div>
-              </header>
-
-              {/* MAIN LAYOUT */}
-              <main className="adaptive-main-area w-full max-w-[1920px] mx-auto p-2 sm:p-4 gap-2 sm:gap-4 z-10 relative">
-                 
-                 {/* LEFT/TOP: SCANNER OR CHART */}
-                 <div className="chart-container-fluid glass-card rounded-2xl relative overflow-hidden flex flex-col border-slate-700/50">
-                    
-                    {/* SCANNER VIEW */}
-                    <div className={`absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-8 transition-opacity duration-700 z-30 bg-slate-900/95 ${viewMode === 'SCREENER' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                        <Radar size={clampSize(36, 48)} className="text-sky-500 animate-spin-slow mb-4 sm:mb-6 drop-shadow-[0_0_20px_rgba(56,189,248,0.5)]" />
-                        <h2 className="text-[clamp(1.2rem,4vw,2rem)] text-center font-black oswald-font tracking-widest text-slate-200 mb-6 sm:mb-8 leading-tight">ПОИСК СНЯТИЯ ЛИКВИДНОСТИ</h2>
-                        <div className="w-full max-w-4xl aspect-[2/1] sm:aspect-[3/1] bg-slate-950/50 rounded-2xl p-2 sm:p-4 border border-slate-800 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
-                            <ResponsiveScanner data={sparklines['BTCUSDT']} />
-                        </div>
-                    </div>
-
-                    {/* CHART VIEW */}
-                    <div className={`absolute inset-0 flex flex-col transition-opacity duration-700 z-20 bg-slate-900/40 ${viewMode === 'DETAIL' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-40 bg-slate-900/80 backdrop-blur-md border border-slate-700 rounded-lg sm:rounded-xl p-2 sm:p-3 shadow-lg pointer-events-none">
-                            <div className="text-[clamp(1.2rem,3vw,1.875rem)] font-black oswald-font tracking-wider text-white leading-none">BTC/USDT</div>
-                            <div className="text-[clamp(8px,2vw,12px)] font-bold tracking-widest text-sky-400 mt-1">ТАЙМФРЕЙМ: 1M</div>
-                        </div>
-                        <div className="flex-1 relative w-full h-full min-h-[300px]">
-                            <div ref={chartContainerRef} className="absolute inset-0" />
-                            <div ref={tradeBoxesContainerRef} className="absolute inset-0 pointer-events-none z-20 overflow-hidden" />
-                            <div id="trade-tooltip" className="absolute z-50 pointer-events-none opacity-0 transition-opacity bg-slate-900/95 backdrop-blur-xl text-white p-2 sm:p-3 rounded-lg border border-slate-600 shadow-2xl min-w-[160px]" style={{transform: 'translate(0, -100%)'}}></div>
-                        </div>
-                    </div>
-
-                 </div>
-
-                 {/* RIGHT/BOTTOM: STATS & LOGS */}
-                 <div className="sidebar-fluid glass-card rounded-2xl flex flex-col border-slate-700/50 p-3 gap-3 overflow-hidden">
-                    
-                    <div className="grid grid-cols-2 gap-2 shrink-0">
-                        <div className="bg-slate-800/50 rounded-xl p-2 sm:p-3 border border-slate-700 flex flex-col justify-center">
-                            <span className="text-[clamp(8px,2vw,10px)] text-slate-400 font-bold tracking-widest uppercase">БАЛАНС (₽)</span>
-                            <span className="text-[clamp(1.2rem,4vw,1.5rem)] font-black mono-font text-emerald-400 mt-0.5 sm:mt-1">{sessionData.balance}</span>
-                        </div>
-                        <div className="bg-slate-800/50 rounded-xl p-2 sm:p-3 border border-slate-700 flex flex-col justify-center">
-                            <span className="text-[clamp(8px,2vw,10px)] text-slate-400 font-bold tracking-widest uppercase">ТЕК. СТАВКА (₽)</span>
-                            <span className="text-[clamp(1.2rem,4vw,1.5rem)] font-black mono-font text-amber-400 mt-0.5 sm:mt-1">{sessionData.stake}</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-3 sm:p-4 border border-slate-700 shrink-0 shadow-lg relative overflow-hidden">
-                        <div className="absolute -right-10 -top-10 w-32 h-32 bg-sky-500/10 rounded-full blur-2xl"></div>
-                        <div className="flex justify-between items-end border-b border-slate-700/50 pb-2 sm:pb-3 mb-2 sm:mb-3">
-                            <span className="text-[clamp(10px,2.5vw,14px)] font-bold tracking-widest uppercase text-slate-300 oswald-font">ПРИБЫЛЬ</span>
-                            <span className={`text-[clamp(1.5rem,5vw,2.25rem)] font-black oswald-font leading-none ${sessionData.pnl >= 0 ? 'text-sky-400' : 'text-rose-400'}`}>
-                                {sessionData.pnl > 0 ? '+' : ''}{sessionData.pnl}
-                            </span>
-                        </div>
-                        <div className="flex justify-between text-center oswald-font tracking-widest">
-                            <div className="flex flex-col">
-                                <span className="text-[clamp(8px,2vw,10px)] text-slate-500 mb-0.5 sm:mb-1">СИГНАЛОВ</span>
-                                <span className="text-sm sm:text-lg text-slate-200">{sessionData.totalSignals}</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-[clamp(8px,2vw,10px)] text-slate-500 mb-0.5 sm:mb-1">WIN</span>
-                                <span className="text-sm sm:text-lg text-emerald-400">{sessionData.wins}</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-[clamp(8px,2vw,10px)] text-slate-500 mb-0.5 sm:mb-1">LOSS</span>
-                                <span className="text-sm sm:text-lg text-rose-400">{sessionData.losses}</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-[clamp(8px,2vw,10px)] text-slate-500 mb-0.5 sm:mb-1">ОТМЕНА</span>
-                                <span className="text-sm sm:text-lg text-slate-400">{sessionData.cancels}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <a href="[https://intrade31.bar/311164](https://intrade31.bar/311164)" target="_blank" rel="noopener noreferrer" className="shrink-0 relative w-full flex items-center justify-center rounded-xl py-3 sm:py-4 px-4 font-bold tracking-widest uppercase overflow-hidden bg-gradient-to-r from-sky-600 to-indigo-600 shadow-[0_5px_15px_rgba(56,189,248,0.3)] active:scale-[0.98] transition-transform">
-                        <span className="relative z-10 flex flex-col items-center">
-                            <span className="text-[8px] sm:text-[9px] text-white/80 tracking-[0.2em] mb-0.5">Брокер для входа</span>
-                            <span className="text-xs sm:text-sm md:text-base text-white oswald-font drop-shadow-md">ТОРГОВАТЬ ЗДЕСЬ</span>
-                        </span>
-                    </a>
-
-                    <div className="flex-1 bg-slate-900/60 rounded-xl border border-slate-700/50 p-2 sm:p-3 flex flex-col shadow-inner min-h-[120px] overflow-hidden">
-                        <div className="text-[clamp(8px,2vw,10px)] font-bold text-slate-500 tracking-widest uppercase mb-1 sm:mb-2 shrink-0">ТЕРМИНАЛ LOGS</div>
-                        <div className="flex-1 overflow-y-auto flex flex-col gap-1 sm:gap-1.5 no-scrollbar">
-                            {logs.map((l, i) => (
-                                <div key={i} className={`text-[clamp(8px,2vw,10px)] leading-tight mono-font tracking-wider py-1 pl-2 border-l-2 ${i===0 ? 'text-sky-300 border-sky-400 font-bold bg-sky-900/20' : 'text-slate-500 border-slate-700'} break-words`}>
-                                    {l}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                 </div>
-
-              </main>
-              
-              {/* FIXED WATERMARK */}
-              <div className="fixed bottom-2 right-4 sm:bottom-4 sm:right-6 z-50 pointer-events-none opacity-40">
-                  <span className="text-[clamp(8px,2vw,12px)] font-black tracking-[0.3em] uppercase oswald-font cinematic-text" style={{animation: 'none', backgroundPosition:'0 0'}}>SLAVA GORDEEV</span>
+              <div className="h-7 md:h-9 glass-panel z-50 overflow-hidden flex items-center shrink-0 w-full relative rounded-b-xl mb-1">
+                <div className="absolute left-0 h-full bg-slate-800 text-white px-3 md:px-5 flex items-center gap-2 z-20 text-[10px] md:text-xs tracking-widest shadow-[5px_0_15px_rgba(0,0,0,0.05)] font-bold oswald-font rounded-r-xl border-r border-slate-600">
+                  <Globe size={14} className="text-cyan-400" /> РАДАР СЕТИ
+                </div>
+                <div className="flex-1 overflow-hidden relative h-full flex items-center ml-[120px] sm:ml-[160px]">
+                  <div className="ticker-wrapper text-[10px] md:text-xs text-slate-500 tracking-widest pt-0.5 font-bold oswald-font">
+                    {[...Array(2)].map((_, idx) => (
+                      <div key={idx} className="flex gap-10 md:gap-16 whitespace-nowrap pr-10 md:pr-16">
+                        {newsHeadlines.map((headline, i) => (
+                          <span key={i} className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-cyan-400 mr-2 shadow-[0_0_8px_rgba(6,182,212,0.5)]"></span>{headline.toUpperCase()}</span>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
+              <header className="h-auto py-2 flex flex-col md:flex-row items-start md:items-center justify-between px-2 shrink-0 z-40 gap-2 md:gap-0">
+                <div className="flex flex-col justify-center w-full md:w-auto">
+                  <div className="flex justify-between items-center md:block">
+                      <h1 className="text-2xl md:text-3xl text-slate-800 leading-none font-bold flex items-center gap-2 oswald-font tracking-wider">
+                        <Zap size={28} className="text-cyan-500 drop-shadow-sm" /> 
+                        ТЕРМИНАЛ <span className="text-gradient font-black hidden sm:inline">PRO MAX</span>
+                      </h1>
+                      <div className="text-[10px] text-white px-3 py-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center shadow-sm oswald-font tracking-widest block md:hidden font-bold">
+                        {appPhase}
+                      </div>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1.5 md:mt-1">
+                      <div className="cinematic-author text-[10px] md:text-xs bg-slate-100/50 px-2 py-0.5 rounded border border-slate-200/80 shadow-sm leading-none pt-1">SLAVA GORDEEV</div>
+                      <div className="text-[8px] md:text-[9px] text-slate-400 tracking-[0.2em] font-bold leading-none uppercase pt-0.5">SMC PINE EXACT / 5M</div>
+                  </div>
+                </div>
+                <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-1 md:gap-1.5 mt-2 md:mt-0">
+                  <div className="text-[10px] md:text-xs text-white px-4 py-1.5 border border-white/80 bg-gradient-to-r from-blue-500 to-cyan-500 shadow-[0_4px_15px_rgba(14,165,233,0.2)] rounded-lg oswald-font tracking-widest hidden md:block font-bold">
+                    {appPhase}
+                  </div>
+                  <div className="flex gap-4 items-center tracking-wider w-full md:w-auto justify-between md:justify-end">
+                    <span className="text-[8px] md:text-[9px] text-slate-500 flex items-center gap-1.5 font-bold uppercase border border-slate-200 px-2 py-0.5 rounded-full bg-white/60">
+                      <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" /> СИНХРОНИЗАЦИЯ
+                    </span>
+                    <LiveClock />
+                  </div>
+                </div>
+              </header>
+
+              <main className="main-layout z-10 w-full relative">
+                
+                {/* LEFT: MAIN CHART PANEL */}
+                <div className="card chart-card glass-panel-heavy relative flex flex-col">
+                  
+                  {/* SCREENER OVERLAY */}
+                  <div className={`absolute inset-0 z-30 transition-all duration-700 bg-transparent flex items-center justify-center p-4 md:p-8 ${(viewMode === 'SCREENER' || appStage === APP_STAGE.TRANSITION_TO_SCANNER) ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                    <div className="card-3d-wrapper flex h-full items-center">
+                       <div className="card-3d relative w-full h-full max-h-[500px] flex flex-col p-6 rounded-[2rem]">
+                          <div className="flex justify-between items-start mb-6 relative z-10">
+                              <div className="flex items-center gap-4">
+                                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-400 text-white rounded-2xl flex items-center justify-center font-bold text-3xl shadow-[0_10px_25px_rgba(14,165,233,0.3)] border border-white/80">₿</div>
+                                  <div>
+                                      <h2 className="text-3xl md:text-4xl font-black text-slate-800 oswald-font tracking-wider leading-none drop-shadow-sm">BITCOIN</h2>
+                                      <span className="text-[10px] md:text-sm font-bold text-cyan-600 tracking-[0.2em] uppercase mt-1 inline-block bg-cyan-50/80 px-2 py-0.5 rounded-md border border-cyan-100">BTC/USDT • 5M</span>
+                                  </div>
+                              </div>
+                              <div className="flex flex-col items-end">
+                                  <div className="flex items-center gap-2 text-slate-600 bg-white/90 px-3 py-1.5 rounded-lg shadow-sm border border-slate-100">
+                                      <span className="text-[9px] md:text-xs font-bold tracking-widest uppercase">Smart Money Scanner</span>
+                                      <Radar size={16} className="animate-spin text-cyan-500" />
+                                  </div>
+                              </div>
+                          </div>
+                          
+                          <div className="flex-1 relative z-10 border border-slate-200/50 rounded-2xl p-1 bg-white/40 shadow-[inset_0_1px_5px_rgba(0,0,0,0.02)] overflow-hidden">
+                              <PremiumScannerChart data={sparklines['BTCUSDT']} scanPhase={appPhase} isScanning={appStage === APP_STAGE.LIVE_SCAN || appStage === APP_STAGE.TRANSITION_TO_SCANNER} />
+                          </div>
+                       </div>
+                    </div>
+                  </div>
+
+                  {/* CHART DETAIL VIEW */}
+                  <div className={`absolute inset-0 z-20 flex flex-col transition-all duration-700 bg-transparent ${(viewMode === 'DETAIL' && appStage !== APP_STAGE.TRANSITION_TO_SCANNER) ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                    <div className="absolute top-4 left-4 z-40 flex flex-col gap-2">
+                      <div className="glass-card p-3 md:p-4 rounded-2xl min-w-[140px] relative overflow-hidden shadow-sm border border-white">
+                        <div className="text-[9px] md:text-[10px] text-slate-400 tracking-widest mb-1 flex items-center gap-1.5 font-bold uppercase">
+                          <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.8)]"/> {asset.name} (5M)
+                        </div>
+                        <div className="text-3xl md:text-4xl tracking-wider text-slate-800 leading-none pt-0.5 font-black oswald-font drop-shadow-sm">{currentPrice.current ? formatPrice(currentPrice.current) : '---'}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 relative w-full mt-24 flex flex-col gap-2 px-2 pb-2 md:px-4 md:pb-4">
+                        <div className="flex-1 relative w-full rounded-2xl overflow-hidden shadow-[inset_0_2px_15px_rgba(0,0,0,0.03)] bg-white/80 border border-white/80">
+                            <div ref={chartContainerRef} className="absolute inset-0 z-10" />
+                            <div ref={overlayRef} className="trade-overlay" />
+                        </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* RIGHT: ANALYTICS PANEL */}
+                <div className="right-panel card glass-panel-heavy relative z-10">
+                  <div className="border-b border-white/80 p-3 bg-gradient-to-r from-blue-50/50 to-transparent flex justify-center items-center shrink-0 shadow-sm relative z-10">
+                    <div className={`text-sm md:text-base oswald-font tracking-widest flex items-center gap-2 text-center leading-none transition-all duration-300 w-full justify-center font-bold ${statusColorClass}`}>
+                      {appPhase.includes('ПОДГОТОВКА') || appPhase.includes('ОЖИДАНИЕ') || appPhase.includes('ПЕРЕХОД') ? (
+                        <span className="text-amber-500 drop-shadow-[0_0_10px_rgba(245,158,11,0.3)] animate-pulse">{appPhase}</span>
+                      ) : appPhase.includes('СНАЙПЕР:') || appPhase.includes('ОТЧЁТ') ? (
+                        <span className="text-blue-600 drop-shadow-[0_0_10px_rgba(37,99,235,0.3)] animate-pulse">{appPhase}</span>
+                      ) : appPhase}
+                    </div>
+                  </div>
+
+                  <div className="flex-1 flex flex-col p-2 md:p-3 gap-3 overflow-y-auto no-scrollbar relative z-10 pb-6">
+                    
+                    <div className="broker-button-wrap shrink-0">
+                        <a className="broker-ref-button" href={STRATEGY_5M_25M_CONFIG.referralUrl} target="_blank" rel="noopener noreferrer">
+                            <span className="broker-ref-button__small">Брокер для входа</span>
+                            <span className="broker-ref-button__main">Торговать здесь</span>
+                            <span className="broker-ref-button__sub">через брокера</span>
+                            <span className="broker-demo-cursor" aria-hidden="true">
+                              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="rotate(-45)"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
+                            </span>
+                        </a>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-2 glass-card rounded-2xl p-2 shrink-0">
+                       <Speedometer value={metrics.structure} label="СТРУКТУРА" colorHex="#eab308" />
+                       <Speedometer value={metrics.liquidity} label="ЛИКВИДНОСТЬ" colorHex="#0ea5e9" glow={true} />
+                       <Speedometer value={metrics.filterLevel} label="АТР ФИЛЬТР" colorHex="#8b5cf6" />
+                       <Speedometer value={metrics.smartMoney} label="SMART MONEY" colorHex="#06b6d4" />
+                    </div>
+
+                    <div className="flex gap-2 h-24 shrink-0">
+                      <div className={`w-[35%] rounded-2xl flex flex-col items-center justify-center relative transition-all duration-500 glass-card ${appPhase === 'СИГНАЛ АКТИВЕН' ? 'border-cyan-300 shadow-[0_0_20px_rgba(34,211,238,0.2)]' : ''}`}>
+                        {signal ? <VolumetricArrow type={signal.type} /> : (
+                          <div className="flex flex-col items-center opacity-30">
+                              <Radar size={24} className="text-slate-500 mb-1" /><span className="text-[8px] md:text-[9px] tracking-widest font-bold text-slate-500 oswald-font">СТАТУС</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="w-[65%] rounded-2xl overflow-hidden glass-card p-2 flex justify-between items-end pb-2 pl-3">
+                        <div className="flex flex-col items-start w-full pr-1">
+                           <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest leading-none mb-1">БАЛАНС 12H</span>
+                           <span className="text-lg md:text-xl text-slate-700 font-black oswald-font drop-shadow-sm leading-none">{formatRub(sessionStats.finalBalance)}</span>
+                           <span className={`text-[10px] mt-1 font-bold ${sessionStats.pnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                             {sessionStats.pnl > 0 ? '+' : ''}{formatRub(sessionStats.pnl)} PNL
+                           </span>
+                        </div>
+                        <HftTape price={currentPrice.current} />
+                      </div>
+                    </div>
+
+                    <div className={`glass-card border rounded-2xl p-3 flex flex-col gap-2 shrink-0 relative overflow-hidden transition-all duration-700 ${
+                        sessionStats.totalSignals > 0 ? (sessionStats.pnl >= 0 ? 'border-emerald-300/50 shadow-[0_10px_30px_rgba(16,185,129,0.05)]' : 'border-rose-300/50 shadow-[0_10px_30px_rgba(225,29,72,0.05)]') : ''
+                    }`}>
+                       <div className="flex justify-between items-center z-10 relative">
+                           <span className="text-[9px] md:text-[10px] text-slate-500 tracking-widest font-bold flex items-center gap-1.5 leading-none oswald-font">
+                              <TrendingUp size={14} className={sessionStats.pnl >= 0 ? "text-emerald-500" : "text-rose-500"} /> СТАТИСТИКА
+                           </span>
+                           <span className="text-[9px] font-black tracking-widest text-slate-600 oswald-font bg-white/60 px-1.5 py-0.5 rounded border border-white">12 ЧАСОВ</span>
+                       </div>
+                       
+                       <div className="flex justify-between items-center z-10 relative mt-1 oswald-font gap-2">
+                           <div className="flex flex-col flex-1 bg-white/60 px-2 py-1.5 rounded-xl border border-white shadow-[0_2px_5px_rgba(0,0,0,0.02)]">
+                               <span className="text-[7px] md:text-[8px] text-slate-400 tracking-widest font-bold uppercase">ПРОФИТ</span>
+                               <span className="text-base md:text-lg text-emerald-500 font-black leading-none mt-0.5">{sessionStats.wins}</span>
+                           </div>
+                           <div className="flex flex-col flex-1 items-end bg-white/60 px-2 py-1.5 rounded-xl border border-white shadow-[0_2px_5px_rgba(0,0,0,0.02)]">
+                               <span className="text-[7px] md:text-[8px] text-slate-400 tracking-widest font-bold uppercase">УБЫТОК</span>
+                               <span className="text-base md:text-lg text-rose-500 font-black leading-none mt-0.5">{sessionStats.losses}</span>
+                           </div>
+                       </div>
+                    </div>
+
+                    <div className="glass-card rounded-2xl p-3 flex justify-between items-center shrink-0 relative overflow-hidden shadow-sm">
+                       <div className="flex flex-col relative z-10">
+                          <span className="text-[8px] text-slate-400 tracking-widest font-bold leading-none uppercase">ЦЕНА ВХОДА</span>
+                          <span className="text-base text-slate-700 mt-1 font-black mono-font leading-none drop-shadow-sm">{signal && signal.entryPrice ? formatPrice(signal.entryPrice) : '---.-----'}</span>
+                       </div>
+                       <div className="flex flex-col items-end relative z-10">
+                          <span className="text-[8px] text-slate-400 tracking-widest flex items-center gap-1 font-bold leading-none uppercase"><Clock size={10} className="text-cyan-500"/> ЭКСПИРАЦИЯ</span>
+                          <span className="text-xl text-cyan-600 mt-1 font-black mono-font tracking-wider leading-none drop-shadow-sm">{countdown !== null ? `${Math.floor(countdown/60)}:${(countdown%60).toString().padStart(2,'0')}` : (signal && signal.exp ? `0${signal.exp}:00` : '--:--')}</span>
+                       </div>
+                    </div>
+
+                    <div ref={logsContainerRef} className="flex-1 glass-card rounded-2xl p-3 overflow-y-auto no-scrollbar flex flex-col justify-start gap-1.5 min-h-[100px]">
+                      {logs.map((l, i) => (
+                        <div key={i} className={`text-[8px] md:text-[9px] leading-snug tracking-widest font-semibold mono-font ${i === 0 ? 'text-slate-700 font-bold border-l-2 border-cyan-400 pl-2 bg-cyan-50/50 py-0.5 rounded-r' : 'text-slate-400 pl-2'}`}>{l}</div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </main>
+
+              <footer className="h-auto py-2 border-t border-slate-200/50 flex flex-row items-center justify-between px-4 shrink-0 z-40 bg-transparent mb-1">
+                <div className="flex items-center gap-2 text-slate-400 text-[9px] md:text-[10px] tracking-widest font-bold uppercase oswald-font">
+                  <Shield size={12} className="text-cyan-500 hidden sm:block" /> 
+                  <span className="hidden sm:inline">256-BIT ШИФРОВАНИЕ СИСТЕМЫ • СОЕДИНЕНИЕ БЕЗОПАСНО</span>
+                  <span className="inline sm:hidden">ЗАЩИТА АКТИВНА</span>
+                </div>
+                
+                <div className="flex items-center gap-2 oswald-font">
+                  <span className="text-white text-[8px] md:text-[9px] px-2 py-1 rounded bg-slate-800 tracking-widest font-bold text-center shadow-sm border border-slate-600">
+                    КРИПТО ИНВЕСТ PRO MAX
+                  </span>
+                </div>
+              </footer>
             </div>
           );
         }
@@ -820,7 +1585,3 @@
     </script>
 </body>
 </html>
-
-
-```
-
