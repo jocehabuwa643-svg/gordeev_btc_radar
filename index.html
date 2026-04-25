@@ -98,7 +98,6 @@
         @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         .ticker-wrapper { display: flex; width: max-content; animation: ticker 40s linear infinite; }
         
-        /* PREMIUM SCANNER CSS */
         .scanner-premium-beam {
             position: absolute; top: 0; bottom: 0; left: 0; width: 25%;
             background: linear-gradient(to right, transparent, rgba(6, 182, 212, 0.05) 40%, rgba(34, 211, 238, 0.3) 100%);
@@ -140,8 +139,8 @@
             width: 100%; min-height: 78px; padding: 14px 18px; text-decoration: none; color: #ffffff;
             background: linear-gradient(135deg, rgba(37, 99, 235, 0.96), rgba(6, 182, 212, 0.92));
             border: 1px solid rgba(255,255,255,0.42); box-shadow: 0 14px 34px rgba(14,165,233,0.28), inset 0 1px 0 rgba(255,255,255,0.35);
-            backdrop-filter: blur(18px); transition: transform 0.2s ease, box-shadow 0.2s ease;
-            animation: brokerBtnDesktopPress 4s infinite; /* Syncs with cursor click */
+            backdrop-filter: blur(18px); transition: transform .25s ease, box-shadow .25s ease;
+            animation: brokerBtnDesktopPress 3.8s infinite;
         }
         .broker-ref-button:hover {
             animation: none; transform: translateY(-1px) scale(1.01);
@@ -152,23 +151,23 @@
         .broker-ref-button__sub { position: relative; z-index: 2; font-size: 13px; font-weight: 700; opacity: .95; }
         
         .broker-demo-cursor {
-            position: absolute; right: 15px; bottom: 5px; font-size: 32px; line-height: 1;
+            position: absolute; right: 14px; bottom: 10px; font-size: 24px; line-height: 1;
             pointer-events: none; opacity: 0; z-index: 10; filter: drop-shadow(0 4px 8px rgba(0,0,0,.4));
-            animation: brokerCursorMove 4s infinite; transform-origin: top left; color: #fff;
+            animation: brokerCursorMove 3.8s ease-in-out infinite; transform-origin: top left; color: #fff;
         }
 
         @keyframes brokerBtnDesktopPress {
-            0%, 23%, 30%, 100% { transform: scale(1); box-shadow: 0 14px 34px rgba(14,165,233,0.28), inset 0 1px 0 rgba(255,255,255,0.35); }
-            26% { transform: scale(0.96); box-shadow: 0 5px 15px rgba(14,165,233,0.4), inset 0 1px 0 rgba(255,255,255,0.2); }
+            0%, 40%, 48%, 100% { transform: scale(1); box-shadow: 0 14px 34px rgba(14,165,233,0.28), inset 0 1px 0 rgba(255,255,255,0.35); }
+            44% { transform: scale(0.98); box-shadow: 0 5px 15px rgba(14,165,233,0.4), inset 0 1px 0 rgba(255,255,255,0.2); }
         }
         @keyframes brokerCursorMove {
-            0% { transform: translate(50px, 40px) scale(1); opacity: 0; }
-            15% { transform: translate(0px, 0px) scale(1); opacity: 1; }
-            23% { transform: translate(0px, 0px) scale(1); opacity: 1; }
-            26% { transform: translate(0px, 0px) scale(0.85); opacity: 1; } /* click down */
-            29% { transform: translate(0px, 0px) scale(1); opacity: 1; } /* click release */
-            45% { transform: translate(20px, 20px) scale(1); opacity: 0; }
-            100% { transform: translate(50px, 40px) scale(1); opacity: 0; }
+            0% { transform: translate(30px, 20px) scale(0.96); opacity: 0; }
+            12% { opacity: 1; }
+            35% { transform: translate(6px, 4px) scale(1); opacity: 1; }
+            44% { transform: translate(0px, 0px) scale(0.85); opacity: 1; } /* click down */
+            50% { transform: translate(1px, 1px) scale(1.04); opacity: 1; } /* click up / bounce */
+            62% { transform: translate(4px, 3px) scale(1); opacity: 0.95; }
+            100% { transform: translate(30px, 20px) scale(0.96); opacity: 0; }
         }
         
         @media (hover: none), (pointer: coarse) { 
@@ -190,11 +189,11 @@
         }
         .trade-box:hover, .chart-pt-entry:hover, .chart-pt-exit:hover, .chart-pt-signal:hover, .chart-result-badge:hover, .chart-arrow-signal:hover { z-index: 50; filter: brightness(1.15); }
         
-        .trade-box.win.call { background: linear-gradient(180deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.05)); border-color: rgba(16, 185, 129, 0.4); }
-        .trade-box.loss.call { background: linear-gradient(180deg, rgba(244, 63, 94, 0.15), rgba(244, 63, 94, 0.05)); border-color: rgba(244, 63, 94, 0.4); }
+        .trade-box.win.call { background: linear-gradient(180deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.05)); border-color: rgba(16, 185, 129, 0.5); }
+        .trade-box.loss.call { background: linear-gradient(180deg, rgba(244, 63, 94, 0.15), rgba(244, 63, 94, 0.05)); border-color: rgba(244, 63, 94, 0.5); }
         .trade-box.win.put { background: linear-gradient(180deg, rgba(14, 165, 233, 0.2), rgba(14, 165, 233, 0.05)); border-color: rgba(14, 165, 233, 0.5); }
-        .trade-box.loss.put { background: linear-gradient(180deg, rgba(244, 63, 94, 0.15), rgba(244, 63, 94, 0.05)); border-color: rgba(244, 63, 94, 0.4); }
-        .trade-box.cancelled { background: linear-gradient(180deg, rgba(148, 163, 184, 0.2), rgba(148, 163, 184, 0.05)); border-color: rgba(148, 163, 184, 0.4); }
+        .trade-box.loss.put { background: linear-gradient(180deg, rgba(244, 63, 94, 0.15), rgba(244, 63, 94, 0.05)); border-color: rgba(244, 63, 94, 0.5); }
+        .trade-box.cancelled { background: linear-gradient(180deg, rgba(148, 163, 184, 0.2), rgba(148, 163, 184, 0.05)); border-color: rgba(148, 163, 184, 0.5); }
         
         /* Points */
         .chart-pt-signal, .chart-pt-entry, .chart-pt-exit {
@@ -203,8 +202,8 @@
         .chart-pt-signal { width: 6px; height: 6px; background: #0ea5e9; box-shadow: 0 0 10px #0ea5e9; z-index: 35; }
         .chart-pt-signal.put { background: #f43f5e; box-shadow: 0 0 10px #f43f5e; }
         
-        .chart-pt-entry { width: 8px; height: 8px; background: #f8fafc; border: 2px solid #3b82f6; box-shadow: 0 0 10px rgba(59,130,246,0.6); z-index: 36; }
-        .chart-pt-exit { width: 8px; height: 8px; background: #f8fafc; border: 2px solid #8b5cf6; box-shadow: 0 0 10px rgba(139,92,246,0.6); z-index: 37; }
+        .chart-pt-entry { width: 8px; height: 8px; background: #ffffff; border: 2px solid #3b82f6; box-shadow: 0 0 10px rgba(59,130,246,0.6); z-index: 36; }
+        .chart-pt-exit { width: 8px; height: 8px; background: #ffffff; border: 2px solid #8b5cf6; box-shadow: 0 0 10px rgba(139,92,246,0.6); z-index: 37; }
         
         /* Arrows */
         .chart-arrow-signal {
@@ -279,7 +278,7 @@
             if (!value) return "нет данных";
             const date = new Date(safeNumber(value, 0) * 1000); 
             if (Number.isNaN(date.getTime())) return "нет данных";
-            return date.toLocaleString("ru-RU", {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'});
+            return date.toLocaleString("ru-RU", {hour: '2-digit', minute: '2-digit', second: '2-digit'});
         }
 
         const { useState, useEffect, useRef, useCallback } = React;
@@ -317,6 +316,13 @@
             
             referralUrl: "https://intrade31.bar/311164",
             authorName: "SLAVA GORDEEV"
+        };
+
+        const SIGNAL_FLOW_CONFIG = {
+            explanationDelaySeconds: 3,
+            traderPrepSeconds: 3,
+            totalEntryDelaySeconds: 6,
+            expiryMinutes: 25
         };
 
         // Strict State Machine
@@ -366,7 +372,13 @@
             return "CANCELLED";
         }
 
-        function createTradeObject({ signalId, direction, signalTime, signalPrice, entryTime, entryPrice, exitTime, exitPrice, result, martingaleStep, stake, cancelReason = "", balanceBefore = 0, entrySource = "live_tick" }) {
+        function buildSignalReason(direction) {
+            if (direction === "BUY" || direction === "CALL") return "Цена сняла нижнюю ликвидность, вернулась выше границы пула, возврат подтверждён.";
+            if (direction === "SELL" || direction === "PUT") return "Цена сняла верхнюю ликвидность, закрылась обратно ниже границы пула, возврат подтверждён.";
+            return "Сигнал найден по стратегии снятия ликвидности.";
+        }
+
+        function createTradeObject({ signalId, direction, signalTime, signalPrice, entryTime, entryPrice, exitTime, exitPrice, result, martingaleStep, stake, cancelReason = "", balanceBefore = 0, entrySource = "live_tick", state = "TRADE_CLOSED" }) {
             const pnl = calculateTradePnl(result, stake);
             const safeBalBefore = safeNumber(balanceBefore, 0);
             
@@ -374,19 +386,23 @@
                 tradeId: signalId, 
                 timeframe: STRATEGY_5M_25M_CONFIG.signalTimeframe,
                 expiryMinutes: STRATEGY_5M_25M_CONFIG.expiryMinutes,
-                direction, signalTime, signalPrice, entryTime, entryPrice, entrySource, exitTime, exitPrice, result,
+                direction, 
+                reason: buildSignalReason(direction),
+                signalTime, signalPrice, entryTime, entryPrice, entrySource, exitTime, exitPrice, result,
                 martingaleStep: safeNumber(martingaleStep, 0) + 1, 
                 stake: safeNumber(stake, STRATEGY_5M_25M_CONFIG.baseStake), 
+                entryDelaySeconds: SIGNAL_FLOW_CONFIG.totalEntryDelaySeconds,
                 cancelReason,
                 pnl,
                 balanceBefore: safeBalBefore,
-                balanceAfter: safeBalBefore + pnl
+                balanceAfter: safeBalBefore + pnl,
+                state
             };
         }
 
         function calculateSessionStats(trades) {
-            const confirmedTrades = trades.filter(t => t.result !== "CANCELLED");
-            const totalPnL = trades.reduce((sum, t) => sum + safeNumber(t.pnl, 0), 0);
+            const confirmedTrades = trades.filter(t => t.result !== "CANCELLED" && t.state === "TRADE_CLOSED");
+            const totalPnL = confirmedTrades.reduce((sum, t) => sum + safeNumber(t.pnl, 0), 0);
             
             const stats = {
                 totalSignals: trades.length, 
@@ -401,26 +417,32 @@
         }
 
         function buildTradeTooltipHtml(trade) {
-            const result = trade.result || "нет данных";
+            const result = trade.result || "ОЖИДАНИЕ";
             const pnl = safeNumber(trade.pnl, 0);
             const pnlText = pnl > 0 ? `+${formatRub(pnl)}` : formatRub(pnl);
             const directionText = (trade.direction === "CALL" || trade.direction === "BUY") ? "BUY" : "SELL";
+            const isClosed = trade.state === "TRADE_CLOSED";
+            
+            const resClass = result === 'WIN' ? 'positive' : (result === 'LOSS' ? 'negative' : 'text-slate-500');
+            const resText = result === 'CANCELLED' ? 'ОТМЕНА' : (isClosed ? result : 'В ПРОЦЕССЕ');
 
             return `
-                <div class="trade-tooltip__title">${directionText}</div>
-                <div class="trade-tooltip__row"><span>Ставка:</span><b>${formatRub(trade.stake)}</b></div>
-                <div class="trade-tooltip__row"><span>Шаг MG:</span><b>${trade.martingaleStep || 1}</b></div>
+                <div class="trade-tooltip__title">Сделка: ${directionText}</div>
+                <div class="trade-tooltip__row text-[10px] text-slate-500 mb-1 leading-tight border-b border-slate-100 pb-2">${trade.reason}</div>
+                <div class="trade-tooltip__row"><span>Сумма:</span><b>${formatRub(trade.stake)}</b></div>
+                <div class="trade-tooltip__row"><span>Шаг MG:</span><b>${trade.martingaleStep} колено</b></div>
                 <div class="trade-tooltip__row mt-1 pt-1 border-t border-slate-100"><span>Сигнал:</span><b>${formatDateTimeFull(trade.signalTime)}</b></div>
                 <div class="trade-tooltip__row"><span>Вход:</span><b>${formatDateTimeFull(trade.entryTime)}</b></div>
+                <div class="trade-tooltip__row"><span>Задержка входа:</span><b>${trade.entryDelaySeconds || 6} сек</b></div>
                 <div class="trade-tooltip__row"><span>Выход:</span><b>${formatDateTimeFull(trade.exitTime)}</b></div>
                 <div class="trade-tooltip__row mt-1 pt-1 border-t border-slate-100"><span>Цена входа:</span><b>${formatPrice(trade.entryPrice)}</b></div>
                 <div class="trade-tooltip__row"><span>Цена выхода:</span><b>${formatPrice(trade.exitPrice)}</b></div>
-                <div class="trade-tooltip__row mt-1 pt-1 border-t border-slate-200"><span>Результат:</span><b class="${result === 'WIN' ? 'positive' : (result === 'LOSS' ? 'negative' : '')}">${result === 'CANCELLED' ? 'ОТМЕНА' : result}</b></div>
+                <div class="trade-tooltip__row mt-1 pt-1 border-t border-slate-200"><span>Результат:</span><b class="${resClass}">${resText}</b></div>
                 ${result === 'CANCELLED' 
                     ? `<div class="trade-tooltip__row"><span>Причина:</span><b class="text-slate-400">${trade.cancelReason || "Сброс"}</b></div>`
-                    : `<div class="trade-tooltip__row"><span>Профит:</span><b class="${pnl > 0 ? 'positive' : 'negative'}">${pnlText}</b></div>`
+                    : (isClosed ? `<div class="trade-tooltip__row"><span>Профит:</span><b class="${pnl >= 0 ? 'positive' : 'negative'}">${pnlText}</b></div>` : '')
                 }
-                <div class="trade-tooltip__row border-t border-slate-100 mt-1 pt-1"><span>Баланс после:</span><b>${formatRub(trade.balanceAfter)}</b></div>
+                <div class="trade-tooltip__row border-t border-slate-100 mt-1 pt-1"><span>Баланс после:</span><b>${isClosed ? formatRub(trade.balanceAfter) : 'Ожидание...'}</b></div>
             `;
         }
 
@@ -680,7 +702,6 @@
                 if (!priceRef.current) return;
                 const isBuy = Math.random() > 0.5;
                 const offset = (Math.random() * 2 - 1);
-                // Safe formatting locally
                 const p = priceRef.current + offset;
                 const tickPrice = (!p && p !== 0) ? '0.00' : (p >= 1000 ? p.toFixed(2) : p.toFixed(4));
                 
@@ -709,7 +730,6 @@
           const audioCtx = useRef(null);
           const engineActive = useRef(false);
           const currentPrice = useRef(null);
-          const markersRef = useRef([]); 
           const tradesHistoryRef = useRef([]);
           const lastChartTimeRef = useRef(0);
           const fullNewsPool = useRef([...FALLBACK_BTC_NEWS]);
@@ -764,86 +784,48 @@
               }
           }, [appStage]);
 
-          // Redraw trade boxes & custom markers overlay
+          // --- ROBUST REDRAW OVERLAY (Single Source of Truth: tradesHistoryRef) ---
           const redrawOverlay = useCallback(() => {
               if (!chartInstance.current || !candleSeries.current || !overlayRef.current) return;
               const chart = chartInstance.current;
               const series = candleSeries.current;
+              
+              // Clear previous overlay DOM elements
               overlayRef.current.innerHTML = '';
 
               tradesHistoryRef.current.forEach(t => {
-                  if (!t.entryTime || !t.exitTime || !t.signalTime) return;
-                  
-                  const xSig = chart.timeScale().timeToCoordinate(t.signalTime);
-                  const xEnt = chart.timeScale().timeToCoordinate(t.entryTime);
-                  const xEx = chart.timeScale().timeToCoordinate(t.exitTime);
-
-                  const ySig = series.priceToCoordinate(t.signalPrice);
-                  const yEnt = series.priceToCoordinate(t.entryPrice);
-                  const yEx = series.priceToCoordinate(t.exitPrice);
-
-                  if (xEnt === null || xEx === null || yEnt === null || yEx === null) return;
-
-                  // 1. Transparent Box
-                  const yTop = Math.min(yEnt, yEx) - 15; 
-                  const yBot = Math.max(yEnt, yEx) + 15;
-                  const boxWidth = Math.max(8, Math.abs(xEx - xEnt));
-                  
-                  const box = document.createElement("div");
                   const isCall = t.direction === "CALL" || t.direction === "BUY";
-                  const isWin = t.result === 'WIN';
                   const isCancelled = t.result === 'CANCELLED';
-                  const resClass = isCancelled ? 'cancelled' : (isWin ? 'win' : 'loss');
+                  const isWin = t.result === 'WIN';
+                  const isClosed = t.state === 'TRADE_CLOSED';
+                  const isActive = t.state === 'TRADE_ACTIVE' || t.state === 'ENTRY_CONFIRMED' || t.state === 'TRADE_EXIT';
+                  
+                  const resClass = isCancelled ? 'cancelled' : (isActive ? 'active' : (isWin ? 'win' : 'loss'));
                   const dirClass = isCall ? 'call' : 'put';
-                  
-                  box.className = `trade-box ${resClass} ${dirClass}`;
-                  box.style.left = `${Math.min(xEnt, xEx)}px`; 
-                  box.style.top = `${yTop}px`;
-                  box.style.width = `${boxWidth}px`; 
-                  box.style.height = `${Math.max(16, yBot - yTop)}px`;
-                  
-                  // 2. Entry Point
-                  const entryPt = document.createElement("div");
-                  entryPt.className = `chart-pt-entry`;
-                  entryPt.style.left = `${xEnt}px`; 
-                  entryPt.style.top = `${yEnt}px`;
-                  entryPt.innerHTML = `<span class="chart-pt-label">ВХОД</span>`;
 
-                  // 3. Exit Point
-                  const exitPt = document.createElement("div");
-                  exitPt.className = `chart-pt-exit`;
-                  exitPt.style.left = `${xEx}px`; 
-                  exitPt.style.top = `${yEx}px`;
-                  exitPt.innerHTML = `<span class="chart-pt-label">ВЫХОД</span>`;
+                  // Map Time -> X Coords
+                  const xSig = t.signalTime ? chart.timeScale().timeToCoordinate(t.signalTime) : null;
+                  const xEnt = t.entryTime ? chart.timeScale().timeToCoordinate(t.entryTime) : null;
+                  
+                  // For active trades, extend box to current time if exitTime is null
+                  const currentUnix = Math.floor(Date.now() / 1000);
+                  const renderExitTime = t.exitTime || (isActive ? currentUnix : null);
+                  const xEx = renderExitTime ? chart.timeScale().timeToCoordinate(renderExitTime) : null;
 
-                  // 4. Result Badge (Outcome)
-                  const pnlValue = safeNumber(t.pnl, 0);
-                  const pnlText = isCancelled ? '' : (pnlValue > 0 ? `+${formatRub(pnlValue)}` : `${formatRub(pnlValue)}`);
-                  const dirText = isCall ? "BUY" : "SELL";
-                  const resText = isCancelled ? 'ОТМЕНА' : `${isWin ? 'WIN' : 'LOSS'} | ${dirText} ${pnlText}`;
+                  // Map Price -> Y Coords
+                  const ySig = t.signalPrice ? series.priceToCoordinate(t.signalPrice) : null;
+                  const yEnt = t.entryPrice ? series.priceToCoordinate(t.entryPrice) : null;
                   
-                  const resBadge = document.createElement("div");
-                  resBadge.className = `chart-result-badge ${isCancelled ? 'cancelled' : (isWin ? 'win' : 'loss')} ${dirClass}`;
-                  resBadge.style.left = `${xEx}px`;
-                  resBadge.style.top = `${yEx}px`; 
-                  resBadge.innerHTML = resText;
+                  const renderExitPrice = t.exitPrice || (isActive ? currentPrice.current : null);
+                  const yEx = renderExitPrice ? series.priceToCoordinate(renderExitPrice) : null;
 
-                  // Tooltip bindings
-                  const tooltipContent = buildTradeTooltipHtml(t);
-                  const showTooltip = () => {
-                      setHtmlTooltipHtml(tooltipContent);
-                      setHoveredTooltip({ x: xEnt + boxWidth / 2, y: yTop - 10 });
-                  };
-                  const hideTooltip = () => setHoveredTooltip(null);
-                  
-                  const elements = [box, entryPt, exitPt, resBadge];
-                  
-                  // 5. Arrow Signal Element
+                  const elements = [];
+
+                  // 1. SIGNAL ARROW & POINT
                   if (xSig !== null && ySig !== null) {
                       const arrowEl = document.createElement("div");
-                      arrowEl.className = `chart-arrow-signal ${isCall ? 'call' : 'put'}`;
+                      arrowEl.className = `chart-arrow-signal ${dirClass}`;
                       arrowEl.style.left = `${xSig}px`; 
-                      // Place arrow slightly away from the candle close price to not overlap it heavily
                       const yOffset = isCall ? 20 : -20;
                       arrowEl.style.top = `calc(${ySig}px + ${yOffset}px)`;
                       arrowEl.innerHTML = isCall 
@@ -855,23 +837,77 @@
                       sigPt.style.left = `${xSig}px`; 
                       sigPt.style.top = `${ySig}px`;
                       
-                      elements.push(arrowEl);
-                      elements.push(sigPt);
-                      
-                      overlayRef.current.appendChild(arrowEl);
-                      overlayRef.current.appendChild(sigPt);
+                      elements.push({ el: arrowEl, isBox: false });
+                      elements.push({ el: sigPt, isBox: false });
                   }
 
-                  elements.forEach(el => {
+                  // 2. ENTRY POINT
+                  if (xEnt !== null && yEnt !== null) {
+                      const entryPt = document.createElement("div");
+                      entryPt.className = `chart-pt-entry`;
+                      entryPt.style.left = `${xEnt}px`; 
+                      entryPt.style.top = `${yEnt}px`;
+                      entryPt.innerHTML = `<span class="chart-pt-label">ВХОД</span>`;
+                      elements.push({ el: entryPt, isBox: false });
+                  }
+
+                  // 3. TRADE BOX, EXIT POINT & OUTCOME BADGE
+                  if (xEnt !== null && xEx !== null && yEnt !== null && yEx !== null) {
+                      const yTop = Math.min(yEnt, yEx) - 15; 
+                      const yBot = Math.max(yEnt, yEx) + 15;
+                      const boxWidth = Math.max(8, Math.abs(xEx - xEnt));
+                      
+                      const box = document.createElement("div");
+                      box.className = `trade-box ${resClass} ${dirClass}`;
+                      box.style.left = `${Math.min(xEnt, xEx)}px`; 
+                      box.style.top = `${yTop}px`;
+                      box.style.width = `${boxWidth}px`; 
+                      box.style.height = `${Math.max(16, yBot - yTop)}px`;
+                      elements.push({ el: box, isBox: true, xCenter: Math.min(xEnt, xEx) + boxWidth / 2, yTop });
+
+                      if (isClosed || isCancelled) {
+                          // Exit Point
+                          const exitPt = document.createElement("div");
+                          exitPt.className = `chart-pt-exit`;
+                          exitPt.style.left = `${xEx}px`; 
+                          exitPt.style.top = `${yEx}px`;
+                          exitPt.innerHTML = `<span class="chart-pt-label">ВЫХОД</span>`;
+                          elements.push({ el: exitPt, isBox: false });
+
+                          // Outcome Badge
+                          const pnlValue = safeNumber(t.pnl, 0);
+                          const pnlText = isCancelled ? '' : (pnlValue > 0 ? `+${formatRub(pnlValue)}` : `${formatRub(pnlValue)}`);
+                          const dirText = isCall ? "BUY" : "SELL";
+                          const resText = isCancelled ? 'ОТМЕНА' : `${isWin ? 'WIN' : 'LOSS'} | ${dirText} ${pnlText}`;
+                          
+                          const resBadge = document.createElement("div");
+                          resBadge.className = `chart-result-badge ${isCancelled ? 'cancelled' : (isWin ? 'win' : 'loss')}`;
+                          resBadge.style.left = `${xEx}px`;
+                          resBadge.style.top = `${yEx}px`; 
+                          resBadge.style.transform = isCall ? 'translate(-50%, 15px)' : 'translate(-50%, calc(-100% - 15px))';
+                          resBadge.innerHTML = resText;
+                          elements.push({ el: resBadge, isBox: false });
+                      }
+                  }
+
+                  // Apply Tooltip handlers and Append
+                  const tooltipContent = buildTradeTooltipHtml(t);
+                  elements.forEach(item => {
+                      const el = item.el;
+                      const showTooltip = () => {
+                          setHtmlTooltipHtml(tooltipContent);
+                          let tX = item.isBox ? item.xCenter : parseFloat(el.style.left);
+                          let tY = item.isBox ? item.yTop - 10 : parseFloat(el.style.top) - 10;
+                          setHoveredTooltip({ x: tX, y: tY });
+                      };
+                      const hideTooltip = () => setHoveredTooltip(null);
+                      
                       el.onmouseenter = showTooltip;
                       el.onmouseleave = hideTooltip;
-                      el.onclick = () => { showTooltip(); setTimeout(hideTooltip, 5000); };
+                      el.onclick = () => { showTooltip(); setTimeout(hideTooltip, 6000); };
+                      
+                      overlayRef.current.appendChild(el);
                   });
-                  
-                  overlayRef.current.appendChild(box);
-                  overlayRef.current.appendChild(entryPt);
-                  overlayRef.current.appendChild(exitPt);
-                  overlayRef.current.appendChild(resBadge);
               });
           }, []);
 
@@ -1017,23 +1053,18 @@
               const endIdx = data.length - 1 - STRATEGY_5M_25M_CONFIG.expiryCandles; 
               
               const simulatedTrades = [];
-
-              // Prime metrics with real first values
               let lastScores = { structure: 50, liquidity: 50, atr: 50, confidence: 50 };
 
               for (let idx = Math.max(STRATEGY_5M_25M_CONFIG.lookback + STRATEGY_5M_25M_CONFIG.atrLen, startIdx); idx <= endIdx; idx++) {
                   const signalInfo = evaluateTVExactSignal(data, idx, STRATEGY_5M_25M_CONFIG, lastSignalIdx);
                   
-                  if (signalInfo.scores) {
-                      lastScores = signalInfo.scores;
-                  }
+                  if (signalInfo.scores) lastScores = signalInfo.scores;
 
                   if (signalInfo.isSell || signalInfo.isBuy) {
                       const isCall = signalInfo.isBuy;
                       const currCandle = data[idx];
                       const currTime = currCandle.time;
 
-                      // Entry is next candle open (simulating +3 sec delay after signal candle close)
                       const entryCandle = data[idx + 1];
                       const exitCandle = data[idx + 1 + STRATEGY_5M_25M_CONFIG.expiryCandles];
 
@@ -1052,12 +1083,12 @@
                               entryTime: entryCandle.time, entryPrice,
                               exitTime: exitCandle.time, exitPrice, 
                               result, martingaleStep: currentMgStep, stake,
-                              balanceBefore: currentBalance, entrySource: "approx_next_5m_open"
+                              balanceBefore: currentBalance, entrySource: "historical_approx",
+                              state: "TRADE_CLOSED"
                           });
                           
                           simulatedTrades.push(trade);
                           currentBalance = trade.balanceAfter;
-
                           currentMgStep = getNextMartingaleIndex(result, currentMgStep);
                           idx += STRATEGY_5M_25M_CONFIG.expiryCandles; 
                       }
@@ -1118,7 +1149,7 @@
 
                 await new Promise(r => setTimeout(r, 500));
 
-                // PHASE: HISTORICAL ANALYSIS VOICE (Strict Sync)
+                // PHASE: HISTORICAL ANALYSIS VOICE
                 setAppStage(APP_STAGE.HISTORICAL_ANALYSIS_VOICE);
                 setAppPhase('ОТЧЁТ АНАЛИТИКИ...');
                 await announceStatsAsync(stats, () => engineActive.current);
@@ -1165,7 +1196,6 @@
 
                       let triggerCandleIdx = lastIdx - 1; 
 
-                      // Get real-time metric scores for the gauges based on current data
                       const signalInfo = evaluateTVExactSignal(data, triggerCandleIdx, STRATEGY_5M_25M_CONFIG, lastSignalIdxLive);
                       
                       setMetrics({ 
@@ -1180,8 +1210,10 @@
                           signalFound = true;
                           lastSignalIdxLive = triggerCandleIdx;
                           const isCall = signalInfo.isBuy;
+                          const direction = isCall ? "CALL" : "PUT";
                           
                           setAsset(cur); setViewMode('DETAIL');
+                          setMetrics(prev => ({ ...prev, structure: isCall ? 100 : 0, liquidity: 90, smartMoney: 85, buyPressure: isCall ? 85 : 15 }));
 
                           await initChart(); playSound('found');
                           
@@ -1196,31 +1228,61 @@
                               } catch (e) {}
                           }
 
-                          drawIndicators(data); redrawOverlay(); // ensure pools update
-                          
+                          drawIndicators(data); 
+
                           const signalTime = data[triggerCandleIdx].time;
                           const signalPrice = data[triggerCandleIdx].close;
-                          const directionText = isCall ? "повышение" : "понижение";
-                          
+                          const liveStake = getStakeByMartingaleIndex(currentMgStepLive);
+                          const liveStatsBefore = calculateSessionStats(tradesHistoryRef.current);
+                          const liveBalanceBefore = liveStatsBefore.finalBalance;
+
+                          // 1. SIGNAL_DETECTED
+                          let activeTrade = {
+                              tradeId: `live-${signalTime}`,
+                              timeframe: STRATEGY_5M_25M_CONFIG.signalTimeframe,
+                              expiryMinutes: STRATEGY_5M_25M_CONFIG.expiryMinutes,
+                              direction: direction, reason: buildSignalReason(direction),
+                              signalTime: signalTime, signalPrice: signalPrice,
+                              entryTime: null, entryPrice: null, entrySource: null, entryDelaySeconds: SIGNAL_FLOW_CONFIG.totalEntryDelaySeconds,
+                              exitTime: null, exitPrice: null,
+                              result: null, martingaleStep: currentMgStepLive + 1, stake: liveStake,
+                              cancelReason: "", pnl: 0, balanceBefore: liveBalanceBefore, balanceAfter: liveBalanceBefore,
+                              state: "SIGNAL_DETECTED"
+                          };
+
+                          tradesHistoryRef.current.push(activeTrade);
+                          redrawOverlay();
+
                           setAppPhase(`ГОТОВЬТЕ: BTC (5 МИН)`);
                           addLog(`ЗАФИКСИРОВАН СИГНАЛ: PINE EXACT`, true);
-                          await speakTextAsync(`Качественный сигнал подтвержден. Направление на ${directionText}. Подготовка 3 секунды.`, () => engineActive.current);
 
+                          // 2. SIGNAL_EXPLANATION
+                          activeTrade.state = "SIGNAL_EXPLANATION";
+                          const directionText = isCall ? "повышение" : "понижение";
+                          await speakTextAsync(`Внимание. Сигнал на ${directionText}. ${activeTrade.reason}`, () => engineActive.current);
+
+                          // 3. TRADER_PREP
+                          activeTrade.state = "TRADER_PREP";
                           setAppPhase('СНАЙПЕР: ЗАДЕРЖКА 3 СЕК');
-                          
+                          await speakTextAsync(`Подготовка к входу. Три секунды.`, () => engineActive.current);
                           await new Promise(r => setTimeout(r, STRATEGY_5M_25M_CONFIG.preparationDelaySeconds * 1000));
 
+                          // 4. ENTRY_CONFIRMED
                           playSound('start'); setAppPhase('СИГНАЛ АКТИВЕН');
                           
-                          const entryTime = Math.floor(Date.now() / 1000); 
-                          const entryPrice = currentPrice.current; 
+                          activeTrade.state = "ENTRY_CONFIRMED";
+                          activeTrade.entryTime = Math.floor(Date.now() / 1000);
+                          activeTrade.entryPrice = currentPrice.current; 
+                          activeTrade.entrySource = "live_after_6s";
+                          redrawOverlay();
                           
-                          setSignal({ type: isCall ? 'CALL' : 'PUT', exp: STRATEGY_5M_25M_CONFIG.expiryMinutes, entryPrice });
+                          setSignal({ type: direction, exp: STRATEGY_5M_25M_CONFIG.expiryMinutes, entryPrice: activeTrade.entryPrice });
 
-                          const liveStake = getStakeByMartingaleIndex(currentMgStepLive);
                           addLog(`ВХОД ${isCall ? 'ВВЕРХ' : 'ВНИЗ'} НА 25 МИН. СТАВКА: ${liveStake}₽`, true);
                           speakTextAsync(`Открываю сделку. Экспирация 25 минут.`, () => engineActive.current);
 
+                          // 5. TRADE_ACTIVE
+                          activeTrade.state = "TRADE_ACTIVE";
                           let expirySeconds = STRATEGY_5M_25M_CONFIG.expiryMinutes * 60;
                           let isLive = true;
                           
@@ -1241,6 +1303,7 @@
                                     }
                                   });
                                 }
+                                redrawOverlay(); // Continuous redraw for expanding trade box
                               } catch (e) {}
                             }
                           })();
@@ -1251,43 +1314,35 @@
                             expirySeconds--;
                           }
                           
+                          // 6. TRADE_EXIT & TRADE_CLOSED
                           isLive = false; setCountdown(null); setAppPhase('АНАЛИЗ РЕЗУЛЬТАТА');
+                          activeTrade.state = "TRADE_EXIT";
 
                           const resultData = await ScannerAPI.getCandles(cur.symbol, 1, '5m');
-                          let finalPrice = entryPrice;
+                          let finalPrice = activeTrade.entryPrice;
                           if (resultData && resultData.length > 0) finalPrice = resultData[resultData.length - 1].close;
                           
-                          const result = evaluateTradeResult(isCall ? "CALL" : "PUT", entryPrice, finalPrice);
+                          const result = evaluateTradeResult(direction, activeTrade.entryPrice, finalPrice);
                           let isWin = result === 'WIN';
 
-                          if (isWin) {
-                            playSound('win');
-                          } else {
-                            playSound('loss');
-                          }
+                          if (isWin) { playSound('win'); } else { playSound('loss'); }
 
-                          const exitTime = Math.floor(Date.now() / 1000);
+                          activeTrade.exitTime = Math.floor(Date.now() / 1000);
+                          activeTrade.exitPrice = finalPrice;
+                          activeTrade.result = result;
+                          activeTrade.pnl = calculateTradePnl(result, liveStake);
+                          activeTrade.balanceAfter = activeTrade.balanceBefore + activeTrade.pnl;
+                          activeTrade.state = "TRADE_CLOSED";
                           
-                          const liveStatsBefore = calculateSessionStats(tradesHistoryRef.current);
-                          const liveBalanceBefore = liveStatsBefore.finalBalance;
-
-                          const liveTradeResult = createTradeObject({
-                              signalId: signalTime, direction: isCall ? 'CALL' : 'PUT',
-                              signalTime, signalPrice, entryTime, entryPrice, exitTime: exitTime, exitPrice: finalPrice,
-                              result: result, martingaleStep: currentMgStepLive, stake: liveStake,
-                              balanceBefore: liveBalanceBefore, entrySource: "live_tick"
-                          });
-                          
-                          tradesHistoryRef.current.push(liveTradeResult);
                           const newStats = calculateSessionStats(tradesHistoryRef.current);
                           setSessionStats(newStats);
                           redrawOverlay();
 
                           if (isWin) {
-                            addLog(`ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}. PNL: +${liveTradeResult.pnl}₽`);
-                            await speakTextAsync(`Плюс. Прибыль ${liveTradeResult.pnl} рублей.`, () => engineActive.current);
+                            addLog(`ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}. PNL: +${activeTrade.pnl}₽`);
+                            await speakTextAsync(`Плюс. Прибыль ${activeTrade.pnl} рублей.`, () => engineActive.current);
                           } else {
-                            addLog(`МИНУС (-). УБЫТОК: ${liveTradeResult.pnl}₽`);
+                            addLog(`МИНУС (-). УБЫТОК: ${activeTrade.pnl}₽`);
                             await speakTextAsync(`Минус. Увеличиваю шаг мартингейла.`, () => engineActive.current);
                           }
 
