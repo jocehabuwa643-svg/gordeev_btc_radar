@@ -68,6 +68,7 @@
     .trade-box { position: absolute; border-radius: 6px; pointer-events: auto; cursor: pointer; backdrop-filter: blur(2px); border: 1px solid rgba(255,255,255,.65); box-shadow: 0 4px 14px rgba(15,23,42,.12), inset 0 1px 0 rgba(255,255,255,.5); }
     .trade-box.win { background: linear-gradient(180deg,rgba(16,185,129,.22),rgba(16,185,129,.04)); border-color: rgba(16,185,129,.5); }
     .trade-box.loss { background: linear-gradient(180deg,rgba(244,63,94,.18),rgba(244,63,94,.04)); border-color: rgba(244,63,94,.45); }
+    .trade-box.active { background: linear-gradient(180deg,rgba(14,165,233,.20),rgba(14,165,233,.04)); border-color: rgba(14,165,233,.45); box-shadow: 0 4px 18px rgba(14,165,233,.16), inset 0 1px 0 rgba(255,255,255,.55); }
     .trade-point, .trade-arrow, .trade-badge { position: absolute; pointer-events: auto; cursor: pointer; transform: translate(-50%,-50%); }
     .trade-arrow { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.86); border: 1px solid rgba(226,232,240,.85); backdrop-filter: blur(8px); z-index: 18; box-shadow: 0 8px 18px rgba(15,23,42,.16); }
     .trade-point { width: 9px; height: 9px; border-radius: 50%; background: #fff; border: 2px solid #3b82f6; z-index: 20; box-shadow: 0 0 10px rgba(59,130,246,.55); }
@@ -138,7 +139,7 @@
   function formatTime(ms) {
     const t = normalizeCandleTimeMs(ms);
     if (!t) return 'нет данных';
-    return new Date(t).toLocaleString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
   function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
@@ -176,7 +177,8 @@
     explanationDelaySeconds: 3,
     traderPrepSeconds: 3,
     totalEntryDelaySeconds: 6,
-    catchUpClosedCandles: 3,
+    catchUpClosedCandles: 12,
+    liveSignalMaxAgeMs: 12 * 60 * 1000,
     signalDebug: true,
 
     demoBalance: 50000,
@@ -366,12 +368,12 @@
     const base = {
       tradeId: buildSignalId({ symbol: cfg.symbol, timeframe: cfg.timeframe, candleTimeMs: signalTime, direction }),
       mode: 'historical', direction, timeframe: cfg.timeframe, expiryMinutes: cfg.expiryMinutes,
-      signalTime, signalPrice: Number(signalCandle.close), signalHigh: Number(signalCandle.high), signalLow: Number(signalCandle.low), atr: signalResult.atr,
+      signalTime, signalChartTime: signalTime, signalPrice: Number(signalCandle.close), signalHigh: Number(signalCandle.high), signalLow: Number(signalCandle.low), atr: signalResult.atr,
       reason: buildSignalReason({ direction }), debug: signalResult, entryDelaySeconds: cfg.totalEntryDelaySeconds
     };
 
     if (!entryCandle || !exitCandle) {
-      return { ...base, result: 'CANCELLED', cancelReason: 'NOT_ENOUGH_FUTURE_CANDLES', entryTime: entryCandle ? normalizeCandleTimeMs(entryCandle.time) : null, entryPrice: entryCandle ? Number(entryCandle.open) : null, exitTime: null, exitPrice: null, state: 'TRADE_CLOSED' };
+      return { ...base, result: 'CANCELLED', cancelReason: 'NOT_ENOUGH_FUTURE_CANDLES', entryTime: entryCandle ? normalizeCandleTimeMs(entryCandle.time) : null, entryChartTime: entryCandle ? normalizeCandleTimeMs(entryCandle.time) : null, entryPrice: entryCandle ? Number(entryCandle.open) : null, exitTime: null, exitChartTime: null, exitPrice: null, state: 'TRADE_CLOSED' };
     }
 
     const entryTime = normalizeCandleTimeMs(entryCandle.time);
@@ -379,7 +381,7 @@
     const entryPrice = Number(entryCandle.open);
     const exitPrice = Number(exitCandle.close);
     const result = evaluateTradeResult(direction, entryPrice, exitPrice);
-    return { ...base, entryTime, entryPrice, entrySource: 'historical_next_5m_open', exitTime, exitPrice, result, state: 'TRADE_CLOSED' };
+    return { ...base, entryTime, entryChartTime: entryTime, entryPrice, entrySource: 'historical_next_5m_open', exitTime, exitChartTime: exitTime, exitPrice, result, state: 'TRADE_CLOSED' };
   }
 
   function applyMoneyManagementToTrades(rawTrades, cfg) {
@@ -493,9 +495,9 @@
       tradeId: params.signalId || `${STRATEGY_RUNTIME_CONFIG.symbol}_${Date.now()}_${direction}`,
       mode: 'live', symbol: STRATEGY_RUNTIME_CONFIG.symbol, timeframe: STRATEGY_RUNTIME_CONFIG.timeframe, expiryMinutes: STRATEGY_RUNTIME_CONFIG.expiryMinutes,
       direction,
-      signalTime: params.signalTime, signalPrice: params.signalPrice, signalHigh: params.signalHigh, signalLow: params.signalLow, atr: params.atr,
-      entryTime: params.entryTime || null, entryPrice: params.entryPrice || null, entrySource: params.entrySource || null,
-      exitTime: params.exitTime || null, exitPrice: params.exitPrice || null,
+      signalTime: params.signalTime, signalChartTime: params.signalChartTime || params.signalTime, signalPrice: params.signalPrice, signalHigh: params.signalHigh, signalLow: params.signalLow, atr: params.atr,
+      entryTime: params.entryTime || null, entryChartTime: params.entryChartTime || null, entryPrice: params.entryPrice || null, entrySource: params.entrySource || null,
+      exitTime: params.exitTime || null, exitChartTime: params.exitChartTime || null, exitPrice: params.exitPrice || null,
       result: params.result || null, pnl: 0,
       martingaleStep: safeNumber(params.martingaleIndex, 0) + 1,
       stake: safeNumber(params.stake, STRATEGY_RUNTIME_CONFIG.baseStake),
@@ -505,27 +507,52 @@
   }
 
   function checkRecentClosedSignals({ candles, symbol = 'BTCUSDT', cfg = STRATEGY_RUNTIME_CONFIG }) {
-    if (!checkRecentClosedSignals.liveState) checkRecentClosedSignals.liveState = { index: null, lastBuyPool: null, lastSellPool: null };
-    const closed = getClosedCandles(candles, Date.now(), cfg.timeframeMs);
-    const recent = closed.slice(-(cfg.catchUpClosedCandles || 3));
+    if (!checkRecentClosedSignals.liveState) {
+      checkRecentClosedSignals.liveState = { index: null, lastBuyPool: null, lastSellPool: null };
+    }
+
+    const now = Date.now();
+    const closed = getClosedCandles(candles, now, cfg.timeframeMs);
+    const recent = closed.slice(-(cfg.catchUpClosedCandles || 12));
     let latestDebug = null;
-    for (const candle of recent) {
+
+    // Идём от самой свежей закрытой свечи назад, чтобы не пропускать сигнал,
+    // если в момент закрытия свечи утилита была занята озвучкой/рендером.
+    for (let r = recent.length - 1; r >= 0; r--) {
+      const candle = recent[r];
       const candleTimeMs = normalizeCandleTimeMs(candle.time);
+      const candleCloseAge = now - (candleTimeMs + cfg.timeframeMs);
       const index = candles.findIndex(c => normalizeCandleTimeMs(c.time) === candleTimeMs);
       if (index < 0) continue;
+
       const result = evaluateStrategySignal(candles, index, cfg, checkRecentClosedSignals.liveState);
-      latestDebug = { candleTime: candleTimeMs, ...result, candle };
-      if (result.isBuy || result.isSell) {
-        const direction = result.isBuy ? 'BUY' : 'SELL';
-        const signalId = buildSignalId({ symbol, timeframe: cfg.timeframe, candleTimeMs, direction });
-        if (announcedLiveSignalIds.has(signalId)) continue;
-        announcedLiveSignalIds.add(signalId);
-        checkRecentClosedSignals.liveState.index = index;
-        if (direction === 'BUY') checkRecentClosedSignals.liveState.lastBuyPool = result.lowerPool;
-        if (direction === 'SELL') checkRecentClosedSignals.liveState.lastSellPool = result.upperPool;
-        return { signal: { signalId, symbol, timeframe: cfg.timeframe, direction, signalTime: candleTimeMs, signalPrice: Number(candle.close), signalHigh: Number(candle.high), signalLow: Number(candle.low), atr: result.atr, reason: buildSignalReason({ direction }), debug: result, index }, debug: latestDebug };
-      }
+      latestDebug = { candleTime: candleTimeMs, candleCloseAge, ...result, candle };
+
+      if (!(result.isBuy || result.isSell)) continue;
+
+      // Старые сигналы остаются в истории, но не запускаются как live-сигнал.
+      if (candleCloseAge > safeNumber(cfg.liveSignalMaxAgeMs, 12 * 60 * 1000)) continue;
+
+      const direction = result.isBuy ? 'BUY' : 'SELL';
+      const signalId = buildSignalId({ symbol, timeframe: cfg.timeframe, candleTimeMs, direction });
+      if (announcedLiveSignalIds.has(signalId)) continue;
+
+      announcedLiveSignalIds.add(signalId);
+      checkRecentClosedSignals.liveState.index = index;
+      if (direction === 'BUY') checkRecentClosedSignals.liveState.lastBuyPool = result.lowerPool;
+      if (direction === 'SELL') checkRecentClosedSignals.liveState.lastSellPool = result.upperPool;
+
+      return {
+        signal: {
+          signalId, symbol, timeframe: cfg.timeframe, direction,
+          signalTime: candleTimeMs, signalChartTime: candleTimeMs,
+          signalPrice: Number(candle.close), signalHigh: Number(candle.high), signalLow: Number(candle.low),
+          atr: result.atr, reason: buildSignalReason({ direction }), debug: result, index
+        },
+        debug: latestDebug
+      };
     }
+
     return { signal: null, debug: latestDebug };
   }
 
@@ -607,6 +634,15 @@
     try { window.speechSynthesis.speak(utterance); } catch (e) { clearTimeout(fallback); done(); }
   }
 
+  function clearSpeechNow() {
+    try { window.speechSynthesis?.cancel(); } catch(e) {}
+    while (speakQueue.length) {
+      const item = speakQueue.shift();
+      try { item.resolve(); } catch(e) {}
+    }
+    voiceBusy = false;
+  }
+
   function ZapIcon({ size = 24, className = '' }) { return <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>; }
   function GlobeIcon({ size = 16, className = '' }) { return <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>; }
   function RadarIcon({ size = 20, className = '' }) { return <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M19.1 4.9A10 10 0 0 0 7 3.3"/><path d="M4 5.5A10 10 0 0 0 5.3 19.4"/><path d="M20 8.7A10 10 0 0 1 17.4 20"/><path d="M12 12v.01"/></svg>; }
@@ -675,6 +711,7 @@
     const tradesRef = useRef([]);
     const engineActiveRef = useRef(false);
     const currentPriceRef = useRef(null);
+    const currentChartTimeSecRef = useRef(null);
     const currentMgIndexRef = useRef(0);
     const lastNewsAtRef = useRef(Date.now());
     const stageRef = useRef(APP_STAGE.IDLE);
@@ -687,6 +724,7 @@
     const [livePrice, setLivePrice] = useState(null);
     const liveWsRef = useRef(null);
     const livePollingRef = useRef(null);
+    const liveSignalLockRef = useRef(false);
     const [backtestStats, setBacktestStats] = useState(null);
     const [debugInfo, setDebugInfo] = useState(null);
     const [metrics, setMetrics] = useState({ structure: 50, liquidity: 50, filterLevel: 50, smartMoney: 50 });
@@ -710,11 +748,12 @@
         const isBuy = t.direction === 'BUY' || t.direction === 'CALL';
         const isWin = t.result === 'WIN';
         const isClosed = t.state === 'TRADE_CLOSED';
-        const xSig = chartRef.current.timeScale().timeToCoordinate(t.signalTime / 1000);
+        const xSig = chartRef.current.timeScale().timeToCoordinate((t.signalChartTime || t.signalTime) / 1000);
         const ySig = candleSeriesRef.current.priceToCoordinate(getSignalArrowPrice(t));
-        const xEntry = t.entryTime ? chartRef.current.timeScale().timeToCoordinate(t.entryTime / 1000) : null;
+        const xEntry = t.entryTime ? chartRef.current.timeScale().timeToCoordinate((t.entryChartTime || t.entryTime) / 1000) : null;
         const yEntry = t.entryTime ? candleSeriesRef.current.priceToCoordinate(t.entryPrice) : null;
-        const renderExitTime = t.exitTime || (t.state === 'TRADE_ACTIVE' ? Date.now() : null);
+        const activeRenderTimeMs = currentChartTimeSecRef.current ? currentChartTimeSecRef.current * 1000 : Date.now();
+        const renderExitTime = t.exitTime ? (t.exitChartTime || t.exitTime) : (t.state === 'TRADE_ACTIVE' ? activeRenderTimeMs : null);
         const renderExitPrice = t.exitPrice || (t.state === 'TRADE_ACTIVE' ? currentPriceRef.current : null);
         const xExit = renderExitTime ? chartRef.current.timeScale().timeToCoordinate(renderExitTime / 1000) : null;
         const yExit = renderExitPrice ? candleSeriesRef.current.priceToCoordinate(renderExitPrice) : null;
@@ -746,7 +785,7 @@
           const top = Math.min(yEntry, yExit) - 16;
           const height = Math.max(18, Math.abs(yExit - yEntry) + 32);
           const box = document.createElement('div');
-          box.className = `trade-box ${isClosed ? (isWin ? 'win' : 'loss') : 'win'}`;
+          box.className = `trade-box ${isClosed ? (isWin ? 'win' : 'loss') : 'active'}`;
           box.style.left = `${xLeft}px`; box.style.top = `${top}px`; box.style.width = `${width}px`; box.style.height = `${height}px`;
           attach(box, xLeft + width / 2, top - 8);
           if (isClosed) {
@@ -817,6 +856,7 @@
       };
 
       currentPriceRef.current = normalized.close;
+      currentChartTimeSecRef.current = normalized.time;
       setLivePrice(normalized.close);
 
       setCandles(prev => {
@@ -869,6 +909,16 @@
               volume: Number(k.v)
             };
             updateLiveCandleOnChart(candle);
+
+            // Закрылась 5M-свеча — сразу проверяем сигнал, не ждём обычного REST-цикла.
+            if (k.x && stageRef.current === APP_STAGE.LIVE_SCAN && !liveSignalLockRef.current) {
+              ScannerAPI.getCandles(symbol, 400, '5m').then(data => {
+                if (!data.length || stageRef.current !== APP_STAGE.LIVE_SCAN || liveSignalLockRef.current) return;
+                const { signal, debug } = checkRecentClosedSignals({ candles: data, symbol, cfg: STRATEGY_RUNTIME_CONFIG });
+                if (debug) setDebugInfo(debug);
+                if (signal) handleLiveSignal(signal, data);
+              }).catch(e => console.warn('closed candle signal check error', e));
+            }
           } catch(e) { console.warn('ws parse error', e); }
         };
         ws.onerror = () => {
@@ -896,13 +946,12 @@
     async function announceStats(s) {
       const pnlValue = Math.round(safeNumber(s.pnl, 0));
       const pnlAbs = Math.abs(pnlValue);
-      const pnlWord = pnlValue >= 0 ? 'прибыль' : 'убыток';
-      await speakTextAsync('Терминал Про Макс запущен. Активирован режим повышенного качества сигналов.', () => engineActiveRef.current);
-      await speakTextAsync('Рабочая модель: график пять минут, экспирация двадцать пять минут, вход по стратегии снятия ликвидности.', () => engineActiveRef.current);
-      await speakTextAsync('Это демонстрационный бэктест: расчёт выполнен для баланса пятьдесят тысяч рублей и базового входа пятьсот рублей.', () => engineActiveRef.current);
-      await speakTextAsync(`За последние двенадцать часов найдено ${s.totalSignals} сигналов. Исполнено ${s.confirmedTrades} сделок. Плюсовых ${s.wins}, минусовых ${s.losses}.`, () => engineActiveRef.current);
-      await speakTextAsync(`Итоговый результат с учётом мартингейла: ${pnlWord} ${pnlAbs} рублей. Итоговый баланс ${Math.round(s.finalBalance)} рублей.`, () => engineActiveRef.current);
-      await speakTextAsync('Важно: результат считается с учётом мартингейла до четвёртого колена. После минусовой сделки следующий вход увеличивается, поэтому одна прибыльная сделка на старшем колене может перекрыть несколько предыдущих минусов.', () => engineActiveRef.current);
+      const resultWord = pnlValue >= 0 ? 'заработали' : 'получили минус';
+
+      await speakTextAsync('Терминал Про Макс запущен.', () => engineActiveRef.current);
+      await speakTextAsync(`За последние двенадцать часов было ${s.confirmedTrades} сделок. Плюсовых ${s.wins}, минусовых ${s.losses}.`, () => engineActiveRef.current);
+      await speakTextAsync(`Если бы вход был по пятьсот рублей, с учётом мартингейла до четвёртого колена вы бы ${resultWord} ${pnlAbs} рублей.`, () => engineActiveRef.current);
+      await speakTextAsync('Перехожу к сканированию рынка.', () => engineActiveRef.current);
     }
 
     async function runInitialAnalysis() {
@@ -917,6 +966,7 @@
       if (!data.length) { setPhase('ОШИБКА API'); addLog('НЕТ СВЯЗИ С БИРЖЕЙ'); return; }
       setCandles(data);
       currentPriceRef.current = data[data.length - 1].close;
+      currentChartTimeSecRef.current = data[data.length - 1].time;
       setLivePrice(currentPriceRef.current);
       await initChart();
       candleSeriesRef.current.setData(data);
@@ -943,66 +993,116 @@
     }
 
     async function handleLiveSignal(signalEvent, liveData) {
-      setStage(APP_STAGE.SIGNAL_FLOW);
-      setViewMode('DETAIL');
-      setPhase('СИГНАЛ ОБНАРУЖЕН');
-      addLog(`LIVE SIGNAL: ${signalEvent.direction}`);
-      setCandles(liveData);
-      currentPriceRef.current = liveData[liveData.length - 1].close;
-      setLivePrice(currentPriceRef.current);
-      if (candleSeriesRef.current) {
-        candleSeriesRef.current.setData(liveData);
-        drawIndicators(liveData);
-      }
-      const before = calculateSessionStats(tradesRef.current);
-      const stake = getStakeByMartingaleIndex(currentMgIndexRef.current);
-      const trade = createTradeObject({ signalId: signalEvent.signalId, direction: signalEvent.direction, signalTime: signalEvent.signalTime, signalPrice: signalEvent.signalPrice, signalHigh: signalEvent.signalHigh, signalLow: signalEvent.signalLow, atr: signalEvent.atr, stake, martingaleIndex: currentMgIndexRef.current, balanceBefore: before.finalBalance, state: 'SIGNAL_DETECTED' });
-      tradesRef.current = [...tradesRef.current, trade];
-      redrawOverlay();
+      if (liveSignalLockRef.current) return;
+      liveSignalLockRef.current = true;
+      clearSpeechNow();
 
-      await speakTextAsync(`Внимание. Сигнал ${signalEvent.direction === 'BUY' ? 'вверх' : 'вниз'}. ${trade.reason}`, () => engineActiveRef.current);
-      await speakTextAsync('Подготовьтесь. До входа три секунды.', () => engineActiveRef.current);
-      setPhase('ПОДГОТОВКА 3 СЕКУНДЫ');
-      for (let i = 3; i > 0; i--) { setCountdown(i); await wait(1000); }
-      setCountdown(null);
+      try {
+        setStage(APP_STAGE.SIGNAL_FLOW);
+        setViewMode('DETAIL');
+        setPhase('СИГНАЛ ОБНАРУЖЕН');
+        addLog(`LIVE SIGNAL: ${signalEvent.direction}`);
 
-      trade.state = 'TRADE_ACTIVE';
-      trade.entryTime = Date.now();
-      trade.entryPrice = currentPriceRef.current;
-      trade.entrySource = 'live_after_6s';
-      setSignal({ type: signalEvent.direction, exp: STRATEGY_RUNTIME_CONFIG.expiryMinutes, entryPrice: trade.entryPrice });
-      setPhase('СИГНАЛ АКТИВЕН');
-      redrawOverlay();
-
-      let seconds = STRATEGY_RUNTIME_CONFIG.expiryMinutes * 60;
-      while (seconds > 0 && engineActiveRef.current) {
-        setCountdown(seconds);
-        await wait(1000);
-        seconds--;
-        if (seconds % 10 === 0) {
-          const d = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 3, '5m');
-          if (d.length) { updateLiveCandleOnChart(d[d.length - 1]); }
+        setCandles(liveData);
+        currentPriceRef.current = liveData[liveData.length - 1].close;
+        currentChartTimeSecRef.current = liveData[liveData.length - 1].time;
+        setLivePrice(currentPriceRef.current);
+        if (candleSeriesRef.current) {
+          candleSeriesRef.current.setData(liveData);
+          drawIndicators(liveData);
         }
+
+        const before = calculateSessionStats(tradesRef.current);
+        const stake = getStakeByMartingaleIndex(currentMgIndexRef.current);
+        const trade = createTradeObject({
+          signalId: signalEvent.signalId,
+          direction: signalEvent.direction,
+          signalTime: signalEvent.signalTime,
+          signalChartTime: signalEvent.signalChartTime || signalEvent.signalTime,
+          signalPrice: signalEvent.signalPrice,
+          signalHigh: signalEvent.signalHigh,
+          signalLow: signalEvent.signalLow,
+          atr: signalEvent.atr,
+          stake,
+          martingaleIndex: currentMgIndexRef.current,
+          balanceBefore: before.finalBalance,
+          state: 'SIGNAL_DETECTED'
+        });
+
+        tradesRef.current = [...tradesRef.current, trade];
+        redrawOverlay();
+
+        const dirText = signalEvent.direction === 'BUY' ? 'вверх' : 'вниз';
+        const shortReason = signalEvent.direction === 'BUY'
+          ? 'Снята нижняя ликвидность, цена вернулась в пул.'
+          : 'Снята верхняя ликвидность, цена вернулась в пул.';
+
+        await speakTextAsync(`Сигнал ${dirText}. ${shortReason}`, () => engineActiveRef.current);
+        await speakTextAsync('Подготовка. Вход через три секунды.', () => engineActiveRef.current);
+
+        setPhase('ПОДГОТОВКА 3 СЕКУНДЫ');
+        for (let i = 3; i > 0; i--) {
+          setCountdown(i);
+          await wait(1000);
+        }
+        setCountdown(null);
+
+        try {
+          const fresh = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 2, '5m');
+          if (fresh.length) updateLiveCandleOnChart(fresh[fresh.length - 1]);
+        } catch(e) {}
+
+        trade.state = 'TRADE_ACTIVE';
+        trade.entryTime = Date.now();
+        trade.entryChartTime = currentChartTimeSecRef.current ? currentChartTimeSecRef.current * 1000 : trade.entryTime;
+        trade.entryPrice = currentPriceRef.current;
+        trade.entrySource = 'live_after_6s';
+        setSignal({ type: signalEvent.direction, exp: STRATEGY_RUNTIME_CONFIG.expiryMinutes, entryPrice: trade.entryPrice });
+        setPhase('СИГНАЛ АКТИВЕН');
+        redrawOverlay();
+        addLog(`ВХОД ${signalEvent.direction}. СТАВКА ${stake}₽. ЭКСПИРАЦИЯ 25 МИН.`);
+
+        let seconds = STRATEGY_RUNTIME_CONFIG.expiryMinutes * 60;
+        while (seconds > 0 && engineActiveRef.current) {
+          setCountdown(seconds);
+          await wait(1000);
+          seconds--;
+          if (seconds % 5 === 0) redrawOverlay();
+          if (seconds % 10 === 0) {
+            try {
+              const d = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 3, '5m');
+              if (d.length) updateLiveCandleOnChart(d[d.length - 1]);
+            } catch(e) {}
+          }
+        }
+
+        setCountdown(null);
+        const exitData = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 2, '5m');
+        const finalCandle = exitData.length ? exitData[exitData.length - 1] : null;
+        const finalPrice = finalCandle ? finalCandle.close : currentPriceRef.current;
+
+        trade.exitTime = Date.now();
+        trade.exitChartTime = finalCandle ? normalizeCandleTimeMs(finalCandle.time) : (currentChartTimeSecRef.current ? currentChartTimeSecRef.current * 1000 : trade.exitTime);
+        trade.exitPrice = finalPrice;
+        trade.result = evaluateTradeResult(trade.direction, trade.entryPrice, trade.exitPrice);
+        trade.pnl = calculateTradePnl(trade.result, trade.stake);
+        trade.balanceAfter = trade.balanceBefore + trade.pnl;
+        trade.state = 'TRADE_CLOSED';
+        currentMgIndexRef.current = getNextMartingaleIndex(trade.result, currentMgIndexRef.current);
+
+        setStats(calculateSessionStats(tradesRef.current));
+        setSignal(null);
+        redrawOverlay();
+        addLog(`${trade.result}: ${trade.direction}, PNL ${trade.pnl}`);
+        await speakTextAsync(trade.result === 'WIN' ? `Плюс. Прибыль ${trade.pnl} рублей.` : 'Минус. Следующий вход по мартингейлу.', () => engineActiveRef.current);
+
+        setStage(APP_STAGE.LIVE_SCAN);
+        setViewMode('SCREENER');
+        setPhase('СКАНИРОВАНИЕ ЛИКВИДНОСТИ (5M)...');
+        lastNewsAtRef.current = Date.now();
+      } finally {
+        liveSignalLockRef.current = false;
       }
-      setCountdown(null);
-      const exitData = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 2, '5m');
-      const finalPrice = exitData.length ? exitData[exitData.length - 1].close : currentPriceRef.current;
-      trade.exitTime = Date.now();
-      trade.exitPrice = finalPrice;
-      trade.result = evaluateTradeResult(trade.direction, trade.entryPrice, trade.exitPrice);
-      trade.pnl = calculateTradePnl(trade.result, trade.stake);
-      trade.balanceAfter = trade.balanceBefore + trade.pnl;
-      trade.state = 'TRADE_CLOSED';
-      currentMgIndexRef.current = getNextMartingaleIndex(trade.result, currentMgIndexRef.current);
-      setStats(calculateSessionStats(tradesRef.current));
-      setSignal(null);
-      redrawOverlay();
-      addLog(`${trade.result}: ${trade.direction}, PNL ${trade.pnl}`);
-      await speakTextAsync(trade.result === 'WIN' ? `Плюс. Прибыль ${trade.pnl} рублей.` : 'Минус. Увеличиваю шаг мартингейла.', () => engineActiveRef.current);
-      setStage(APP_STAGE.LIVE_SCAN);
-      setViewMode('SCREENER');
-      setPhase('СКАНИРОВАНИЕ ЛИКВИДНОСТИ (5M)...');
-      lastNewsAtRef.current = Date.now();
     }
 
     useEffect(() => {
@@ -1020,7 +1120,7 @@
             const { signal, debug } = checkRecentClosedSignals({ candles: data, symbol: STRATEGY_RUNTIME_CONFIG.symbol, cfg: STRATEGY_RUNTIME_CONFIG });
             if (debug) setDebugInfo(debug);
             if (candleSeriesRef.current && viewMode === 'DETAIL') { candleSeriesRef.current.setData(data); drawIndicators(data); redrawOverlay(); }
-            if (signal && !cancelled) { await handleLiveSignal(signal, data); return; }
+            if (signal && !cancelled && !liveSignalLockRef.current) { await handleLiveSignal(signal, data); return; }
           }
           if (Date.now() - lastNewsAtRef.current > 10 * 60 * 1000 && !window.speechSynthesis?.speaking) {
             lastNewsAtRef.current = Date.now();
@@ -1028,7 +1128,7 @@
             await speakTextAsync(`Финансовая новость. Источник: ${n.source}. ${n.title}.`, () => engineActiveRef.current && stageRef.current === APP_STAGE.LIVE_SCAN);
           }
         } catch (e) { console.warn('Live loop error:', e); addLog('ПЕРЕЗАПУСК РАДАРА'); }
-        if (!cancelled) setTimeout(loop, 7000);
+        if (!cancelled) setTimeout(loop, 2500);
       };
       loop();
       return () => { cancelled = true; };
