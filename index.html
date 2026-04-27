@@ -645,6 +645,9 @@
     const [viewMode, setViewMode] = useState('DETAIL');
     const [candles, setCandles] = useState([]);
     const [stats, setStats] = useState(calculateSessionStats([]));
+    const [livePrice, setLivePrice] = useState(null);
+    const liveWsRef = useRef(null);
+    const livePollingRef = useRef(null);
     const [backtestStats, setBacktestStats] = useState(null);
     const [debugInfo, setDebugInfo] = useState(null);
     const [metrics, setMetrics] = useState({ structure: 50, liquidity: 50, filterLevel: 50, smartMoney: 50 });
@@ -763,10 +766,103 @@
       ls.setData(lower); extraSeriesRef.current.push(ls);
     }
 
+    function updateLiveCandleOnChart(candle) {
+      if (!candle || !Number.isFinite(Number(candle.close))) return;
+      const normalized = {
+        time: Number(candle.time),
+        open: Number(candle.open),
+        high: Number(candle.high),
+        low: Number(candle.low),
+        close: Number(candle.close),
+        volume: Number(candle.volume || 0)
+      };
+
+      currentPriceRef.current = normalized.close;
+      setLivePrice(normalized.close);
+
+      setCandles(prev => {
+        const arr = Array.isArray(prev) ? [...prev] : [];
+        const last = arr[arr.length - 1];
+        if (last && Number(last.time) === Number(normalized.time)) {
+          arr[arr.length - 1] = normalized;
+        } else if (!last || Number(normalized.time) > Number(last.time)) {
+          arr.push(normalized);
+          if (arr.length > 500) arr.shift();
+        }
+        return arr;
+      });
+
+      if (candleSeriesRef.current) {
+        try { candleSeriesRef.current.update(normalized); } catch(e) { console.warn('live chart update error', e); }
+      }
+      redrawOverlay();
+    }
+
+    function startLivePolling(symbol = STRATEGY_RUNTIME_CONFIG.symbol) {
+      if (livePollingRef.current) clearInterval(livePollingRef.current);
+      livePollingRef.current = setInterval(async () => {
+        if (!engineActiveRef.current) return;
+        try {
+          const d = await ScannerAPI.getCandles(symbol, 2, '5m');
+          if (d && d.length) updateLiveCandleOnChart(d[d.length - 1]);
+        } catch(e) { console.warn('live polling error', e); }
+      }, 2000);
+    }
+
+    function startLiveStream(symbol = STRATEGY_RUNTIME_CONFIG.symbol) {
+      try { if (liveWsRef.current) liveWsRef.current.close(); } catch(e) {}
+      const wsUrl = `wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_5m`;
+      try {
+        const ws = new WebSocket(wsUrl);
+        liveWsRef.current = ws;
+        ws.onopen = () => addLog('LIVE STREAM: Binance BTCUSDT 5M подключён');
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            const k = msg.k;
+            if (!k) return;
+            const candle = {
+              time: Math.floor(Number(k.t) / 1000),
+              open: Number(k.o),
+              high: Number(k.h),
+              low: Number(k.l),
+              close: Number(k.c),
+              volume: Number(k.v)
+            };
+            updateLiveCandleOnChart(candle);
+          } catch(e) { console.warn('ws parse error', e); }
+        };
+        ws.onerror = () => {
+          addLog('LIVE STREAM: ошибка WebSocket, включаю REST polling');
+          startLivePolling(symbol);
+        };
+        ws.onclose = () => {
+          if (engineActiveRef.current) setTimeout(() => { if (engineActiveRef.current) startLiveStream(symbol); }, 4000);
+        };
+      } catch(e) {
+        addLog('LIVE STREAM: недоступен, включаю REST polling');
+        startLivePolling(symbol);
+      }
+    }
+
+    function stopLiveStreams() {
+      try { if (liveWsRef.current) liveWsRef.current.close(); } catch(e) {}
+      try { if (livePollingRef.current) clearInterval(livePollingRef.current); } catch(e) {}
+      liveWsRef.current = null;
+      livePollingRef.current = null;
+    }
+
+    useEffect(() => () => stopLiveStreams(), []);
+
     async function announceStats(s) {
+      const pnlValue = Math.round(safeNumber(s.pnl, 0));
+      const pnlAbs = Math.abs(pnlValue);
+      const pnlWord = pnlValue >= 0 ? 'прибыль' : 'убыток';
       await speakTextAsync('Запущен режим пять минут. Экспирация сделки двадцать пять минут.', () => engineActiveRef.current);
-      await speakTextAsync(`За последние двенадцать часов найдено ${s.totalSignals} сигналов. Исполнено ${s.confirmedTrades} сделок.`, () => engineActiveRef.current);
-      await speakTextAsync(`Плюсовых ${s.wins}, минусовых ${s.losses}. Итоговый результат ${Math.round(s.pnl)} рублей. Баланс ${Math.round(s.finalBalance)} рублей.`, () => engineActiveRef.current);
+      await speakTextAsync('Это демонстрационный бэктест: расчёт выполнен для баланса пятьдесят тысяч рублей и базового входа пятьсот рублей.', () => engineActiveRef.current);
+      await speakTextAsync(`За последние двенадцать часов найдено ${s.totalSignals} сигналов. Исполнено ${s.confirmedTrades} сделок. Плюсовых ${s.wins}, минусовых ${s.losses}.`, () => engineActiveRef.current);
+      await speakTextAsync(`Итоговый результат: ${pnlWord} ${pnlAbs} рублей. Итоговый баланс ${Math.round(s.finalBalance)} рублей.`, () => engineActiveRef.current);
+      await speakTextAsync('Результат рассчитан с учётом мартингейла: после минусовой сделки следующий вход увеличивается до четвёртого колена, поэтому прибыльные сделки на старших коленах могут перекрывать предыдущие минусы.', () => engineActiveRef.current);
     }
 
     async function runInitialAnalysis() {
@@ -781,6 +877,7 @@
       if (!data.length) { setPhase('ОШИБКА API'); addLog('НЕТ СВЯЗИ С БИРЖЕЙ'); return; }
       setCandles(data);
       currentPriceRef.current = data[data.length - 1].close;
+      setLivePrice(currentPriceRef.current);
       await initChart();
       candleSeriesRef.current.setData(data);
       drawIndicators(data);
@@ -798,6 +895,8 @@
       setPhase('ОТЧЁТ АНАЛИТИКИ...');
       await announceStats(newStats);
       if (!engineActiveRef.current) return;
+      startLiveStream(STRATEGY_RUNTIME_CONFIG.symbol);
+      startLivePolling(STRATEGY_RUNTIME_CONFIG.symbol);
       setViewMode('SCREENER');
       setStage(APP_STAGE.LIVE_SCAN);
       setPhase('СКАНИРОВАНИЕ ЛИКВИДНОСТИ (5M)...');
@@ -810,6 +909,7 @@
       addLog(`LIVE SIGNAL: ${signalEvent.direction}`);
       setCandles(liveData);
       currentPriceRef.current = liveData[liveData.length - 1].close;
+      setLivePrice(currentPriceRef.current);
       if (candleSeriesRef.current) {
         candleSeriesRef.current.setData(liveData);
         drawIndicators(liveData);
@@ -841,7 +941,7 @@
         seconds--;
         if (seconds % 10 === 0) {
           const d = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 3, '5m');
-          if (d.length) { currentPriceRef.current = d[d.length - 1].close; redrawOverlay(); }
+          if (d.length) { updateLiveCandleOnChart(d[d.length - 1]); }
         }
       }
       setCountdown(null);
@@ -875,6 +975,8 @@
           if (data.length) {
             setCandles(data);
             currentPriceRef.current = data[data.length - 1].close;
+            setLivePrice(currentPriceRef.current);
+            updateLiveCandleOnChart(data[data.length - 1]);
             const { signal, debug } = checkRecentClosedSignals({ candles: data, symbol: STRATEGY_RUNTIME_CONFIG.symbol, cfg: STRATEGY_RUNTIME_CONFIG });
             if (debug) setDebugInfo(debug);
             if (candleSeriesRef.current && viewMode === 'DETAIL') { candleSeriesRef.current.setData(data); drawIndicators(data); redrawOverlay(); }
@@ -940,7 +1042,7 @@
         <section className="chart-card glass">
           <div className="price-card glass-soft">
             <div className="text-[10px] text-slate-400 tracking-widest font-bold uppercase flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>Bitcoin (5M)</div>
-            <div className="oswald text-4xl md:text-5xl font-black text-slate-800 leading-none mt-2">{currentPriceRef.current ? formatPrice(currentPriceRef.current) : '---'}</div>
+            <div className="oswald text-4xl md:text-5xl font-black text-slate-800 leading-none mt-2">{livePrice ? formatPrice(livePrice) : (currentPriceRef.current ? formatPrice(currentPriceRef.current) : '---')}</div>
           </div>
 
           <div className="chart-area">
