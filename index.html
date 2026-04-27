@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Крипто Терминал Гордеева - PRO MAX (SMC) FIXED</title>
+  <title>Крипто Терминал Гордеева - PRO MAX (SMC) QUALITY</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -143,28 +143,35 @@
   function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
   const STRATEGY_RUNTIME_CONFIG = {
-    mode: 'PINE_EQUIVALENT_5M_FIXED',
+    mode: 'PINE_EQUIVALENT_5M_QUALITY_BALANCED',
     symbol: 'BTCUSDT',
     timeframe: '5m',
     timeframeMs: 5 * 60 * 1000,
     historicalLookbackHours: 12,
     expiryMinutes: 25,
     expiryCandles: 5,
-    allowOverlappingHistoricalTrades: true,
+    allowOverlappingHistoricalTrades: false,
 
-    lookback: 20,
+    lookback: 24,
     atrLen: 14,
     useChoch: false,
     chochLookback: 3,
     chochMode: 'Close',
     confirmOnClose: true,
-    minSweepATR: 0.03,
-    minReclaimATR: 0.03,
-    minBodyRatio: 0.10,
-    maxRangeATR: 3.50,
+    minSweepATR: 0.05,
+    minReclaimATR: 0.05,
+    minBodyRatio: 0.14,
+    maxRangeATR: 3.00,
+    minWickRatio: 0.20,
     requireBodyDir: false,
     blockDoubleSweep: false,
-    cooldownBars: 1,
+    cooldownBars: 5,
+    blockSamePoolSignals: true,
+    samePoolDistanceATR: 0.50,
+    usePoolEdgeFilter: true,
+    poolEdgePercent: 0.38,
+    useLateEntryValidation: true,
+    lateEntryMaxMoveATR: 0.25,
 
     explanationDelaySeconds: 3,
     traderPrepSeconds: 3,
@@ -219,7 +226,7 @@
     });
   }
 
-  function evaluateStrategySignal(candles, index, cfg = STRATEGY_RUNTIME_CONFIG, lastSignalIndex = null) {
+  function evaluateStrategySignal(candles, index, cfg = STRATEGY_RUNTIME_CONFIG, lastSignalState = null) {
     const neutral = { structure: 50, liquidity: 50, atr: 50, confidence: 50 };
     if (!Array.isArray(candles) || index < cfg.lookback + cfg.atrLen + 2) {
       return { isBuy: false, isSell: false, rawBuy: false, rawSell: false, reclaimBuy: false, reclaimSell: false, reason: 'NOT_ENOUGH_DATA', scores: neutral };
@@ -237,7 +244,12 @@
     }
 
     const safeRange = Math.max(high - low, 0.00000001);
-    const bodyRatio = Math.abs(close - open) / safeRange;
+    const bodySize = Math.abs(close - open);
+    const bodyRatio = bodySize / safeRange;
+    const upperWick = high - Math.max(open, close);
+    const lowerWick = Math.min(open, close) - low;
+    const upperWickRatio = upperWick / safeRange;
+    const lowerWickRatio = lowerWick / safeRange;
     const rawSell = high > upperPool;
     const rawBuy = low < lowerPool;
     const reclaimSell = rawSell && close < upperPool;
@@ -251,9 +263,24 @@
     const rangeOk = safeRange <= atr * cfg.maxRangeATR;
     const sellBodyOk = !cfg.requireBodyDir || close < open;
     const buyBodyOk = !cfg.requireBodyDir || close > open;
+    const sellWickOk = !cfg.minWickRatio || upperWickRatio >= cfg.minWickRatio;
+    const buyWickOk = !cfg.minWickRatio || lowerWickRatio >= cfg.minWickRatio;
+    const poolRange = Math.max(upperPool - lowerPool, 0.00000001);
+    const closePosition = (close - lowerPool) / poolRange;
+    const buyEdgeOk = !cfg.usePoolEdgeFilter || closePosition <= cfg.poolEdgePercent;
+    const sellEdgeOk = !cfg.usePoolEdgeFilter || closePosition >= (1 - cfg.poolEdgePercent);
+
     const doubleSweep = reclaimSell && reclaimBuy;
     const sideOk = !(cfg.blockDoubleSweep && doubleSweep);
+
+    const normalizedSignalState = (typeof lastSignalState === 'number')
+      ? { index: lastSignalState }
+      : (lastSignalState || {});
+    const lastSignalIndex = Number.isFinite(Number(normalizedSignalState.index)) ? Number(normalizedSignalState.index) : null;
     const cooldownOk = lastSignalIndex === null || index - lastSignalIndex > cfg.cooldownBars;
+
+    const sameBuyPoolBlocked = !!cfg.blockSamePoolSignals && Number.isFinite(Number(normalizedSignalState.lastBuyPool)) && Math.abs(lowerPool - Number(normalizedSignalState.lastBuyPool)) <= atr * cfg.samePoolDistanceATR;
+    const sameSellPoolBlocked = !!cfg.blockSamePoolSignals && Number.isFinite(Number(normalizedSignalState.lastSellPool)) && Math.abs(upperPool - Number(normalizedSignalState.lastSellPool)) <= atr * cfg.samePoolDistanceATR;
 
     let sellChoch = true, buyChoch = true;
     if (cfg.useChoch) {
@@ -264,8 +291,8 @@
       else { sellChoch = low < prevLow; buyChoch = high > prevHigh; }
     }
 
-    const sellFilters = reclaimSell && sweepUpDepth >= atr * cfg.minSweepATR && reclaimDown >= atr * cfg.minReclaimATR && bodyRatio >= cfg.minBodyRatio && rangeOk && sellBodyOk && sideOk && cooldownOk;
-    const buyFilters = reclaimBuy && sweepDownDepth >= atr * cfg.minSweepATR && reclaimUp >= atr * cfg.minReclaimATR && bodyRatio >= cfg.minBodyRatio && rangeOk && buyBodyOk && sideOk && cooldownOk;
+    const sellFilters = reclaimSell && sweepUpDepth >= atr * cfg.minSweepATR && reclaimDown >= atr * cfg.minReclaimATR && bodyRatio >= cfg.minBodyRatio && rangeOk && sellBodyOk && sellWickOk && sellEdgeOk && sideOk && cooldownOk && !sameSellPoolBlocked;
+    const buyFilters = reclaimBuy && sweepDownDepth >= atr * cfg.minSweepATR && reclaimUp >= atr * cfg.minReclaimATR && bodyRatio >= cfg.minBodyRatio && rangeOk && buyBodyOk && buyWickOk && buyEdgeOk && sideOk && cooldownOk && !sameBuyPoolBlocked;
     const isSell = sellFilters && sellChoch;
     const isBuy = buyFilters && buyChoch;
 
@@ -273,6 +300,12 @@
     if (!rawBuy && !rawSell) reason = 'NO_RAW_SWEEP';
     else if (rawBuy && !reclaimBuy) reason = 'BUY_NO_RECLAIM';
     else if (rawSell && !reclaimSell) reason = 'SELL_NO_RECLAIM';
+    else if (reclaimBuy && sameBuyPoolBlocked) reason = 'BUY_SAME_POOL_BLOCKED';
+    else if (reclaimSell && sameSellPoolBlocked) reason = 'SELL_SAME_POOL_BLOCKED';
+    else if (reclaimBuy && !buyEdgeOk) reason = 'BUY_MIDDLE_RANGE_BLOCKED';
+    else if (reclaimSell && !sellEdgeOk) reason = 'SELL_MIDDLE_RANGE_BLOCKED';
+    else if (reclaimBuy && !buyWickOk) reason = 'BUY_WEAK_SWEEP_WICK';
+    else if (reclaimSell && !sellWickOk) reason = 'SELL_WEAK_SWEEP_WICK';
     else if (reclaimBuy && !buyFilters) reason = 'BUY_FILTERED';
     else if (reclaimSell && !sellFilters) reason = 'SELL_FILTERED';
     else if (isBuy) reason = 'FINAL_BUY';
@@ -286,7 +319,7 @@
     if (!rawBuy && !rawSell) liquidity = Math.min(50, liquidity);
     const confidence = Math.floor(clamp(structure * .3 + liquidity * .4 + atrScore * .3, 0, 100));
 
-    return { isBuy, isSell, rawBuy, rawSell, reclaimBuy, reclaimSell, upperPool, lowerPool, atr, bodyRatio, sweepUpDepth, sweepDownDepth, reclaimUp, reclaimDown, rangeOk, buyFilters, sellFilters, cooldownOk, reason, scores: { structure, liquidity, atr: atrScore, confidence } };
+    return { isBuy, isSell, rawBuy, rawSell, reclaimBuy, reclaimSell, upperPool, lowerPool, atr, bodyRatio, upperWickRatio, lowerWickRatio, closePosition, buyEdgeOk, sellEdgeOk, buyWickOk, sellWickOk, sameBuyPoolBlocked, sameSellPoolBlocked, sweepUpDepth, sweepDownDepth, reclaimUp, reclaimDown, rangeOk, buyFilters, sellFilters, cooldownOk, reason, scores: { structure, liquidity, atr: atrScore, confidence } };
   }
 
   function buildSignalReason({ direction }) {
@@ -370,7 +403,7 @@
     const windowStart = now - lookbackHours * 60 * 60 * 1000;
     const closed = getClosedCandles(candles, now, cfg.timeframeMs);
     const rawTrades = [];
-    let lastSignalIndex = null;
+    let lastSignalState = { index: null, lastBuyPool: null, lastSellPool: null };
     let lastScores = { structure: 50, liquidity: 50, atr: 50, confidence: 50 };
 
     const stats = { candlesLoaded: candles.length, closedCandles: closed.length, candlesInWindow: 0, rawBuy: 0, rawSell: 0, reclaimBuy: 0, reclaimSell: 0, finalBuy: 0, finalSell: 0, rejected: 0, rejectReasons: {}, builtTrades: 0, ledgerTrades: 0, renderedMarkers: 0 };
@@ -384,7 +417,7 @@
       const originalIndex = candles.findIndex(c => normalizeCandleTimeMs(c.time) === candleTimeMs);
       if (originalIndex < 0) continue;
 
-      const result = evaluateStrategySignal(candles, originalIndex, cfg, lastSignalIndex);
+      const result = evaluateStrategySignal(candles, originalIndex, cfg, lastSignalState);
       if (result.scores) lastScores = result.scores;
       if (result.rawBuy) stats.rawBuy++;
       if (result.rawSell) stats.rawSell++;
@@ -402,7 +435,9 @@
 
       if (direction === 'BUY') stats.finalBuy++;
       if (direction === 'SELL') stats.finalSell++;
-      lastSignalIndex = originalIndex;
+      lastSignalState.index = originalIndex;
+      if (direction === 'BUY') lastSignalState.lastBuyPool = result.lowerPool;
+      if (direction === 'SELL') lastSignalState.lastSellPool = result.upperPool;
 
       const trade = buildHistoricalTradeFromSignal({ candles, signalIndex: originalIndex, signalResult: result, direction, cfg });
       if (trade) rawTrades.push(trade);
@@ -470,6 +505,7 @@
   }
 
   function checkRecentClosedSignals({ candles, symbol = 'BTCUSDT', cfg = STRATEGY_RUNTIME_CONFIG }) {
+    if (!checkRecentClosedSignals.liveState) checkRecentClosedSignals.liveState = { index: null, lastBuyPool: null, lastSellPool: null };
     const closed = getClosedCandles(candles, Date.now(), cfg.timeframeMs);
     const recent = closed.slice(-(cfg.catchUpClosedCandles || 3));
     let latestDebug = null;
@@ -477,13 +513,16 @@
       const candleTimeMs = normalizeCandleTimeMs(candle.time);
       const index = candles.findIndex(c => normalizeCandleTimeMs(c.time) === candleTimeMs);
       if (index < 0) continue;
-      const result = evaluateStrategySignal(candles, index, cfg);
+      const result = evaluateStrategySignal(candles, index, cfg, checkRecentClosedSignals.liveState);
       latestDebug = { candleTime: candleTimeMs, ...result, candle };
       if (result.isBuy || result.isSell) {
         const direction = result.isBuy ? 'BUY' : 'SELL';
         const signalId = buildSignalId({ symbol, timeframe: cfg.timeframe, candleTimeMs, direction });
         if (announcedLiveSignalIds.has(signalId)) continue;
         announcedLiveSignalIds.add(signalId);
+        checkRecentClosedSignals.liveState.index = index;
+        if (direction === 'BUY') checkRecentClosedSignals.liveState.lastBuyPool = result.lowerPool;
+        if (direction === 'SELL') checkRecentClosedSignals.liveState.lastSellPool = result.upperPool;
         return { signal: { signalId, symbol, timeframe: cfg.timeframe, direction, signalTime: candleTimeMs, signalPrice: Number(candle.close), signalHigh: Number(candle.high), signalLow: Number(candle.low), atr: result.atr, reason: buildSignalReason({ direction }), debug: result, index }, debug: latestDebug };
       }
     }
@@ -858,11 +897,12 @@
       const pnlValue = Math.round(safeNumber(s.pnl, 0));
       const pnlAbs = Math.abs(pnlValue);
       const pnlWord = pnlValue >= 0 ? 'прибыль' : 'убыток';
-      await speakTextAsync('Запущен режим пять минут. Экспирация сделки двадцать пять минут.', () => engineActiveRef.current);
+      await speakTextAsync('Терминал Про Макс запущен. Активирован режим повышенного качества сигналов.', () => engineActiveRef.current);
+      await speakTextAsync('Рабочая модель: график пять минут, экспирация двадцать пять минут, вход по стратегии снятия ликвидности.', () => engineActiveRef.current);
       await speakTextAsync('Это демонстрационный бэктест: расчёт выполнен для баланса пятьдесят тысяч рублей и базового входа пятьсот рублей.', () => engineActiveRef.current);
       await speakTextAsync(`За последние двенадцать часов найдено ${s.totalSignals} сигналов. Исполнено ${s.confirmedTrades} сделок. Плюсовых ${s.wins}, минусовых ${s.losses}.`, () => engineActiveRef.current);
-      await speakTextAsync(`Итоговый результат: ${pnlWord} ${pnlAbs} рублей. Итоговый баланс ${Math.round(s.finalBalance)} рублей.`, () => engineActiveRef.current);
-      await speakTextAsync('Результат рассчитан с учётом мартингейла: после минусовой сделки следующий вход увеличивается до четвёртого колена, поэтому прибыльные сделки на старших коленах могут перекрывать предыдущие минусы.', () => engineActiveRef.current);
+      await speakTextAsync(`Итоговый результат с учётом мартингейла: ${pnlWord} ${pnlAbs} рублей. Итоговый баланс ${Math.round(s.finalBalance)} рублей.`, () => engineActiveRef.current);
+      await speakTextAsync('Важно: результат считается с учётом мартингейла до четвёртого колена. После минусовой сделки следующий вход увеличивается, поэтому одна прибыльная сделка на старшем колене может перекрыть несколько предыдущих минусов.', () => engineActiveRef.current);
     }
 
     async function runInitialAnalysis() {
@@ -871,7 +911,7 @@
       setStage(APP_STAGE.ANALYSIS);
       setViewMode('DETAIL');
       setPhase('АНАЛИЗ 12 ЧАСОВ (5M)...');
-      addLog('ЗАПУСК: FIXED 5M / 25M ENGINE');
+      addLog('ЗАПУСК: QUALITY BALANCED 5M / 25M ENGINE');
 
       const data = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 400, '5m');
       if (!data.length) { setPhase('ОШИБКА API'); addLog('НЕТ СВЯЗИ С БИРЖЕЙ'); return; }
@@ -1033,7 +1073,7 @@
       <header className="header shrink-0">
         <div>
           <h1 className="oswald text-3xl md:text-4xl font-black flex items-center gap-2 text-slate-800"><ZapIcon size={30} className="text-cyan-500"/> ТЕРМИНАЛ <span className="gradient-text">PRO MAX</span></h1>
-          <div className="flex items-center gap-3 mt-1"><span className="author-glow text-xs bg-white/50 border border-slate-200 rounded px-2 py-0.5">SLAVA GORDEEV</span><span className="text-[9px] text-slate-400 tracking-[.22em] font-bold uppercase">SMC PINE EXACT / 5M</span></div>
+          <div className="flex items-center gap-3 mt-1"><span className="author-glow text-xs bg-white/50 border border-slate-200 rounded px-2 py-0.5">SLAVA GORDEEV</span><span className="text-[9px] text-slate-400 tracking-[.22em] font-bold uppercase">SMC PINE QUALITY / 5M</span></div>
         </div>
         <div className="flex flex-col md:items-end gap-1"><div className="oswald text-xs md:text-sm text-white px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 font-bold tracking-widest shadow-md">{phase}</div><div className="flex items-center gap-4"><span className="text-[9px] text-slate-500 font-bold uppercase px-2 py-1 bg-white/60 border border-slate-200 rounded-full"><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1 animate-pulse"></span>Синхронизация</span><LiveClock/></div></div>
       </header>
