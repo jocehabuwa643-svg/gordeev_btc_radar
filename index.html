@@ -143,42 +143,43 @@
   }
   function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
+  // TEST VERSION: 1M candles, 25-minute expiry. Strategy core is unchanged; only timeframe/expiry-candles are adapted.
   const STRATEGY_RUNTIME_CONFIG = {
-    mode: 'PINE_EQUIVALENT_5M_QUALITY_BALANCED',
+    mode: 'PINE_EQUIVALENT_1M_21M_TEST',
     symbol: 'BTCUSDT',
-    timeframe: '5m',
-    timeframeMs: 5 * 60 * 1000,
+    timeframe: '1m',
+    timeframeMs: 1 * 60 * 1000,
     historicalLookbackHours: 12,
     expiryMinutes: 25,
-    expiryCandles: 5,
+    expiryCandles: 25,
     allowOverlappingHistoricalTrades: false,
 
-    lookback: 24,
+    lookback: 90,
     atrLen: 14,
     useChoch: false,
     chochLookback: 3,
     chochMode: 'Close',
     confirmOnClose: true,
-    minSweepATR: 0.05,
+    minSweepATR: 0.06,
     minReclaimATR: 0.05,
-    minBodyRatio: 0.14,
-    maxRangeATR: 3.00,
-    minWickRatio: 0.20,
+    minBodyRatio: 0.12,
+    maxRangeATR: 3.20,
+    minWickRatio: 0.18,
     requireBodyDir: false,
     blockDoubleSweep: false,
-    cooldownBars: 5,
+    cooldownBars: 25,
     blockSamePoolSignals: true,
-    samePoolDistanceATR: 0.50,
+    samePoolDistanceATR: 0.70,
     usePoolEdgeFilter: true,
-    poolEdgePercent: 0.38,
+    poolEdgePercent: 0.40,
     useLateEntryValidation: true,
     lateEntryMaxMoveATR: 0.25,
 
     explanationDelaySeconds: 3,
     traderPrepSeconds: 3,
     totalEntryDelaySeconds: 6,
-    catchUpClosedCandles: 12,
-    liveSignalMaxAgeMs: 12 * 60 * 1000,
+    catchUpClosedCandles: 30,
+    liveSignalMaxAgeMs: 4 * 60 * 1000,
     signalDebug: true,
 
     demoBalance: 50000,
@@ -381,7 +382,7 @@
     const entryPrice = Number(entryCandle.open);
     const exitPrice = Number(exitCandle.close);
     const result = evaluateTradeResult(direction, entryPrice, exitPrice);
-    return { ...base, entryTime, entryChartTime: entryTime, entryPrice, entrySource: 'historical_next_5m_open', exitTime, exitChartTime: exitTime, exitPrice, result, state: 'TRADE_CLOSED' };
+    return { ...base, entryTime, entryChartTime: entryTime, entryPrice, entrySource: 'historical_next_1m_open', exitTime, exitChartTime: exitTime, exitPrice, result, state: 'TRADE_CLOSED' };
   }
 
   function applyMoneyManagementToTrades(rawTrades, cfg) {
@@ -583,7 +584,7 @@
   }
 
   const ScannerAPI = {
-    async getCandles(symbol, count = 400, interval = '5m') {
+    async getCandles(symbol, count = 1000, interval = '1m') {
       // КРИТИЧНО: Binance первым. Раньше первым был MEXC, из-за этого сигналы могли расходиться с графиком Binance.
       const urls = [
         `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
@@ -696,12 +697,12 @@
         })}
       </svg>
       {isScanning && <div className="scanner-beam"><div className="absolute bottom-2 right-2 mono text-[8px] text-cyan-600 font-bold">SCAN</div></div>}
-      <div className="absolute top-4 left-4 z-[6] flex flex-col"><span className="mono text-[9px] text-cyan-600 font-bold tracking-widest uppercase">{phase}</span><span className="mono text-[8px] text-slate-400 tracking-widest">{data.length} BARS • 5M</span></div>
+      <div className="absolute top-4 left-4 z-[6] flex flex-col"><span className="mono text-[9px] text-cyan-600 font-bold tracking-widest uppercase">{phase}</span><span className="mono text-[8px] text-slate-400 tracking-widest">{data.length} BARS • 1M</span></div>
     </div>;
   }
 
   function App() {
-    if (MAINTENANCE_MODE) return <div className="maintenance-screen"><div className="maintenance-card"><div className="author-glow text-xl mb-6">SLAVA GORDEEV</div><h1 className="oswald text-5xl md:text-7xl font-black leading-none">КРИПТО ТЕРМИНАЛ<br/><span className="gradient-text">PRO MAX</span></h1><p className="mt-6 text-slate-600 font-semibold leading-relaxed">Утилита находится на техническом обновлении. Мы усиливаем сигнальный модуль, аналитику 5M и точность расчёта сделок.</p><div className="mt-8 inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-slate-100 border border-white text-slate-600 font-bold text-sm"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span> Обновление стратегии и синхронизация сигналов</div></div></div>;
+    if (MAINTENANCE_MODE) return <div className="maintenance-screen"><div className="maintenance-card"><div className="author-glow text-xl mb-6">SLAVA GORDEEV</div><h1 className="oswald text-5xl md:text-7xl font-black leading-none">КРИПТО ТЕРМИНАЛ<br/><span className="gradient-text">PRO MAX</span></h1><p className="mt-6 text-slate-600 font-semibold leading-relaxed">Утилита находится на техническом обновлении. Мы усиливаем сигнальный модуль, аналитику 1M и точность расчёта сделок.</p><div className="mt-8 inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-slate-100 border border-white text-slate-600 font-bold text-sm"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span> Обновление стратегии и синхронизация сигналов</div></div></div>;
 
     const chartContainerRef = useRef(null);
     const overlayRef = useRef(null);
@@ -769,7 +770,7 @@
           const arrow = document.createElement('div');
           arrow.className = 'trade-arrow';
           arrow.style.left = `${xSig}px`; arrow.style.top = `${ySig}px`;
-          arrow.innerHTML = isBuy ? `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3"><path d="M12 19V5M5 12l7-7 7 7"/></svg>` : `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="3"><path d="M12 5v14M5 12l7 7 7-7"/></svg>`;
+          arrow.innerHTML = isBuy ? `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3"><path d="M12 19V1M5 12l7-7 7 7"/></svg>` : `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="3"><path d="M12 5v14M5 12l7 7 7-7"/></svg>`;
           attach(arrow, xSig, ySig - 12);
         }
         if (xEntry !== null && yEntry !== null) {
@@ -882,7 +883,7 @@
       livePollingRef.current = setInterval(async () => {
         if (!engineActiveRef.current) return;
         try {
-          const d = await ScannerAPI.getCandles(symbol, 2, '5m');
+          const d = await ScannerAPI.getCandles(symbol, 3, '1m');
           if (d && d.length) updateLiveCandleOnChart(d[d.length - 1]);
         } catch(e) { console.warn('live polling error', e); }
       }, 2000);
@@ -890,11 +891,11 @@
 
     function startLiveStream(symbol = STRATEGY_RUNTIME_CONFIG.symbol) {
       try { if (liveWsRef.current) liveWsRef.current.close(); } catch(e) {}
-      const wsUrl = `wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_5m`;
+      const wsUrl = `wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_1m`;
       try {
         const ws = new WebSocket(wsUrl);
         liveWsRef.current = ws;
-        ws.onopen = () => addLog('LIVE STREAM: Binance BTCUSDT 5M подключён');
+        ws.onopen = () => addLog('LIVE STREAM: Binance BTCUSDT 1M подключён');
         ws.onmessage = (event) => {
           try {
             const msg = JSON.parse(event.data);
@@ -910,9 +911,9 @@
             };
             updateLiveCandleOnChart(candle);
 
-            // Закрылась 5M-свеча — сразу проверяем сигнал, не ждём обычного REST-цикла.
+            // Закрылась 1M-свеча — сразу проверяем сигнал, не ждём обычного REST-цикла.
             if (k.x && stageRef.current === APP_STAGE.LIVE_SCAN && !liveSignalLockRef.current) {
-              ScannerAPI.getCandles(symbol, 400, '5m').then(data => {
+              ScannerAPI.getCandles(symbol, 1000, '1m').then(data => {
                 if (!data.length || stageRef.current !== APP_STAGE.LIVE_SCAN || liveSignalLockRef.current) return;
                 const { signal, debug } = checkRecentClosedSignals({ candles: data, symbol, cfg: STRATEGY_RUNTIME_CONFIG });
                 if (debug) setDebugInfo(debug);
@@ -948,7 +949,7 @@
       const pnlAbs = Math.abs(pnlValue);
       const resultWord = pnlValue >= 0 ? 'заработали' : 'получили минус';
 
-      await speakTextAsync('Терминал Про Макс запущен.', () => engineActiveRef.current);
+      await speakTextAsync('Терминал Про Макс запущен. Тестовый режим: одноминутный график, экспирация двадцать пять минут.', () => engineActiveRef.current);
       await speakTextAsync(`За последние двенадцать часов было ${s.confirmedTrades} сделок. Плюсовых ${s.wins}, минусовых ${s.losses}.`, () => engineActiveRef.current);
       await speakTextAsync(`Если бы вход был по пятьсот рублей, с учётом мартингейла до четвёртого колена вы бы ${resultWord} ${pnlAbs} рублей.`, () => engineActiveRef.current);
       await speakTextAsync('Перехожу к сканированию рынка.', () => engineActiveRef.current);
@@ -959,10 +960,10 @@
       engineActiveRef.current = true;
       setStage(APP_STAGE.ANALYSIS);
       setViewMode('DETAIL');
-      setPhase('АНАЛИЗ 12 ЧАСОВ (5M)...');
-      addLog('ЗАПУСК: QUALITY BALANCED 5M / 25M ENGINE');
+      setPhase('АНАЛИЗ 12 ЧАСОВ (1M)...');
+      addLog('ЗАПУСК: 1M / 21M TEST ENGINE');
 
-      const data = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 400, '5m');
+      const data = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 1000, '1m');
       if (!data.length) { setPhase('ОШИБКА API'); addLog('НЕТ СВЯЗИ С БИРЖЕЙ'); return; }
       setCandles(data);
       currentPriceRef.current = data[data.length - 1].close;
@@ -989,7 +990,7 @@
       startLivePolling(STRATEGY_RUNTIME_CONFIG.symbol);
       setViewMode('SCREENER');
       setStage(APP_STAGE.LIVE_SCAN);
-      setPhase('СКАНИРОВАНИЕ ЛИКВИДНОСТИ (5M)...');
+      setPhase('СКАНИРОВАНИЕ ЛИКВИДНОСТИ (1M)...');
     }
 
     async function handleLiveSignal(signalEvent, liveData) {
@@ -1048,7 +1049,7 @@
         setCountdown(null);
 
         try {
-          const fresh = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 2, '5m');
+          const fresh = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 3, '1m');
           if (fresh.length) updateLiveCandleOnChart(fresh[fresh.length - 1]);
         } catch(e) {}
 
@@ -1070,14 +1071,14 @@
           if (seconds % 5 === 0) redrawOverlay();
           if (seconds % 10 === 0) {
             try {
-              const d = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 3, '5m');
+              const d = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 3, '1m');
               if (d.length) updateLiveCandleOnChart(d[d.length - 1]);
             } catch(e) {}
           }
         }
 
         setCountdown(null);
-        const exitData = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 2, '5m');
+        const exitData = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 3, '1m');
         const finalCandle = exitData.length ? exitData[exitData.length - 1] : null;
         const finalPrice = finalCandle ? finalCandle.close : currentPriceRef.current;
 
@@ -1098,7 +1099,7 @@
 
         setStage(APP_STAGE.LIVE_SCAN);
         setViewMode('SCREENER');
-        setPhase('СКАНИРОВАНИЕ ЛИКВИДНОСТИ (5M)...');
+        setPhase('СКАНИРОВАНИЕ ЛИКВИДНОСТИ (1M)...');
         lastNewsAtRef.current = Date.now();
       } finally {
         liveSignalLockRef.current = false;
@@ -1111,7 +1112,7 @@
       const loop = async () => {
         if (cancelled || stageRef.current !== APP_STAGE.LIVE_SCAN) return;
         try {
-          const data = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 400, '5m');
+          const data = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 1000, '1m');
           if (data.length) {
             setCandles(data);
             currentPriceRef.current = data[data.length - 1].close;
@@ -1152,14 +1153,14 @@
           <div className="author-glow text-lg md:text-xl mb-6">SLAVA GORDEEV</div>
           <div className="w-20 h-20 mb-6 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-200 border border-white flex items-center justify-center shadow-lg"><ZapIcon size={38} className="text-cyan-500" /></div>
           <h1 className="oswald text-4xl md:text-5xl leading-none font-black text-slate-800">КРИПТО ЯДРО<br/><span className="gradient-text">PRO MAX</span></h1>
-          <p className="mt-3 mb-9 text-[11px] tracking-[.24em] text-slate-400 font-bold uppercase">SMC Pine Exact • 5M / 25M Fixed Engine</p>
+          <p className="mt-3 mb-9 text-[11px] tracking-[.24em] text-slate-400 font-bold uppercase">SMC Pine Exact • 1M / 21M Test Engine</p>
           <button onClick={startTerminal} className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white oswald text-xl md:text-2xl font-bold tracking-widest shadow-[0_12px_30px_rgba(14,165,233,.3)] active:scale-95 transition">ЗАПУСК СИСТЕМЫ</button>
         </div>
       </div>;
     }
 
     return <div className="app-shell">
-      {stage === APP_STAGE.SPLASH && <div className="maintenance-screen"><div className="maintenance-card"><ZapIcon size={40} className="text-cyan-500 mx-auto mb-6"/><div className="author-glow text-4xl md:text-6xl">SLAVA GORDEEV</div><div className="mt-4 text-[10px] tracking-[.3em] text-slate-500 font-bold uppercase">SMC Pine Exact / 5M Engine</div><div className="mt-8 w-56 h-1 bg-slate-200 rounded-full overflow-hidden mx-auto"><div className="h-full bg-cyan-400 animate-[pulse_1.5s_ease-in-out_infinite]"></div></div></div></div>}
+      {stage === APP_STAGE.SPLASH && <div className="maintenance-screen"><div className="maintenance-card"><ZapIcon size={40} className="text-cyan-500 mx-auto mb-6"/><div className="author-glow text-4xl md:text-6xl">SLAVA GORDEEV</div><div className="mt-4 text-[10px] tracking-[.3em] text-slate-500 font-bold uppercase">SMC Pine Exact / 1M Engine</div><div className="mt-8 w-56 h-1 bg-slate-200 rounded-full overflow-hidden mx-auto"><div className="h-full bg-cyan-400 animate-[pulse_1.5s_ease-in-out_infinite]"></div></div></div></div>}
 
       {tooltip && <div className="trade-tooltip" style={{ left: tooltip.x, top: tooltip.y }} dangerouslySetInnerHTML={{ __html: tooltipHtml }} />}
 
@@ -1173,7 +1174,7 @@
       <header className="header shrink-0">
         <div>
           <h1 className="oswald text-3xl md:text-4xl font-black flex items-center gap-2 text-slate-800"><ZapIcon size={30} className="text-cyan-500"/> ТЕРМИНАЛ <span className="gradient-text">PRO MAX</span></h1>
-          <div className="flex items-center gap-3 mt-1"><span className="author-glow text-xs bg-white/50 border border-slate-200 rounded px-2 py-0.5">SLAVA GORDEEV</span><span className="text-[9px] text-slate-400 tracking-[.22em] font-bold uppercase">SMC PINE QUALITY / 5M</span></div>
+          <div className="flex items-center gap-3 mt-1"><span className="author-glow text-xs bg-white/50 border border-slate-200 rounded px-2 py-0.5">SLAVA GORDEEV</span><span className="text-[9px] text-slate-400 tracking-[.22em] font-bold uppercase">SMC PINE TEST / 1M</span></div>
         </div>
         <div className="flex flex-col md:items-end gap-1"><div className="oswald text-xs md:text-sm text-white px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 font-bold tracking-widest shadow-md">{phase}</div><div className="flex items-center gap-4"><span className="text-[9px] text-slate-500 font-bold uppercase px-2 py-1 bg-white/60 border border-slate-200 rounded-full"><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1 animate-pulse"></span>Синхронизация</span><LiveClock/></div></div>
       </header>
@@ -1181,7 +1182,7 @@
       <main className="main-layout">
         <section className="chart-card glass">
           <div className="price-card glass-soft">
-            <div className="text-[10px] text-slate-400 tracking-widest font-bold uppercase flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>Bitcoin (5M)</div>
+            <div className="text-[10px] text-slate-400 tracking-widest font-bold uppercase flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>Bitcoin (1M)</div>
             <div className="oswald text-4xl md:text-5xl font-black text-slate-800 leading-none mt-2">{livePrice ? formatPrice(livePrice) : (currentPriceRef.current ? formatPrice(currentPriceRef.current) : '---')}</div>
           </div>
 
@@ -1193,7 +1194,7 @@
           <div className="scanner-layer" style={{ opacity: viewMode === 'SCREENER' ? 1 : 0, pointerEvents: viewMode === 'SCREENER' ? 'auto' : 'none' }}>
             <div className="scanner-card glass">
               <div className="flex justify-between items-start gap-4">
-                <div className="flex items-center gap-4"><div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 text-white flex items-center justify-center text-4xl font-black shadow-lg">₿</div><div><h2 className="oswald text-4xl md:text-5xl font-black leading-none">BITCOIN</h2><span className="text-cyan-600 font-black tracking-[.22em] bg-cyan-50 border border-cyan-100 px-2 py-1 rounded-lg text-xs">BTC/USDT • 5M</span></div></div>
+                <div className="flex items-center gap-4"><div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 text-white flex items-center justify-center text-4xl font-black shadow-lg">₿</div><div><h2 className="oswald text-4xl md:text-5xl font-black leading-none">BITCOIN</h2><span className="text-cyan-600 font-black tracking-[.22em] bg-cyan-50 border border-cyan-100 px-2 py-1 rounded-lg text-xs">BTC/USDT • 1M</span></div></div>
                 <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-white/70 border border-slate-100 text-slate-600 font-bold text-xs tracking-widest uppercase"><span>Smart Money Scanner</span><RadarIcon className="text-cyan-500 animate-spin"/></div>
               </div>
               <PremiumScannerChart data={candles} isScanning={stage === APP_STAGE.LIVE_SCAN} phase={phase}/>
