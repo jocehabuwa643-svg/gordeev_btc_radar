@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Крипто Терминал Гордеева - PRO MAX</title>
+  <title>Крипто Терминал Гордеева - PRO MAX (SMC) QUALITY</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -14,1729 +14,976 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Oswald:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700;800&display=swap');
 
-    * { box-sizing: border-box; }
-
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      min-height: 100%;
-      background: #f8fafc;
-      color: #0f172a;
-      overflow: hidden;
-      font-family: 'Montserrat', sans-serif;
-      -webkit-font-smoothing: antialiased;
-      touch-action: manipulation;
-    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; max-width: 100%; overflow-x: hidden; background: #f8fafc; color: #0f172a; font-family: 'Montserrat', sans-serif; -webkit-font-smoothing: antialiased; }
+    body { min-height: 100dvh; }
 
     .oswald { font-family: 'Oswald', sans-serif; letter-spacing: .06em; text-transform: uppercase; }
     .mono { font-family: 'JetBrains Mono', monospace; }
-    .raj { font-family: 'Rajdhani', sans-serif; }
+    .author-glow { font-family: 'Rajdhani', sans-serif; font-weight: 800; letter-spacing: .35em; text-transform: uppercase; background: linear-gradient(90deg,#94a3b8,#f8fafc,#334155,#f8fafc,#94a3b8); background-size: 220% auto; color: transparent; -webkit-background-clip: text; animation: shimmer 7s linear infinite; }
+    @keyframes shimmer { from { background-position: -220% center; } to { background-position: 220% center; } }
 
-    .app {
-      width: 100%;
-      height: 100dvh;
-      max-width: 1680px;
-      margin: 0 auto;
-      padding: 8px 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      position: relative;
-      overflow: hidden;
-      background:
-        radial-gradient(circle at 15% 8%, rgba(14,165,233,.16), transparent 28%),
-        radial-gradient(circle at 85% 85%, rgba(37,99,235,.09), transparent 34%),
-        linear-gradient(135deg, #f8fbff, #eef5fb 48%, #ffffff);
+    .app-shell { position: relative; width: 100%; max-width: 1600px; min-height: 100dvh; margin: 0 auto; padding: clamp(8px,1.4vw,16px); display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+    .app-shell::before { content: ''; position: fixed; inset: 0; pointer-events: none; background: radial-gradient(circle at 15% 12%,rgba(14,165,233,.16),transparent 34%), radial-gradient(circle at 86% 80%,rgba(37,99,235,.10),transparent 38%), linear-gradient(135deg,#f8fafc,#eef7ff 45%,#ffffff); z-index: -2; }
+    .app-shell::after { content: ''; position: fixed; inset: 0; pointer-events: none; background-image: linear-gradient(rgba(14,165,233,.035) 1px, transparent 1px), linear-gradient(90deg,rgba(14,165,233,.035) 1px, transparent 1px); background-size: 30px 30px; z-index: -1; mask-image: radial-gradient(circle at center,black 0%,transparent 82%); }
+
+    .glass { background: rgba(255,255,255,.82); border: 1px solid rgba(255,255,255,.92); box-shadow: 0 18px 42px rgba(15,23,42,.07), inset 0 1px 0 rgba(255,255,255,.9); backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); }
+    .glass-soft { background: rgba(255,255,255,.65); border: 1px solid rgba(255,255,255,.88); box-shadow: 0 8px 24px rgba(15,23,42,.05), inset 0 1px 0 rgba(255,255,255,.95); backdrop-filter: blur(18px); }
+    .gradient-text { background: linear-gradient(135deg,#1d4ed8,#06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+    .ticker-bar { height: 36px; border-radius: 0 0 16px 16px; display: flex; align-items: center; overflow: hidden; }
+    .ticker-label { height: 100%; display: flex; align-items: center; gap: 8px; padding: 0 18px; background: #0f172a; color: #fff; border-radius: 0 0 16px 0; box-shadow: 8px 0 20px rgba(15,23,42,.08); z-index: 3; }
+    .ticker-track { display: flex; width: max-content; animation: ticker 42s linear infinite; }
+    @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+    .header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 4px 8px; }
+    .main-layout { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(340px, .85fr); gap: 16px; align-items: stretch; }
+    .chart-card, .side-panel { min-height: 0; border-radius: 30px; overflow: hidden; }
+    .chart-card { position: relative; display: flex; flex-direction: column; }
+    .side-panel { display: flex; flex-direction: column; max-height: 100%; }
+    .side-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; scrollbar-width: none; }
+    .side-scroll::-webkit-scrollbar { display: none; }
+
+    .broker-button-wrap { position: relative; overflow: hidden; border-radius: 22px; }
+    .broker-btn { position: relative; display: flex; min-height: 78px; width: 100%; align-items: center; justify-content: center; flex-direction: column; gap: 3px; color: #fff; text-decoration: none; background: linear-gradient(135deg,rgba(37,99,235,.97),rgba(6,182,212,.93)); border: 1px solid rgba(255,255,255,.46); box-shadow: 0 16px 36px rgba(14,165,233,.28), inset 0 1px 0 rgba(255,255,255,.35); transform-origin: center center; animation: brokerBtnPress 3.8s ease-in-out infinite; }
+    .broker-btn::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(180deg,rgba(255,255,255,.25),transparent 40%,rgba(0,0,0,.06)); pointer-events: none; }
+    @keyframes brokerBtnPress {
+      0%, 100% { transform: translateY(0) scale(1); box-shadow: 0 16px 36px rgba(14,165,233,.28), inset 0 1px 0 rgba(255,255,255,.35); }
+      34% { transform: translateY(0) scale(1); }
+      43% { transform: translateY(2px) scale(.985); box-shadow: 0 7px 16px rgba(14,165,233,.22), inset 0 2px 6px rgba(0,0,0,.12); }
+      52% { transform: translateY(1px) scale(.992); box-shadow: 0 10px 20px rgba(14,165,233,.24), inset 0 2px 4px rgba(0,0,0,.08); }
+      66% { transform: translateY(0) scale(1); box-shadow: 0 16px 36px rgba(14,165,233,.28), inset 0 1px 0 rgba(255,255,255,.35); }
+    }
+    .broker-cursor { position: absolute; right: 18px; bottom: 10px; width: 34px; height: 34px; color: #fff; filter: drop-shadow(0 5px 10px rgba(0,0,0,.35)); animation: cursorTap 3.8s ease-in-out infinite; pointer-events: none; transform-origin: 60% 10%; }
+    @keyframes cursorTap {
+      0% { transform: translate(42px,18px) scale(.88); opacity: 0; }
+      16% { opacity: 1; }
+      38% { transform: translate(0,0) scale(1); opacity: 1; }
+      44% { transform: translate(-2px,4px) scale(.94); opacity: 1; }
+      54% { transform: translate(0,0) scale(1); opacity: 1; }
+      100% { transform: translate(42px,18px) scale(.88); opacity: 0; }
+    }
+    @media (hover:none), (pointer:coarse) { .broker-cursor { display: none; } }
+
+    .chart-area { position: absolute; inset: 94px 14px 14px 14px; border-radius: 24px; overflow: hidden; background: rgba(255,255,255,.76); border: 1px solid rgba(255,255,255,.9); box-shadow: inset 0 1px 18px rgba(15,23,42,.035); }
+    .chart-container { position: absolute; inset: 0; z-index: 5; }
+    .trade-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 10; overflow: hidden; }
+    .price-card { position: absolute; left: 18px; top: 18px; z-index: 20; min-width: 180px; padding: 16px 18px; border-radius: 22px; }
+
+    .scanner-layer { position: absolute; inset: 0; z-index: 25; display: flex; align-items: center; justify-content: center; padding: 28px; transition: .5s ease; }
+    .scanner-card { width: min(760px, 100%); height: min(520px, 82%); border-radius: 34px; padding: 28px; display: flex; flex-direction: column; gap: 22px; animation: scannerFloat 9s ease-in-out infinite; }
+    @keyframes scannerFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+    .scanner-chart { flex: 1; position: relative; border-radius: 24px; overflow: hidden; background: rgba(255,255,255,.44); border: 1px solid rgba(226,232,240,.7); box-shadow: inset 0 0 30px rgba(14,165,233,.06); }
+    .scanner-chart::before { content: ''; position: absolute; inset: 0; background-image: linear-gradient(rgba(14,165,233,.06) 1px, transparent 1px), linear-gradient(90deg,rgba(14,165,233,.06) 1px, transparent 1px); background-size: 12px 12px; }
+    .scanner-beam { position: absolute; top: 0; bottom: 0; left: 0; width: 25%; background: linear-gradient(90deg,transparent,rgba(34,211,238,.08) 40%,rgba(34,211,238,.30)); border-right: 2px solid rgba(34,211,238,.85); box-shadow: 2px 0 18px rgba(34,211,238,.35); animation: beam 2.7s cubic-bezier(.4,0,.2,1) infinite; z-index: 5; }
+    @keyframes beam { 0% { transform: translateX(-110%); opacity: 0; } 12%,88% { opacity: 1; } 100% { transform: translateX(410%); opacity: 0; } }
+    @keyframes candleGlow { 0%,82%,100% { opacity: .65; filter: brightness(.95); transform: scaleY(1); } 88% { opacity: 1; filter: brightness(1.65) drop-shadow(0 0 5px rgba(34,211,238,.8)); transform: scaleY(1.06); } }
+
+    .trade-box { position: absolute; border-radius: 6px; pointer-events: auto; cursor: pointer; backdrop-filter: blur(2px); border: 1px solid rgba(255,255,255,.65); box-shadow: 0 4px 14px rgba(15,23,42,.12), inset 0 1px 0 rgba(255,255,255,.5); }
+    .trade-box.win { background: linear-gradient(180deg,rgba(16,185,129,.22),rgba(16,185,129,.04)); border-color: rgba(16,185,129,.5); }
+    .trade-box.loss { background: linear-gradient(180deg,rgba(244,63,94,.18),rgba(244,63,94,.04)); border-color: rgba(244,63,94,.45); }
+    .trade-box.active { background: linear-gradient(180deg,rgba(14,165,233,.20),rgba(14,165,233,.04)); border-color: rgba(14,165,233,.45); box-shadow: 0 4px 18px rgba(14,165,233,.16), inset 0 1px 0 rgba(255,255,255,.55); }
+    .trade-point, .trade-arrow, .trade-badge, .trade-mini-label { position: absolute; pointer-events: auto; cursor: pointer; transform: translate(-50%,-50%); }
+    .trade-arrow { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.92); border: 1px solid rgba(226,232,240,.92); backdrop-filter: blur(8px); z-index: 18; box-shadow: 0 8px 18px rgba(15,23,42,.16); }
+    .trade-arrow.signal { box-shadow: 0 10px 22px rgba(15,23,42,.18), 0 0 0 3px rgba(255,255,255,.22); }
+    .trade-arrow.entry { width: 34px; height: 34px; background: rgba(255,255,255,.95); border-color: rgba(59,130,246,.36); box-shadow: 0 14px 28px rgba(59,130,246,.26); }
+    .trade-point { width: 9px; height: 9px; border-radius: 50%; background: #fff; border: 2px solid #3b82f6; z-index: 20; box-shadow: 0 0 10px rgba(59,130,246,.55); }
+    .trade-point.exit { border-color: #8b5cf6; box-shadow: 0 0 10px rgba(139,92,246,.55); }
+    .trade-badge { z-index: 22; padding: 4px 7px; border-radius: 8px; color: #fff; font: 800 10px 'JetBrains Mono'; white-space: nowrap; box-shadow: 0 8px 16px rgba(15,23,42,.22); }
+    .trade-badge.win { background: rgba(16,185,129,.95); border: 1px solid #34d399; }
+    .trade-badge.loss { background: rgba(244,63,94,.95); border: 1px solid #fb7185; }
+    .trade-mini-label { z-index: 19; padding: 3px 6px; border-radius: 999px; background: rgba(255,255,255,.94); border: 1px solid rgba(226,232,240,.92); color: #0f172a; font: 800 9px 'JetBrains Mono'; letter-spacing: .08em; white-space: nowrap; box-shadow: 0 8px 16px rgba(15,23,42,.10); }
+    .trade-tooltip { position: absolute; z-index: 999; pointer-events: none; min-width: 240px; padding: 14px 16px; border-radius: 16px; background: rgba(255,255,255,.94); border: 1px solid rgba(226,232,240,1); box-shadow: 0 18px 38px rgba(15,23,42,.16); backdrop-filter: blur(18px); transform: translate(-50%,-110%); font-size: 12px; }
+    .tip-row { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
+    .tip-row span { color: #64748b; }
+    .tip-row b { font-family: 'JetBrains Mono'; text-align: right; }
+
+    .speedo { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; padding-top: 4px; }
+    .debug-grid { font-size: 10px; }
+    .debug-grid div { display: flex; justify-content: space-between; gap: 10px; }
+
+    .maintenance-screen { position: fixed; inset: 0; z-index: 999999; display: flex; align-items: center; justify-content: center; padding: 24px; background: radial-gradient(circle at 30% 20%, rgba(14,165,233,.22), transparent 34%), linear-gradient(135deg,#f8fbff,#eaf3fb 45%,#fff); }
+    .maintenance-card { width: min(620px,94vw); text-align: center; padding: clamp(30px,5vw,58px); border-radius: 34px; background: rgba(255,255,255,.78); border: 1px solid rgba(255,255,255,.9); box-shadow: 0 32px 96px rgba(15,23,42,.16); backdrop-filter: blur(24px); }
+
+
+    /* DESKTOP COMPACT MODE: весь терминал помещается на одном экране */
+    @media (min-width: 1025px) {
+      html, body, #root { height: 100%; overflow: hidden; }
+      .app-shell { height: 100dvh; min-height: 0; padding: 8px 10px; gap: 6px; overflow: hidden; }
+      .ticker-bar { height: 30px; border-radius: 0 0 14px 14px; }
+      .ticker-label { padding: 0 14px; font-size: 11px; }
+      .header { height: 58px; min-height: 58px; padding: 0 6px; }
+      .header h1 { font-size: 30px !important; line-height: 1 !important; }
+      .header .author-glow { font-size: 10px !important; }
+      .main-layout { flex: 1; height: auto; min-height: 0; overflow: hidden; grid-template-columns: minmax(0, 1.78fr) minmax(310px, .72fr); gap: 10px; }
+      .chart-card, .side-panel { height: 100%; max-height: 100%; border-radius: 24px; }
+      .side-scroll { overflow: hidden; gap: 8px; padding: 8px; }
+      .side-panel > .p-4 { padding: 10px !important; font-size: 13px !important; }
+      .broker-btn { min-height: 60px; }
+      .debug-grid { font-size: 8px; line-height: 1.15; padding: 9px !important; }
+      .debug-grid .mb-2 { margin-bottom: 4px !important; }
+      .speedo { padding-top: 0; }
+      .speedo svg { width: 40px !important; height: 26px !important; }
+      .chart-area { inset: 78px 10px 10px 10px; transition: opacity .35s ease; }
+      .price-card { top: 10px; left: 12px; min-width: 158px; padding: 10px 14px; transition: opacity .35s ease; }
+      .scanner-layer { padding: 12px; background: linear-gradient(135deg, rgba(248,250,252,.88), rgba(255,255,255,.75)); }
+      .scanner-card { width: 100%; height: 100%; max-height: none; padding: 18px; border-radius: 24px; gap: 14px; animation: none; }
+      .scanner-card .w-16 { width: 54px !important; height: 54px !important; }
+      .scanner-card h2 { font-size: 34px !important; }
+      .scanner-chart { border-radius: 18px; }
+      footer { height: 24px; min-height: 24px; padding: 4px 12px !important; font-size: 9px !important; }
+      .glass-soft.rounded-2xl.p-4 { padding: 10px !important; }
+      .glass-soft.rounded-2xl.p-3 { padding: 9px !important; }
     }
 
-    .app::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      opacity: .55;
-      background-image:
-        linear-gradient(rgba(14,165,233,.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(14,165,233,.035) 1px, transparent 1px);
-      background-size: 32px 32px;
-      mask-image: radial-gradient(circle at center, #000 0%, transparent 80%);
-      -webkit-mask-image: radial-gradient(circle at center, #000 0%, transparent 80%);
+    @media (max-width: 1024px) {
+      .app-shell { height: auto; min-height: 100dvh; overflow: visible; }
+      .main-layout { display: flex; flex-direction: column; overflow: visible; }
+      .chart-card { min-height: 620px; }
+      .side-panel { overflow: visible; }
+      .side-scroll { overflow: visible; }
+      .chart-area { inset: 100px 10px 12px 10px; }
+      .price-card { min-width: 160px; }
+      .scanner-layer { padding: 18px; }
+      .scanner-card { height: 520px; padding: 22px; }
     }
-
-    .glass {
-      background: rgba(255,255,255,.74);
-      border: 1px solid rgba(255,255,255,.92);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      box-shadow:
-        0 16px 42px rgba(15,23,42,.07),
-        inset 0 1px 0 rgba(255,255,255,.92);
-    }
-
-    .glass-soft {
-      background: rgba(255,255,255,.62);
-      border: 1px solid rgba(255,255,255,.86);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      box-shadow:
-        0 8px 24px rgba(15,23,42,.045),
-        inset 0 1px 0 rgba(255,255,255,.85);
-    }
-
-    .author-shimmer {
-      font-family: 'Rajdhani', sans-serif;
-      font-weight: 700;
-      letter-spacing: .35em;
-      text-transform: uppercase;
-      background: linear-gradient(90deg, #94a3b8 0%, #f8fafc 25%, #475569 50%, #f8fafc 75%, #94a3b8 100%);
-      background-size: 220% auto;
-      color: transparent;
-      -webkit-background-clip: text;
-      background-clip: text;
-      animation: shimmer 7s linear infinite;
-    }
-
-    @keyframes shimmer {
-      0% { background-position: -220% center; }
-      100% { background-position: 220% center; }
-    }
-
-    .top-ticker {
-      height: 31px;
-      border-radius: 0 0 16px 16px;
-      overflow: hidden;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-    }
-
-    .ticker-label {
-      height: 100%;
-      min-width: 135px;
-      padding: 0 16px;
-      border-radius: 0 0 16px 0;
-      background: #0f172a;
-      color: white;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      font-weight: 900;
-      letter-spacing: .12em;
-      box-shadow: 8px 0 22px rgba(15,23,42,.12);
-    }
-
-    .ticker-track {
-      display: flex;
-      width: max-content;
-      animation: ticker 40s linear infinite;
-      white-space: nowrap;
-    }
-
-    @keyframes ticker {
-      from { transform: translateX(0); }
-      to { transform: translateX(-50%); }
-    }
-
-    .header {
-      height: 70px;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 10px;
-      gap: 12px;
-      flex-shrink: 0;
-    }
-
-    .title-main {
-      font-family: 'Oswald', sans-serif;
-      font-size: clamp(28px, 3vw, 42px);
-      line-height: .95;
-      font-weight: 800;
-      letter-spacing: .055em;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .title-main span {
-      background: linear-gradient(135deg, #1d4ed8, #06b6d4);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .status-pill {
-      padding: 9px 18px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #2563eb, #06b6d4);
-      color: white;
-      font-size: 13px;
-      font-family: 'Oswald', sans-serif;
-      font-weight: 800;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      box-shadow: 0 10px 26px rgba(14,165,233,.22);
-      white-space: nowrap;
-    }
-
-    .main {
-      z-index: 10;
-      flex: 1;
-      min-height: 0;
-      display: grid;
-      grid-template-columns: minmax(0, 1.78fr) minmax(330px, .86fr);
-      gap: 12px;
-      overflow: hidden;
-    }
-
-    .chart-card {
-      position: relative;
-      min-height: 0;
-      overflow: hidden;
-      border-radius: 28px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .chart-top-info {
-      position: absolute;
-      left: 26px;
-      top: 24px;
-      z-index: 20;
-      border-radius: 22px;
-      padding: 13px 18px;
-      min-width: 220px;
-    }
-
-    .chart-price {
-      font-family: 'Oswald', sans-serif;
-      font-weight: 800;
-      letter-spacing: .05em;
-      color: #0f172a;
-      font-size: clamp(36px, 4vw, 58px);
-      line-height: .9;
-    }
-
-    .chart-wrap {
-      position: relative;
-      flex: 1;
-      min-height: 0;
-      border-radius: 22px;
-      overflow: hidden;
-      background: rgba(255,255,255,.72);
-      border: 1px solid rgba(255,255,255,.92);
-      box-shadow: inset 0 1px 18px rgba(15,23,42,.035);
-      margin-top: 82px;
-    }
-
-    #chart {
-      position: absolute;
-      inset: 0;
-      z-index: 1;
-    }
-
-    .trade-overlay {
-      position: absolute;
-      inset: 0;
-      z-index: 6;
-      pointer-events: none;
-      overflow: hidden;
-    }
-
-    .trade-box {
-      position: absolute;
-      pointer-events: auto;
-      cursor: pointer;
-      border-radius: 9px;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-      border: 1px solid rgba(255,255,255,.75);
-      box-shadow:
-        0 6px 18px rgba(15,23,42,.08),
-        inset 0 1px 0 rgba(255,255,255,.72);
-    }
-
-    .trade-box.win {
-      background: linear-gradient(180deg, rgba(16,185,129,.24), rgba(16,185,129,.055));
-      border-color: rgba(16,185,129,.50);
-    }
-
-    .trade-box.loss {
-      background: linear-gradient(180deg, rgba(244,63,94,.22), rgba(244,63,94,.05));
-      border-color: rgba(244,63,94,.48);
-    }
-
-    .trade-box.active {
-      background: linear-gradient(180deg, rgba(14,165,233,.22), rgba(14,165,233,.055));
-      border-color: rgba(14,165,233,.50);
-      animation: activeBox 1.2s ease-in-out infinite;
-    }
-
-    @keyframes activeBox {
-      0%, 100% { box-shadow: 0 8px 22px rgba(14,165,233,.12), inset 0 1px 0 rgba(255,255,255,.78); }
-      50% { box-shadow: 0 8px 32px rgba(14,165,233,.24), inset 0 1px 0 rgba(255,255,255,.95); }
-    }
-
-    .pt {
-      position: absolute;
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      transform: translate(-50%, -50%);
-      pointer-events: auto;
-      cursor: pointer;
-      z-index: 10;
-      background: white;
-      box-shadow: 0 0 16px rgba(15,23,42,.2);
-    }
-
-    .pt.signal { border: 2px solid #0ea5e9; }
-    .pt.signal.sell { border-color: #f43f5e; }
-    .pt.entry { border: 2px solid #2563eb; }
-    .pt.exit { border: 2px solid #8b5cf6; }
-
-    .arrow {
-      position: absolute;
-      width: 32px;
-      height: 32px;
-      border-radius: 999px;
-      transform: translate(-50%, -50%);
-      pointer-events: auto;
-      cursor: pointer;
-      z-index: 12;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(255,255,255,.88);
-      backdrop-filter: blur(6px);
-      border: 1px solid rgba(255,255,255,.95);
-      box-shadow: 0 8px 20px rgba(15,23,42,.12);
-      font-size: 18px;
-      font-weight: 900;
-    }
-
-    .arrow.buy { color: #10b981; }
-    .arrow.sell { color: #f43f5e; }
-
-    .badge {
-      position: absolute;
-      transform: translate(-50%, -120%);
-      pointer-events: auto;
-      cursor: pointer;
-      z-index: 14;
-      white-space: nowrap;
-      padding: 5px 8px;
-      border-radius: 8px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      font-weight: 900;
-      color: white;
-      box-shadow: 0 8px 20px rgba(15,23,42,.18);
-    }
-
-    .badge.win { background: rgba(16,185,129,.96); }
-    .badge.loss { background: rgba(244,63,94,.96); }
-    .badge.active { background: rgba(14,165,233,.96); }
-
-    .tooltip {
-      position: fixed;
-      z-index: 99999;
-      min-width: 255px;
-      max-width: 315px;
-      padding: 14px 15px;
-      border-radius: 18px;
-      background: rgba(255,255,255,.94);
-      border: 1px solid rgba(226,232,240,.95);
-      box-shadow: 0 18px 44px rgba(15,23,42,.18);
-      backdrop-filter: blur(20px);
-      pointer-events: none;
-      font-size: 12px;
-    }
-
-    .tooltip-title {
-      font-family: 'Oswald', sans-serif;
-      font-size: 14px;
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      border-bottom: 1px solid rgba(15,23,42,.08);
-      padding-bottom: 8px;
-      margin-bottom: 7px;
-    }
-
-    .tooltip-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 3px 0;
-    }
-
-    .tooltip-row span { color: #64748b; font-weight: 600; }
-    .tooltip-row b { font-family: 'JetBrains Mono', monospace; color: #0f172a; text-align: right; }
-
-    .right {
-      min-height: 0;
-      overflow: hidden;
-      border-radius: 28px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .right-head {
-      height: 55px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      border-bottom: 1px solid rgba(255,255,255,.8);
-      font-family: 'Oswald', sans-serif;
-      font-weight: 800;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      font-size: 17px;
-      color: #0f172a;
-      text-align: center;
-      padding: 0 10px;
-    }
-
-    .right-body {
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-      padding: 12px;
-      display: grid;
-      grid-template-rows: auto auto auto auto 1fr;
-      gap: 10px;
-    }
-
-    .broker {
-      min-height: 74px;
-      border-radius: 22px;
-      background: linear-gradient(135deg, #2563eb, #06b6d4);
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 16px 34px rgba(14,165,233,.26);
-      border: 1px solid rgba(255,255,255,.45);
-    }
-
-    .broker::after {
-      content: "➤";
-      position: absolute;
-      right: 20px;
-      bottom: 16px;
-      font-size: 26px;
-      filter: drop-shadow(0 5px 10px rgba(0,0,0,.24));
-      animation: brokerTap 3s ease-in-out infinite;
-    }
-
-    @keyframes brokerTap {
-      0% { transform: translate(18px, 12px) scale(.95); opacity: 0; }
-      15% { opacity: 1; }
-      40% { transform: translate(0, 0) scale(1); opacity: 1; }
-      50% { transform: translate(-2px, 2px) scale(.82); opacity: 1; }
-      62% { transform: translate(0, 0) scale(1.05); opacity: 1; }
-      100% { transform: translate(18px, 12px) scale(.95); opacity: 0; }
-    }
-
-    .broker small { font-size: 10px; letter-spacing: .22em; text-transform: uppercase; font-weight: 900; opacity: .9; }
-    .broker strong { font-family: 'Oswald', sans-serif; font-size: 28px; letter-spacing: .04em; line-height: 1; text-transform: uppercase; }
-
-    .gauges {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      padding: 10px;
-      border-radius: 22px;
-    }
-
-    .gauge { text-align: center; min-width: 0; }
-
-    .gauge-arc {
-      height: 30px;
-      border-radius: 50px 50px 0 0;
-      border-top: 5px solid #e2e8f0;
-      border-left: 5px solid #e2e8f0;
-      border-right: 5px solid #e2e8f0;
-      position: relative;
-      margin: 0 auto 3px;
-      width: 52px;
-    }
-
-    .gauge-needle {
-      position: absolute;
-      left: 50%;
-      bottom: -3px;
-      width: 3px;
-      height: 26px;
-      border-radius: 99px;
-      transform-origin: bottom center;
-      background: #0ea5e9;
-      box-shadow: 0 0 10px rgba(14,165,233,.35);
-    }
-
-    .gauge-val { font-family: 'Oswald', sans-serif; font-size: 18px; font-weight: 800; line-height: 1; }
-    .gauge-label { font-size: 8px; letter-spacing: .08em; color: #94a3b8; font-weight: 900; text-transform: uppercase; white-space: nowrap; }
-
-    .scanner {
-      border-radius: 22px;
-      padding: 10px 12px;
-      overflow: hidden;
-      position: relative;
-      height: 128px;
-    }
-
-    .scanner-title {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 10px;
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 800;
-      color: #0891b2;
-      text-transform: uppercase;
-      letter-spacing: .09em;
-      margin-bottom: 7px;
-    }
-
-    .mini-chart {
-      position: relative;
-      height: 82px;
-      border-radius: 15px;
-      overflow: hidden;
-      background: rgba(248,250,252,.7);
-      border: 1px solid rgba(226,232,240,.65);
-    }
-
-    .mini-grid {
-      position: absolute;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(14,165,233,.07) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(14,165,233,.07) 1px, transparent 1px);
-      background-size: 10px 10px;
-    }
-
-    .scan-beam {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 28%;
-      left: 0;
-      background: linear-gradient(90deg, transparent, rgba(34,211,238,.18), rgba(34,211,238,.38));
-      border-right: 2px solid rgba(34,211,238,.9);
-      box-shadow: 4px 0 20px rgba(34,211,238,.35);
-      animation: scanMove 2.4s ease-in-out infinite;
-      z-index: 5;
-    }
-
-    @keyframes scanMove {
-      from { transform: translateX(-110%); opacity: .2; }
-      12% { opacity: 1; }
-      88% { opacity: 1; }
-      to { transform: translateX(390%); opacity: .2; }
-    }
-
-    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-    .stat-card {
-      border-radius: 20px;
-      padding: 12px;
-      min-height: 78px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    .stat-label { font-size: 9px; letter-spacing: .12em; color: #94a3b8; font-weight: 900; text-transform: uppercase; }
-    .stat-value { font-family: 'Oswald', sans-serif; font-size: 31px; line-height: 1; font-weight: 800; color: #0f172a; }
-
-    .logbox {
-      border-radius: 20px;
-      padding: 10px 12px;
-      min-height: 0;
-      overflow: hidden;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      line-height: 1.45;
-      color: #64748b;
-    }
-
-    .footer {
-      height: 28px;
-      flex-shrink: 0;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      color: #94a3b8;
-      font-size: 10px;
-      letter-spacing: .12em;
-      font-weight: 900;
-      text-transform: uppercase;
-      padding: 0 12px;
-    }
-
-    .start-screen {
-      position: fixed;
-      inset: 0;
-      z-index: 999999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 22px;
-      background:
-        radial-gradient(circle at 30% 10%, rgba(14,165,233,.22), transparent 32%),
-        radial-gradient(circle at 70% 85%, rgba(37,99,235,.15), transparent 36%),
-        linear-gradient(135deg, #f8fbff, #eaf3fb 45%, #ffffff);
-    }
-
-    .start-card {
-      width: min(520px, 94vw);
-      border-radius: 34px;
-      padding: 42px;
-      text-align: center;
-    }
-
-    .start-title {
-      font-family: 'Oswald', sans-serif;
-      font-size: clamp(42px, 9vw, 72px);
-      line-height: .86;
-      font-weight: 800;
-      letter-spacing: .045em;
-      text-transform: uppercase;
-      margin: 12px 0;
-    }
-
-    .start-btn {
-      width: 100%;
-      border: 0;
-      border-radius: 22px;
-      padding: 17px;
-      margin-top: 26px;
-      cursor: pointer;
-      color: white;
-      background: linear-gradient(135deg, #2563eb, #06b6d4);
-      box-shadow: 0 16px 34px rgba(14,165,233,.28);
-      font-family: 'Oswald', sans-serif;
-      font-size: 24px;
-      font-weight: 800;
-      letter-spacing: .14em;
-      text-transform: uppercase;
-    }
-
-    .maintenance {
-      position: fixed;
-      inset: 0;
-      z-index: 999999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      background: linear-gradient(135deg, #f8fbff, #eaf3fb, #fff);
-    }
-
-    .maintenance h1 {
-      font-family: 'Oswald', sans-serif;
-      font-size: clamp(42px, 8vw, 78px);
-      line-height: .9;
-      text-align: center;
-      margin: 0 0 18px;
-    }
-
-    @media (max-width: 980px) {
-      html, body { overflow: auto; }
-      .app { height: auto; min-height: 100dvh; overflow: visible; }
-      .header { height: auto; min-height: 66px; align-items: flex-start; flex-direction: column; }
-      .status-pill { width: 100%; text-align: center; font-size: 12px; }
-      .main { display: flex; flex-direction: column; overflow: visible; }
-      .chart-card { height: 58dvh; min-height: 470px; }
-      .right { overflow: visible; }
-      .right-body { overflow: visible; display: flex; flex-direction: column; }
-      .footer { height: auto; padding-bottom: 8px; }
-      .chart-top-info { left: 16px; top: 16px; min-width: 190px; }
-      .chart-wrap { margin-top: 78px; }
-    }
-
-    @media (max-width: 520px) {
-      .app { padding: 6px; gap: 6px; }
-      .ticker-label { min-width: 115px; font-size: 10px; padding: 0 11px; }
-      .title-main { font-size: 27px; }
-      .chart-card { min-height: 430px; }
-      .chart-price { font-size: 38px; }
-      .right-head { font-size: 14px; }
-      .broker strong { font-size: 23px; }
-      .gauges { gap: 4px; padding: 8px 5px; }
-      .gauge-arc { width: 42px; }
-      .gauge-label { font-size: 7px; }
+    @media (max-width: 640px) {
+      .header { flex-direction: column; align-items: flex-start; }
+      .ticker-label { padding: 0 12px; }
+      .ticker-track { font-size: 10px; }
+      .chart-card { min-height: 580px; }
+      .chart-area { inset: 98px 8px 10px 8px; }
+      .scanner-card { height: 460px; padding: 18px; border-radius: 28px; }
+      .price-card { top: 14px; left: 12px; }
     }
   </style>
 </head>
-
 <body>
-  <div id="root"></div>
+<div id="root"></div>
 
-  <script type="text/babel">
-    const { useEffect, useRef, useState } = React;
+<script type="text/babel">
+  const { useCallback, useEffect, useMemo, useRef, useState } = React;
 
-    const MAINTENANCE_MODE = false;
+  const MAINTENANCE_MODE = false; // Поставь true, если нужно временно закрыть утилиту плашкой обновления.
 
-    const CFG = {
-      symbol: "BTCUSDT",
-      displaySymbol: "BTC/USDT",
-      timeframe: "1m",
-      timeframeLabel: "1M",
-      timeframeMs: 60 * 1000,
+  function safeNumber(value, fallback = 0) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  }
+  function clamp(value, min, max) { return Math.max(min, Math.min(max, safeNumber(value, min))); }
+  function normalizeCandleTimeMs(time) {
+    const n = Number(time);
+    if (!Number.isFinite(n)) return null;
+    return n < 1e12 ? n * 1000 : n;
+  }
+  function formatRub(value) { return `${Math.round(safeNumber(value, 0)).toLocaleString('ru-RU')} ₽`; }
+  function formatPrice(value) {
+    const n = safeNumber(value, 0);
+    if (n >= 1000) return n.toFixed(2);
+    if (n >= 10) return n.toFixed(3);
+    if (n >= 1) return n.toFixed(4);
+    return n.toFixed(5);
+  }
+  function formatTime(ms) {
+    const t = normalizeCandleTimeMs(ms);
+    if (!t) return 'нет данных';
+    return new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+  function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
-      expiryMinutes: 25,
-      expiryCandles: 25,
-      historicalLookbackHours: 12,
+  // TEST VERSION: 1M candles, 25-minute expiry. Strategy core is unchanged; only timeframe/expiry-candles are adapted.
+  const STRATEGY_RUNTIME_CONFIG = {
+    mode: 'PINE_EQUIVALENT_1M_21M_TEST',
+    symbol: 'BTCUSDT',
+    timeframe: '1m',
+    timeframeMs: 1 * 60 * 1000,
+    historicalLookbackHours: 12,
+    expiryMinutes: 25,
+    expiryCandles: 25,
+    allowOverlappingHistoricalTrades: false,
 
-      lookback: 90,
-      atrLen: 14,
+    lookback: 90,
+    atrLen: 14,
+    useChoch: false,
+    chochLookback: 3,
+    chochMode: 'Close',
+    confirmOnClose: true,
+    minSweepATR: 0.06,
+    minReclaimATR: 0.05,
+    minBodyRatio: 0.12,
+    maxRangeATR: 3.20,
+    minWickRatio: 0.18,
+    requireBodyDir: false,
+    blockDoubleSweep: false,
+    cooldownBars: 25,
+    blockSamePoolSignals: true,
+    samePoolDistanceATR: 0.70,
+    usePoolEdgeFilter: true,
+    poolEdgePercent: 0.40,
+    useLateEntryValidation: true,
+    lateEntryMaxMoveATR: 0.25,
 
-      minSweepATR: 0.06,
-      minReclaimATR: 0.05,
-      minBodyRatio: 0.12,
-      maxRangeATR: 3.20,
-      minWickRatio: 0.18,
+    explanationDelaySeconds: 3,
+    traderPrepSeconds: 3,
+    totalEntryDelaySeconds: 6,
+    catchUpClosedCandles: 30,
+    liveSignalMaxAgeMs: 4 * 60 * 1000,
+    signalDebug: true,
 
-      cooldownBars: 25,
-      blockSamePoolSignals: true,
-      samePoolDistanceATR: 0.70,
-      blockMiddleRange: true,
-      edgeZonePercent: 0.36,
+    demoBalance: 50000,
+    baseStake: 500,
+    payout: 0.70,
+    martingaleLadder: [500, 1215, 2950, 7165],
+    maxMartingaleSteps: 4,
+    referralUrl: 'https://intrade31.bar/311164',
+    authorName: 'SLAVA GORDEEV'
+  };
 
-      demoBalance: 50000,
-      baseStake: 500,
-      payout: 0.70,
-      martingaleLadder: [500, 1215, 2950, 7165],
+  const APP_STAGE = {
+    IDLE: 'IDLE',
+    SPLASH: 'SPLASH',
+    ANALYSIS: 'ANALYSIS',
+    LIVE_SCAN: 'LIVE_SCAN',
+    SIGNAL_FLOW: 'SIGNAL_FLOW'
+  };
 
-      referralUrl: "https://intrade31.bar/311164",
-      authorName: "SLAVA GORDEEV"
-    };
+  const announcedLiveSignalIds = new Set();
 
-    const NEWS = [
-      "ForkLog: биткоин протестировал новый уровень сопротивления",
-      "BitsMedia: крупные фонды наращивают позиции в BTC",
-      "РБК: индекс страха и жадности указывает на перекупленность",
-      "ForkLog: объём торгов на криптобиржах вырос за сутки",
-      "BitsMedia: институционалы продолжают аккумулировать стейблкоины"
-    ];
+  function buildSignalId({ symbol, timeframe, candleTimeMs, direction }) {
+    return `${symbol}_${timeframe}_${Number(candleTimeMs)}_${direction}`;
+  }
 
-    function safeNumber(value, fallback = 0) {
-      const n = Number(value);
-      return Number.isFinite(n) ? n : fallback;
-    }
-
-    function clamp(value, min, max) {
-      return Math.max(min, Math.min(max, safeNumber(value, 0)));
-    }
-
-    function formatRub(value) {
-      return `${Math.round(safeNumber(value, 0)).toLocaleString("ru-RU")} ₽`;
-    }
-
-    function formatPrice(value) {
-      const n = safeNumber(value, 0);
-      if (n >= 1000) return n.toFixed(2);
-      if (n >= 10) return n.toFixed(3);
-      if (n >= 1) return n.toFixed(4);
-      return n.toFixed(5);
-    }
-
-    function normalizeCandleTimeMs(time) {
-      const n = Number(time);
-      if (!Number.isFinite(n)) return null;
-      return n < 1e12 ? n * 1000 : n;
-    }
-
-    function formatDateTime(ms) {
-      const t = normalizeCandleTimeMs(ms);
-      if (!t) return "—";
-      return new Date(t).toLocaleString("ru-RU", {
-        day: "2-digit",
-        month: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit"
-      });
-    }
-
-    function calcAtrAtIndex(candles, index, period) {
-      if (!Array.isArray(candles) || index < period + 1) return 0;
-      let sum = 0;
-      let count = 0;
-      for (let i = index - period + 1; i <= index; i++) {
-        const c = candles[i];
-        const p = candles[i - 1];
-        if (!c || !p) continue;
-        const tr = Math.max(
-          safeNumber(c.high) - safeNumber(c.low),
-          Math.abs(safeNumber(c.high) - safeNumber(p.close)),
-          Math.abs(safeNumber(c.low) - safeNumber(p.close))
-        );
-        sum += tr;
-        count++;
-      }
-      return count ? sum / count : 0;
-    }
-
-    function getClosedCandles(candles, now = Date.now()) {
-      return candles.filter(c => {
-        const t = normalizeCandleTimeMs(c.time);
-        return t && t + CFG.timeframeMs <= now;
-      });
-    }
-
-    function basicScores() {
-      return { structure: 50, liquidity: 50, atr: 50, confidence: 50 };
-    }
-
-    function calculateScores(x) {
-      const liqRaw = (x.rawBuy || x.rawSell) ? 64 : 28;
-      const reclaim = (x.reclaimBuy || x.reclaimSell) ? 24 : 0;
-      const liquidity = clamp(liqRaw + reclaim, 0, 100);
-      const structure = clamp((x.bodyRatio / CFG.minBodyRatio) * 52, 20, 100);
-      const atr = clamp(100 - (x.range / (x.atr * CFG.maxRangeATR)) * 70, 8, 100);
-      const confidence = clamp(structure * .28 + liquidity * .44 + atr * .28, 0, 100);
-      return {
-        structure: Math.round(structure),
-        liquidity: Math.round(liquidity),
-        atr: Math.round(atr),
-        confidence: Math.round(confidence)
-      };
-    }
-
-    function buildRejectReason(x) {
-      if (!x.rangeOk) return "RANGE_TOO_BIG";
-      if (!x.bodyOk) return "BODY_TOO_SMALL";
-      if (x.buyWickOk === false || x.sellWickOk === false) return "WEAK_SWEEP_WICK";
-      if (x.buyEdgeOk === false || x.sellEdgeOk === false) return "MIDDLE_RANGE";
-      if (!x.cooldownOk) return "COOLDOWN";
-      if (!x.samePoolOk) return "SAME_POOL_BLOCK";
-      return "FILTERED";
-    }
-
-    function evaluateSignal(candles, index, state = {}) {
-      if (!Array.isArray(candles) || index < CFG.lookback + CFG.atrLen + 2) {
-        return { isBuy: false, isSell: false, reason: "NOT_ENOUGH_DATA", scores: basicScores() };
-      }
-
-      const c = candles[index];
+  function calcAtrAtIndex(candles, index, period) {
+    if (!Array.isArray(candles) || index < period) return 0;
+    let sum = 0;
+    let count = 0;
+    for (let j = 0; j < period; j++) {
+      const c = candles[index - j];
+      const p = candles[index - j - 1];
+      if (!c || !p) continue;
       const high = safeNumber(c.high);
       const low = safeNumber(c.low);
-      const open = safeNumber(c.open);
-      const close = safeNumber(c.close);
+      const prevClose = safeNumber(p.close);
+      const tr = Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose));
+      if (Number.isFinite(tr)) { sum += tr; count++; }
+    }
+    return count ? sum / count : 0;
+  }
 
-      const prev = candles.slice(index - CFG.lookback, index);
-      const upperPool = Math.max(...prev.map(x => safeNumber(x.high)));
-      const lowerPool = Math.min(...prev.map(x => safeNumber(x.low)));
-      const atr = calcAtrAtIndex(candles, index, CFG.atrLen);
+  function getClosedCandles(candles, now = Date.now(), timeframeMs = STRATEGY_RUNTIME_CONFIG.timeframeMs) {
+    return (candles || []).filter(c => {
+      const openTime = normalizeCandleTimeMs(c.time);
+      return openTime && openTime + timeframeMs <= now;
+    });
+  }
 
-      if (![high, low, open, close, upperPool, lowerPool, atr].every(Number.isFinite) || atr <= 0) {
-        return { isBuy: false, isSell: false, reason: "BAD_DATA", scores: basicScores() };
-      }
-
-      const range = Math.max(high - low, 0.00000001);
-      const body = Math.abs(close - open);
-      const bodyRatio = body / range;
-
-      const upperWick = high - Math.max(open, close);
-      const lowerWick = Math.min(open, close) - low;
-      const upperWickRatio = upperWick / range;
-      const lowerWickRatio = lowerWick / range;
-
-      const rawSell = high > upperPool;
-      const rawBuy = low < lowerPool;
-
-      const reclaimSell = rawSell && close < upperPool;
-      const reclaimBuy = rawBuy && close > lowerPool;
-
-      const sweepUpDepth = high - upperPool;
-      const sweepDownDepth = lowerPool - low;
-      const reclaimDown = upperPool - close;
-      const reclaimUp = close - lowerPool;
-
-      const rangeOk = range <= atr * CFG.maxRangeATR;
-      const bodyOk = bodyRatio >= CFG.minBodyRatio;
-
-      const sellWickOk = upperWickRatio >= CFG.minWickRatio;
-      const buyWickOk = lowerWickRatio >= CFG.minWickRatio;
-
-      const poolRange = Math.max(upperPool - lowerPool, 0.00000001);
-      const positionInPool = (close - lowerPool) / poolRange;
-
-      const buyEdgeOk = !CFG.blockMiddleRange || positionInPool <= CFG.edgeZonePercent;
-      const sellEdgeOk = !CFG.blockMiddleRange || positionInPool >= 1 - CFG.edgeZonePercent;
-
-      const cooldownOk = state.lastSignalIndex == null || index - state.lastSignalIndex > CFG.cooldownBars;
-
-      let samePoolBuyOk = true;
-      let samePoolSellOk = true;
-
-      if (CFG.blockSamePoolSignals) {
-        if (state.lastBuyPool != null && Math.abs(lowerPool - state.lastBuyPool) <= atr * CFG.samePoolDistanceATR) {
-          samePoolBuyOk = false;
-        }
-        if (state.lastSellPool != null && Math.abs(upperPool - state.lastSellPool) <= atr * CFG.samePoolDistanceATR) {
-          samePoolSellOk = false;
-        }
-      }
-
-      const buyFilters =
-        reclaimBuy &&
-        sweepDownDepth >= atr * CFG.minSweepATR &&
-        reclaimUp >= atr * CFG.minReclaimATR &&
-        bodyOk &&
-        rangeOk &&
-        buyWickOk &&
-        buyEdgeOk &&
-        cooldownOk &&
-        samePoolBuyOk;
-
-      const sellFilters =
-        reclaimSell &&
-        sweepUpDepth >= atr * CFG.minSweepATR &&
-        reclaimDown >= atr * CFG.minReclaimATR &&
-        bodyOk &&
-        rangeOk &&
-        sellWickOk &&
-        sellEdgeOk &&
-        cooldownOk &&
-        samePoolSellOk;
-
-      const isBuy = buyFilters;
-      const isSell = sellFilters;
-
-      let reason = "NO_SIGNAL";
-      if (!rawBuy && !rawSell) reason = "NO_RAW_SWEEP";
-      else if (rawBuy && !reclaimBuy) reason = "BUY_NO_RECLAIM";
-      else if (rawSell && !reclaimSell) reason = "SELL_NO_RECLAIM";
-      else if (reclaimBuy && !buyFilters) reason = buildRejectReason({
-        rangeOk,
-        bodyOk,
-        buyWickOk,
-        buyEdgeOk,
-        cooldownOk,
-        samePoolOk: samePoolBuyOk
-      });
-      else if (reclaimSell && !sellFilters) reason = buildRejectReason({
-        rangeOk,
-        bodyOk,
-        sellWickOk,
-        sellEdgeOk,
-        cooldownOk,
-        samePoolOk: samePoolSellOk
-      });
-      else if (isBuy) reason = "FINAL_BUY";
-      else if (isSell) reason = "FINAL_SELL";
-
-      const scores = calculateScores({
-        rawBuy,
-        rawSell,
-        reclaimBuy,
-        reclaimSell,
-        bodyRatio,
-        range,
-        atr,
-        sweepUpDepth,
-        sweepDownDepth,
-        reclaimUp,
-        reclaimDown
-      });
-
-      return {
-        isBuy,
-        isSell,
-        rawBuy,
-        rawSell,
-        reclaimBuy,
-        reclaimSell,
-        upperPool,
-        lowerPool,
-        atr,
-        bodyRatio,
-        rangeOk,
-        bodyOk,
-        buyWickOk,
-        sellWickOk,
-        buyEdgeOk,
-        sellEdgeOk,
-        cooldownOk,
-        samePoolBuyOk,
-        samePoolSellOk,
-        reason,
-        scores
-      };
+  function evaluateStrategySignal(candles, index, cfg = STRATEGY_RUNTIME_CONFIG, lastSignalState = null) {
+    const neutral = { structure: 50, liquidity: 50, atr: 50, confidence: 50 };
+    if (!Array.isArray(candles) || index < cfg.lookback + cfg.atrLen + 2) {
+      return { isBuy: false, isSell: false, rawBuy: false, rawSell: false, reclaimBuy: false, reclaimSell: false, reason: 'NOT_ENOUGH_DATA', scores: neutral };
     }
 
-    function buildSignalReason(direction) {
-      if (direction === "BUY") return "Сигнал вверх. Цена сняла нижнюю ликвидность и вернулась выше пула.";
-      if (direction === "SELL") return "Сигнал вниз. Цена сняла верхнюю ликвидность и закрылась ниже пула.";
-      return "Сигнал по снятию ликвидности.";
+    const candle = candles[index];
+    const prevBars = candles.slice(index - cfg.lookback, index);
+    const high = Number(candle.high), low = Number(candle.low), open = Number(candle.open), close = Number(candle.close);
+    const upperPool = Math.max(...prevBars.map(c => Number(c.high)));
+    const lowerPool = Math.min(...prevBars.map(c => Number(c.low)));
+    const atr = calcAtrAtIndex(candles, index, cfg.atrLen);
+
+    if (![high, low, open, close, upperPool, lowerPool, atr].every(Number.isFinite) || atr <= 0) {
+      return { isBuy: false, isSell: false, rawBuy: false, rawSell: false, reclaimBuy: false, reclaimSell: false, upperPool, lowerPool, atr, reason: 'BAD_NUMERIC_DATA', scores: neutral };
     }
 
-    function resultOfTrade(direction, entry, exit) {
-      if (!Number.isFinite(entry) || !Number.isFinite(exit)) return "CANCELLED";
-      if (direction === "BUY") return exit > entry ? "WIN" : "LOSS";
-      if (direction === "SELL") return exit < entry ? "WIN" : "LOSS";
-      return "CANCELLED";
+    const safeRange = Math.max(high - low, 0.00000001);
+    const bodySize = Math.abs(close - open);
+    const bodyRatio = bodySize / safeRange;
+    const upperWick = high - Math.max(open, close);
+    const lowerWick = Math.min(open, close) - low;
+    const upperWickRatio = upperWick / safeRange;
+    const lowerWickRatio = lowerWick / safeRange;
+    const rawSell = high > upperPool;
+    const rawBuy = low < lowerPool;
+    const reclaimSell = rawSell && close < upperPool;
+    const reclaimBuy = rawBuy && close > lowerPool;
+
+    const sweepUpDepth = high - upperPool;
+    const reclaimDown = upperPool - close;
+    const sweepDownDepth = lowerPool - low;
+    const reclaimUp = close - lowerPool;
+
+    const rangeOk = safeRange <= atr * cfg.maxRangeATR;
+    const sellBodyOk = !cfg.requireBodyDir || close < open;
+    const buyBodyOk = !cfg.requireBodyDir || close > open;
+    const sellWickOk = !cfg.minWickRatio || upperWickRatio >= cfg.minWickRatio;
+    const buyWickOk = !cfg.minWickRatio || lowerWickRatio >= cfg.minWickRatio;
+    const poolRange = Math.max(upperPool - lowerPool, 0.00000001);
+    const closePosition = (close - lowerPool) / poolRange;
+    const buyEdgeOk = !cfg.usePoolEdgeFilter || closePosition <= cfg.poolEdgePercent;
+    const sellEdgeOk = !cfg.usePoolEdgeFilter || closePosition >= (1 - cfg.poolEdgePercent);
+
+    const doubleSweep = reclaimSell && reclaimBuy;
+    const sideOk = !(cfg.blockDoubleSweep && doubleSweep);
+
+    const normalizedSignalState = (typeof lastSignalState === 'number')
+      ? { index: lastSignalState }
+      : (lastSignalState || {});
+    const lastSignalIndex = Number.isFinite(Number(normalizedSignalState.index)) ? Number(normalizedSignalState.index) : null;
+    const cooldownOk = lastSignalIndex === null || index - lastSignalIndex > cfg.cooldownBars;
+
+    const sameBuyPoolBlocked = !!cfg.blockSamePoolSignals && Number.isFinite(Number(normalizedSignalState.lastBuyPool)) && Math.abs(lowerPool - Number(normalizedSignalState.lastBuyPool)) <= atr * cfg.samePoolDistanceATR;
+    const sameSellPoolBlocked = !!cfg.blockSamePoolSignals && Number.isFinite(Number(normalizedSignalState.lastSellPool)) && Math.abs(upperPool - Number(normalizedSignalState.lastSellPool)) <= atr * cfg.samePoolDistanceATR;
+
+    let sellChoch = true, buyChoch = true;
+    if (cfg.useChoch) {
+      const chochBars = candles.slice(index - cfg.chochLookback, index);
+      const prevLow = Math.min(...chochBars.map(c => Number(c.low)));
+      const prevHigh = Math.max(...chochBars.map(c => Number(c.high)));
+      if (cfg.chochMode === 'Close') { sellChoch = close < prevLow; buyChoch = close > prevHigh; }
+      else { sellChoch = low < prevLow; buyChoch = high > prevHigh; }
     }
 
-    function applyMoney(trades) {
-      let balance = CFG.demoBalance;
-      let mg = 0;
+    const sellFilters = reclaimSell && sweepUpDepth >= atr * cfg.minSweepATR && reclaimDown >= atr * cfg.minReclaimATR && bodyRatio >= cfg.minBodyRatio && rangeOk && sellBodyOk && sellWickOk && sellEdgeOk && sideOk && cooldownOk && !sameSellPoolBlocked;
+    const buyFilters = reclaimBuy && sweepDownDepth >= atr * cfg.minSweepATR && reclaimUp >= atr * cfg.minReclaimATR && bodyRatio >= cfg.minBodyRatio && rangeOk && buyBodyOk && buyWickOk && buyEdgeOk && sideOk && cooldownOk && !sameBuyPoolBlocked;
+    const isSell = sellFilters && sellChoch;
+    const isBuy = buyFilters && buyChoch;
 
-      return trades.map((t, index) => {
-        const stage = mg + 1;
-        const stake = CFG.martingaleLadder[mg] || CFG.baseStake;
-        const before = balance;
-        let pnl = 0;
+    let reason = 'NO_SIGNAL';
+    if (!rawBuy && !rawSell) reason = 'NO_RAW_SWEEP';
+    else if (rawBuy && !reclaimBuy) reason = 'BUY_NO_RECLAIM';
+    else if (rawSell && !reclaimSell) reason = 'SELL_NO_RECLAIM';
+    else if (reclaimBuy && sameBuyPoolBlocked) reason = 'BUY_SAME_POOL_BLOCKED';
+    else if (reclaimSell && sameSellPoolBlocked) reason = 'SELL_SAME_POOL_BLOCKED';
+    else if (reclaimBuy && !buyEdgeOk) reason = 'BUY_MIDDLE_RANGE_BLOCKED';
+    else if (reclaimSell && !sellEdgeOk) reason = 'SELL_MIDDLE_RANGE_BLOCKED';
+    else if (reclaimBuy && !buyWickOk) reason = 'BUY_WEAK_SWEEP_WICK';
+    else if (reclaimSell && !sellWickOk) reason = 'SELL_WEAK_SWEEP_WICK';
+    else if (reclaimBuy && !buyFilters) reason = 'BUY_FILTERED';
+    else if (reclaimSell && !sellFilters) reason = 'SELL_FILTERED';
+    else if (isBuy) reason = 'FINAL_BUY';
+    else if (isSell) reason = 'FINAL_SELL';
 
-        if (t.result === "WIN") {
-          pnl = Math.round(stake * CFG.payout);
-          mg = 0;
-        } else if (t.result === "LOSS") {
-          pnl = -stake;
-          mg = mg < CFG.martingaleLadder.length - 1 ? mg + 1 : 0;
-        }
+    const sweepD = Math.max(0, rawSell ? sweepUpDepth : rawBuy ? sweepDownDepth : 0);
+    const reclaimD = Math.max(0, rawSell ? reclaimDown : rawBuy ? reclaimUp : 0);
+    let structure = Math.floor(clamp((bodyRatio / cfg.minBodyRatio) * 50, 20, 100));
+    let liquidity = Math.floor(clamp(((sweepD / (atr * cfg.minSweepATR || 1)) + (reclaimD / (atr * cfg.minReclaimATR || 1))) * 25, rawBuy || rawSell ? 20 : 0, 100));
+    let atrScore = Math.floor(clamp(100 - (safeRange / (atr * cfg.maxRangeATR)) * 100, 10, 100));
+    if (!rawBuy && !rawSell) liquidity = Math.min(50, liquidity);
+    const confidence = Math.floor(clamp(structure * .3 + liquidity * .4 + atrScore * .3, 0, 100));
 
-        balance = before + pnl;
+    return { isBuy, isSell, rawBuy, rawSell, reclaimBuy, reclaimSell, upperPool, lowerPool, atr, bodyRatio, upperWickRatio, lowerWickRatio, closePosition, buyEdgeOk, sellEdgeOk, buyWickOk, sellWickOk, sameBuyPoolBlocked, sameSellPoolBlocked, sweepUpDepth, sweepDownDepth, reclaimUp, reclaimDown, rangeOk, buyFilters, sellFilters, cooldownOk, reason, scores: { structure, liquidity, atr: atrScore, confidence } };
+  }
 
-        return {
-          ...t,
-          tradeId: t.tradeId || `trade_${index}`,
-          stake,
-          martingaleStep: stage,
-          pnl,
-          balanceBefore: before,
-          balanceAfter: balance
-        };
-      });
-    }
+  function buildSignalReason({ direction }) {
+    if (direction === 'BUY' || direction === 'CALL') return 'Цена сняла нижнюю ликвидность и закрылась обратно выше границы пула.';
+    if (direction === 'SELL' || direction === 'PUT') return 'Цена сняла верхнюю ликвидность и закрылась обратно ниже границы пула.';
+    return 'Сигнал по стратегии снятия ликвидности.';
+  }
 
-    function buildHistoricalBacktest(candles) {
-      const now = Date.now();
-      const windowStart = now - CFG.historicalLookbackHours * 60 * 60 * 1000;
-      const closed = getClosedCandles(candles, now);
+  function evaluateTradeResult(direction, entryPrice, exitPrice) {
+    const entry = Number(entryPrice), exit = Number(exitPrice);
+    if (!Number.isFinite(entry) || !Number.isFinite(exit)) return 'CANCELLED';
+    if (direction === 'BUY' || direction === 'CALL') return exit > entry ? 'WIN' : 'LOSS';
+    if (direction === 'SELL' || direction === 'PUT') return exit < entry ? 'WIN' : 'LOSS';
+    return 'CANCELLED';
+  }
 
-      const rawTrades = [];
-      const stats = {
-        candlesLoaded: candles.length,
-        candlesInWindow: 0,
-        rawBuy: 0,
-        rawSell: 0,
-        reclaimBuy: 0,
-        reclaimSell: 0,
-        finalBuy: 0,
-        finalSell: 0,
-        rejected: 0,
-        rejectReasons: {}
-      };
+  function calculateTradePnl(result, stake, payout = STRATEGY_RUNTIME_CONFIG.payout) {
+    const s = safeNumber(stake, STRATEGY_RUNTIME_CONFIG.baseStake);
+    if (result === 'WIN') return Math.round(s * payout);
+    if (result === 'LOSS') return -s;
+    return 0;
+  }
 
-      const scanState = {
-        lastSignalIndex: null,
-        lastBuyPool: null,
-        lastSellPool: null
-      };
+  function getStakeByMartingaleIndex(index) {
+    const i = clamp(index, 0, STRATEGY_RUNTIME_CONFIG.martingaleLadder.length - 1);
+    return STRATEGY_RUNTIME_CONFIG.martingaleLadder[i] || STRATEGY_RUNTIME_CONFIG.baseStake;
+  }
+  function getNextMartingaleIndex(result, currentIndex) {
+    const i = safeNumber(currentIndex, 0);
+    if (result === 'WIN') return 0;
+    if (result === 'LOSS') return i < STRATEGY_RUNTIME_CONFIG.martingaleLadder.length - 1 ? i + 1 : 0;
+    return 0;
+  }
 
-      let nextTradeAllowedIndex = 0;
-      let lastScores = basicScores();
+  function buildHistoricalTradeFromSignal({ candles, signalIndex, signalResult, direction, cfg }) {
+    const signalCandle = candles[signalIndex];
+    if (!signalCandle) return null;
+    const entryIndex = signalIndex + 1;
+    const exitIndex = entryIndex + cfg.expiryCandles;
+    const entryCandle = candles[entryIndex];
+    const exitCandle = candles[exitIndex];
+    const signalTime = normalizeCandleTimeMs(signalCandle.time);
 
-      for (let i = 0; i < closed.length; i++) {
-        const c = closed[i];
-        const t = normalizeCandleTimeMs(c.time);
-        if (!t || t < windowStart) continue;
-
-        stats.candlesInWindow++;
-
-        const index = candles.findIndex(x => normalizeCandleTimeMs(x.time) === t);
-        if (index < 0) continue;
-
-        const res = evaluateSignal(candles, index, scanState);
-        lastScores = res.scores || lastScores;
-
-        if (res.rawBuy) stats.rawBuy++;
-        if (res.rawSell) stats.rawSell++;
-        if (res.reclaimBuy) stats.reclaimBuy++;
-        if (res.reclaimSell) stats.reclaimSell++;
-
-        const direction = res.isBuy ? "BUY" : res.isSell ? "SELL" : null;
-
-        if (!direction) {
-          if (res.rawBuy || res.rawSell || res.reclaimBuy || res.reclaimSell) {
-            stats.rejected++;
-            stats.rejectReasons[res.reason] = (stats.rejectReasons[res.reason] || 0) + 1;
-          }
-          continue;
-        }
-
-        if (index < nextTradeAllowedIndex) {
-          stats.rejected++;
-          stats.rejectReasons["TRADE_ALREADY_ACTIVE"] = (stats.rejectReasons["TRADE_ALREADY_ACTIVE"] || 0) + 1;
-          continue;
-        }
-
-        if (direction === "BUY") stats.finalBuy++;
-        if (direction === "SELL") stats.finalSell++;
-
-        const signalCandle = candles[index];
-        const entryIndex = index + 1;
-        const exitIndex = entryIndex + CFG.expiryCandles;
-
-        const entryCandle = candles[entryIndex];
-        const exitCandle = candles[exitIndex];
-
-        const signalTime = normalizeCandleTimeMs(signalCandle.time);
-
-        const base = {
-          tradeId: `${CFG.symbol}_${CFG.timeframe}_${signalTime}_${direction}`,
-          mode: "historical",
-          direction,
-          signalTime,
-          signalPrice: safeNumber(signalCandle.close),
-          signalHigh: safeNumber(signalCandle.high),
-          signalLow: safeNumber(signalCandle.low),
-          atr: res.atr,
-          reason: buildSignalReason(direction),
-          debug: res,
-          state: "TRADE_CLOSED",
-          entryDelaySeconds: 6
-        };
-
-        if (entryCandle && exitCandle) {
-          const entryTime = normalizeCandleTimeMs(entryCandle.time);
-          const exitTime = normalizeCandleTimeMs(exitCandle.time);
-          const entryPrice = safeNumber(entryCandle.open);
-          const exitPrice = safeNumber(exitCandle.close);
-          const result = resultOfTrade(direction, entryPrice, exitPrice);
-
-          rawTrades.push({
-            ...base,
-            entryTime,
-            entryChartTime: entryTime,
-            entryPrice,
-            exitTime,
-            exitPrice,
-            result
-          });
-
-          scanState.lastSignalIndex = index;
-          if (direction === "BUY") scanState.lastBuyPool = res.lowerPool;
-          if (direction === "SELL") scanState.lastSellPool = res.upperPool;
-          nextTradeAllowedIndex = exitIndex;
-        }
-      }
-
-      const trades = applyMoney(rawTrades);
-      const pnl = trades.reduce((s, t) => s + safeNumber(t.pnl), 0);
-
-      stats.builtTrades = rawTrades.length;
-      stats.ledgerTrades = trades.length;
-      stats.pnl = pnl;
-
-      return { trades, stats, lastScores };
-    }
-
-    function buildStats(trades) {
-      const closed = trades.filter(t => t.result === "WIN" || t.result === "LOSS");
-      const wins = closed.filter(t => t.result === "WIN").length;
-      const losses = closed.filter(t => t.result === "LOSS").length;
-      const pnl = closed.reduce((s, t) => s + safeNumber(t.pnl), 0);
-
-      return {
-        totalSignals: trades.length,
-        confirmedTrades: closed.length,
-        wins,
-        losses,
-        pnl,
-        finalBalance: CFG.demoBalance + pnl
-      };
-    }
-
-    const API = {
-      async getCandles(symbol = CFG.symbol, count = 900, interval = CFG.timeframe) {
-        const urls = [
-          `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
-          `https://api.mexc.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`
-        ];
-
-        for (const url of urls) {
-          try {
-            const r = await fetch(url, { cache: "no-store" });
-            if (!r.ok) continue;
-            const data = await r.json();
-            return data.map(d => ({
-              time: Math.floor(Number(d[0]) / 1000),
-              open: Number(d[1]),
-              high: Number(d[2]),
-              low: Number(d[3]),
-              close: Number(d[4]),
-              volume: Number(d[5])
-            })).filter(c => Number.isFinite(c.close));
-          } catch (e) {}
-        }
-        return [];
-      }
+    const base = {
+      tradeId: buildSignalId({ symbol: cfg.symbol, timeframe: cfg.timeframe, candleTimeMs: signalTime, direction }),
+      mode: 'historical', direction, timeframe: cfg.timeframe, expiryMinutes: cfg.expiryMinutes,
+      signalTime, signalChartTime: signalTime, signalPrice: Number(signalCandle.close), signalHigh: Number(signalCandle.high), signalLow: Number(signalCandle.low), atr: signalResult.atr,
+      reason: buildSignalReason({ direction }), debug: signalResult, entryDelaySeconds: cfg.totalEntryDelaySeconds
     };
 
-    function Gauge({ value, label, color = "#0ea5e9" }) {
-      const v = clamp(value, 0, 100);
-      const angle = -90 + v * 1.8;
-      return (
-        <div className="gauge">
-          <div className="gauge-arc">
-            <div className="gauge-needle" style={{ transform: `rotate(${angle}deg)`, background: color }} />
-          </div>
-          <div className="gauge-val" style={{ color }}>{Math.round(v)}</div>
-          <div className="gauge-label">{label}</div>
-        </div>
-      );
+    if (!entryCandle || !exitCandle) {
+      return { ...base, result: 'CANCELLED', cancelReason: 'NOT_ENOUGH_FUTURE_CANDLES', entryTime: entryCandle ? normalizeCandleTimeMs(entryCandle.time) : null, entryChartTime: entryCandle ? normalizeCandleTimeMs(entryCandle.time) : null, entryPrice: entryCandle ? Number(entryCandle.open) : null, exitTime: null, exitChartTime: null, exitPrice: null, state: 'TRADE_CLOSED' };
     }
 
-    function LiveClock() {
-      const [now, setNow] = useState(new Date());
-      useEffect(() => {
-        const id = setInterval(() => setNow(new Date()), 1000);
-        return () => clearInterval(id);
-      }, []);
-      return <span className="mono font-bold text-slate-800">{now.toLocaleTimeString("ru-RU")}</span>;
-    }
+    const entryTime = normalizeCandleTimeMs(entryCandle.time);
+    const exitTime = normalizeCandleTimeMs(exitCandle.time);
+    const entryPrice = Number(entryCandle.open);
+    const exitPrice = Number(exitCandle.close);
+    const result = evaluateTradeResult(direction, entryPrice, exitPrice);
+    return { ...base, entryTime, entryChartTime: entryTime, entryPrice, entrySource: 'historical_next_1m_open', exitTime, exitChartTime: exitTime, exitPrice, result, state: 'TRADE_CLOSED' };
+  }
 
-    function MiniScanner({ candles, phase }) {
-      const data = Array.isArray(candles) ? candles.slice(-50) : [];
-      const min = data.length ? Math.min(...data.map(c => c.low)) : 0;
-      const max = data.length ? Math.max(...data.map(c => c.high)) : 1;
-      const range = Math.max(max - min, 1);
+  function applyMoneyManagementToTrades(rawTrades, cfg) {
+    let balance = cfg.demoBalance;
+    let mgIndex = 0;
+    return rawTrades.map((trade, index) => {
+      const stageUsed = mgIndex + 1;
+      const balanceBefore = balance;
+      if (trade.result === 'CANCELLED') return { ...trade, stake: 0, martingaleStep: stageUsed, pnl: 0, balanceBefore, balanceAfter: balance };
+      const stake = getStakeByMartingaleIndex(mgIndex);
+      const pnl = calculateTradePnl(trade.result, stake, cfg.payout);
+      balance += pnl;
+      mgIndex = getNextMartingaleIndex(trade.result, mgIndex);
+      return { ...trade, tradeId: trade.tradeId || `trade-${index}`, stake, martingaleStep: stageUsed, pnl, balanceBefore, balanceAfter: balance };
+    });
+  }
 
-      return (
-        <div className="scanner glass-soft">
-          <div className="scanner-title">
-            <span>{phase}</span>
-            <span>{data.length} BARS</span>
-          </div>
-          <div className="mini-chart">
-            <div className="mini-grid" />
-            <svg width="100%" height="100%" viewBox="0 0 260 84" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, zIndex: 2 }}>
-              {data.map((c, i) => {
-                const x = i * (260 / Math.max(data.length, 1));
-                const w = Math.max(2, 260 / Math.max(data.length, 1) * .62);
-                const oY = 84 - ((c.open - min) / range) * 74 - 5;
-                const clY = 84 - ((c.close - min) / range) * 74 - 5;
-                const hY = 84 - ((c.high - min) / range) * 74 - 5;
-                const lY = 84 - ((c.low - min) / range) * 74 - 5;
-                const up = c.close >= c.open;
-                return (
-                  <g key={i}>
-                    <line x1={x + w/2} y1={hY} x2={x + w/2} y2={lY} stroke={up ? "#38bdf8" : "#94a3b8"} strokeWidth="1" />
-                    <rect x={x} y={Math.min(oY, clY)} width={w} height={Math.max(Math.abs(oY - clY), 1.5)} rx=".6" fill={up ? "#38bdf8" : "transparent"} stroke={up ? "#38bdf8" : "#94a3b8"} strokeWidth="1" />
-                  </g>
-                );
-              })}
-            </svg>
-            <div className="scan-beam" />
-          </div>
-        </div>
-      );
-    }
+  function buildHistoricalBacktest12h(candles, cfg) {
+    const now = Date.now();
+    const lookbackHours = safeNumber(cfg.historicalLookbackHours, 12);
+    const windowStart = now - lookbackHours * 60 * 60 * 1000;
+    const closed = getClosedCandles(candles, now, cfg.timeframeMs);
+    const rawTrades = [];
+    let lastSignalState = { index: null, lastBuyPool: null, lastSellPool: null };
+    let lastScores = { structure: 50, liquidity: 50, atr: 50, confidence: 50 };
 
-    function App() {
-      const chartContainerRef = useRef(null);
-      const overlayRef = useRef(null);
-      const chartRef = useRef(null);
-      const seriesRef = useRef(null);
-      const poolSeriesRef = useRef([]);
-      const wsRef = useRef(null);
-      const pollRef = useRef(null);
-      const activeRef = useRef(false);
-      const tradesRef = useRef([]);
-      const candlesRef = useRef([]);
-      const livePriceRef = useRef(null);
-      const lastLiveSignalRef = useRef(null);
-      const chartReadyRef = useRef(false);
-      const lastChartTimeRef = useRef(0);
-      const liveStartMsRef = useRef(Date.now());
+    const stats = { candlesLoaded: candles.length, closedCandles: closed.length, candlesInWindow: 0, rawBuy: 0, rawSell: 0, reclaimBuy: 0, reclaimSell: 0, finalBuy: 0, finalSell: 0, rejected: 0, rejectReasons: {}, builtTrades: 0, ledgerTrades: 0, renderedMarkers: 0 };
 
-      const [started, setStarted] = useState(false);
-      const [phase, setPhase] = useState("ОЖИДАНИЕ ЗАПУСКА");
-      const [livePrice, setLivePrice] = useState(null);
-      const [candles, setCandles] = useState([]);
-      const [trades, setTrades] = useState([]);
-      const [stats, setStats] = useState({ totalSignals: 0, confirmedTrades: 0, wins: 0, losses: 0, pnl: 0, finalBalance: CFG.demoBalance });
-      const [debugStats, setDebugStats] = useState(null);
-      const [scores, setScores] = useState({ structure: 50, liquidity: 50, atr: 50, confidence: 50 });
-      const [logs, setLogs] = useState([]);
-      const [tooltip, setTooltip] = useState(null);
-      const [activeSignal, setActiveSignal] = useState(null);
-      const [countdown, setCountdown] = useState(null);
+    for (let i = 0; i < closed.length; i++) {
+      const candle = closed[i];
+      const candleTimeMs = normalizeCandleTimeMs(candle.time);
+      if (!candleTimeMs || candleTimeMs < windowStart) continue;
+      stats.candlesInWindow++;
 
-      function addLog(text) {
-        setLogs(prev => [text, ...prev].slice(0, 7));
-      }
+      const originalIndex = candles.findIndex(c => normalizeCandleTimeMs(c.time) === candleTimeMs);
+      if (originalIndex < 0) continue;
 
-      function speak(text) {
-        return new Promise(resolve => {
-          try {
-            if (!window.speechSynthesis) return resolve();
-            window.speechSynthesis.cancel();
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = "ru-RU";
-            u.rate = .96;
-            u.pitch = .95;
-            u.onend = resolve;
-            u.onerror = resolve;
-            window.speechSynthesis.speak(u);
-            setTimeout(resolve, Math.max(1800, text.length * 75));
-          } catch (e) {
-            resolve();
-          }
-        });
-      }
+      const result = evaluateStrategySignal(candles, originalIndex, cfg, lastSignalState);
+      if (result.scores) lastScores = result.scores;
+      if (result.rawBuy) stats.rawBuy++;
+      if (result.rawSell) stats.rawSell++;
+      if (result.reclaimBuy) stats.reclaimBuy++;
+      if (result.reclaimSell) stats.reclaimSell++;
 
-      function initChart() {
-        if (chartReadyRef.current || !chartContainerRef.current || !window.LightweightCharts) return;
-
-        const chart = window.LightweightCharts.createChart(chartContainerRef.current, {
-          autoSize: true,
-          layout: {
-            background: { type: "solid", color: "transparent" },
-            textColor: "#64748b",
-            fontFamily: "JetBrains Mono"
-          },
-          grid: {
-            vertLines: { color: "rgba(148,163,184,.13)" },
-            horzLines: { color: "rgba(148,163,184,.13)" }
-          },
-          timeScale: {
-            borderVisible: false,
-            timeVisible: true,
-            secondsVisible: false
-          },
-          rightPriceScale: {
-            borderVisible: false
-          },
-          crosshair: {
-            mode: 1
-          }
-        });
-
-        const series = chart.addCandlestickSeries({
-          upColor: "#38bdf8",
-          downColor: "#fb7185",
-          borderUpColor: "#38bdf8",
-          borderDownColor: "#fb7185",
-          wickUpColor: "#38bdf8",
-          wickDownColor: "#fb7185"
-        });
-
-        chartRef.current = chart;
-        seriesRef.current = series;
-        chartReadyRef.current = true;
-
-        chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
-          renderTradeOverlay();
-          setTooltip(null);
-        });
-
-        chart.timeScale().subscribeSizeChange(() => {
-          renderTradeOverlay();
-          setTooltip(null);
-        });
-      }
-
-      function drawPools(data) {
-        if (!chartRef.current || !seriesRef.current) return;
-
-        poolSeriesRef.current.forEach(s => {
-          try { chartRef.current.removeSeries(s); } catch(e) {}
-        });
-        poolSeriesRef.current = [];
-
-        const upper = [];
-        const lower = [];
-
-        for (let i = CFG.lookback; i < data.length; i++) {
-          let up = -Infinity;
-          let dn = Infinity;
-          for (let k = 1; k <= CFG.lookback; k++) {
-            up = Math.max(up, safeNumber(data[i-k].high));
-            dn = Math.min(dn, safeNumber(data[i-k].low));
-          }
-          upper.push({ time: data[i].time, value: up });
-          lower.push({ time: data[i].time, value: dn });
+      const direction = result.isBuy ? 'BUY' : result.isSell ? 'SELL' : null;
+      if (!direction) {
+        if (result.rawBuy || result.rawSell || result.reclaimBuy || result.reclaimSell) {
+          stats.rejected++;
+          stats.rejectReasons[result.reason || 'NO_SIGNAL'] = (stats.rejectReasons[result.reason || 'NO_SIGNAL'] || 0) + 1;
         }
+        continue;
+      }
 
+      if (direction === 'BUY') stats.finalBuy++;
+      if (direction === 'SELL') stats.finalSell++;
+      lastSignalState.index = originalIndex;
+      if (direction === 'BUY') lastSignalState.lastBuyPool = result.lowerPool;
+      if (direction === 'SELL') lastSignalState.lastSellPool = result.upperPool;
+
+      const trade = buildHistoricalTradeFromSignal({ candles, signalIndex: originalIndex, signalResult: result, direction, cfg });
+      if (trade) rawTrades.push(trade);
+
+      // Если нужно строго не открывать новую сделку во время текущих 25 минут — поставь allowOverlappingHistoricalTrades: false.
+      if (!cfg.allowOverlappingHistoricalTrades && trade && trade.result !== 'CANCELLED') {
+        const exitTimeMs = trade.exitTime;
+        const exitIdxInClosed = closed.findIndex(c => normalizeCandleTimeMs(c.time) >= exitTimeMs);
+        if (exitIdxInClosed > i) i = exitIdxInClosed - 1;
+      }
+    }
+
+    const financialTrades = applyMoneyManagementToTrades(rawTrades, cfg);
+    stats.builtTrades = rawTrades.length;
+    stats.ledgerTrades = financialTrades.length;
+
+    const last = financialTrades[financialTrades.length - 1];
+    const currentMgStep = last ? getNextMartingaleIndex(last.result, (last.martingaleStep || 1) - 1) : 0;
+
+    console.log('Historical scan result', {
+      rawSweepCount: stats.rawBuy + stats.rawSell,
+      reclaimCount: stats.reclaimBuy + stats.reclaimSell,
+      finalSignalCount: stats.finalBuy + stats.finalSell,
+      builtTrades: stats.builtTrades,
+      ledgerTrades: stats.ledgerTrades,
+      wins: financialTrades.filter(t => t.result === 'WIN').length,
+      losses: financialTrades.filter(t => t.result === 'LOSS').length,
+      pnl: financialTrades.reduce((s, t) => s + safeNumber(t.pnl), 0),
+      balance: financialTrades.length ? financialTrades[financialTrades.length - 1].balanceAfter : cfg.demoBalance
+    });
+
+    return { simulatedTrades: financialTrades, currentMgStep, lastScores, stats };
+  }
+
+  function calculateSessionStats(trades) {
+    const confirmed = (trades || []).filter(t => t.result !== 'CANCELLED' && t.state === 'TRADE_CLOSED');
+    const pnl = confirmed.reduce((s, t) => s + safeNumber(t.pnl, 0), 0);
+    return {
+      totalSignals: (trades || []).length,
+      confirmedTrades: confirmed.length,
+      cancelled: (trades || []).filter(t => t.result === 'CANCELLED').length,
+      wins: confirmed.filter(t => t.result === 'WIN').length,
+      losses: confirmed.filter(t => t.result === 'LOSS').length,
+      pnl,
+      finalBalance: STRATEGY_RUNTIME_CONFIG.demoBalance + pnl
+    };
+  }
+
+  function createTradeObject(params) {
+    const direction = params.direction;
+    const balanceBefore = safeNumber(params.balanceBefore, STRATEGY_RUNTIME_CONFIG.demoBalance);
+    return {
+      tradeId: params.signalId || `${STRATEGY_RUNTIME_CONFIG.symbol}_${Date.now()}_${direction}`,
+      mode: 'live', symbol: STRATEGY_RUNTIME_CONFIG.symbol, timeframe: STRATEGY_RUNTIME_CONFIG.timeframe, expiryMinutes: STRATEGY_RUNTIME_CONFIG.expiryMinutes,
+      direction,
+      signalTime: params.signalTime, signalChartTime: params.signalChartTime || params.signalTime, signalPrice: params.signalPrice, signalHigh: params.signalHigh, signalLow: params.signalLow, atr: params.atr,
+      entryTime: params.entryTime || null, entryChartTime: params.entryChartTime || null, entryPrice: params.entryPrice || null, entrySource: params.entrySource || null,
+      exitTime: params.exitTime || null, exitChartTime: params.exitChartTime || null, exitPrice: params.exitPrice || null,
+      result: params.result || null, pnl: 0,
+      martingaleStep: safeNumber(params.martingaleIndex, 0) + 1,
+      stake: safeNumber(params.stake, STRATEGY_RUNTIME_CONFIG.baseStake),
+      balanceBefore, balanceAfter: balanceBefore,
+      reason: buildSignalReason({ direction }), cancelReason: params.cancelReason || '', state: params.state || 'SIGNAL_DETECTED'
+    };
+  }
+
+  function checkRecentClosedSignals({ candles, symbol = 'BTCUSDT', cfg = STRATEGY_RUNTIME_CONFIG }) {
+    if (!checkRecentClosedSignals.liveState) {
+      checkRecentClosedSignals.liveState = { index: null, lastBuyPool: null, lastSellPool: null };
+    }
+
+    const now = Date.now();
+    const closed = getClosedCandles(candles, now, cfg.timeframeMs);
+    const recent = closed.slice(-(cfg.catchUpClosedCandles || 12));
+    let latestDebug = null;
+
+    // Идём от самой свежей закрытой свечи назад, чтобы не пропускать сигнал,
+    // если в момент закрытия свечи утилита была занята озвучкой/рендером.
+    for (let r = recent.length - 1; r >= 0; r--) {
+      const candle = recent[r];
+      const candleTimeMs = normalizeCandleTimeMs(candle.time);
+      const candleCloseAge = now - (candleTimeMs + cfg.timeframeMs);
+      const index = candles.findIndex(c => normalizeCandleTimeMs(c.time) === candleTimeMs);
+      if (index < 0) continue;
+
+      const result = evaluateStrategySignal(candles, index, cfg, checkRecentClosedSignals.liveState);
+      latestDebug = { candleTime: candleTimeMs, candleCloseAge, ...result, candle };
+
+      if (!(result.isBuy || result.isSell)) continue;
+
+      // Старые сигналы остаются в истории, но не запускаются как live-сигнал.
+      if (candleCloseAge > safeNumber(cfg.liveSignalMaxAgeMs, 12 * 60 * 1000)) continue;
+
+      const direction = result.isBuy ? 'BUY' : 'SELL';
+      const signalId = buildSignalId({ symbol, timeframe: cfg.timeframe, candleTimeMs, direction });
+      if (announcedLiveSignalIds.has(signalId)) continue;
+
+      announcedLiveSignalIds.add(signalId);
+      checkRecentClosedSignals.liveState.index = index;
+      if (direction === 'BUY') checkRecentClosedSignals.liveState.lastBuyPool = result.lowerPool;
+      if (direction === 'SELL') checkRecentClosedSignals.liveState.lastSellPool = result.upperPool;
+
+      return {
+        signal: {
+          signalId, symbol, timeframe: cfg.timeframe, direction,
+          signalTime: candleTimeMs, signalChartTime: candleTimeMs,
+          signalPrice: Number(candle.close), signalHigh: Number(candle.high), signalLow: Number(candle.low),
+          atr: result.atr, reason: buildSignalReason({ direction }), debug: result, index
+        },
+        debug: latestDebug
+      };
+    }
+
+    return { signal: null, debug: latestDebug };
+  }
+
+  function getSignalArrowPrice(trade) {
+    const atr = safeNumber(trade.atr, 0);
+    if (trade.direction === 'SELL' || trade.direction === 'PUT') return safeNumber(trade.signalHigh, trade.signalPrice) + atr * 0.35;
+    return safeNumber(trade.signalLow, trade.signalPrice) - atr * 0.35;
+  }
+
+  function buildTradeTooltipHtml(t) {
+    const direction = t.direction === 'BUY' || t.direction === 'CALL' ? 'BUY' : 'SELL';
+    const pnl = safeNumber(t.pnl, 0);
+    const pnlClass = pnl >= 0 ? 'color:#059669' : 'color:#e11d48';
+    return `
+      <div class="oswald" style="font-weight:900;margin-bottom:8px;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">Сделка: ${direction}</div>
+      <div style="font-size:10px;color:#64748b;margin-bottom:6px;line-height:1.35;">${t.reason || ''}</div>
+      <div class="tip-row"><span>Сумма:</span><b>${formatRub(t.stake)}</b></div>
+      <div class="tip-row"><span>MG:</span><b>${t.martingaleStep || 1} колено</b></div>
+      <div class="tip-row"><span>Сигнал:</span><b>${formatTime(t.signalTime)}</b></div>
+      <div class="tip-row"><span>Вход:</span><b>${formatTime(t.entryTime)}</b></div>
+      <div class="tip-row"><span>Выход:</span><b>${formatTime(t.exitTime)}</b></div>
+      <div class="tip-row"><span>Цена входа:</span><b>${formatPrice(t.entryPrice)}</b></div>
+      <div class="tip-row"><span>Цена выхода:</span><b>${formatPrice(t.exitPrice)}</b></div>
+      <div class="tip-row"><span>Результат:</span><b>${t.result || 'ОЖИДАНИЕ'}</b></div>
+      <div class="tip-row"><span>PNL:</span><b style="${pnlClass}">${pnl > 0 ? '+' : ''}${formatRub(pnl)}</b></div>
+      <div class="tip-row"><span>Баланс после:</span><b>${formatRub(t.balanceAfter)}</b></div>
+    `;
+  }
+
+  function getTradeMidStatusText(trade, currentPrice) {
+    if (!trade || !Number.isFinite(Number(currentPrice)) || !Number.isFinite(Number(trade.entryPrice))) {
+      return 'Середина сделки. Данных пока недостаточно, продолжаем сопровождение.';
+    }
+    const isBuy = trade.direction === 'BUY' || trade.direction === 'CALL';
+    const move = isBuy ? (Number(currentPrice) - Number(trade.entryPrice)) : (Number(trade.entryPrice) - Number(currentPrice));
+    const absMove = Math.abs(move);
+    const atrBase = Math.max(Number(trade.atr || 0), Number(trade.entryPrice || 0) * 0.0006, 1);
+    const distance = formatPrice(absMove);
+
+    if (move >= atrBase * 0.45) return 'Середина сделки. Идём уверенно в плюс. Цена ушла от входа на ' + distance + '. Это сильное преимущество по текущей динамике.';
+    if (move >= atrBase * 0.12) return 'Середина сделки. Пока выходим в плюс. Отрыв от входа ' + distance + '. Сделка выглядит рабочей, но сопровождение продолжается.';
+    if (move <= -atrBase * 0.45) return 'Середина сделки. Сейчас уверенно уходим в минус. Цена ушла против входа на ' + distance + '. Нужен сильный возврат.';
+    if (move <= -atrBase * 0.12) return 'Середина сделки. Пока в минусе. Отклонение от входа ' + distance + '. Возврат ещё возможен.';
+    return 'Середина сделки. Цена находится возле входа. Отклонение всего ' + distance + '. Сделка на грани, исход ещё не определён.';
+  }
+
+  const ScannerAPI = {
+    async getCandles(symbol, count = 1000, interval = '1m') {
+      // КРИТИЧНО: Binance первым. Раньше первым был MEXC, из-за этого сигналы могли расходиться с графиком Binance.
+      const urls = [
+        `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
+        `https://api.mexc.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`
+      ];
+      for (const url of urls) {
         try {
-          const upS = chartRef.current.addLineSeries({
-            color: "rgba(244,63,94,.62)",
-            lineWidth: 1,
-            lineStyle: 2,
-            title: "UPPER POOL",
-            lastValueVisible: true,
-            priceLineVisible: false
-          });
-          upS.setData(upper);
-
-          const dnS = chartRef.current.addLineSeries({
-            color: "rgba(16,185,129,.62)",
-            lineWidth: 1,
-            lineStyle: 2,
-            title: "LOWER POOL",
-            lastValueVisible: true,
-            priceLineVisible: false
-          });
-          dnS.setData(lower);
-
-          poolSeriesRef.current = [upS, dnS];
-        } catch(e) {}
+          const res = await fetch(url, { cache: 'no-store' });
+          if (!res.ok) continue;
+          const data = await res.json();
+          if (!Array.isArray(data)) continue;
+          const candles = data.map(d => ({ time: Math.floor(Number(d[0]) / 1000), open: Number(d[1]), high: Number(d[2]), low: Number(d[3]), close: Number(d[4]), volume: Number(d[5]) })).filter(c => [c.time, c.open, c.high, c.low, c.close].every(Number.isFinite));
+          if (candles.length) return candles;
+        } catch (e) { console.warn('Candle source failed:', url, e); }
       }
+      return [];
+    }
+  };
 
-      function tooltipHtml(t) {
-        const pnl = safeNumber(t.pnl, 0);
-        const direction = t.direction === "BUY" ? "BUY / вверх" : "SELL / вниз";
-        const result = t.result || "В процессе";
-        const color = pnl >= 0 ? "#059669" : "#e11d48";
+  const FALLBACK_NEWS = [
+    { source: 'ForkLog', title: 'Биткоин протестировал новый уровень сопротивления' },
+    { source: 'BitsMedia', title: 'Крупные фонды наращивают позиции в BTC' },
+    { source: 'РБК', title: 'Индекс страха и жадности указывает на перегретость рынка' },
+    { source: 'ForkLog', title: 'Объём торгов на криптобиржах вырос за сутки' },
+    { source: 'BitsMedia', title: 'Институционалы продолжают аккумулировать стейблкоины' }
+  ];
 
-        return `
-          <div class="tooltip-title">${direction}</div>
-          <div class="tooltip-row"><span>Причина:</span><b>${t.reason || "Сигнал"}</b></div>
-          <div class="tooltip-row"><span>Сумма:</span><b>${formatRub(t.stake || CFG.baseStake)}</b></div>
-          <div class="tooltip-row"><span>Мартингейл:</span><b>${t.martingaleStep || 1} колено</b></div>
-          <div class="tooltip-row"><span>Сигнал:</span><b>${formatDateTime(t.signalTime)}</b></div>
-          <div class="tooltip-row"><span>Вход:</span><b>${formatDateTime(t.entryTime)}</b></div>
-          <div class="tooltip-row"><span>Выход:</span><b>${formatDateTime(t.exitTime)}</b></div>
-          <div class="tooltip-row"><span>Цена входа:</span><b>${formatPrice(t.entryPrice)}</b></div>
-          <div class="tooltip-row"><span>Цена выхода:</span><b>${t.exitPrice ? formatPrice(t.exitPrice) : "—"}</b></div>
-          <div class="tooltip-row"><span>Результат:</span><b>${result}</b></div>
-          <div class="tooltip-row"><span>PNL:</span><b style="color:${color}">${pnl > 0 ? "+" : ""}${formatRub(pnl)}</b></div>
-        `;
-      }
+  const speakQueue = [];
+  let voiceBusy = false;
+  function speakTextAsync(text, isActive = () => true) {
+    return new Promise(resolve => {
+      if (!('speechSynthesis' in window) || !isActive()) return resolve();
+      speakQueue.push({ text, resolve });
+      processSpeechQueue(isActive);
+    });
+  }
+  function processSpeechQueue(isActive) {
+    if (voiceBusy || !speakQueue.length) return;
+    if (!isActive()) { while (speakQueue.length) speakQueue.shift().resolve(); return; }
+    voiceBusy = true;
+    const item = speakQueue.shift();
+    const utterance = new SpeechSynthesisUtterance(item.text);
+    utterance.lang = 'ru-RU'; utterance.rate = .92; utterance.pitch = .95;
+    const done = () => { voiceBusy = false; item.resolve(); setTimeout(() => processSpeechQueue(isActive), 220); };
+    const fallback = setTimeout(done, Math.min(9000, item.text.length * 95 + 1200));
+    utterance.onend = () => { clearTimeout(fallback); done(); };
+    utterance.onerror = () => { clearTimeout(fallback); done(); };
+    try { window.speechSynthesis.speak(utterance); } catch (e) { clearTimeout(fallback); done(); }
+  }
 
-      function renderTradeOverlay() {
-        if (!overlayRef.current || !chartRef.current || !seriesRef.current) return;
+  function clearSpeechNow() {
+    try { window.speechSynthesis?.cancel(); } catch(e) {}
+    while (speakQueue.length) {
+      const item = speakQueue.shift();
+      try { item.resolve(); } catch(e) {}
+    }
+    voiceBusy = false;
+  }
 
-        const overlay = overlayRef.current;
-        overlay.innerHTML = "";
+  function ZapIcon({ size = 24, className = '' }) { return <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>; }
+  function GlobeIcon({ size = 16, className = '' }) { return <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>; }
+  function RadarIcon({ size = 20, className = '' }) { return <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M19.1 4.9A10 10 0 0 0 7 3.3"/><path d="M4 5.5A10 10 0 0 0 5.3 19.4"/><path d="M20 8.7A10 10 0 0 1 17.4 20"/><path d="M12 12v.01"/></svg>; }
 
-        const chart = chartRef.current;
-        const series = seriesRef.current;
-        const allTrades = tradesRef.current || [];
-        const currentLivePrice = livePriceRef.current;
+  function LiveClock() {
+    const [d, setD] = useState(new Date());
+    useEffect(() => { const id = setInterval(() => setD(new Date()), 1000); return () => clearInterval(id); }, []);
+    return <span className="mono font-bold text-slate-800">{d.toLocaleTimeString('ru-RU')}</span>;
+  }
 
-        allTrades.forEach(t => {
-          const resultClass =
-            t.state !== "TRADE_CLOSED" ? "active" :
-            t.result === "WIN" ? "win" :
-            t.result === "LOSS" ? "loss" : "active";
+  function Speedometer({ value, label, color = '#0ea5e9', glow = false }) {
+    const v = clamp(value, 0, 100);
+    const angle = -90 + v / 100 * 180;
+    const dash = Math.PI * 40;
+    return <div className="speedo">
+      <svg viewBox="0 0 100 58" className="w-12 h-8 overflow-visible">
+        <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#e2e8f0" strokeWidth="6" strokeLinecap="round" />
+        <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" strokeDasharray={dash} strokeDashoffset={dash - (v / 100) * dash} style={{transition:'.6s ease'}} />
+        <g style={{ transform: `rotate(${angle}deg)`, transformOrigin: '50px 50px', transition: '.6s ease' }}><polygon points="48,50 52,50 50,14" fill={color}/><circle cx="50" cy="50" r="5" fill={color}/><circle cx="50" cy="50" r="2" fill="#fff"/></g>
+      </svg>
+      <div className="oswald font-black text-lg leading-none" style={{color, textShadow: glow ? `0 0 10px ${color}55` : 'none'}}>{Math.round(v)}</div>
+      <div className="text-[8px] tracking-widest text-slate-400 font-bold uppercase whitespace-nowrap">{label}</div>
+    </div>;
+  }
 
-          const isBuy = t.direction === "BUY";
+  function PremiumScannerChart({ data, isScanning, phase }) {
+    const chartData = (data || []).slice(-42);
+    if (chartData.length < 3) return <div className="h-full flex items-center justify-center oswald text-slate-400 animate-pulse">Загрузка свечей...</div>;
+    const min = Math.min(...chartData.map(c => c.low));
+    const max = Math.max(...chartData.map(c => c.high));
+    const maxVol = Math.max(...chartData.map(c => c.volume || 1));
+    const range = max - min || 1;
+    const width = 220, height = 90, cw = width / chartData.length;
+    return <div className="scanner-chart">
+      <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="absolute inset-0 w-full h-full z-[2]">
+        {chartData.map((c, i) => {
+          const up = c.close >= c.open;
+          const x = i * cw;
+          const w = cw * .68;
+          const oY = height - ((c.open - min) / range) * height;
+          const cY = height - ((c.close - min) / range) * height;
+          const hY = height - ((c.high - min) / range) * height;
+          const lY = height - ((c.low - min) / range) * height;
+          const volH = ((c.volume || 0) / maxVol) * 15;
+          const style = isScanning ? { animation: 'candleGlow 2.7s linear infinite', animationDelay: `${i / chartData.length * 2.7}s` } : {};
+          return <g key={i} style={style}>
+            <line x1={x + w/2} x2={x + w/2} y1={hY} y2={lY} stroke={up ? '#38bdf8' : '#94a3b8'} strokeWidth="1" />
+            <rect x={x} y={up ? cY : oY} width={w} height={Math.max(Math.abs(cY-oY), 1.2)} rx=".5" fill={up ? '#38bdf8' : 'transparent'} stroke={up ? 'none' : '#94a3b8'} strokeWidth="1" />
+            <rect x={x} y={height - volH} width={w} height={volH} fill={up ? 'rgba(14,165,233,.16)' : 'rgba(148,163,184,.16)'} />
+          </g>;
+        })}
+      </svg>
+      {isScanning && <div className="scanner-beam"><div className="absolute bottom-2 right-2 mono text-[8px] text-cyan-600 font-bold">SCAN</div></div>}
+      <div className="absolute top-4 left-4 z-[6] flex flex-col"><span className="mono text-[9px] text-cyan-600 font-bold tracking-widest uppercase">{phase}</span><span className="mono text-[8px] text-slate-400 tracking-widest">{data.length} BARS • 1M</span></div>
+    </div>;
+  }
 
-          const signalX = chart.timeScale().timeToCoordinate((normalizeCandleTimeMs(t.signalTime) || 0) / 1000);
-          const signalY = series.priceToCoordinate(
-            isBuy
-              ? safeNumber(t.signalLow, t.signalPrice) - safeNumber(t.atr, 0) * .35
-              : safeNumber(t.signalHigh, t.signalPrice) + safeNumber(t.atr, 0) * .35
-          );
+  function App() {
+    if (MAINTENANCE_MODE) return <div className="maintenance-screen"><div className="maintenance-card"><div className="author-glow text-xl mb-6">SLAVA GORDEEV</div><h1 className="oswald text-5xl md:text-7xl font-black leading-none">КРИПТО ТЕРМИНАЛ<br/><span className="gradient-text">PRO MAX</span></h1><p className="mt-6 text-slate-600 font-semibold leading-relaxed">Утилита находится на техническом обновлении. Мы усиливаем сигнальный модуль, аналитику 1M и точность расчёта сделок.</p><div className="mt-8 inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-slate-100 border border-white text-slate-600 font-bold text-sm"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span> Обновление стратегии и синхронизация сигналов</div></div></div>;
 
-          const entryTime = normalizeCandleTimeMs(t.entryChartTime || t.entryTime);
-          const entryX = entryTime ? chart.timeScale().timeToCoordinate(entryTime / 1000) : null;
-          const entryY = t.entryPrice ? series.priceToCoordinate(t.entryPrice) : null;
+    const chartContainerRef = useRef(null);
+    const overlayRef = useRef(null);
+    const chartRef = useRef(null);
+    const candleSeriesRef = useRef(null);
+    const extraSeriesRef = useRef([]);
+    const tradesRef = useRef([]);
+    const engineActiveRef = useRef(false);
+    const currentPriceRef = useRef(null);
+    const currentChartTimeSecRef = useRef(null);
+    const currentMgIndexRef = useRef(0);
+    const lastNewsAtRef = useRef(Date.now());
+    const stageRef = useRef(APP_STAGE.IDLE);
 
-          const exitTime = t.exitTime ? normalizeCandleTimeMs(t.exitTime) : Date.now();
-          const exitX = entryTime ? chart.timeScale().timeToCoordinate(exitTime / 1000) : null;
-          const liveExitPrice = t.exitPrice || currentLivePrice || t.entryPrice || t.signalPrice;
-          const exitY = liveExitPrice ? series.priceToCoordinate(liveExitPrice) : null;
+    const [stage, setStage] = useState(APP_STAGE.IDLE);
+    const [phase, setPhase] = useState('ОЖИДАНИЕ ЗАПУСКА...');
+    const [viewMode, setViewMode] = useState('DETAIL');
+    const [candles, setCandles] = useState([]);
+    const [stats, setStats] = useState(calculateSessionStats([]));
+    const [livePrice, setLivePrice] = useState(null);
+    const liveWsRef = useRef(null);
+    const livePollingRef = useRef(null);
+    const liveSignalLockRef = useRef(false);
+    const [backtestStats, setBacktestStats] = useState(null);
+    const [debugInfo, setDebugInfo] = useState(null);
+    const [metrics, setMetrics] = useState({ structure: 50, liquidity: 50, filterLevel: 50, smartMoney: 50 });
+    const [signal, setSignal] = useState(null);
+    const [countdown, setCountdown] = useState(null);
+    const [logs, setLogs] = useState([]);
+    const [midTradeNote, setMidTradeNote] = useState('');
+    const [tooltip, setTooltip] = useState(null);
+    const [tooltipHtml, setTooltipHtml] = useState('');
+    const [renderedMarkers, setRenderedMarkers] = useState(0);
 
-          const showTip = (event) => {
-            setTooltip({
-              x: Math.min(window.innerWidth - 170, Math.max(150, event.clientX)),
-              y: Math.min(window.innerHeight - 150, Math.max(140, event.clientY)),
-              html: tooltipHtml(t)
-            });
-          };
+    useEffect(() => { stageRef.current = stage; }, [stage]);
 
-          const hideTip = () => setTooltip(null);
+    const addLog = useCallback((msg) => setLogs(p => [`SMC PINE: ${msg}`, ...p].slice(0, 6)), []);
 
-          if (signalX != null && signalY != null) {
-            const arrow = document.createElement("div");
-            arrow.className = `arrow ${isBuy ? "buy" : "sell"}`;
-            arrow.style.left = `${signalX}px`;
-            arrow.style.top = `${signalY}px`;
-            arrow.innerHTML = isBuy ? "↑" : "↓";
-            arrow.onmouseenter = showTip;
-            arrow.onmouseleave = hideTip;
-            overlay.appendChild(arrow);
-
-            const sig = document.createElement("div");
-            sig.className = `pt signal ${isBuy ? "buy" : "sell"}`;
-            sig.style.left = `${signalX}px`;
-            sig.style.top = `${signalY}px`;
-            sig.onmouseenter = showTip;
-            sig.onmouseleave = hideTip;
-            overlay.appendChild(sig);
-          }
-
-          if (entryX != null && entryY != null) {
-            const ent = document.createElement("div");
-            ent.className = "pt entry";
-            ent.style.left = `${entryX}px`;
-            ent.style.top = `${entryY}px`;
-            ent.onmouseenter = showTip;
-            ent.onmouseleave = hideTip;
-            overlay.appendChild(ent);
-          }
-
-          if (entryX != null && entryY != null && exitX != null && exitY != null) {
-            const left = Math.min(entryX, exitX);
-            const width = Math.max(8, Math.abs(exitX - entryX));
-            const top = Math.min(entryY, exitY) - 18;
-            const height = Math.max(28, Math.abs(exitY - entryY) + 36);
-
-            const box = document.createElement("div");
-            box.className = `trade-box ${resultClass}`;
-            box.style.left = `${left}px`;
-            box.style.top = `${top}px`;
-            box.style.width = `${width}px`;
-            box.style.height = `${height}px`;
-            box.onmouseenter = showTip;
-            box.onmouseleave = hideTip;
-            overlay.appendChild(box);
-
-            if (t.state === "TRADE_CLOSED") {
-              const exit = document.createElement("div");
-              exit.className = "pt exit";
-              exit.style.left = `${exitX}px`;
-              exit.style.top = `${exitY}px`;
-              exit.onmouseenter = showTip;
-              exit.onmouseleave = hideTip;
-              overlay.appendChild(exit);
-            }
-
-            const badge = document.createElement("div");
-            badge.className = `badge ${resultClass}`;
-            badge.style.left = `${exitX}px`;
-            badge.style.top = `${exitY}px`;
-            const pnl = safeNumber(t.pnl, 0);
-            badge.innerHTML =
-              t.state === "TRADE_CLOSED"
-                ? `${t.result} ${pnl > 0 ? "+" : ""}${formatRub(pnl)}`
-                : `В СДЕЛКЕ`;
-            badge.onmouseenter = showTip;
-            badge.onmouseleave = hideTip;
-            overlay.appendChild(badge);
-          }
-        });
-      }
-
-      function updateLiveCandle(candle) {
-        if (!candle || !Number.isFinite(candle.close)) return;
-
-        livePriceRef.current = candle.close;
-        setLivePrice(candle.close);
-
-        if (seriesRef.current) {
-          try {
-            seriesRef.current.update(candle);
-            lastChartTimeRef.current = Math.max(lastChartTimeRef.current, candle.time || 0);
-          } catch(e) {}
-        }
-
-        const old = candlesRef.current || [];
-        const last = old[old.length - 1];
-        let next;
-        if (last && last.time === candle.time) {
-          next = [...old.slice(0, -1), candle];
-        } else {
-          next = [...old, candle].slice(-950);
-        }
-
-        candlesRef.current = next;
-        setCandles(next);
-        renderTradeOverlay();
-      }
-
-      async function checkLiveSignal() {
-        if (!activeRef.current) return;
-        if (tradesRef.current.some(t => t.state !== "TRADE_CLOSED")) return;
-
-        const data = candlesRef.current;
-        const closed = getClosedCandles(data);
-        const recent = closed.slice(-16);
-
-        const scanState = {
-          lastSignalIndex: lastLiveSignalRef.current?.lastIndex ?? null,
-          lastBuyPool: lastLiveSignalRef.current?.lastBuyPool ?? null,
-          lastSellPool: lastLiveSignalRef.current?.lastSellPool ?? null
+    const redrawOverlay = useCallback(() => {
+      if (!chartRef.current || !candleSeriesRef.current || !overlayRef.current) return;
+      overlayRef.current.innerHTML = '';
+      let count = 0;
+      for (const t of tradesRef.current) {
+        if (!t.signalTime) continue;
+        const isBuy = t.direction === 'BUY' || t.direction === 'CALL';
+        const isWin = t.result === 'WIN';
+        const isClosed = t.state === 'TRADE_CLOSED';
+        const xSig = chartRef.current.timeScale().timeToCoordinate((t.signalChartTime || t.signalTime) / 1000);
+        const ySig = candleSeriesRef.current.priceToCoordinate(getSignalArrowPrice(t));
+        const xEntry = t.entryTime ? chartRef.current.timeScale().timeToCoordinate((t.entryChartTime || t.entryTime) / 1000) : null;
+        const yEntry = t.entryTime ? candleSeriesRef.current.priceToCoordinate(t.entryPrice) : null;
+        const activeRenderTimeMs = currentChartTimeSecRef.current ? currentChartTimeSecRef.current * 1000 : Date.now();
+        const renderExitTime = t.exitTime ? (t.exitChartTime || t.exitTime) : (t.state === 'TRADE_ACTIVE' ? activeRenderTimeMs : null);
+        const renderExitPrice = t.exitPrice || (t.state === 'TRADE_ACTIVE' ? currentPriceRef.current : null);
+        const xExit = renderExitTime ? chartRef.current.timeScale().timeToCoordinate(renderExitTime / 1000) : null;
+        const yExit = renderExitPrice ? candleSeriesRef.current.priceToCoordinate(renderExitPrice) : null;
+        const tooltipContent = buildTradeTooltipHtml(t);
+        const attach = (el, x, y) => {
+          el.onmouseenter = () => { setTooltipHtml(tooltipContent); setTooltip({ x, y }); };
+          el.onmouseleave = () => setTooltip(null);
+          el.onclick = () => { setTooltipHtml(tooltipContent); setTooltip({ x, y }); setTimeout(() => setTooltip(null), 6000); };
+          overlayRef.current.appendChild(el);
         };
 
-        for (const c of recent) {
-          const candleTime = normalizeCandleTimeMs(c.time);
-          const candleCloseTime = candleTime + CFG.timeframeMs;
-
-          if (candleCloseTime < Date.now() - CFG.timeframeMs * 4) continue;
-
-          const index = data.findIndex(x => normalizeCandleTimeMs(x.time) === candleTime);
-          if (index < 0) continue;
-
-          const res = evaluateSignal(data, index, scanState);
-          setScores(res.scores || basicScores());
-
-          const direction = res.isBuy ? "BUY" : res.isSell ? "SELL" : null;
-          if (!direction) continue;
-
-          const signalId = `${CFG.symbol}_${CFG.timeframe}_${candleTime}_${direction}`;
-          if (lastLiveSignalRef.current?.signalId === signalId) continue;
-
-          lastLiveSignalRef.current = {
-            signalId,
-            lastIndex: index,
-            lastBuyPool: direction === "BUY" ? res.lowerPool : scanState.lastBuyPool,
-            lastSellPool: direction === "SELL" ? res.upperPool : scanState.lastSellPool
-          };
-
-          await startLiveTrade({
-            signalId,
-            direction,
-            candle: c,
-            result: res
-          });
-
-          break;
+        if (xSig !== null && ySig !== null) {
+          const arrow = document.createElement('div');
+          arrow.className = 'trade-arrow signal';
+          arrow.style.left = `${xSig}px`; arrow.style.top = `${ySig}px`;
+          arrow.innerHTML = isBuy ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3"><path d="M12 19V1M5 12l7-7 7 7"/></svg>` : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="3"><path d="M12 5v14M5 12l7 7 7-7"/></svg>`;
+          attach(arrow, xSig, ySig - 12);
+          const signalLabel = document.createElement('div');
+          signalLabel.className = 'trade-mini-label';
+          signalLabel.style.left = `${xSig}px`;
+          signalLabel.style.top = `${ySig - 28}px`;
+          signalLabel.textContent = 'SIGNAL';
+          attach(signalLabel, xSig, ySig - 36);
         }
-      }
-
-      async function startLiveTrade({ signalId, direction, candle, result }) {
-        window.speechSynthesis?.cancel();
-
-        const currentStats = buildStats(tradesRef.current);
-        const last = tradesRef.current[tradesRef.current.length - 1];
-        const lastStage = last && last.result === "LOSS" ? Math.min((last.martingaleStep || 1), CFG.martingaleLadder.length - 1) : 0;
-        const stake = CFG.martingaleLadder[lastStage] || CFG.baseStake;
-
-        const signalTime = normalizeCandleTimeMs(candle.time);
-        const signalPrice = safeNumber(candle.close);
-
-        const trade = {
-          tradeId: signalId,
-          mode: "live",
-          direction,
-          signalTime,
-          signalPrice,
-          signalHigh: safeNumber(candle.high),
-          signalLow: safeNumber(candle.low),
-          atr: result.atr,
-          reason: buildSignalReason(direction),
-          state: "SIGNAL_DETECTED",
-          entryTime: null,
-          entryChartTime: null,
-          entryPrice: null,
-          exitTime: null,
-          exitPrice: null,
-          result: null,
-          stake,
-          martingaleStep: lastStage + 1,
-          pnl: 0,
-          balanceBefore: currentStats.finalBalance,
-          balanceAfter: currentStats.finalBalance,
-          entryDelaySeconds: 6
-        };
-
-        tradesRef.current = [...tradesRef.current, trade];
-        setTrades([...tradesRef.current]);
-        setActiveSignal({ direction, stake });
-        setPhase("СИГНАЛ АКТИВЕН");
-        addLog(`СИГНАЛ ${direction}. Подготовка входа.`);
-
-        await speak(buildSignalReason(direction));
-        await new Promise(r => setTimeout(r, 3000));
-        await speak("Подготовьтесь. До входа три секунды.");
-        await new Promise(r => setTimeout(r, 3000));
-
-        trade.state = "TRADE_ACTIVE";
-        trade.entryTime = Date.now();
-        trade.entryChartTime = Date.now();
-        trade.entryPrice = livePriceRef.current || signalPrice;
-        trade.balanceBefore = buildStats(tradesRef.current.filter(t => t.tradeId !== trade.tradeId)).finalBalance;
-
-        tradesRef.current = tradesRef.current.map(t => t.tradeId === trade.tradeId ? trade : t);
-        setTrades([...tradesRef.current]);
-        addLog(`ВХОД ${direction}. Ставка ${formatRub(stake)}. Экспирация 25 минут.`);
-        renderTradeOverlay();
-
-        let seconds = CFG.expiryMinutes * 60;
-        setCountdown(seconds);
-
-        const timer = setInterval(() => {
-          seconds--;
-          setCountdown(seconds);
-          renderTradeOverlay();
-
-          if (seconds <= 0) {
-            clearInterval(timer);
-            closeLiveTrade(trade.tradeId);
+        if (xEntry !== null && yEntry !== null) {
+          const entryArrow = document.createElement('div');
+          entryArrow.className = 'trade-arrow entry';
+          entryArrow.style.left = `${xEntry}px`; entryArrow.style.top = `${yEntry - 20}px`;
+          entryArrow.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="3"><path d="M12 19V1M5 12l7-7 7 7"/></svg>`;
+          attach(entryArrow, xEntry, yEntry - 28);
+          const entryLabel = document.createElement('div');
+          entryLabel.className = 'trade-mini-label';
+          entryLabel.style.left = `${xEntry}px`;
+          entryLabel.style.top = `${yEntry - 46}px`;
+          entryLabel.textContent = 'ENTRY';
+          attach(entryLabel, xEntry, yEntry - 54);
+          const p = document.createElement('div');
+          p.className = 'trade-point';
+          p.style.left = `${xEntry}px`; p.style.top = `${yEntry}px`;
+          attach(p, xEntry, yEntry - 10);
+        }
+        if (xEntry !== null && xExit !== null && yEntry !== null && yExit !== null) {
+          count++;
+          const xLeft = Math.min(xEntry, xExit);
+          const width = Math.max(8, Math.abs(xExit - xEntry));
+          const top = Math.min(yEntry, yExit) - 16;
+          const height = Math.max(18, Math.abs(yExit - yEntry) + 32);
+          const box = document.createElement('div');
+          box.className = `trade-box ${isClosed ? (isWin ? 'win' : 'loss') : 'active'}`;
+          box.style.left = `${xLeft}px`; box.style.top = `${top}px`; box.style.width = `${width}px`; box.style.height = `${height}px`;
+          attach(box, xLeft + width / 2, top - 8);
+          if (isClosed) {
+            const exit = document.createElement('div');
+            exit.className = 'trade-point exit';
+            exit.style.left = `${xExit}px`; exit.style.top = `${yExit}px`;
+            attach(exit, xExit, yExit - 10);
+            const badge = document.createElement('div');
+            badge.className = `trade-badge ${isWin ? 'win' : 'loss'}`;
+            badge.style.left = `${xExit}px`; badge.style.top = `${yExit}px`;
+            badge.style.transform = isBuy ? 'translate(-50%, 16px)' : 'translate(-50%, calc(-100% - 16px))';
+            badge.textContent = `${isWin ? 'WIN' : 'LOSS'} | ${isBuy ? 'BUY' : 'SELL'} ${t.pnl > 0 ? '+' : ''}${formatRub(t.pnl)}`;
+            attach(badge, xExit, yExit - 10);
           }
-        }, 1000);
-      }
-
-      async function closeLiveTrade(tradeId) {
-        const trade = tradesRef.current.find(t => t.tradeId === tradeId);
-        if (!trade) return;
-
-        const exitPrice = livePriceRef.current || trade.entryPrice;
-        const res = resultOfTrade(trade.direction, trade.entryPrice, exitPrice);
-        const pnl = res === "WIN" ? Math.round(trade.stake * CFG.payout) : -trade.stake;
-
-        trade.state = "TRADE_CLOSED";
-        trade.exitTime = Date.now();
-        trade.exitPrice = exitPrice;
-        trade.result = res;
-        trade.pnl = pnl;
-        trade.balanceAfter = safeNumber(trade.balanceBefore) + pnl;
-
-        tradesRef.current = tradesRef.current.map(t => t.tradeId === tradeId ? trade : t);
-        setTrades([...tradesRef.current]);
-
-        const newStats = buildStats(tradesRef.current);
-        setStats(newStats);
-        setCountdown(null);
-        setActiveSignal(null);
-        setPhase("СКАНИРОВАНИЕ ЛИКВИДНОСТИ (1M)");
-        renderTradeOverlay();
-
-        if (res === "WIN") {
-          addLog(`WIN: ${formatRub(pnl)}. Выход ${formatPrice(exitPrice)}.`);
-          await speak(`Сделка закрыта в плюс. Прибыль ${Math.abs(pnl)} рублей.`);
-        } else {
-          addLog(`LOSS: ${formatRub(pnl)}. Следующий шаг мартингейла.`);
-          await speak(`Сделка закрыта в минус. Следующий сигнал будет рассчитан с учётом мартингейла.`);
         }
       }
+      setRenderedMarkers(count);
+    }, []);
 
-      function startWebSocket() {
+    async function initChart() {
+      if (!chartContainerRef.current || chartRef.current) return;
+      await wait(50);
+      if (!chartContainerRef.current || chartRef.current) return;
+      const chart = LightweightCharts.createChart(chartContainerRef.current, {
+        autoSize: true,
+        layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#475569', fontFamily: 'JetBrains Mono' },
+        grid: { vertLines: { color: 'rgba(148,163,184,.13)' }, horzLines: { color: 'rgba(148,163,184,.13)' } },
+        timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
+        rightPriceScale: { borderVisible: false }
+      });
+      const candlesSeries = chart.addCandlestickSeries({ upColor: '#38bdf8', downColor: '#fb7185', borderUpColor: '#38bdf8', borderDownColor: '#fb7185', wickUpColor: '#38bdf8', wickDownColor: '#fb7185' });
+      chartRef.current = chart;
+      candleSeriesRef.current = candlesSeries;
+      chart.timeScale().subscribeVisibleLogicalRangeChange(redrawOverlay);
+      chart.timeScale().subscribeSizeChange(redrawOverlay);
+      window.addEventListener('resize', redrawOverlay);
+    }
+
+    function clearExtraSeries() {
+      if (!chartRef.current) return;
+      extraSeriesRef.current.forEach(s => { try { chartRef.current.removeSeries(s); } catch(e) {} });
+      extraSeriesRef.current = [];
+    }
+    function drawIndicators(data) {
+      if (!chartRef.current) return;
+      clearExtraSeries();
+      const upper = [], lower = [];
+      for (let i = STRATEGY_RUNTIME_CONFIG.lookback; i < data.length; i++) {
+        const prev = data.slice(i - STRATEGY_RUNTIME_CONFIG.lookback, i);
+        upper.push({ time: data[i].time, value: Math.max(...prev.map(c => c.high)) });
+        lower.push({ time: data[i].time, value: Math.min(...prev.map(c => c.low)) });
+      }
+      const us = chartRef.current.addLineSeries({ color: 'rgba(244,63,94,.55)', lineWidth: 1, lineStyle: 2, title: 'UPPER POOL', lastValueVisible: true, priceLineVisible: false });
+      us.setData(upper); extraSeriesRef.current.push(us);
+      const ls = chartRef.current.addLineSeries({ color: 'rgba(16,185,129,.55)', lineWidth: 1, lineStyle: 2, title: 'LOWER POOL', lastValueVisible: true, priceLineVisible: false });
+      ls.setData(lower); extraSeriesRef.current.push(ls);
+    }
+
+    function updateLiveCandleOnChart(candle) {
+      if (!candle || !Number.isFinite(Number(candle.close))) return;
+      const normalized = {
+        time: Number(candle.time),
+        open: Number(candle.open),
+        high: Number(candle.high),
+        low: Number(candle.low),
+        close: Number(candle.close),
+        volume: Number(candle.volume || 0)
+      };
+
+      currentPriceRef.current = normalized.close;
+      currentChartTimeSecRef.current = normalized.time;
+      setLivePrice(normalized.close);
+
+      setCandles(prev => {
+        const arr = Array.isArray(prev) ? [...prev] : [];
+        const last = arr[arr.length - 1];
+        if (last && Number(last.time) === Number(normalized.time)) {
+          arr[arr.length - 1] = normalized;
+        } else if (!last || Number(normalized.time) > Number(last.time)) {
+          arr.push(normalized);
+          if (arr.length > 500) arr.shift();
+        }
+        return arr;
+      });
+
+      if (candleSeriesRef.current) {
+        try { candleSeriesRef.current.update(normalized); } catch(e) { console.warn('live chart update error', e); }
+      }
+      redrawOverlay();
+    }
+
+    function startLivePolling(symbol = STRATEGY_RUNTIME_CONFIG.symbol) {
+      if (livePollingRef.current) clearInterval(livePollingRef.current);
+      livePollingRef.current = setInterval(async () => {
+        if (!engineActiveRef.current) return;
         try {
-          if (wsRef.current) wsRef.current.close();
-        } catch(e) {}
+          const d = await ScannerAPI.getCandles(symbol, 3, '1m');
+          if (d && d.length) updateLiveCandleOnChart(d[d.length - 1]);
+        } catch(e) { console.warn('live polling error', e); }
+      }, 2000);
+    }
 
-        const wsUrl = `wss://stream.binance.com:9443/ws/${CFG.symbol.toLowerCase()}@kline_${CFG.timeframe}`;
+    function startLiveStream(symbol = STRATEGY_RUNTIME_CONFIG.symbol) {
+      try { if (liveWsRef.current) liveWsRef.current.close(); } catch(e) {}
+      const wsUrl = `wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_1m`;
+      try {
         const ws = new WebSocket(wsUrl);
-        wsRef.current = ws;
-
-        ws.onopen = () => addLog(`LIVE STREAM ${CFG.timeframeLabel}: подключён`);
-        ws.onmessage = async (event) => {
+        liveWsRef.current = ws;
+        ws.onopen = () => addLog('LIVE STREAM: Binance BTCUSDT 1M подключён');
+        ws.onmessage = (event) => {
           try {
             const msg = JSON.parse(event.data);
             const k = msg.k;
             if (!k) return;
-
             const candle = {
               time: Math.floor(Number(k.t) / 1000),
               open: Number(k.o),
@@ -1745,302 +992,365 @@
               close: Number(k.c),
               volume: Number(k.v)
             };
+            updateLiveCandleOnChart(candle);
 
-            updateLiveCandle(candle);
-
-            if (k.x === true) {
-              await checkLiveSignal();
+            // Закрылась 1M-свеча — сразу проверяем сигнал, не ждём обычного REST-цикла.
+            if (k.x && stageRef.current === APP_STAGE.LIVE_SCAN && !liveSignalLockRef.current) {
+              ScannerAPI.getCandles(symbol, 1000, '1m').then(data => {
+                if (!data.length || stageRef.current !== APP_STAGE.LIVE_SCAN || liveSignalLockRef.current) return;
+                const { signal, debug } = checkRecentClosedSignals({ candles: data, symbol, cfg: STRATEGY_RUNTIME_CONFIG });
+                if (debug) setDebugInfo(debug);
+                if (signal) handleLiveSignal(signal, data);
+              }).catch(e => console.warn('closed candle signal check error', e));
             }
-          } catch(e) {}
+          } catch(e) { console.warn('ws parse error', e); }
         };
-
         ws.onerror = () => {
-          addLog("WebSocket недоступен, включаю REST polling");
-          startPolling();
+          addLog('LIVE STREAM: ошибка WebSocket, включаю REST polling');
+          startLivePolling(symbol);
         };
-
         ws.onclose = () => {
-          if (activeRef.current) {
-            setTimeout(() => {
-              if (activeRef.current) startWebSocket();
-            }, 4000);
-          }
+          if (engineActiveRef.current) setTimeout(() => { if (engineActiveRef.current) startLiveStream(symbol); }, 4000);
         };
+      } catch(e) {
+        addLog('LIVE STREAM: недоступен, включаю REST polling');
+        startLivePolling(symbol);
       }
-
-      function startPolling() {
-        if (pollRef.current) clearInterval(pollRef.current);
-
-        pollRef.current = setInterval(async () => {
-          if (!activeRef.current) return;
-          const data = await API.getCandles(CFG.symbol, 5, CFG.timeframe);
-          if (data.length) updateLiveCandle(data[data.length - 1]);
-          await checkLiveSignal();
-        }, 2500);
-      }
-
-      async function startTerminal() {
-        setStarted(true);
-        activeRef.current = true;
-        liveStartMsRef.current = Date.now();
-
-        try {
-          const ctx = new (window.AudioContext || window.webkitAudioContext)();
-          const osc = ctx.createOscillator();
-          osc.connect(ctx.destination);
-          osc.start();
-          osc.stop(ctx.currentTime + .01);
-        } catch(e) {}
-
-        setPhase("ЗАГРУЗКА ДАННЫХ");
-        addLog("Запуск терминала...");
-
-        setTimeout(() => initChart(), 0);
-        await new Promise(r => setTimeout(r, 250));
-
-        const data = await API.getCandles(CFG.symbol, 900, CFG.timeframe);
-        if (!data.length) {
-          setPhase("ОШИБКА API");
-          addLog("Нет связи с биржей.");
-          await speak("Ошибка связи с биржей.");
-          return;
-        }
-
-        candlesRef.current = data;
-        setCandles(data);
-        livePriceRef.current = data[data.length - 1].close;
-        setLivePrice(data[data.length - 1].close);
-
-        if (seriesRef.current) {
-          seriesRef.current.setData(data);
-          lastChartTimeRef.current = data[data.length - 1].time;
-          drawPools(data);
-          setTimeout(() => {
-            try { chartRef.current.timeScale().fitContent(); } catch(e) {}
-            renderTradeOverlay();
-          }, 100);
-        }
-
-        const bt = buildHistoricalBacktest(data);
-        tradesRef.current = bt.trades;
-        setTrades(bt.trades);
-        setDebugStats(bt.stats);
-        setScores(bt.lastScores || basicScores());
-
-        const s = buildStats(bt.trades);
-        setStats(s);
-
-        setTimeout(renderTradeOverlay, 350);
-
-        const pnlText = s.pnl >= 0 ? `заработали ${Math.abs(Math.round(s.pnl))} рублей` : `получили минус ${Math.abs(Math.round(s.pnl))} рублей`;
-
-        await speak(`Терминал Про Макс запущен. За последние 12 часов было ${s.confirmedTrades} сделок. Плюсовых ${s.wins}, минусовых ${s.losses}. Если бы вход был по 500 рублей с учетом мартингейла до четвертого колена, вы бы ${pnlText}. Перехожу к сканированию рынка.`);
-
-        setPhase("СКАНИРОВАНИЕ ЛИКВИДНОСТИ (1M)");
-        startWebSocket();
-        startPolling();
-      }
-
-      useEffect(() => {
-        return () => {
-          activeRef.current = false;
-          try { wsRef.current?.close(); } catch(e) {}
-          if (pollRef.current) clearInterval(pollRef.current);
-        };
-      }, []);
-
-      if (MAINTENANCE_MODE) {
-        return (
-          <div className="maintenance">
-            <div className="glass start-card">
-              <div className="author-shimmer text-lg mb-4">SLAVA GORDEEV</div>
-              <h1>ТЕРМИНАЛ<br/><span style={{ color: "#0ea5e9" }}>PRO MAX</span></h1>
-              <p className="text-slate-500 font-semibold">
-                Утилита находится на техническом обновлении. Идёт усиление стратегии и синхронизация сигналов.
-              </p>
-            </div>
-          </div>
-        );
-      }
-
-      if (!started) {
-        return (
-          <div className="start-screen">
-            <div className="glass start-card">
-              <div className="author-shimmer text-lg mb-5">SLAVA GORDEEV</div>
-              <div className="text-cyan-500 text-5xl mb-2">⚡</div>
-              <div className="start-title">
-                ТЕРМИНАЛ<br/>
-                <span style={{ color: "#0ea5e9" }}>PRO MAX</span>
-              </div>
-              <p className="text-slate-500 font-bold tracking-[.18em] uppercase text-xs">
-                SMC Pine Test / 1M / 25M
-              </p>
-              <button className="start-btn" onClick={startTerminal}>
-                Запуск системы
-              </button>
-            </div>
-          </div>
-        );
-      }
-
-      return (
-        <div className="app">
-          {tooltip && (
-            <div
-              className="tooltip"
-              style={{ left: tooltip.x, top: tooltip.y, transform: "translate(-50%, -105%)" }}
-              dangerouslySetInnerHTML={{ __html: tooltip.html }}
-            />
-          )}
-
-          <div className="top-ticker glass">
-            <div className="ticker-label oswald">◎ РАДАР СЕТИ</div>
-            <div className="overflow-hidden flex-1">
-              <div className="ticker-track oswald text-[11px] text-slate-500 font-bold tracking-widest">
-                {[0,1].map(n => (
-                  <div key={n} className="flex gap-14 pr-14">
-                    {NEWS.map((x, i) => (
-                      <span key={i} className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,.7)]"></span>
-                        {x.toUpperCase()}
-                      </span>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <header className="header">
-            <div>
-              <div className="title-main">
-                <span style={{ color: "#06b6d4", WebkitTextFillColor: "#06b6d4" }}>⚡</span>
-                ТЕРМИНАЛ <span>PRO MAX</span>
-              </div>
-              <div className="flex items-center gap-3 mt-2">
-                <div className="author-shimmer text-xs px-2 py-1 rounded-lg border border-slate-200 bg-white/45">
-                  SLAVA GORDEEV
-                </div>
-                <div className="text-[10px] text-slate-400 font-black tracking-[.22em] uppercase">
-                  SMC PINE TEST / 1M
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="status-pill">{phase}</div>
-              <div className="hidden sm:flex flex-col items-end gap-1">
-                <div className="text-[10px] text-slate-500 font-black uppercase tracking-widest bg-white/55 px-3 py-1 rounded-full border border-slate-200">
-                  ● синхронизация
-                </div>
-                <LiveClock />
-              </div>
-            </div>
-          </header>
-
-          <main className="main">
-            <section className="chart-card glass">
-              <div className="chart-top-info glass-soft">
-                <div className="text-[10px] text-slate-400 font-black tracking-widest uppercase mb-2">
-                  ● BITCOIN ({CFG.timeframeLabel})
-                </div>
-                <div className="chart-price">{livePrice ? formatPrice(livePrice) : "—"}</div>
-              </div>
-
-              <div className="chart-wrap">
-                <div id="chart" ref={chartContainerRef}></div>
-                <div className="trade-overlay" ref={overlayRef}></div>
-              </div>
-            </section>
-
-            <aside className="right glass">
-              <div className="right-head">{phase}</div>
-
-              <div className="right-body">
-                <a className="broker" href={CFG.referralUrl} target="_blank" rel="noopener noreferrer">
-                  <small>Брокер для входа</small>
-                  <strong>Торговать здесь</strong>
-                  <small>через брокера</small>
-                </a>
-
-                <MiniScanner candles={candles} phase={`Сканирование ликвидности (${CFG.timeframeLabel})`} />
-
-                <div className="gauges glass-soft">
-                  <Gauge value={scores.structure} label="структура" color="#eab308" />
-                  <Gauge value={scores.liquidity} label="ликвидность" color="#0ea5e9" />
-                  <Gauge value={scores.atr} label="ATR фильтр" color="#8b5cf6" />
-                  <Gauge value={scores.confidence} label="Smart Money" color="#06b6d4" />
-                </div>
-
-                <div className="stat-grid">
-                  <div className="stat-card glass-soft">
-                    <div className="stat-label">Баланс 12H</div>
-                    <div className="stat-value">{formatRub(stats.finalBalance)}</div>
-                    <div className={`text-xs font-black mt-1 ${stats.pnl >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
-                      {stats.pnl > 0 ? "+" : ""}{formatRub(stats.pnl)} PNL
-                    </div>
-                  </div>
-
-                  <div className="stat-card glass-soft">
-                    <div className="stat-label">Экспирация</div>
-                    <div className="stat-value text-cyan-600">
-                      {countdown != null
-                        ? `${Math.floor(countdown / 60)}:${String(countdown % 60).padStart(2, "0")}`
-                        : "25:00"}
-                    </div>
-                    <div className="text-xs font-black mt-1 text-slate-400">
-                      {activeSignal ? `${activeSignal.direction} / ${formatRub(activeSignal.stake)}` : "Ожидание"}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="logbox glass-soft">
-                  <div className="flex justify-between mb-2 oswald text-slate-700 font-bold tracking-widest text-xs">
-                    <span>СТАТИСТИКА 12H</span>
-                    <span>{stats.confirmedTrades} сделок</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 mb-2">
-                    <div className="bg-white/55 rounded-xl p-2">
-                      <div className="text-[9px] text-slate-400 font-black uppercase">Профит</div>
-                      <div className="oswald text-emerald-500 text-xl font-black">{stats.wins}</div>
-                    </div>
-                    <div className="bg-white/55 rounded-xl p-2 text-right">
-                      <div className="text-[9px] text-slate-400 font-black uppercase">Убыток</div>
-                      <div className="oswald text-rose-500 text-xl font-black">{stats.losses}</div>
-                    </div>
-                  </div>
-
-                  {debugStats && (
-                    <div className="mb-2 border-t border-slate-200/60 pt-2">
-                      <div className="flex justify-between"><span>RAW:</span><b>{debugStats.rawBuy + debugStats.rawSell}</b></div>
-                      <div className="flex justify-between"><span>RECLAIM:</span><b>{debugStats.reclaimBuy + debugStats.reclaimSell}</b></div>
-                      <div className="flex justify-between"><span>FINAL:</span><b>{debugStats.finalBuy + debugStats.finalSell}</b></div>
-                      <div className="flex justify-between"><span>TRADES:</span><b>{debugStats.ledgerTrades}</b></div>
-                    </div>
-                  )}
-
-                  <div className="border-t border-slate-200/60 pt-2">
-                    {logs.length ? logs.map((l, i) => (
-                      <div key={i} className="truncate">SMC: {l}</div>
-                    )) : <div>SMC: ожидание событий...</div>}
-                  </div>
-                </div>
-              </div>
-            </aside>
-          </main>
-
-          <footer className="footer">
-            <span>256-BIT ШИФРОВАНИЕ СИСТЕМЫ • СОЕДИНЕНИЕ БЕЗОПАСНО</span>
-            <span className="bg-slate-800 text-white px-3 py-1 rounded-lg">КРИПТО ИНВЕСТ PRO MAX</span>
-          </footer>
-        </div>
-      );
     }
 
-    const root = ReactDOM.createRoot(document.getElementById("root"));
-    root.render(<App />);
-  </script>
+    function stopLiveStreams() {
+      try { if (liveWsRef.current) liveWsRef.current.close(); } catch(e) {}
+      try { if (livePollingRef.current) clearInterval(livePollingRef.current); } catch(e) {}
+      liveWsRef.current = null;
+      livePollingRef.current = null;
+    }
+
+    useEffect(() => () => stopLiveStreams(), []);
+
+    async function announceStats(s) {
+      const pnlValue = Math.round(safeNumber(s.pnl, 0));
+      const pnlAbs = Math.abs(pnlValue);
+      const resultWord = pnlValue >= 0 ? 'заработали' : 'получили минус';
+
+      await speakTextAsync('Терминал Про Макс запущен. Тестовый режим: одноминутный график, экспирация двадцать пять минут.', () => engineActiveRef.current);
+      await speakTextAsync(`За последние двенадцать часов было ${s.confirmedTrades} сделок. Плюсовых ${s.wins}, минусовых ${s.losses}.`, () => engineActiveRef.current);
+      await speakTextAsync(`Если бы вход был по пятьсот рублей, с учётом мартингейла до четвёртого колена вы бы ${resultWord} ${pnlAbs} рублей.`, () => engineActiveRef.current);
+      await speakTextAsync('Перехожу к сканированию рынка.', () => engineActiveRef.current);
+    }
+
+    async function runInitialAnalysis() {
+      if (engineActiveRef.current) return;
+      engineActiveRef.current = true;
+      setStage(APP_STAGE.ANALYSIS);
+      setViewMode('DETAIL');
+      setPhase('АНАЛИЗ 12 ЧАСОВ (1M)...');
+      addLog('ЗАПУСК: 1M / 21M TEST ENGINE');
+
+      const data = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 1000, '1m');
+      if (!data.length) { setPhase('ОШИБКА API'); addLog('НЕТ СВЯЗИ С БИРЖЕЙ'); return; }
+      setCandles(data);
+      currentPriceRef.current = data[data.length - 1].close;
+      currentChartTimeSecRef.current = data[data.length - 1].time;
+      setLivePrice(currentPriceRef.current);
+      await initChart();
+      candleSeriesRef.current.setData(data);
+      drawIndicators(data);
+
+      const result = buildHistoricalBacktest12h(data, STRATEGY_RUNTIME_CONFIG);
+      tradesRef.current = result.simulatedTrades;
+      currentMgIndexRef.current = result.currentMgStep;
+      setMetrics({ structure: result.lastScores.structure, liquidity: result.lastScores.liquidity, filterLevel: result.lastScores.atr, smartMoney: result.lastScores.confidence });
+      setBacktestStats(result.stats);
+      const newStats = calculateSessionStats(result.simulatedTrades);
+      setStats(newStats);
+      redrawOverlay();
+      try { chartRef.current.timeScale().fitContent(); } catch(e) {}
+      addLog(`БЭКТЕСТ: FINAL ${result.stats.finalBuy + result.stats.finalSell}, TRADES ${result.stats.ledgerTrades}, PNL ${newStats.pnl}`);
+      setPhase('ОТЧЁТ АНАЛИТИКИ...');
+      await announceStats(newStats);
+      if (!engineActiveRef.current) return;
+      startLiveStream(STRATEGY_RUNTIME_CONFIG.symbol);
+      startLivePolling(STRATEGY_RUNTIME_CONFIG.symbol);
+      setViewMode('SCREENER');
+      setStage(APP_STAGE.LIVE_SCAN);
+      setPhase('СКАНИРОВАНИЕ ЛИКВИДНОСТИ (1M)...');
+    }
+
+    async function handleLiveSignal(signalEvent, liveData) {
+      if (liveSignalLockRef.current) return;
+      liveSignalLockRef.current = true;
+      clearSpeechNow();
+
+      try {
+        setStage(APP_STAGE.SIGNAL_FLOW);
+        setViewMode('DETAIL');
+        setPhase('СИГНАЛ ОБНАРУЖЕН');
+        addLog(`LIVE SIGNAL: ${signalEvent.direction}`);
+
+        setCandles(liveData);
+        currentPriceRef.current = liveData[liveData.length - 1].close;
+        currentChartTimeSecRef.current = liveData[liveData.length - 1].time;
+        setLivePrice(currentPriceRef.current);
+        if (candleSeriesRef.current) {
+          candleSeriesRef.current.setData(liveData);
+          drawIndicators(liveData);
+        }
+
+        const before = calculateSessionStats(tradesRef.current);
+        const stake = getStakeByMartingaleIndex(currentMgIndexRef.current);
+        const trade = createTradeObject({
+          signalId: signalEvent.signalId,
+          direction: signalEvent.direction,
+          signalTime: signalEvent.signalTime,
+          signalChartTime: signalEvent.signalChartTime || signalEvent.signalTime,
+          signalPrice: signalEvent.signalPrice,
+          signalHigh: signalEvent.signalHigh,
+          signalLow: signalEvent.signalLow,
+          atr: signalEvent.atr,
+          stake,
+          martingaleIndex: currentMgIndexRef.current,
+          balanceBefore: before.finalBalance,
+          state: 'SIGNAL_DETECTED'
+        });
+
+        tradesRef.current = [...tradesRef.current, trade];
+        setSignal({ type: signalEvent.direction, status: 'SIGNAL', entryPrice: null, signalPrice: signalEvent.signalPrice, signalTime: signalEvent.signalTime, entryReady: false });
+        setMidTradeNote('');
+        redrawOverlay();
+
+        const dirText = signalEvent.direction === 'BUY' ? 'вверх' : 'вниз';
+        const shortReason = signalEvent.direction === 'BUY'
+          ? 'Снята нижняя ликвидность, цена вернулась в пул.'
+          : 'Снята верхняя ликвидность, цена вернулась в пул.';
+
+        await speakTextAsync(`Сигнал ${dirText}. ${shortReason}`, () => engineActiveRef.current);
+        setSignal(prev => prev ? { ...prev, status: 'PREP', prepStartedAt: Date.now() } : prev);
+        await speakTextAsync('Подготовка. Вход через три секунды.', () => engineActiveRef.current);
+
+        setPhase('ПОДГОТОВКА 3 СЕКУНДЫ');
+        for (let i = 3; i > 0; i--) {
+          setCountdown(i);
+          await wait(1000);
+        }
+        setCountdown(null);
+
+        try {
+          const fresh = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 3, '1m');
+          if (fresh.length) updateLiveCandleOnChart(fresh[fresh.length - 1]);
+        } catch(e) {}
+
+        trade.state = 'TRADE_ACTIVE';
+        trade.entryTime = Date.now();
+        trade.entryChartTime = currentChartTimeSecRef.current ? currentChartTimeSecRef.current * 1000 : trade.entryTime;
+        trade.entryPrice = currentPriceRef.current;
+        trade.entrySource = 'live_after_6s';
+        setSignal({ type: signalEvent.direction, exp: STRATEGY_RUNTIME_CONFIG.expiryMinutes, entryPrice: trade.entryPrice, status: 'ACTIVE', entryReady: true, signalPrice: trade.signalPrice, signalTime: trade.signalTime, entryTime: trade.entryTime });
+        setPhase('СИГНАЛ АКТИВЕН');
+        redrawOverlay();
+        addLog(`ВХОД ${signalEvent.direction}. СТАВКА ${stake}₽. ЭКСПИРАЦИЯ 25 МИН.`);
+
+        let seconds = STRATEGY_RUNTIME_CONFIG.expiryMinutes * 60;
+        const midPoint = Math.floor((STRATEGY_RUNTIME_CONFIG.expiryMinutes * 60) / 2);
+        let midTradeSpoken = false;
+        while (seconds > 0 && engineActiveRef.current) {
+          setCountdown(seconds);
+          if (!midTradeSpoken && seconds <= midPoint) {
+            const midText = getTradeMidStatusText(trade, currentPriceRef.current);
+            setMidTradeNote(midText);
+            addLog(`MID: ${midText}`);
+            await speakTextAsync(midText, () => engineActiveRef.current);
+            midTradeSpoken = true;
+          }
+          await wait(1000);
+          seconds--;
+          if (seconds % 5 === 0) redrawOverlay();
+          if (seconds % 10 === 0) {
+            try {
+              const d = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 3, '1m');
+              if (d.length) updateLiveCandleOnChart(d[d.length - 1]);
+            } catch(e) {}
+          }
+        }
+
+        setCountdown(null);
+        const exitData = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 3, '1m');
+        const finalCandle = exitData.length ? exitData[exitData.length - 1] : null;
+        const finalPrice = finalCandle ? finalCandle.close : currentPriceRef.current;
+
+        trade.exitTime = Date.now();
+        trade.exitChartTime = finalCandle ? normalizeCandleTimeMs(finalCandle.time) : (currentChartTimeSecRef.current ? currentChartTimeSecRef.current * 1000 : trade.exitTime);
+        trade.exitPrice = finalPrice;
+        trade.result = evaluateTradeResult(trade.direction, trade.entryPrice, trade.exitPrice);
+        trade.pnl = calculateTradePnl(trade.result, trade.stake);
+        trade.balanceAfter = trade.balanceBefore + trade.pnl;
+        trade.state = 'TRADE_CLOSED';
+        currentMgIndexRef.current = getNextMartingaleIndex(trade.result, currentMgIndexRef.current);
+
+        setStats(calculateSessionStats(tradesRef.current));
+        setSignal(null);
+        setMidTradeNote('');
+        redrawOverlay();
+        addLog(`${trade.result}: ${trade.direction}, PNL ${trade.pnl}`);
+        await speakTextAsync(trade.result === 'WIN' ? `Плюс. Прибыль ${trade.pnl} рублей.` : 'Минус. Следующий вход по мартингейлу.', () => engineActiveRef.current);
+
+        setStage(APP_STAGE.LIVE_SCAN);
+        setViewMode('SCREENER');
+        setPhase('СКАНИРОВАНИЕ ЛИКВИДНОСТИ (1M)...');
+        lastNewsAtRef.current = Date.now();
+      } finally {
+        liveSignalLockRef.current = false;
+      }
+    }
+
+    useEffect(() => {
+      if (stage !== APP_STAGE.LIVE_SCAN || !engineActiveRef.current) return;
+      let cancelled = false;
+      const loop = async () => {
+        if (cancelled || stageRef.current !== APP_STAGE.LIVE_SCAN) return;
+        try {
+          const data = await ScannerAPI.getCandles(STRATEGY_RUNTIME_CONFIG.symbol, 1000, '1m');
+          if (data.length) {
+            setCandles(data);
+            currentPriceRef.current = data[data.length - 1].close;
+            setLivePrice(currentPriceRef.current);
+            updateLiveCandleOnChart(data[data.length - 1]);
+            const { signal, debug } = checkRecentClosedSignals({ candles: data, symbol: STRATEGY_RUNTIME_CONFIG.symbol, cfg: STRATEGY_RUNTIME_CONFIG });
+            if (debug) setDebugInfo(debug);
+            if (candleSeriesRef.current && viewMode === 'DETAIL') { candleSeriesRef.current.setData(data); drawIndicators(data); redrawOverlay(); }
+            if (signal && !cancelled && !liveSignalLockRef.current) { await handleLiveSignal(signal, data); return; }
+          }
+          if (Date.now() - lastNewsAtRef.current > 10 * 60 * 1000 && !window.speechSynthesis?.speaking) {
+            lastNewsAtRef.current = Date.now();
+            const n = FALLBACK_NEWS[Math.floor(Math.random() * FALLBACK_NEWS.length)];
+            await speakTextAsync(`Финансовая новость. Источник: ${n.source}. ${n.title}.`, () => engineActiveRef.current && stageRef.current === APP_STAGE.LIVE_SCAN);
+          }
+        } catch (e) { console.warn('Live loop error:', e); addLog('ПЕРЕЗАПУСК РАДАРА'); }
+        if (!cancelled) setTimeout(loop, 2500);
+      };
+      loop();
+      return () => { cancelled = true; };
+    }, [stage, viewMode, redrawOverlay]);
+
+    useEffect(() => {
+      if (stage === APP_STAGE.SPLASH) {
+        const t = setTimeout(() => runInitialAnalysis(), 1800);
+        return () => clearTimeout(t);
+      }
+    }, [stage]);
+
+    function startTerminal() {
+      try { window.speechSynthesis?.cancel(); window.speechSynthesis?.speak(new SpeechSynthesisUtterance('')); } catch(e) {}
+      setStage(APP_STAGE.SPLASH);
+    }
+
+    if (stage === APP_STAGE.IDLE) {
+      return <div className="app-shell items-center justify-center">
+        <div className="glass max-w-md w-[92vw] rounded-[2.5rem] p-9 md:p-12 text-center flex flex-col items-center">
+          <div className="author-glow text-lg md:text-xl mb-6">SLAVA GORDEEV</div>
+          <div className="w-20 h-20 mb-6 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-200 border border-white flex items-center justify-center shadow-lg"><ZapIcon size={38} className="text-cyan-500" /></div>
+          <h1 className="oswald text-4xl md:text-5xl leading-none font-black text-slate-800">КРИПТО ЯДРО<br/><span className="gradient-text">PRO MAX</span></h1>
+          <p className="mt-3 mb-9 text-[11px] tracking-[.24em] text-slate-400 font-bold uppercase">SMC Pine Exact • 1M / 21M Test Engine</p>
+          <button onClick={startTerminal} className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white oswald text-xl md:text-2xl font-bold tracking-widest shadow-[0_12px_30px_rgba(14,165,233,.3)] active:scale-95 transition">ЗАПУСК СИСТЕМЫ</button>
+        </div>
+      </div>;
+    }
+
+    return <div className="app-shell">
+      {stage === APP_STAGE.SPLASH && <div className="maintenance-screen"><div className="maintenance-card"><ZapIcon size={40} className="text-cyan-500 mx-auto mb-6"/><div className="author-glow text-4xl md:text-6xl">SLAVA GORDEEV</div><div className="mt-4 text-[10px] tracking-[.3em] text-slate-500 font-bold uppercase">SMC Pine Exact / 1M Engine</div><div className="mt-8 w-56 h-1 bg-slate-200 rounded-full overflow-hidden mx-auto"><div className="h-full bg-cyan-400 animate-[pulse_1.5s_ease-in-out_infinite]"></div></div></div></div>}
+
+      {tooltip && <div className="trade-tooltip" style={{ left: tooltip.x, top: tooltip.y }} dangerouslySetInnerHTML={{ __html: tooltipHtml }} />}
+
+      <div className="ticker-bar glass-soft shrink-0">
+        <div className="ticker-label oswald text-xs font-bold"><GlobeIcon className="text-cyan-400"/> РАДАР СЕТИ</div>
+        <div className="overflow-hidden flex-1"><div className="ticker-track oswald text-xs font-bold text-slate-500 tracking-widest">
+          {[0,1].map(block => <div key={block} className="flex gap-12 pr-12 whitespace-nowrap">{FALLBACK_NEWS.map((n,i) => <span key={`${block}-${i}`} className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,.7)]"></span>{n.source}: {n.title}</span>)}</div>)}
+        </div></div>
+      </div>
+
+      <header className="header shrink-0">
+        <div>
+          <h1 className="oswald text-3xl md:text-4xl font-black flex items-center gap-2 text-slate-800"><ZapIcon size={30} className="text-cyan-500"/> ТЕРМИНАЛ <span className="gradient-text">PRO MAX</span></h1>
+          <div className="flex items-center gap-3 mt-1"><span className="author-glow text-xs bg-white/50 border border-slate-200 rounded px-2 py-0.5">SLAVA GORDEEV</span><span className="text-[9px] text-slate-400 tracking-[.22em] font-bold uppercase">SMC PINE TEST / 1M</span></div>
+        </div>
+        <div className="flex flex-col md:items-end gap-1"><div className="oswald text-xs md:text-sm text-white px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 font-bold tracking-widest shadow-md">{phase}</div><div className="flex items-center gap-4"><span className="text-[9px] text-slate-500 font-bold uppercase px-2 py-1 bg-white/60 border border-slate-200 rounded-full"><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1 animate-pulse"></span>Синхронизация</span><LiveClock/></div></div>
+      </header>
+
+      <main className="main-layout">
+        <section className="chart-card glass">
+          <div className="price-card glass-soft" style={{ opacity: viewMode === 'DETAIL' ? 1 : 0, pointerEvents: viewMode === 'DETAIL' ? 'auto' : 'none' }}>
+            <div className="text-[10px] text-slate-400 tracking-widest font-bold uppercase flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>Bitcoin (1M)</div>
+            <div className="oswald text-4xl md:text-5xl font-black text-slate-800 leading-none mt-2">{livePrice ? formatPrice(livePrice) : (currentPriceRef.current ? formatPrice(currentPriceRef.current) : '---')}</div>
+          </div>
+
+          <div className="chart-area" style={{ opacity: viewMode === 'DETAIL' ? 1 : 0, pointerEvents: viewMode === 'DETAIL' ? 'auto' : 'none' }}>
+            <div ref={chartContainerRef} className="chart-container"></div>
+            <div ref={overlayRef} className="trade-overlay"></div>
+          </div>
+
+          <div className="scanner-layer" style={{ opacity: viewMode === 'SCREENER' ? 1 : 0, pointerEvents: viewMode === 'SCREENER' ? 'auto' : 'none' }}>
+            <div className="scanner-card glass">
+              <div className="flex justify-between items-start gap-4">
+                <div className="flex items-center gap-4"><div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 text-white flex items-center justify-center text-4xl font-black shadow-lg">₿</div><div><h2 className="oswald text-4xl md:text-5xl font-black leading-none">BITCOIN</h2><span className="text-cyan-600 font-black tracking-[.22em] bg-cyan-50 border border-cyan-100 px-2 py-1 rounded-lg text-xs">BTC/USDT • 1M</span></div></div>
+                <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-white/70 border border-slate-100 text-slate-600 font-bold text-xs tracking-widest uppercase"><span>Smart Money Scanner</span><RadarIcon className="text-cyan-500 animate-spin"/></div>
+              </div>
+              <PremiumScannerChart data={candles} isScanning={stage === APP_STAGE.LIVE_SCAN} phase={phase}/>
+            </div>
+          </div>
+        </section>
+
+        <aside className="side-panel glass">
+          <div className="p-4 border-b border-white/70 bg-gradient-to-r from-blue-50/70 to-transparent text-center oswald font-bold tracking-widest text-slate-800">{phase}</div>
+          <div className="side-scroll">
+            <div className="broker-button-wrap shrink-0"><a className="broker-btn" href={STRATEGY_RUNTIME_CONFIG.referralUrl} target="_blank" rel="noopener noreferrer"><span className="text-[10px] tracking-[.24em] uppercase font-black opacity-90">Брокер для входа</span><span className="oswald text-2xl md:text-3xl font-black tracking-wide">ТОРГОВАТЬ ЗДЕСЬ</span><span className="text-sm font-bold">через брокера</span><span className="broker-cursor"><svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="M7.6 2.2c-.66-.28-1.38.2-1.38.91v10.44c0 .7.7 1.18 1.36.92l2.83-1.12 1.74 5.06c.16.47.6.78 1.1.78h2.01c.35 0 .67-.16.88-.43.21-.27.28-.62.18-.95l-1.72-5.7 4.18-.17c.51-.02.95-.39 1.05-.89.1-.5-.16-1-.62-1.22L7.6 2.2z"/></svg></span></a></div>
+
+            {backtestStats && <div className="glass-soft rounded-2xl p-3 debug-grid mono">
+              <div className="oswald text-cyan-600 font-bold tracking-widest mb-2 border-b border-slate-200 pb-1">ДИАГНОСТИКА СТРАТЕГИИ 12H</div>
+              <div><span>Свечей в 12H:</span><b>{backtestStats.candlesInWindow}</b></div>
+              <div><span>RAW Sweep:</span><b className="text-cyan-600">{backtestStats.rawBuy + backtestStats.rawSell}</b></div>
+              <div><span>RECLAIM:</span><b className="text-blue-600">{backtestStats.reclaimBuy + backtestStats.reclaimSell}</b></div>
+              <div><span>FINAL Signals:</span><b className="text-emerald-500">{backtestStats.finalBuy + backtestStats.finalSell}</b></div>
+              <div className="border-t border-slate-100 pt-1 mt-1"><span>Built trades:</span><b>{backtestStats.builtTrades}</b></div>
+              <div><span>Ledger trades:</span><b>{backtestStats.ledgerTrades}</b></div>
+              <div><span>Rendered markers:</span><b>{renderedMarkers}</b></div>
+              {Object.keys(backtestStats.rejectReasons || {}).length > 0 && <div className="mt-2 pt-2 border-t border-slate-100 flex-col items-stretch"><span className="text-slate-400">Частые причины:</span>{Object.entries(backtestStats.rejectReasons).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([r,c]) => <b key={r} className="text-amber-600 truncate">{r}: {c}</b>)}</div>}
+              {debugInfo && <div className="mt-2 pt-2 border-t border-slate-100"><span>Live Reason:</span><b className="text-amber-600">{debugInfo.reason}</b></div>}
+            </div>}
+
+            <div className="glass-soft rounded-2xl p-3 grid grid-cols-4 gap-1"><Speedometer value={metrics.structure} label="Структура" color="#eab308"/><Speedometer value={metrics.liquidity} label="Ликвидность" color="#0ea5e9" glow/><Speedometer value={metrics.filterLevel} label="ATR фильтр" color="#8b5cf6"/><Speedometer value={metrics.smartMoney} label="Smart Money" color="#06b6d4"/></div>
+
+            <div className="grid grid-cols-[.9fr_1.1fr] gap-3 h-32">
+              <div className="glass-soft rounded-2xl p-3 flex flex-col justify-between">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="text-[10px] text-slate-400 tracking-widest font-bold uppercase">Состояние сделки</div>
+                    <div className="oswald text-sm font-black text-slate-700 mt-1">{signal ? (signal.status === 'PREP' ? 'ПОДГОТОВКА' : signal.status === 'ACTIVE' ? 'ВХОД В РЫНКЕ' : 'СИГНАЛ') : 'ОЖИДАНИЕ'}</div>
+                  </div>
+                  <div className="text-4xl leading-none">{signal ? (signal.type === 'BUY' ? '⬆️' : '⬇️') : '📡'}</div>
+                </div>
+                <div className={`rounded-xl px-3 py-2 flex items-center justify-between ${signal?.entryReady ? 'bg-blue-50 border border-blue-200 text-blue-700' : 'bg-slate-50 border border-slate-200 text-slate-400'}`}>
+                  <span className="text-[10px] font-black tracking-widest uppercase">Метка входа</span>
+                  <span className="text-xl leading-none">{signal?.entryReady ? (signal.type === 'BUY' ? '↗' : '↘') : '○'}</span>
+                </div>
+              </div>
+              <div className="glass-soft rounded-2xl p-4 flex flex-col justify-center"><span className="text-[10px] text-slate-400 tracking-widest font-bold uppercase">Баланс 12H</span><span className="oswald text-3xl font-black text-slate-800">{formatRub(stats.finalBalance)}</span><span className={`text-sm font-black ${stats.pnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>{stats.pnl > 0 ? '+' : ''}{formatRub(stats.pnl)} PNL</span></div>
+            </div>
+
+            <div className="glass-soft rounded-2xl p-4"><div className="flex justify-between items-center"><span className="oswald text-slate-500 font-bold tracking-widest text-xs">СТАТИСТИКА</span><span className="oswald text-xs font-black text-slate-600">12 ЧАСОВ</span></div><div className="grid grid-cols-2 gap-3 mt-3"><div className="bg-white/60 rounded-xl p-3"><span className="text-[9px] text-slate-400 font-bold uppercase">Профит</span><div className="oswald text-2xl font-black text-emerald-500">{stats.wins}</div></div><div className="bg-white/60 rounded-xl p-3 text-right"><span className="text-[9px] text-slate-400 font-bold uppercase">Убыток</span><div className="oswald text-2xl font-black text-rose-500">{stats.losses}</div></div></div></div>
+
+            <div className="glass-soft rounded-2xl p-4 flex justify-between items-center"><div><span className="text-[10px] text-slate-400 tracking-widest font-bold uppercase">Цена входа</span><div className="mono text-lg font-black text-slate-700">{signal?.entryPrice ? formatPrice(signal.entryPrice) : '---.-----'}</div></div><div className="text-right"><span className="text-[10px] text-slate-400 tracking-widest font-bold uppercase">{signal && !signal.entryReady ? 'До входа' : 'Экспирация'}</span><div className="mono text-2xl font-black text-cyan-600">{countdown !== null ? `${Math.floor(countdown/60)}:${String(countdown%60).padStart(2,'0')}` : '--:--'}</div></div></div>
+
+            <div className="glass-soft rounded-2xl p-3 text-[10px] text-slate-600 min-h-[76px] flex flex-col justify-center">{midTradeNote ? <><div className="oswald text-[11px] tracking-widest text-cyan-600 mb-1">АНАЛИЗ СЕРЕДИНЫ СДЕЛКИ</div><div>{midTradeNote}</div></> : <div className="text-slate-400">Во время активной сделки здесь появится промежуточный анализ движения.</div>}</div>
+
+            <div className="glass-soft rounded-2xl p-3 mono text-[10px] text-slate-500 min-h-[80px]">{logs.length ? logs.map((l,i)=><div key={i} className="py-0.5 border-b border-slate-100 last:border-b-0">{l}</div>) : 'Логи системы...'}</div>
+          </div>
+        </aside>
+      </main>
+
+      <footer className="flex justify-between items-center text-[10px] text-slate-400 font-bold tracking-widest uppercase px-4 py-2 shrink-0"><span>256-BIT ШИФРОВАНИЕ СИСТЕМЫ • СОЕДИНЕНИЕ БЕЗОПАСНО</span><span className="bg-slate-800 text-white rounded-lg px-3 py-1">КРИПТО ИНВЕСТ PRO MAX</span></footer>
+    </div>;
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
 </body>
 </html>
