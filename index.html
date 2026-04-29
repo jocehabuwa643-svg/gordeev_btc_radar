@@ -3,2102 +3,1446 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Крипто Терминал Гордеева - PRO MAX</title>
+  <title>Крипто Терминал Гордеева - PRO MAX (Premium Light)</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Oswald:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700;800&display=swap');
 
+    :root {
+      /* Premium Light Fintech Palette */
+      --bg-page: #eef3f8;
+      --bg-panel: rgba(255, 255, 255, 0.85);
+      --bg-card: #ffffff;
+      
+      --border-light: rgba(112, 130, 152, 0.2);
+      --border-strong: rgba(112, 130, 152, 0.35);
+      
+      --shadow-sm: 0 4px 12px rgba(31, 45, 61, 0.05);
+      --shadow-md: 0 12px 28px rgba(31, 45, 61, 0.08);
+      
+      --text-main: #1f2d3d;
+      --text-muted: #708298;
+      
+      --accent: #28a8ff;
+      --accent-hover: #1c92e5;
+      --accent-soft: rgba(40, 168, 255, 0.1);
+      
+      --good: #10b981;
+      --good-soft: rgba(16, 185, 129, 0.15);
+      --bad: #ef5f73;
+      --bad-soft: rgba(239, 95, 115, 0.15);
+      --warn: #f5a623;
+    }
+
     * { box-sizing: border-box; }
 
     html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      min-height: 100%;
-      background: #f8fafc;
-      color: #0f172a;
-      overflow: hidden;
+      width: 100%; height: 100%;
+      margin: 0; padding: 0;
+      background: radial-gradient(circle at top right, rgba(40,168,255,0.06), transparent 45%), linear-gradient(180deg, #f6f9fc 0%, var(--bg-page) 100%);
+      color: var(--text-main);
       font-family: 'Montserrat', sans-serif;
       -webkit-font-smoothing: antialiased;
-      touch-action: manipulation;
+      overflow: hidden; /* STRICT NO SCROLL ON DESKTOP */
     }
 
-    .oswald { font-family: 'Oswald', sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+    #root { width: 100%; height: 100%; overflow: hidden; }
+
+    .oswald { font-family: 'Oswald', sans-serif; letter-spacing: 0.05em; text-transform: uppercase; }
     .mono { font-family: 'JetBrains Mono', monospace; }
-    .raj { font-family: 'Rajdhani', sans-serif; }
 
-    .app {
-      width: 100%;
-      height: 100dvh;
-      max-width: 1680px;
-      margin: 0 auto;
-      padding: 8px 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      position: relative;
-      overflow: hidden;
-      background:
-        radial-gradient(circle at 15% 8%, rgba(14,165,233,.16), transparent 28%),
-        radial-gradient(circle at 85% 85%, rgba(37,99,235,.09), transparent 34%),
-        linear-gradient(135deg, #f8fbff, #eef5fb 48%, #ffffff);
+    /* Fine grid background */
+    body::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.35;
+      background-image: linear-gradient(var(--border-light) 1px, transparent 1px), linear-gradient(90deg, var(--border-light) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: radial-gradient(circle at center, #000 0%, transparent 85%);
+      -webkit-mask-image: radial-gradient(circle at center, #000 0%, transparent 85%);
     }
 
-    .app::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      opacity: .55;
-      background-image:
-        linear-gradient(rgba(14,165,233,.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(14,165,233,.035) 1px, transparent 1px);
-      background-size: 32px 32px;
-      mask-image: radial-gradient(circle at center, #000 0%, transparent 80%);
-      -webkit-mask-image: radial-gradient(circle at center, #000 0%, transparent 80%);
+    /* --- PREMIUM ANIMATIONS --- */
+    .author-name {
+      font-family: 'Rajdhani', sans-serif; font-weight: 800; letter-spacing: 0.35em; text-transform: uppercase;
+      background: linear-gradient(90deg, #708298 0%, #cbd5e1 20%, #28a8ff 50%, #cbd5e1 80%, #708298 100%);
+      background-size: 200% auto; color: transparent; -webkit-background-clip: text; background-clip: text;
+      animation: silverSweep 5s linear infinite; display: inline-block;
+    }
+    @keyframes silverSweep { to { background-position: 200% center; } }
+    .text-glow { text-shadow: 0 0 15px currentColor; }
+
+    /* Cinematic Startup Overlay */
+    #startup {
+      position: fixed; inset: 0; z-index: 999999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: radial-gradient(circle at center, #ffffff 0%, #e2e8f0 100%);
+      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .startup-card {
+      background: rgba(255,255,255,0.95); border: 1px solid var(--border-light);
+      box-shadow: 0 20px 60px rgba(31,45,61,0.08); border-radius: 28px;
+      padding: 50px 60px; text-align: center; width: min(90vw, 540px);
+    }
+    
+    .btn-start {
+      margin-top: 36px; padding: 18px 40px; border-radius: 14px;
+      font-family: 'Oswald', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+      background: linear-gradient(135deg, #0ea5e9, #2563eb); color: #fff;
+      border: none; cursor: pointer; box-shadow: 0 10px 25px rgba(14,165,233,0.3);
+      transition: transform 0.15s, box-shadow 0.15s; width: 100%;
+    }
+    .btn-start:active { transform: scale(0.96); box-shadow: 0 5px 15px rgba(14,165,233,0.2); }
+
+    .loader-wrap { margin-top: 30px; display: none; flex-direction: column; align-items: center; width: 100%; }
+    .loader-text { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 10px; font-family: 'JetBrains Mono', monospace; }
+    .loader-bar { width: 100%; height: 4px; background: rgba(0,0,0,0.06); border-radius: 2px; overflow: hidden; position: relative; }
+    .loader-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s ease; box-shadow: 0 0 10px var(--accent); }
+
+    /* --- STRICT LAYOUT ARCHITECTURE --- */
+    .app-shell {
+      width: 100%; height: 100dvh; max-width: 1920px;
+      margin: 0 auto; padding: 12px; box-sizing: border-box;
+      display: grid;
+      grid-template-rows: 64px 76px minmax(0, 1fr);
+      gap: 12px; overflow: hidden;
+      position: relative; z-index: 10;
     }
 
-    .glass {
-      background: rgba(255,255,255,.74);
-      border: 1px solid rgba(255,255,255,.92);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      box-shadow:
-        0 16px 42px rgba(15,23,42,.07),
-        inset 0 1px 0 rgba(255,255,255,.92);
-    }
-
-    .glass-soft {
-      background: rgba(255,255,255,.62);
-      border: 1px solid rgba(255,255,255,.86);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      box-shadow:
-        0 8px 24px rgba(15,23,42,.045),
-        inset 0 1px 0 rgba(255,255,255,.85);
-    }
-
-    .author-shimmer {
-      font-family: 'Rajdhani', sans-serif;
-      font-weight: 700;
-      letter-spacing: .35em;
-      text-transform: uppercase;
-      background: linear-gradient(90deg, #94a3b8 0%, #f8fafc 25%, #475569 50%, #f8fafc 75%, #94a3b8 100%);
-      background-size: 220% auto;
-      color: transparent;
-      -webkit-background-clip: text;
-      background-clip: text;
-      animation: shimmer 7s linear infinite;
-    }
-
-    @keyframes shimmer {
-      0% { background-position: -220% center; }
-      100% { background-position: 220% center; }
-    }
-
-    .top-ticker {
-      height: 31px;
-      border-radius: 0 0 16px 16px;
-      overflow: hidden;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-    }
-
-    .ticker-label {
-      height: 100%;
-      min-width: 135px;
-      padding: 0 16px;
-      border-radius: 0 0 16px 0;
-      background: #0f172a;
-      color: white;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      font-weight: 900;
-      letter-spacing: .12em;
-      box-shadow: 8px 0 22px rgba(15,23,42,.12);
-    }
-
-    .ticker-track {
-      display: flex;
-      width: max-content;
-      animation: ticker 40s linear infinite;
-      white-space: nowrap;
-    }
-
-    @keyframes ticker {
-      from { transform: translateX(0); }
-      to { transform: translateX(-50%); }
-    }
-
+    /* 1. Header */
     .header {
-      height: 70px;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 10px;
-      gap: 12px;
-      flex-shrink: 0;
+      min-height: 0; overflow: hidden;
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg-panel); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 18px;
+      padding: 0 24px; box-shadow: 0 8px 32px rgba(31, 45, 61, 0.05), inset 0 2px 4px rgba(255, 255, 255, 0.4);
     }
 
-    .title-main {
-      font-family: 'Oswald', sans-serif;
-      font-size: clamp(28px, 3vw, 42px);
-      line-height: .95;
-      font-weight: 800;
-      letter-spacing: .055em;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    /* 2. Metrics Row (Speedometers) */
+    .metrics-row {
+      min-height: 0; overflow: hidden;
+      display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px;
+    }
+    .metric-card {
+      background: rgba(255, 255, 255, 0.68); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 14px;
+      padding: 8px 6px; display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+      box-shadow: 0 8px 32px rgba(31, 45, 61, 0.05), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(12px); min-height: 0; overflow: hidden; position: relative;
+    }
+    .mc-title { font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; text-align: center; white-space: nowrap; margin-bottom: 2px; z-index: 2; }
+    
+    .gauge-container { width: 44px; height: 22px; position: relative; z-index: 2; }
+    .gauge-svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 2px 4px rgba(40,168,255,0.2)); }
+    .gauge-bg { fill: none; stroke: var(--border-light); stroke-width: 8; stroke-linecap: round; }
+    .gauge-arc-fill { fill: none; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+    .gauge-value { font-size: 11px; font-weight: 800; font-family: 'JetBrains Mono', monospace; margin-top: 4px; color: var(--text-main); line-height: 1; z-index: 2; }
+
+    /* 3. Main Dashboard */
+    .main-dashboard {
+      min-height: 0; overflow: hidden; height: 100%;
+      display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 14px;
     }
 
-    .title-main span {
-      background: linear-gradient(135deg, #1d4ed8, #06b6d4);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+    /* Chart Area */
+    .chart-area {
+      min-width: 0; min-height: 0; height: 100%; overflow: hidden;
+      background: var(--bg-panel); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(31, 45, 61, 0.05), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+      position: relative; display: flex; flex-direction: column;
     }
-
-    .status-pill {
-      padding: 9px 18px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #2563eb, #06b6d4);
-      color: white;
-      font-size: 13px;
-      font-family: 'Oswald', sans-serif;
-      font-weight: 800;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      box-shadow: 0 10px 26px rgba(14,165,233,.22);
-      white-space: nowrap;
+    .chart-info { position: absolute; top: 16px; left: 16px; z-index: 20; padding: 10px 16px; border-radius: 12px; background: rgba(255,255,255,0.95); border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); pointer-events: none; }
+    .chart-price { font-family: 'Oswald', sans-serif; font-size: 32px; font-weight: 800; line-height: 1; margin-top: 2px; color: var(--text-main); }
+    
+    .chart-wrap { flex: 1; position: relative; overflow: hidden; border-radius: 0 0 20px 20px;}
+    #tv-chart { position: absolute; inset: 0; }
+    #chart-overlay { position: absolute; inset: 0; z-index: 35; overflow: hidden; pointer-events: none; }
+    
+    /* --- NEW SCAN ORBS ANIMATION --- */
+    .scan-orb-layer {
+      position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 30; opacity: 0; transition: opacity .35s ease;
     }
+    .scan-orb-layer.is-active { opacity: 1; }
+    
+    .scan-orb {
+      position: absolute; width: 24px; height: 24px; border-radius: 999px;
+      background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.98) 0%, rgba(88,205,255,0.95) 22%, rgba(39,147,255,0.45) 48%, rgba(39,147,255,0.08) 74%, transparent 100%);
+      box-shadow: 0 0 12px rgba(68,190,255,.78), 0 0 32px rgba(68,190,255,.35), 0 0 58px rgba(68,190,255,.18);
+      transition: transform .16s linear;
+    }
+    .scan-orb::before {
+      content: ""; position: absolute; inset: -7px; border-radius: inherit;
+      border: 1px solid rgba(76,190,255,.38); box-shadow: 0 0 18px rgba(76,190,255,.22);
+      animation: scanRingPulse .75s ease-out infinite;
+    }
+    .scan-orb::after {
+      content: ""; position: absolute; inset: 5px; border-radius: inherit;
+      background: rgba(255,255,255,.85); filter: blur(.2px);
+    }
+    .scan-candle-pulse {
+      position: absolute; width: 34px; height: 34px; border-radius: 999px;
+      border: 1px solid rgba(57,180,255,.45);
+      background: radial-gradient(circle, rgba(88,205,255,.18), transparent 68%);
+      box-shadow: 0 0 20px rgba(72,190,255,.28), inset 0 0 12px rgba(255,255,255,.3);
+      animation: candleScanPulse .52s ease-out forwards;
+    }
+    @keyframes scanRingPulse { 0% { transform: scale(.72); opacity: .45; } 50% { transform: scale(1.08); opacity: .95; } 100% { transform: scale(1.32); opacity: .12; } }
+    @keyframes candleScanPulse { 0% { transform: translate(-50%, -50%) scale(.65); opacity: 0; } 35% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.35); opacity: 0; } }
 
-    .main {
-      z-index: 10;
-      flex: 1;
-      min-height: 0;
+    /* Empty Market Overlay */
+    .empty-market { position: absolute; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.92); backdrop-filter: blur(8px); text-align: center; padding: 20px; transition: opacity 0.3s; }
+    .empty-title { font-family: 'Oswald', sans-serif; font-size: 28px; font-weight: 800; color: var(--bad); letter-spacing: 0.05em; margin-bottom: 8px; }
+
+    /* Right Sidebar (Strict Grid) */
+    .sidebar {
+      width: 340px; min-width: 340px; max-width: 340px; 
+      min-height: 0; height: 100%;
       display: grid;
-      grid-template-columns: minmax(0, 1.78fr) minmax(330px, .86fr);
-      gap: 12px;
-      overflow: hidden;
+      /* Adjusted to fit perfectly without scroll */
+      grid-template-rows: 64px 74px 62px 105px 65px minmax(110px, 1fr) 95px;
+      gap: 10px; overflow: hidden;
     }
 
-    .chart-card {
-      position: relative;
-      min-height: 0;
-      overflow: hidden;
-      border-radius: 28px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
+    .sidebar-card {
+      min-height: 0; min-width: 0; overflow: hidden;
+      background: rgba(255, 255, 255, 0.68); border: 1px solid rgba(255, 255, 255, 0.8);
+      border-radius: 16px; padding: 12px 14px; box-sizing: border-box;
+      box-shadow: 0 8px 32px rgba(31, 45, 61, 0.05), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(16px);
+      display: flex; flex-direction: column; justify-content: center; position: relative;
     }
+    .sc-title { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); font-weight: 800; margin-bottom: 4px; }
 
-    .chart-top-info {
-      position: absolute;
-      left: 26px;
-      top: 24px;
-      z-index: 20;
-      border-radius: 22px;
-      padding: 13px 18px;
-      min-width: 220px;
+    /* --- PREMIUM BROKER CTA --- */
+    .broker-cta {
+      position: relative; width: 100%; height: 100%; border-radius: 14px; overflow: hidden; text-decoration: none; color: #fff;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #22b8ff 0%, #246dff 100%);
+      box-shadow: 0 16px 34px rgba(36,109,255,.28), inset 0 1px 0 rgba(255,255,255,.62), inset 0 -8px 16px rgba(0,0,0,.12);
+      transform: translateY(0); transition: transform .18s ease, box-shadow .18s ease, filter .18s ease; cursor: pointer;
     }
-
-    .chart-price {
-      font-family: 'Oswald', sans-serif;
-      font-weight: 800;
-      letter-spacing: .05em;
-      color: #0f172a;
-      font-size: clamp(36px, 4vw, 58px);
-      line-height: .9;
+    .broker-cta:hover {
+      transform: translateY(-2px); filter: brightness(1.04);
+      box-shadow: 0 22px 42px rgba(36,109,255,.36), inset 0 1px 0 rgba(255,255,255,.7), inset 0 -8px 16px rgba(0,0,0,.12);
     }
-
-    .chart-wrap {
-      position: relative;
-      flex: 1;
-      min-height: 0;
-      border-radius: 22px;
-      overflow: hidden;
-      background: rgba(255,255,255,.72);
-      border: 1px solid rgba(255,255,255,.92);
-      box-shadow: inset 0 1px 18px rgba(15,23,42,.035);
-      margin-top: 82px;
+    .broker-cta.is-pressed {
+      transform: translateY(4px) scale(.99);
+      box-shadow: 0 7px 16px rgba(36,109,255,.18), inset 0 4px 12px rgba(0,0,0,.2);
     }
-
-    #chart {
-      position: absolute;
-      inset: 0;
-      z-index: 1;
+    .broker-cta__small { font-size: 9px; font-weight: 900; letter-spacing: .18em; opacity: .86; margin-bottom: 2px;}
+    .broker-cta__main { font-family: 'Oswald', sans-serif; font-size: 21px; line-height: 1; font-weight: 900; letter-spacing: .05em; text-transform: uppercase; }
+    .broker-cta__arrow { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); font-size: 22px; opacity: .9; }
+    
+    .broker-demo-cursor {
+      position: absolute; right: 18px; bottom: 10px; font-size: 22px; color: #fff;
+      filter: drop-shadow(0 5px 8px rgba(0,0,0,.32)); opacity: 0;
+      transform: translate(30px, 24px) rotate(-25deg); pointer-events: none; z-index: 20;
     }
+    
+    /* Settings */
+    .setup-row { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 4px; }
+    .setup-row:last-child { margin-bottom: 0; }
+    .setup-row span { color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .setup-row b { color: var(--text-main); font-family: 'JetBrains Mono', monospace; font-weight: 800; }
 
-    .trade-overlay {
-      position: absolute;
-      inset: 0;
-      z-index: 6;
-      pointer-events: none;
-      overflow: hidden;
-    }
+    /* Stats 12H - Compact & Fixed Grid */
+    .stat-val { font-family: 'Oswald', sans-serif; font-size: clamp(24px, 2vw, 32px); line-height: 1; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
+    .stats-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+    .stats-cell { min-width: 0; height: 44px; border-radius: 12px; background: rgba(255,255,255,.58); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .stats-cell__label { font-size: 8px; line-height: 1; text-transform: uppercase; letter-spacing: .08em; color: #64748b; font-weight: 800; }
+    .stats-cell__value { margin-top: 4px; font-size: 16px; line-height: 1; font-weight: 900; font-family: 'JetBrains Mono', monospace; }
 
-    .trade-box {
-      position: absolute;
-      pointer-events: auto;
-      cursor: pointer;
-      border-radius: 9px;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-      border: 1px solid rgba(255,255,255,.75);
-      box-shadow:
-        0 6px 18px rgba(15,23,42,.08),
-        inset 0 1px 0 rgba(255,255,255,.72);
-    }
+    /* Orderbook */
+    .ob-container { display: flex; flex-direction: column; gap: 2px; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+    .ob-row { display: flex; justify-content: space-between; padding: 1px 6px; border-radius: 4px; position: relative; z-index: 1; overflow: hidden; }
+    .ob-row::before { content: ""; position: absolute; right: 0; top: 0; bottom: 0; opacity: 0.12; z-index: -1; transition: width 0.3s ease; }
+    .ob-row.ask::before { background: var(--bad); width: var(--w); }
+    .ob-row.bid::before { background: var(--good); width: var(--w); }
+    .ob-row.ask { color: #d92d20; font-weight: 600; }
+    .ob-row.bid { color: #059669; font-weight: 600; }
+    .ob-center { text-align: center; font-size: 11px; font-weight: 800; color: var(--text-main); padding: 2px 0; border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light); margin: 1px 0; }
 
-    .trade-box.win {
-      background: linear-gradient(180deg, rgba(16,185,129,.24), rgba(16,185,129,.055));
-      border-color: rgba(16,185,129,.50);
-    }
+    /* Overlay Chart Elements */
+    .trade-box { position: absolute; pointer-events: auto; cursor: pointer; border-radius: 4px; border: 1px solid transparent; transition: background 0.2s, width 0.1s; backdrop-filter: blur(1px); }
+    .trade-box.active { background: var(--accent-soft); border-color: rgba(40,168,255,0.4); box-shadow: 0 0 15px rgba(40,168,255,0.1); }
+    .trade-box.win { background: var(--good-soft); border-color: rgba(16,185,129,0.4); }
+    .trade-box.loss { background: var(--bad-soft); border-color: rgba(239,95,115,0.4); }
+    
+    .marker-dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: auto; z-index: 10; }
+    .marker-dot.entry { background: #fff; border: 2px solid var(--accent); box-shadow: 0 0 8px var(--accent); width: 8px; height: 8px;}
+    .marker-dot.exit { background: #fff; border: 2px solid #8b5cf6; box-shadow: 0 0 8px #8b5cf6; width: 8px; height: 8px;}
 
-    .trade-box.loss {
-      background: linear-gradient(180deg, rgba(244,63,94,.22), rgba(244,63,94,.05));
-      border-color: rgba(244,63,94,.48);
-    }
+    .signal-arrow { position: absolute; transform: translate(-50%, -50%); width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 2px solid; display: flex; align-items: center; justify-content: center; z-index: 10; pointer-events: auto; box-shadow: var(--shadow-sm); font-size: 12px; font-weight: bold; cursor: pointer; }
+    .signal-arrow.buy { color: var(--good); border-color: var(--good); }
+    .signal-arrow.sell { color: var(--bad); border-color: var(--bad); }
 
-    .trade-box.active {
-      background: linear-gradient(180deg, rgba(14,165,233,.22), rgba(14,165,233,.055));
-      border-color: rgba(14,165,233,.50);
-      animation: activeBox 1.2s ease-in-out infinite;
-    }
+    /* Global Smart Tooltip */
+    #tt { position: fixed; z-index: 100000; pointer-events: none; opacity: 0; transition: opacity 0.15s ease; background: rgba(255,255,255,0.95); border: 1px solid var(--border-strong); backdrop-filter: blur(16px); border-radius: 12px; padding: 12px 14px; font-size: 10px; width: 260px; box-shadow: var(--shadow-md); color: var(--text-main); }
+    .tt-r { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,0.04); }
+    .tt-r:last-child { border: none; padding-bottom: 0; }
+    .tt-r span { color: var(--text-muted); font-weight: 600; }
+    .tt-r b { font-family: 'JetBrains Mono', monospace; text-align: right; }
 
-    @keyframes activeBox {
-      0%, 100% { box-shadow: 0 8px 22px rgba(14,165,233,.12), inset 0 1px 0 rgba(255,255,255,.78); }
-      50% { box-shadow: 0 8px 32px rgba(14,165,233,.24), inset 0 1px 0 rgba(255,255,255,.95); }
-    }
+    /* Soft Error Log */
+    .soft-error { color: #d92d20; font-size: 9px; font-family: 'JetBrains Mono', monospace; padding: 2px 0; border-bottom: 1px solid rgba(217,45,32,0.1); }
 
-    .pt {
-      position: absolute;
-      width: 9px;
-      height: 9px;
-      border-radius: 999px;
-      transform: translate(-50%, -50%);
-      pointer-events: auto;
-      cursor: pointer;
-      z-index: 11;
-      background: white;
-      box-shadow: 0 0 14px rgba(15,23,42,.20);
-    }
-
-    .pt.entry {
-      border: 2px solid #2563eb;
-      box-shadow: 0 0 0 4px rgba(37,99,235,.10), 0 0 16px rgba(37,99,235,.28);
-    }
-
-    .pt.exit {
-      border: 2px solid #8b5cf6;
-      box-shadow: 0 0 0 4px rgba(139,92,246,.10), 0 0 16px rgba(139,92,246,.28);
-    }
-
-    .signal-arrow {
-      position: absolute;
-      width: 32px;
-      height: 32px;
-      border-radius: 999px;
-      transform: translate(-50%, -50%);
-      pointer-events: auto;
-      cursor: pointer;
-      z-index: 14;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(255,255,255,.92);
-      backdrop-filter: blur(7px);
-      -webkit-backdrop-filter: blur(7px);
-      border: 1px solid rgba(255,255,255,.98);
-      box-shadow: 0 10px 24px rgba(15,23,42,.16), inset 0 1px 0 rgba(255,255,255,.9);
-    }
-
-    .signal-arrow.buy {
-      color: #10b981;
-      border-color: rgba(16,185,129,.42);
-      box-shadow: 0 10px 24px rgba(16,185,129,.20), inset 0 1px 0 rgba(255,255,255,.92);
-    }
-
-    .signal-arrow.sell {
-      color: #f43f5e;
-      border-color: rgba(244,63,94,.42);
-      box-shadow: 0 10px 24px rgba(244,63,94,.20), inset 0 1px 0 rgba(255,255,255,.92);
-    }
-
-    .marker-label {
-      position: absolute;
-      transform: translate(-50%, -50%);
-      pointer-events: auto;
-      cursor: pointer;
-      z-index: 15;
-      white-space: nowrap;
-      padding: 3px 7px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.94);
-      border: 1px solid rgba(226,232,240,.92);
-      color: #0f172a;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 9px;
-      font-weight: 900;
-      letter-spacing: .08em;
-      box-shadow: 0 8px 18px rgba(15,23,42,.10);
-    }
-
-    .marker-label.buy { color: #059669; }
-    .marker-label.sell { color: #e11d48; }
-    .marker-label.entry { color: #2563eb; }
-    .marker-label.exit { color: #7c3aed; }
-
-    .badge {
-      position: absolute;
-      transform: translate(-50%, -120%);
-      pointer-events: auto;
-      cursor: pointer;
-      z-index: 14;
-      white-space: nowrap;
-      padding: 5px 8px;
-      border-radius: 8px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      font-weight: 900;
-      color: white;
-      box-shadow: 0 8px 20px rgba(15,23,42,.18);
-    }
-
-    .badge.win { background: rgba(16,185,129,.96); }
-    .badge.loss { background: rgba(244,63,94,.96); }
-    .badge.active { background: rgba(14,165,233,.96); }
-
-    .tooltip {
-      position: fixed;
-      z-index: 99999;
-      min-width: 255px;
-      max-width: 315px;
-      padding: 14px 15px;
-      border-radius: 18px;
-      background: rgba(255,255,255,.94);
-      border: 1px solid rgba(226,232,240,.95);
-      box-shadow: 0 18px 44px rgba(15,23,42,.18);
-      backdrop-filter: blur(20px);
-      pointer-events: none;
-      font-size: 12px;
-    }
-
-    .tooltip-title {
-      font-family: 'Oswald', sans-serif;
-      font-size: 14px;
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      border-bottom: 1px solid rgba(15,23,42,.08);
-      padding-bottom: 8px;
-      margin-bottom: 7px;
-    }
-
-    .tooltip-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 3px 0;
-    }
-
-    .tooltip-row span { color: #64748b; font-weight: 600; }
-    .tooltip-row b { font-family: 'JetBrains Mono', monospace; color: #0f172a; text-align: right; }
-
-    .right {
-      min-height: 0;
-      overflow: hidden;
-      border-radius: 28px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .right-head {
-      height: 55px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      border-bottom: 1px solid rgba(255,255,255,.8);
-      font-family: 'Oswald', sans-serif;
-      font-weight: 800;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      font-size: 17px;
-      color: #0f172a;
-      text-align: center;
-      padding: 0 10px;
-    }
-
-    .right-body {
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-      padding: 12px;
-      display: grid;
-      grid-template-rows: auto auto auto auto 1fr;
-      gap: 10px;
-    }
-
-    .broker {
-      min-height: 74px;
-      border-radius: 22px;
-      background: linear-gradient(135deg, #2563eb, #06b6d4);
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 16px 34px rgba(14,165,233,.26);
-      border: 1px solid rgba(255,255,255,.45);
-    }
-
-    .broker::after {
-      content: "➤";
-      position: absolute;
-      right: 20px;
-      bottom: 16px;
-      font-size: 26px;
-      filter: drop-shadow(0 5px 10px rgba(0,0,0,.24));
-      animation: brokerTap 3s ease-in-out infinite;
-    }
-
-    @keyframes brokerTap {
-      0% { transform: translate(18px, 12px) scale(.95); opacity: 0; }
-      15% { opacity: 1; }
-      40% { transform: translate(0, 0) scale(1); opacity: 1; }
-      50% { transform: translate(-2px, 2px) scale(.82); opacity: 1; }
-      62% { transform: translate(0, 0) scale(1.05); opacity: 1; }
-      100% { transform: translate(18px, 12px) scale(.95); opacity: 0; }
-    }
-
-    .broker small { font-size: 10px; letter-spacing: .22em; text-transform: uppercase; font-weight: 900; opacity: .9; }
-    .broker strong { font-family: 'Oswald', sans-serif; font-size: 28px; letter-spacing: .04em; line-height: 1; text-transform: uppercase; }
-
-    .gauges {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      padding: 10px;
-      border-radius: 22px;
-    }
-
-    .gauge { text-align: center; min-width: 0; }
-
-    .gauge-arc {
-      height: 30px;
-      border-radius: 50px 50px 0 0;
-      border-top: 5px solid #e2e8f0;
-      border-left: 5px solid #e2e8f0;
-      border-right: 5px solid #e2e8f0;
-      position: relative;
-      margin: 0 auto 3px;
-      width: 52px;
-    }
-
-    .gauge-needle {
-      position: absolute;
-      left: 50%;
-      bottom: -3px;
-      width: 3px;
-      height: 26px;
-      border-radius: 99px;
-      transform-origin: bottom center;
-      background: #0ea5e9;
-      box-shadow: 0 0 10px rgba(14,165,233,.35);
-    }
-
-    .gauge-val { font-family: 'Oswald', sans-serif; font-size: 18px; font-weight: 800; line-height: 1; }
-    .gauge-label { font-size: 8px; letter-spacing: .08em; color: #94a3b8; font-weight: 900; text-transform: uppercase; white-space: nowrap; }
-
-    .scanner {
-      border-radius: 22px;
-      padding: 10px 12px;
-      overflow: hidden;
-      position: relative;
-      height: 128px;
-    }
-
-    .scanner-title {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 10px;
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 800;
-      color: #0891b2;
-      text-transform: uppercase;
-      letter-spacing: .09em;
-      margin-bottom: 7px;
-    }
-
-    .mini-chart {
-      position: relative;
-      height: 82px;
-      border-radius: 15px;
-      overflow: hidden;
-      background: rgba(248,250,252,.7);
-      border: 1px solid rgba(226,232,240,.65);
-    }
-
-    .mini-grid {
-      position: absolute;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(14,165,233,.07) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(14,165,233,.07) 1px, transparent 1px);
-      background-size: 10px 10px;
-    }
-
-    .scan-beam {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 28%;
-      left: 0;
-      background: linear-gradient(90deg, transparent, rgba(34,211,238,.18), rgba(34,211,238,.38));
-      border-right: 2px solid rgba(34,211,238,.9);
-      box-shadow: 4px 0 20px rgba(34,211,238,.35);
-      animation: scanMove 2.4s ease-in-out infinite;
-      z-index: 5;
-    }
-
-    @keyframes scanMove {
-      from { transform: translateX(-110%); opacity: .2; }
-      12% { opacity: 1; }
-      88% { opacity: 1; }
-      to { transform: translateX(390%); opacity: .2; }
-    }
-
-    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-    .stat-card {
-      border-radius: 20px;
-      padding: 12px;
-      min-height: 78px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    .stat-label { font-size: 9px; letter-spacing: .12em; color: #94a3b8; font-weight: 900; text-transform: uppercase; }
-    .stat-value { font-family: 'Oswald', sans-serif; font-size: 31px; line-height: 1; font-weight: 800; color: #0f172a; }
-
-    .logbox {
-      border-radius: 20px;
-      padding: 10px 12px;
-      min-height: 0;
-      overflow: hidden;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      line-height: 1.45;
-      color: #64748b;
-    }
-
-    .footer {
-      height: 28px;
-      flex-shrink: 0;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      color: #94a3b8;
-      font-size: 10px;
-      letter-spacing: .12em;
-      font-weight: 900;
-      text-transform: uppercase;
-      padding: 0 12px;
-    }
-
-    .start-screen {
-      position: fixed;
-      inset: 0;
-      z-index: 999999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 22px;
-      background:
-        radial-gradient(circle at 30% 10%, rgba(14,165,233,.22), transparent 32%),
-        radial-gradient(circle at 70% 85%, rgba(37,99,235,.15), transparent 36%),
-        linear-gradient(135deg, #f8fbff, #eaf3fb 45%, #ffffff);
-    }
-
-    .start-card {
-      width: min(520px, 94vw);
-      border-radius: 34px;
-      padding: 42px;
-      text-align: center;
-    }
-
-    .start-title {
-      font-family: 'Oswald', sans-serif;
-      font-size: clamp(42px, 9vw, 72px);
-      line-height: .86;
-      font-weight: 800;
-      letter-spacing: .045em;
-      text-transform: uppercase;
-      margin: 12px 0;
-    }
-
-    .start-btn {
-      width: 100%;
-      border: 0;
-      border-radius: 22px;
-      padding: 17px;
-      margin-top: 26px;
-      cursor: pointer;
-      color: white;
-      background: linear-gradient(135deg, #2563eb, #06b6d4);
-      box-shadow: 0 16px 34px rgba(14,165,233,.28);
-      font-family: 'Oswald', sans-serif;
-      font-size: 24px;
-      font-weight: 800;
-      letter-spacing: .14em;
-      text-transform: uppercase;
-    }
-
-    .maintenance {
-      position: fixed;
-      inset: 0;
-      z-index: 999999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      background: linear-gradient(135deg, #f8fbff, #eaf3fb, #fff);
-    }
-
-    .maintenance h1 {
-      font-family: 'Oswald', sans-serif;
-      font-size: clamp(42px, 8vw, 78px);
-      line-height: .9;
-      text-align: center;
-      margin: 0 0 18px;
-    }
-
-    @media (max-width: 980px) {
-      html, body { overflow: auto; }
-      .app { height: auto; min-height: 100dvh; overflow: visible; }
-      .header { height: auto; min-height: 66px; align-items: flex-start; flex-direction: column; }
-      .status-pill { width: 100%; text-align: center; font-size: 12px; }
-      .main { display: flex; flex-direction: column; overflow: visible; }
-      .chart-card { height: 58dvh; min-height: 470px; }
-      .right { overflow: visible; }
-      .right-body { overflow: visible; display: flex; flex-direction: column; }
-      .footer { height: auto; padding-bottom: 8px; }
-      .chart-top-info { left: 16px; top: 16px; min-width: 190px; }
-      .chart-wrap { margin-top: 78px; }
-    }
-
-    @media (max-width: 520px) {
-      .app { padding: 6px; gap: 6px; }
-      .ticker-label { min-width: 115px; font-size: 10px; padding: 0 11px; }
-      .title-main { font-size: 27px; }
-      .chart-card { min-height: 430px; }
-      .chart-price { font-size: 38px; }
-      .right-head { font-size: 14px; }
-      .broker strong { font-size: 23px; }
-      .gauges { gap: 4px; padding: 8px 5px; }
-      .gauge-arc { width: 42px; }
-      .gauge-label { font-size: 7px; }
+    @media (max-width: 1100px) {
+      body, html { overflow: auto; height: auto; }
+      .app-shell { display: flex; flex-direction: column; height: auto; min-height: 100vh; overflow: visible; padding: 10px; }
+      .metrics-row { overflow-x: auto; padding-bottom: 4px; }
+      .metric-card { min-width: 80px; }
+      .main-dashboard { display: flex; flex-direction: column; overflow: visible; }
+      .chart-area { height: 50vh; min-height: 400px; flex: none; }
+      .sidebar { display: flex; flex-direction: column; height: auto; overflow: visible; width: 100%; max-width: none; }
+      .sidebar-card { min-height: 80px; }
     }
   </style>
 </head>
-
 <body>
-  <div id="root"></div>
 
-  <script type="text/babel">
-    const { useEffect, useRef, useState } = React;
+  <!-- 1. CINEMATIC STARTUP SCREEN -->
+  <div id="startup">
+    <div class="startup-card">
+      <div class="author-anim text-lg mb-3">SLAVA GORDEEV</div>
+      <div class="text-accent text-5xl mb-2 text-glow">⚡</div>
+      <h1 class="oswald text-5xl md:text-6xl font-black leading-none mb-3 text-slate-800">ТЕРМИНАЛ<br><span style="color:var(--accent);">PRO MAX</span></h1>
+      <p class="mono text-slate-500 mt-2 tracking-widest text-xs uppercase font-bold">Premium 5M / 25M Dashboard</p>
+      
+      <button id="startTerminalBtn" class="btn-start" onclick="App.startSequence()">
+        ЗАПУСК СИСТЕМЫ
+      </button>
 
-    const MAINTENANCE_MODE = false;
+      <div class="loader-wrap" id="loader-wrap">
+        <div class="loader-text" id="load-text">Инициализация...</div>
+        <div class="loader-bar"><div class="loader-fill" id="load-bar"></div></div>
+      </div>
+    </div>
+  </div>
 
-    const CFG = {
+  <!-- 2. MAIN APP SHELL -->
+  <div id="root">
+    <div id="app" class="app-shell" style="visibility: hidden;">
+      
+      <!-- HEADER -->
+      <header class="header-row header">
+        <div class="flex items-center gap-3">
+          <div class="text-accent text-3xl text-glow">⚡</div>
+          <div>
+            <div class="oswald text-xl md:text-2xl font-black tracking-wide leading-none text-slate-800">ТЕРМИНАЛ <span style="color:var(--accent);">PRO MAX</span></div>
+            <div class="text-[9px] text-slate-400 font-bold tracking-[0.2em] uppercase mt-1 author-anim">SLAVA GORDEEV</div>
+          </div>
+        </div>
+        <div class="hidden sm:flex flex-col items-end">
+          <div id="ui-clock" class="mono text-xl font-bold text-slate-700">--:--:--</div>
+          <div class="text-[9px] text-emerald-500 font-bold uppercase tracking-widest mt-1" id="terminalStatus">Соединение безопасно</div>
+        </div>
+      </header>
+
+      <!-- SPEEDOMETERS ROW -->
+      <div class="metrics-row">
+        <div class="metric-card" data-gauge="structure"><div class="mc-title">Структура</div><div class="gauge-container"><svg viewBox="0 0 100 50" class="gauge-svg"><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-bg"/><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-fill gauge-arc-fill" stroke="#f5a623"/></svg></div><div class="mc-val gauge-value">0%</div></div>
+        <div class="metric-card" data-gauge="liquidity"><div class="mc-title">Ликвидность</div><div class="gauge-container"><svg viewBox="0 0 100 50" class="gauge-svg"><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-bg"/><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-fill gauge-arc-fill" stroke="#0ea5e9"/></svg></div><div class="mc-val gauge-value">0%</div></div>
+        <div class="metric-card" data-gauge="atrRange"><div class="mc-title">ATR / Range</div><div class="gauge-container"><svg viewBox="0 0 100 50" class="gauge-svg"><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-bg"/><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-fill gauge-arc-fill" stroke="#8b5cf6"/></svg></div><div class="mc-val gauge-value">0%</div></div>
+        <div class="metric-card" data-gauge="smartMoney"><div class="mc-title">Smart Money</div><div class="gauge-container"><svg viewBox="0 0 100 50" class="gauge-svg"><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-bg"/><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-fill gauge-arc-fill" stroke="#10b981"/></svg></div><div class="mc-val gauge-value">0%</div></div>
+        <div class="metric-card" data-gauge="qualityScore" style="background:var(--accent-soft); border-color:var(--accent);"><div class="mc-title" style="color:var(--accent);">Quality Score</div><div class="gauge-container"><svg viewBox="0 0 100 50" class="gauge-svg"><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-bg" style="stroke:rgba(40,168,255,0.2)"/><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-fill gauge-arc-fill" stroke="var(--accent)"/></svg></div><div class="mc-val text-accent gauge-value">0</div></div>
+        <div class="metric-card" data-gauge="edgeZone"><div class="mc-title">Edge Zone</div><div class="gauge-container"><svg viewBox="0 0 100 50" class="gauge-svg"><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-bg"/><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-fill gauge-arc-fill" stroke="#708298"/></svg></div><div class="mc-val gauge-value">0%</div></div>
+        <div class="metric-card" data-gauge="cooldown"><div class="mc-title">Cooldown</div><div class="gauge-container"><svg viewBox="0 0 100 50" class="gauge-svg"><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-bg"/><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-fill gauge-arc-fill" stroke="#cbd5e1" style="stroke-dashoffset:0"/></svg></div><div class="mc-val text-emerald-500 gauge-value">READY</div></div>
+      </div>
+
+      <!-- MAIN WORKSPACE -->
+      <div class="main-dashboard">
+        
+        <!-- LEFT: CHART AREA -->
+        <section class="chart-area" id="chartContainer">
+          <div class="chart-info">
+            <div class="text-[10px] text-slate-400 font-black tracking-widest uppercase">● BITCOIN (5M)</div>
+            <div id="ui-price" class="chart-price">---.--</div>
+          </div>
+          
+          <div class="chart-wrap" id="tv-container">
+            <div id="tv-chart"></div>
+            <div id="chart-overlay"></div>
+            
+            <!-- NEW Scan Orbs Layer -->
+            <div id="scanOrbLayer" class="scan-orb-layer">
+              <div id="scanOrb" class="scan-orb"></div>
+            </div>
+
+            <!-- Empty Market Alert -->
+            <div id="ui-empty-market" class="empty-market" style="display:none;">
+              <div class="text-bad text-5xl mb-3">⚠️</div>
+              <div class="empty-title">ОЖИДАНИЕ РЕАЛЬНЫХ ДАННЫХ</div>
+              <div class="text-xs font-bold text-slate-500 uppercase tracking-widest max-w-md">Торговая аналитика приостановлена. Фейковые свечи заблокированы.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- RIGHT: SIDEBAR (Strict Grid) -->
+        <aside class="sidebar">
+          
+          <!-- 1. Premium Broker CTA -->
+          <div class="sidebar-card" style="padding:0; border:none; box-shadow:none; background:transparent;">
+            <a href="https://intrade31.bar/311164" target="_blank" rel="noopener noreferrer" id="brokerCta" class="broker-cta">
+              <span class="broker-cta__small">БРОКЕР ДЛЯ ВХОДА</span>
+              <span class="broker-cta__main">ТОРГОВАТЬ ЗДЕСЬ</span>
+              <span class="broker-cta__arrow">➜</span>
+              <span id="brokerDemoCursor" class="broker-demo-cursor">➤</span>
+            </a>
+          </div>
+
+          <!-- 2. Setup Hint -->
+          <div class="sidebar-card setup-hint">
+            <div class="setup-row"><span>Время сделки:</span> <b>25 минут</b></div>
+            <div class="setup-row"><span>График анализа:</span> <b>BTCUSDT 5M</b></div>
+            <div class="setup-row"><span>Вход после сигнала:</span> <b>Через 6 сек</b></div>
+          </div>
+
+          <!-- 3. Strategy Mode -->
+          <div class="sidebar-card flex justify-between items-center" style="border-left: 4px solid var(--accent);">
+            <div>
+              <div class="sc-title mb-1" style="color:var(--text-main);">Режим стратегии</div>
+              <div class="text-[10px] font-bold text-accent" id="ui-scan-status">BALANCED+ 5M/25M</div>
+              <div class="text-[8px] font-bold text-slate-400 mt-1 uppercase" id="ui-data-source">SOURCE: WAIT</div>
+            </div>
+            <div class="text-right">
+               <div class="text-[8px] font-bold text-slate-500 uppercase mb-1">Type A & B</div>
+               <div class="text-[8px] font-bold text-emerald-500 bg-emerald-50 px-2 py-1 rounded border border-emerald-100">Retest On</div>
+            </div>
+          </div>
+
+          <!-- 4. 12H PNL -->
+          <div class="sidebar-card flex flex-col justify-center relative overflow-hidden">
+            <div class="absolute top-2 right-2 p-1 opacity-5 text-5xl pointer-events-none">📊</div>
+            <div class="sc-title text-accent mb-0">Статистика 12H</div>
+            <div class="stat-val" id="ui-pnl" style="color:var(--text-main);">--- ₽</div>
+            <div class="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-wider" id="ui-pnl-desc">Ожидание данных</div>
+            
+            <div class="stats-row">
+              <div class="stats-cell"><div class="stats-cell__label">Сделок</div><div class="stats-cell__value text-slate-700" id="ui-t-total">0</div></div>
+              <div class="stats-cell"><div class="stats-cell__label text-good">Win</div><div class="stats-cell__value text-good" id="ui-t-win">0</div></div>
+              <div class="stats-cell"><div class="stats-cell__label text-bad">Loss</div><div class="stats-cell__value text-bad" id="ui-t-loss">0</div></div>
+            </div>
+          </div>
+
+          <!-- 5. Current Trade -->
+          <div class="sidebar-card">
+            <div class="sc-title">Анализ текущей сделки</div>
+            <div class="text-[10px] font-bold text-slate-600 mt-1 min-h-[28px] flex items-center leading-tight" id="ui-mid-text">
+              Сделок в данный момент нет.<br>Ожидание сигнала.
+            </div>
+            <div class="text-[10px] text-accent font-bold mt-1 mono" id="ui-mid-timer"></div>
+          </div>
+
+          <!-- 6. Orderbook -->
+          <div class="sidebar-card">
+            <div class="flex justify-between items-center mb-1">
+              <div class="sc-title mb-0">Стакан BTC/USDT</div>
+              <div class="text-[8px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 border border-slate-200 font-bold">REST</div>
+            </div>
+            <div class="ob-container" id="ui-ob">
+              <div class="text-[10px] text-slate-400 text-center py-2 font-mono">Ожидание стакана...</div>
+            </div>
+          </div>
+
+          <!-- 7. Diagnostics & Log -->
+          <div class="sidebar-card" style="justify-content: flex-start;">
+            <div class="sc-title text-accent mb-1 flex justify-between items-center">
+              <span>Диагностика 12H</span>
+              <span id="ui-strict-warn" style="display:none;" class="text-[8px] bg-rose-50 text-rose-500 px-1 py-0.5 rounded border border-rose-200">ADAPTIVE STRICT</span>
+            </div>
+            <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-[9px] mono text-slate-500 font-semibold">
+              <div class="flex justify-between"><span>RAW Sweep:</span> <b id="diag-raw">0</b></div>
+              <div class="flex justify-between"><span>Reclaim:</span> <b id="diag-rec">0</b></div>
+              <div class="flex justify-between"><span>Type A (Dir):</span> <b id="diag-ta">0</b></div>
+              <div class="flex justify-between"><span>Type B (Ret):</span> <b id="diag-tb">0</b></div>
+              <div class="flex justify-between"><span>Final Sig:</span> <b id="diag-fin" class="text-accent">0</b></div>
+              <div class="flex justify-between"><span>Rejected:</span> <b id="diag-rej">0</b></div>
+            </div>
+            
+            <div class="mt-auto pt-1 border-t border-slate-100 mono text-[8px] text-slate-400 max-h-[30px] overflow-hidden flex flex-col justify-end" id="systemLog">
+              <div><span class="text-accent">[SYS]</span> Инициализация...</div>
+            </div>
+          </div>
+
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Tooltip -->
+  <div id="tt"></div>
+
+  <script>
+    // --- 1. SAFE DOM HELPERS & GLOBAL ERROR HANDLING ---
+    window.__TERMINAL_ERRORS__ = [];
+    function reportTerminalError(scope, error) {
+      const msg = `[${scope}] ${error?.message || error || "Unknown error"}`;
+      console.error(msg, error);
+      window.__TERMINAL_ERRORS__.push(msg);
+      const log = document.getElementById('systemLog');
+      if (log) {
+        log.innerHTML = `<div class="soft-error">${msg}</div>` + log.innerHTML;
+        if(log.children.length > 3) log.lastChild.remove();
+      }
+      const st = document.getElementById("terminalStatus");
+      if (st) st.textContent = "ОШИБКА МОДУЛЯ · ТЕРМИНАЛ РАБОТАЕТ";
+    }
+    
+    function byId(id) { return document.getElementById(id); }
+    function safeSetText(id, text) { const el = byId(id); if (el) el.textContent = text ?? ""; }
+    function safeSetHTML(id, html) { const el = byId(id); if (el) el.innerHTML = html ?? ""; }
+    
+    function safeNum(value, fallback = 0) { const n = Number(value); return Number.isFinite(n) ? n : fallback; }
+    function safePercent(value, fallback = 0) { const n = Number(value); return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : fallback; }
+    function safeArray(value) { return Array.isArray(value) ? value : []; }
+
+    window.addEventListener("error", function(e) {
+      const msg = String(e.error || e.message || "unknown");
+      if (msg.includes("WebSocket") || msg.includes("SecurityError") || msg.includes("CSP") || msg.includes("ResizeObserver")) return true;
+      reportTerminalError("runtime", msg);
+    });
+    window.addEventListener("unhandledrejection", function(e) {
+      const msg = String(e.reason?.message || e.reason || "unknown");
+      if (msg.includes("WebSocket") || msg.includes("SecurityError") || msg.includes("CSP")) return true;
+      reportTerminalError("async", msg);
+    });
+
+    // --- BROKER CTA ANIMATION ---
+    function runBrokerDemoPress() {
+      const btn = document.getElementById("brokerCta");
+      const cursor = document.getElementById("brokerDemoCursor");
+      if (!btn || !cursor) return;
+
+      cursor.animate([
+        { opacity: 0, transform: "translate(34px, 24px) rotate(-25deg) scale(.95)" },
+        { opacity: 1, transform: "translate(6px, 4px) rotate(-25deg) scale(1)" },
+        { opacity: 1, transform: "translate(0, 0) rotate(-25deg) scale(.86)" },
+        { opacity: 1, transform: "translate(1px, 1px) rotate(-25deg) scale(1.05)" },
+        { opacity: 0, transform: "translate(26px, 18px) rotate(-25deg) scale(.95)" }
+      ], {
+        duration: 2200,
+        easing: "cubic-bezier(.22,.8,.22,1)"
+      });
+
+      setTimeout(() => btn.classList.add("is-pressed"), 920);
+      setTimeout(() => btn.classList.remove("is-pressed"), 1240);
+    }
+    setInterval(runBrokerDemoPress, 4200);
+    setTimeout(runBrokerDemoPress, 1000);
+
+    // --- GAUGES LOGIC ---
+    const lastGaugeValues = {
+      structure: 50, liquidity: 50, atrRange: 50, smartMoney: 50, qualityScore: 50, edgeZone: 50, cooldown: 100
+    };
+
+    function setGaugeValue(id, value) {
+      const fallback = lastGaugeValues[id] ?? 50;
+      const pct = safePercent(value, fallback);
+      lastGaugeValues[id] = pct;
+
+      const card = document.querySelector(`[data-gauge="${id}"]`);
+      if (!card) return;
+
+      const arc = card.querySelector(".gauge-arc-fill");
+      const label = card.querySelector(".gauge-value");
+
+      if (arc) {
+        const len = 125.6; // Matches SVG path length approximately
+        arc.style.strokeDasharray = `${len}`;
+        arc.style.strokeDashoffset = `${len - (pct / 100) * len}`;
+      }
+
+      if (label) {
+        label.textContent = id === "cooldown" && pct >= 95 ? "READY" : `${Math.round(pct)}%`;
+      }
+    }
+
+    function updateGauges(metrics = {}) {
+      setGaugeValue("structure", metrics.structure);
+      setGaugeValue("liquidity", metrics.liquidity);
+      setGaugeValue("atrRange", metrics.atrRange);
+      setGaugeValue("smartMoney", metrics.smartMoney);
+      setGaugeValue("qualityScore", metrics.qualityScore);
+      setGaugeValue("edgeZone", metrics.edgeZone);
+      setGaugeValue("cooldown", metrics.cooldown ?? 100);
+    }
+
+    function updateGaugesFromCandles(candles) {
+      if (!Array.isArray(candles) || candles.length < 30) return;
+      const recent = candles.slice(-30);
+      const ranges = recent.map(c => c.high - c.low);
+      const avgRange = ranges.reduce((a,b)=>a+b,0) / ranges.length;
+      const last = recent[recent.length - 1];
+
+      const structure = 50 + Math.min(50, Math.abs(last.close - recent[0].open) / Math.max(avgRange, 1) * 6);
+      const liquidity = 45 + Math.min(55, Math.abs(last.high - last.low) / Math.max(avgRange, 1) * 18);
+      const atrRange = Math.min(100, Math.max(20, 100 - Math.abs(last.high - last.low) / Math.max(avgRange, 1) * 25));
+      const smartMoney = 50 + Math.min(45, Math.abs(last.close - last.open) / Math.max(last.high - last.low, 1) * 50);
+      const qualityScore = Math.round((structure + liquidity + atrRange + smartMoney) / 4);
+
+      updateGauges({ structure, liquidity, atrRange, smartMoney, qualityScore, edgeZone: 55, cooldown: 100 });
+    }
+
+    // --- 2. CONFIGURATION (BALANCED+ 5M/25M) ---
+    const CONFIG = window.CONFIG || {
       symbol: "BTCUSDT",
-      displaySymbol: "BTC/USDT",
-      timeframe: "1m",
-      timeframeLabel: "1M",
-      timeframeMs: 60 * 1000,
-
+      signalTimeframe: "5m", 
+      signalTimeframeMs: 5 * 60 * 1000,
       expiryMinutes: 25,
-      expiryCandles: 25,
+      expiryCandles: 5, 
       historicalLookbackHours: 12,
-
-      lookback: 90,
+      
+      baseStake: 300,
+      payout: 0.70,
+      martingaleLadder: [300, 729, 1770, 4300, 10440],
+      strategyMode: "SMC_SWEEP_RETEST_5M_25M",
+      
+      lookback: 24,
       atrLen: 14,
-
-      minSweepATR: 0.06,
+      minSweepATR: 0.055,
       minReclaimATR: 0.05,
       minBodyRatio: 0.12,
-      maxRangeATR: 3.20,
-      minWickRatio: 0.18,
-
-      cooldownBars: 25,
+      minWickRatio: 0.16,
+      maxRangeATR: 3.0,
+      cooldownBars: 5, 
+      
       blockSamePoolSignals: true,
-      samePoolDistanceATR: 0.70,
+      samePoolDistanceATR: 0.55,
       blockMiddleRange: true,
       edgeZonePercent: 0.36,
-
-      demoBalance: 50000,
-      baseStake: 500,
-      payout: 0.70,
-      martingaleLadder: [500, 1215, 2950, 7165],
-
-      referralUrl: "https://intrade31.bar/311164",
-      authorName: "SLAVA GORDEEV"
+      maxEntryDistanceATR: 0.45,
+      minQualityScore: 62,
+      
+      enableRetestEntry: true,
+      retestWindowBars: 6,
+      retestToleranceATR: 0.28,
+      minRetestQualityScore: 64,
+      retestNeedsRejectWick: true,
+      
+      impulseLookback: 5,
+      maxOppositeImpulseATR: 2.2,
+      requireConfirmationIfImpulseStrong: true,
+      
+      adaptiveMode: true,
+      adaptiveTightenAfterLosses: 2,
+      adaptiveQualityBoost: 4,
+      
+      restPollingMs: 5000
     };
 
-    const NEWS = [
-      "ForkLog: биткоин протестировал новый уровень сопротивления",
-      "BitsMedia: крупные фонды наращивают позиции в BTC",
-      "РБК: индекс страха и жадности указывает на перекупленность",
-      "ForkLog: объём торгов на криптобиржах вырос за сутки",
-      "BitsMedia: институционалы продолжают аккумулировать стейблкоины"
-    ];
-
-    function safeNumber(value, fallback = 0) {
-      const n = Number(value);
-      return Number.isFinite(n) ? n : fallback;
-    }
-
-    function clamp(value, min, max) {
-      return Math.max(min, Math.min(max, safeNumber(value, 0)));
-    }
-
-    function formatRub(value) {
-      return `${Math.round(safeNumber(value, 0)).toLocaleString("ru-RU")} ₽`;
-    }
-
-    function formatPrice(value) {
-      const n = safeNumber(value, 0);
-      if (n >= 1000) return n.toFixed(2);
-      if (n >= 10) return n.toFixed(3);
-      if (n >= 1) return n.toFixed(4);
-      return n.toFixed(5);
-    }
-
-    function normalizeCandleTimeMs(time) {
-      const n = Number(time);
-      if (!Number.isFinite(n)) return null;
-      return n < 1e12 ? n * 1000 : n;
-    }
-
-    function formatDateTime(ms) {
-      const t = normalizeCandleTimeMs(ms);
-      if (!t) return "—";
-      return new Date(t).toLocaleString("ru-RU", {
-        day: "2-digit",
-        month: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit"
-      });
-    }
-
-    function calcAtrAtIndex(candles, index, period) {
-      if (!Array.isArray(candles) || index < period + 1) return 0;
-      let sum = 0;
-      let count = 0;
-      for (let i = index - period + 1; i <= index; i++) {
-        const c = candles[i];
-        const p = candles[i - 1];
-        if (!c || !p) continue;
-        const tr = Math.max(
-          safeNumber(c.high) - safeNumber(c.low),
-          Math.abs(safeNumber(c.high) - safeNumber(p.close)),
-          Math.abs(safeNumber(c.low) - safeNumber(p.close))
-        );
-        sum += tr;
-        count++;
-      }
-      return count ? sum / count : 0;
-    }
-
-    function getClosedCandles(candles, now = Date.now()) {
-      return candles.filter(c => {
-        const t = normalizeCandleTimeMs(c.time);
-        return t && t + CFG.timeframeMs <= now;
-      });
-    }
-
-    function basicScores() {
-      return { structure: 50, liquidity: 50, atr: 50, confidence: 50 };
-    }
-
-    function calculateScores(x) {
-      const liqRaw = (x.rawBuy || x.rawSell) ? 64 : 28;
-      const reclaim = (x.reclaimBuy || x.reclaimSell) ? 24 : 0;
-      const liquidity = clamp(liqRaw + reclaim, 0, 100);
-      const structure = clamp((x.bodyRatio / CFG.minBodyRatio) * 52, 20, 100);
-      const atr = clamp(100 - (x.range / (x.atr * CFG.maxRangeATR)) * 70, 8, 100);
-      const confidence = clamp(structure * .28 + liquidity * .44 + atr * .28, 0, 100);
-      return {
-        structure: Math.round(structure),
-        liquidity: Math.round(liquidity),
-        atr: Math.round(atr),
-        confidence: Math.round(confidence)
-      };
-    }
-
-    function buildRejectReason(x) {
-      if (!x.rangeOk) return "RANGE_TOO_BIG";
-      if (!x.bodyOk) return "BODY_TOO_SMALL";
-      if (x.buyWickOk === false || x.sellWickOk === false) return "WEAK_SWEEP_WICK";
-      if (x.buyEdgeOk === false || x.sellEdgeOk === false) return "MIDDLE_RANGE";
-      if (!x.cooldownOk) return "COOLDOWN";
-      if (!x.samePoolOk) return "SAME_POOL_BLOCK";
-      return "FILTERED";
-    }
-
-    function evaluateSignal(candles, index, state = {}) {
-      if (!Array.isArray(candles) || index < CFG.lookback + CFG.atrLen + 2) {
-        return { isBuy: false, isSell: false, reason: "NOT_ENOUGH_DATA", scores: basicScores() };
-      }
-
-      const c = candles[index];
-      const high = safeNumber(c.high);
-      const low = safeNumber(c.low);
-      const open = safeNumber(c.open);
-      const close = safeNumber(c.close);
-
-      const prev = candles.slice(index - CFG.lookback, index);
-      const upperPool = Math.max(...prev.map(x => safeNumber(x.high)));
-      const lowerPool = Math.min(...prev.map(x => safeNumber(x.low)));
-      const atr = calcAtrAtIndex(candles, index, CFG.atrLen);
-
-      if (![high, low, open, close, upperPool, lowerPool, atr].every(Number.isFinite) || atr <= 0) {
-        return { isBuy: false, isSell: false, reason: "BAD_DATA", scores: basicScores() };
-      }
-
-      const range = Math.max(high - low, 0.00000001);
-      const body = Math.abs(close - open);
-      const bodyRatio = body / range;
-
-      const upperWick = high - Math.max(open, close);
-      const lowerWick = Math.min(open, close) - low;
-      const upperWickRatio = upperWick / range;
-      const lowerWickRatio = lowerWick / range;
-
-      const rawSell = high > upperPool;
-      const rawBuy = low < lowerPool;
-
-      const reclaimSell = rawSell && close < upperPool;
-      const reclaimBuy = rawBuy && close > lowerPool;
-
-      const sweepUpDepth = high - upperPool;
-      const sweepDownDepth = lowerPool - low;
-      const reclaimDown = upperPool - close;
-      const reclaimUp = close - lowerPool;
-
-      const rangeOk = range <= atr * CFG.maxRangeATR;
-      const bodyOk = bodyRatio >= CFG.minBodyRatio;
-
-      const sellWickOk = upperWickRatio >= CFG.minWickRatio;
-      const buyWickOk = lowerWickRatio >= CFG.minWickRatio;
-
-      const poolRange = Math.max(upperPool - lowerPool, 0.00000001);
-      const positionInPool = (close - lowerPool) / poolRange;
-
-      const buyEdgeOk = !CFG.blockMiddleRange || positionInPool <= CFG.edgeZonePercent;
-      const sellEdgeOk = !CFG.blockMiddleRange || positionInPool >= 1 - CFG.edgeZonePercent;
-
-      const cooldownOk = state.lastSignalIndex == null || index - state.lastSignalIndex > CFG.cooldownBars;
-
-      let samePoolBuyOk = true;
-      let samePoolSellOk = true;
-
-      if (CFG.blockSamePoolSignals) {
-        if (state.lastBuyPool != null && Math.abs(lowerPool - state.lastBuyPool) <= atr * CFG.samePoolDistanceATR) {
-          samePoolBuyOk = false;
-        }
-        if (state.lastSellPool != null && Math.abs(upperPool - state.lastSellPool) <= atr * CFG.samePoolDistanceATR) {
-          samePoolSellOk = false;
-        }
-      }
-
-      const buyFilters =
-        reclaimBuy &&
-        sweepDownDepth >= atr * CFG.minSweepATR &&
-        reclaimUp >= atr * CFG.minReclaimATR &&
-        bodyOk &&
-        rangeOk &&
-        buyWickOk &&
-        buyEdgeOk &&
-        cooldownOk &&
-        samePoolBuyOk;
-
-      const sellFilters =
-        reclaimSell &&
-        sweepUpDepth >= atr * CFG.minSweepATR &&
-        reclaimDown >= atr * CFG.minReclaimATR &&
-        bodyOk &&
-        rangeOk &&
-        sellWickOk &&
-        sellEdgeOk &&
-        cooldownOk &&
-        samePoolSellOk;
-
-      const isBuy = buyFilters;
-      const isSell = sellFilters;
-
-      let reason = "NO_SIGNAL";
-      if (!rawBuy && !rawSell) reason = "NO_RAW_SWEEP";
-      else if (rawBuy && !reclaimBuy) reason = "BUY_NO_RECLAIM";
-      else if (rawSell && !reclaimSell) reason = "SELL_NO_RECLAIM";
-      else if (reclaimBuy && !buyFilters) reason = buildRejectReason({
-        rangeOk,
-        bodyOk,
-        buyWickOk,
-        buyEdgeOk,
-        cooldownOk,
-        samePoolOk: samePoolBuyOk
-      });
-      else if (reclaimSell && !sellFilters) reason = buildRejectReason({
-        rangeOk,
-        bodyOk,
-        sellWickOk,
-        sellEdgeOk,
-        cooldownOk,
-        samePoolOk: samePoolSellOk
-      });
-      else if (isBuy) reason = "FINAL_BUY";
-      else if (isSell) reason = "FINAL_SELL";
-
-      const scores = calculateScores({
-        rawBuy,
-        rawSell,
-        reclaimBuy,
-        reclaimSell,
-        bodyRatio,
-        range,
-        atr,
-        sweepUpDepth,
-        sweepDownDepth,
-        reclaimUp,
-        reclaimDown
-      });
-
-      return {
-        isBuy,
-        isSell,
-        rawBuy,
-        rawSell,
-        reclaimBuy,
-        reclaimSell,
-        upperPool,
-        lowerPool,
-        atr,
-        bodyRatio,
-        rangeOk,
-        bodyOk,
-        buyWickOk,
-        sellWickOk,
-        buyEdgeOk,
-        sellEdgeOk,
-        cooldownOk,
-        samePoolBuyOk,
-        samePoolSellOk,
-        reason,
-        scores
-      };
-    }
-
-    function buildSignalReason(direction) {
-      if (direction === "BUY") return "Сигнал вверх. Цена сняла нижнюю ликвидность и вернулась выше пула.";
-      if (direction === "SELL") return "Сигнал вниз. Цена сняла верхнюю ликвидность и закрылась ниже пула.";
-      return "Сигнал по снятию ликвидности.";
-    }
-
-    function resultOfTrade(direction, entry, exit) {
-      if (!Number.isFinite(entry) || !Number.isFinite(exit)) return "CANCELLED";
-      if (direction === "BUY") return exit > entry ? "WIN" : "LOSS";
-      if (direction === "SELL") return exit < entry ? "WIN" : "LOSS";
-      return "CANCELLED";
-    }
-
-    function applyMoney(trades) {
-      let balance = CFG.demoBalance;
-      let mg = 0;
-
-      return trades.map((t, index) => {
-        const stage = mg + 1;
-        const stake = CFG.martingaleLadder[mg] || CFG.baseStake;
-        const before = balance;
-        let pnl = 0;
-
-        if (t.result === "WIN") {
-          pnl = Math.round(stake * CFG.payout);
-          mg = 0;
-        } else if (t.result === "LOSS") {
-          pnl = -stake;
-          mg = mg < CFG.martingaleLadder.length - 1 ? mg + 1 : 0;
-        }
-
-        balance = before + pnl;
-
-        return {
-          ...t,
-          tradeId: t.tradeId || `trade_${index}`,
-          stake,
-          martingaleStep: stage,
-          pnl,
-          balanceBefore: before,
-          balanceAfter: balance
-        };
-      });
-    }
-
-    function buildHistoricalBacktest(candles) {
-      const now = Date.now();
-      const windowStart = now - CFG.historicalLookbackHours * 60 * 60 * 1000;
-      const closed = getClosedCandles(candles, now);
-
-      const rawTrades = [];
-      const stats = {
-        candlesLoaded: candles.length,
-        candlesInWindow: 0,
-        rawBuy: 0,
-        rawSell: 0,
-        reclaimBuy: 0,
-        reclaimSell: 0,
-        finalBuy: 0,
-        finalSell: 0,
-        rejected: 0,
-        rejectReasons: {}
-      };
-
-      const scanState = {
-        lastSignalIndex: null,
-        lastBuyPool: null,
-        lastSellPool: null
-      };
-
-      let nextTradeAllowedIndex = 0;
-      let lastScores = basicScores();
-
-      for (let i = 0; i < closed.length; i++) {
-        const c = closed[i];
-        const t = normalizeCandleTimeMs(c.time);
-        if (!t || t < windowStart) continue;
-
-        stats.candlesInWindow++;
-
-        const index = candles.findIndex(x => normalizeCandleTimeMs(x.time) === t);
-        if (index < 0) continue;
-
-        const res = evaluateSignal(candles, index, scanState);
-        lastScores = res.scores || lastScores;
-
-        if (res.rawBuy) stats.rawBuy++;
-        if (res.rawSell) stats.rawSell++;
-        if (res.reclaimBuy) stats.reclaimBuy++;
-        if (res.reclaimSell) stats.reclaimSell++;
-
-        const direction = res.isBuy ? "BUY" : res.isSell ? "SELL" : null;
-
-        if (!direction) {
-          if (res.rawBuy || res.rawSell || res.reclaimBuy || res.reclaimSell) {
-            stats.rejected++;
-            stats.rejectReasons[res.reason] = (stats.rejectReasons[res.reason] || 0) + 1;
-          }
-          continue;
-        }
-
-        if (index < nextTradeAllowedIndex) {
-          stats.rejected++;
-          stats.rejectReasons["TRADE_ALREADY_ACTIVE"] = (stats.rejectReasons["TRADE_ALREADY_ACTIVE"] || 0) + 1;
-          continue;
-        }
-
-        if (direction === "BUY") stats.finalBuy++;
-        if (direction === "SELL") stats.finalSell++;
-
-        const signalCandle = candles[index];
-        const entryIndex = index + 1;
-        const exitIndex = entryIndex + CFG.expiryCandles;
-
-        const entryCandle = candles[entryIndex];
-        const exitCandle = candles[exitIndex];
-
-        const signalTime = normalizeCandleTimeMs(signalCandle.time);
-
-        const base = {
-          tradeId: `${CFG.symbol}_${CFG.timeframe}_${signalTime}_${direction}`,
-          mode: "historical",
-          direction,
-          signalTime,
-          signalPrice: safeNumber(signalCandle.close),
-          signalHigh: safeNumber(signalCandle.high),
-          signalLow: safeNumber(signalCandle.low),
-          atr: res.atr,
-          reason: buildSignalReason(direction),
-          debug: res,
-          state: "TRADE_CLOSED",
-          entryDelaySeconds: 6
-        };
-
-        if (entryCandle && exitCandle) {
-          const entryTime = normalizeCandleTimeMs(entryCandle.time);
-          const exitTime = normalizeCandleTimeMs(exitCandle.time);
-          const entryPrice = safeNumber(entryCandle.open);
-          const exitPrice = safeNumber(exitCandle.close);
-          const result = resultOfTrade(direction, entryPrice, exitPrice);
-
-          rawTrades.push({
-            ...base,
-            entryTime,
-            entryChartTime: entryTime,
-            entryPrice,
-            exitTime,
-            exitPrice,
-            result
-          });
-
-          scanState.lastSignalIndex = index;
-          if (direction === "BUY") scanState.lastBuyPool = res.lowerPool;
-          if (direction === "SELL") scanState.lastSellPool = res.upperPool;
-          nextTradeAllowedIndex = exitIndex;
-        }
-      }
-
-      const trades = applyMoney(rawTrades);
-      const pnl = trades.reduce((s, t) => s + safeNumber(t.pnl), 0);
-
-      stats.builtTrades = rawTrades.length;
-      stats.ledgerTrades = trades.length;
-      stats.pnl = pnl;
-
-      return { trades, stats, lastScores };
-    }
-
-    function buildStats(trades) {
-      const closed = trades.filter(t => t.result === "WIN" || t.result === "LOSS");
-      const wins = closed.filter(t => t.result === "WIN").length;
-      const losses = closed.filter(t => t.result === "LOSS").length;
-      const pnl = closed.reduce((s, t) => s + safeNumber(t.pnl), 0);
-
-      return {
-        totalSignals: trades.length,
-        confirmedTrades: closed.length,
-        wins,
-        losses,
-        pnl,
-        finalBalance: CFG.demoBalance + pnl
-      };
-    }
-
-    const API = {
-      async getCandles(symbol = CFG.symbol, count = 900, interval = CFG.timeframe) {
-        const urls = [
-          `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
-          `https://api.mexc.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`
-        ];
-
-        for (const url of urls) {
-          try {
-            const r = await fetch(url, { cache: "no-store" });
-            if (!r.ok) continue;
-            const data = await r.json();
-            return data.map(d => ({
-              time: Math.floor(Number(d[0]) / 1000),
-              open: Number(d[1]),
-              high: Number(d[2]),
-              low: Number(d[3]),
-              close: Number(d[4]),
-              volume: Number(d[5])
-            })).filter(c => Number.isFinite(c.close));
-          } catch (e) {}
-        }
-        return [];
+    // --- 3. UTILITIES ---
+    const Utils = {
+      formatRub: (v) => { 
+        const n = Math.round(safeNum(v)); 
+        const sign = n > 0 ? "+" : n < 0 ? "-" : "";
+        const formatted = Math.abs(n).toLocaleString("ru-RU").replace(/,/g, ' ');
+        return `${sign}${formatted} ₽`; 
+      },
+      speakRub: (v) => {
+        const n = Math.round(safeNum(v));
+        const sign = n > 0 ? "плюс " : n < 0 ? "минус " : "";
+        const formatted = Math.abs(n).toLocaleString("ru-RU").replace(/,/g, ''); // Fix TTS reading "thousands" weirdly
+        return `${sign}${formatted} рублей`; 
+      },
+      formatPrice: (v) => safeNum(v).toFixed(2),
+      timeStr: (ms) => { if(!ms) return "—"; return new Date(ms).toLocaleTimeString("ru-RU", {hour:'2-digit', minute:'2-digit', second:'2-digit'}); },
+      sanitizeCandles: (arr) => {
+        const cands = safeArray(arr);
+        return cands.filter(c => c && Number.isFinite(Number(c.time)) && Number.isFinite(Number(c.high)) && Number(c.high)>=Number(c.low))
+                  .map(c => ({ time: Number(c.time), open: Number(c.open), high: Number(c.high), low: Number(c.low), close: Number(c.close), vol: Number(c.vol||0) }))
+                  .sort((a,b)=>a.time - b.time);
       }
     };
 
-    function Gauge({ value, label, color = "#0ea5e9" }) {
-      const v = clamp(value, 0, 100);
-      const angle = -90 + v * 1.8;
-      return (
-        <div className="gauge">
-          <div className="gauge-arc">
-            <div className="gauge-needle" style={{ transform: `rotate(${angle}deg)`, background: color }} />
-          </div>
-          <div className="gauge-val" style={{ color }}>{Math.round(v)}</div>
-          <div className="gauge-label">{label}</div>
-        </div>
-      );
+    // --- 4. STATE ---
+    const State = {
+      candles: [], livePrice: 0, trades: [], activeTrade: null,
+      source: "NO REAL DATA", canTradeSignals: false,
+      stats: { total: 0, win: 0, loss: 0, pnl: 0 },
+      chart: null, series: null, upSeries: null, dnSeries: null,
+      mgStep: 0, lastSignalIndex: 0, lastBuyPool: 0, lastSellPool: 0,
+      lossStreak: 0, isStrictMode: false, activeLiquidityZone: null,
+      diag: { raw: 0, reclaim: 0, qPassed: 0, typeA: 0, typeB: 0, final: 0, rejected: 0, lastQs: 0, reasons: {} }
+    };
+
+    function getActiveConfig() {
+      if (State.isStrictMode) return { ...CONFIG, minQualityScore: CONFIG.minQualityScore + CONFIG.adaptiveQualityBoost, minRetestQualityScore: CONFIG.minRetestQualityScore + CONFIG.adaptiveQualityBoost, maxEntryDistanceATR: 0.35, blockSamePoolSignals: true };
+      return CONFIG;
     }
 
-    function LiveClock() {
-      const [now, setNow] = useState(new Date());
-      useEffect(() => {
-        const id = setInterval(() => setNow(new Date()), 1000);
-        return () => clearInterval(id);
-      }, []);
-      return <span className="mono font-bold text-slate-800">{now.toLocaleTimeString("ru-RU")}</span>;
-    }
+    // --- 5. VOICE ENGINE (Anti-Spam & Mid-Trade) ---
+    const VoiceState = {
+      lastZoneKey: null, zoneActive: false,
+      lastVoiceAt: 0, lastLeaveAt: 0, cooldownMs: 120000, midTradeSpoken: false
+    };
 
-    function MiniScanner({ candles, phase }) {
-      const data = Array.isArray(candles) ? candles.slice(-50) : [];
-      const min = data.length ? Math.min(...data.map(c => c.low)) : 0;
-      const max = data.length ? Math.max(...data.map(c => c.high)) : 1;
-      const range = Math.max(max - min, 1);
-
-      return (
-        <div className="scanner glass-soft">
-          <div className="scanner-title">
-            <span>{phase}</span>
-            <span>{data.length} BARS</span>
-          </div>
-          <div className="mini-chart">
-            <div className="mini-grid" />
-            <svg width="100%" height="100%" viewBox="0 0 260 84" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, zIndex: 2 }}>
-              {data.map((c, i) => {
-                const x = i * (260 / Math.max(data.length, 1));
-                const w = Math.max(2, 260 / Math.max(data.length, 1) * .62);
-                const oY = 84 - ((c.open - min) / range) * 74 - 5;
-                const clY = 84 - ((c.close - min) / range) * 74 - 5;
-                const hY = 84 - ((c.high - min) / range) * 74 - 5;
-                const lY = 84 - ((c.low - min) / range) * 74 - 5;
-                const up = c.close >= c.open;
-                return (
-                  <g key={i}>
-                    <line x1={x + w/2} y1={hY} x2={x + w/2} y2={lY} stroke={up ? "#38bdf8" : "#94a3b8"} strokeWidth="1" />
-                    <rect x={x} y={Math.min(oY, clY)} width={w} height={Math.max(Math.abs(oY - clY), 1.5)} rx=".6" fill={up ? "#38bdf8" : "transparent"} stroke={up ? "#38bdf8" : "#94a3b8"} strokeWidth="1" />
-                  </g>
-                );
-              })}
-            </svg>
-            <div className="scan-beam" />
-          </div>
-        </div>
-      );
-    }
-
-    function App() {
-      const chartContainerRef = useRef(null);
-      const overlayRef = useRef(null);
-      const chartRef = useRef(null);
-      const seriesRef = useRef(null);
-      const poolSeriesRef = useRef([]);
-      const wsRef = useRef(null);
-      const pollRef = useRef(null);
-      const activeRef = useRef(false);
-      const tradesRef = useRef([]);
-      const candlesRef = useRef([]);
-      const livePriceRef = useRef(null);
-      const lastLiveSignalRef = useRef(null);
-      const chartReadyRef = useRef(false);
-      const lastChartTimeRef = useRef(0);
-      const liveStartMsRef = useRef(Date.now());
-
-      const [started, setStarted] = useState(false);
-      const [phase, setPhase] = useState("ОЖИДАНИЕ ЗАПУСКА");
-      const [livePrice, setLivePrice] = useState(null);
-      const [candles, setCandles] = useState([]);
-      const [trades, setTrades] = useState([]);
-      const [stats, setStats] = useState({ totalSignals: 0, confirmedTrades: 0, wins: 0, losses: 0, pnl: 0, finalBalance: CFG.demoBalance });
-      const [debugStats, setDebugStats] = useState(null);
-      const [scores, setScores] = useState({ structure: 50, liquidity: 50, atr: 50, confidence: 50 });
-      const [logs, setLogs] = useState([]);
-      const [tooltip, setTooltip] = useState(null);
-      const [activeSignal, setActiveSignal] = useState(null);
-      const [countdown, setCountdown] = useState(null);
-
-      function addLog(text) {
-        setLogs(prev => [text, ...prev].slice(0, 7));
-      }
-
-      function speak(text) {
-        return new Promise(resolve => {
-          try {
-            if (!window.speechSynthesis) return resolve();
-            window.speechSynthesis.cancel();
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = "ru-RU";
-            u.rate = .96;
-            u.pitch = .95;
-            u.onend = resolve;
-            u.onerror = resolve;
-            window.speechSynthesis.speak(u);
-            setTimeout(resolve, Math.max(1800, text.length * 75));
-          } catch (e) {
-            resolve();
-          }
+    const Voice = {
+      q: [], isSpk: false,
+      speak: (t) => { Voice.q.push(t); Voice.play(); },
+      play: async () => {
+        if(Voice.isSpk || Voice.q.length===0 || !window.speechSynthesis) return;
+        Voice.isSpk = true;
+        const txt = Voice.q.shift();
+        return new Promise(r => {
+          const u = new SpeechSynthesisUtterance(txt);
+          u.lang = "ru-RU"; u.rate = 0.95; u.pitch = 1.0;
+          u.onend = () => { Voice.isSpk = false; setTimeout(Voice.play, 200); r(); };
+          u.onerror = () => { Voice.isSpk = false; r(); };
+          window.speechSynthesis.speak(u);
         });
-      }
+      },
+      checkPotentialZone: (data, idx) => {
+        if(idx < CONFIG.lookback) return;
+        const c = data[idx]; const prev = data.slice(idx - CONFIG.lookback, idx);
+        const upP = Math.max(...prev.map(x => x.high)); const dnP = Math.min(...prev.map(x => x.low));
+        const atr = Alg.getATR(data, idx, CONFIG.atrLen);
+        if(atr <= 0) return;
+        
+        const isNearUp = c.close >= upP - atr * 0.15 && c.close <= upP + atr * 0.15;
+        const isNearDn = c.close <= dnP + atr * 0.15 && c.close >= dnP - atr * 0.15;
 
-      function initChart() {
-        if (chartReadyRef.current || !chartContainerRef.current || !window.LightweightCharts) return;
-
-        const chart = window.LightweightCharts.createChart(chartContainerRef.current, {
-          autoSize: true,
-          layout: {
-            background: { type: "solid", color: "transparent" },
-            textColor: "#64748b",
-            fontFamily: "JetBrains Mono"
-          },
-          grid: {
-            vertLines: { color: "rgba(148,163,184,.13)" },
-            horzLines: { color: "rgba(148,163,184,.13)" }
-          },
-          timeScale: {
-            borderVisible: false,
-            timeVisible: true,
-            secondsVisible: false
-          },
-          rightPriceScale: {
-            borderVisible: false
-          },
-          crosshair: {
-            mode: 1
-          }
-        });
-
-        const series = chart.addCandlestickSeries({
-          upColor: "#38bdf8",
-          downColor: "#fb7185",
-          borderUpColor: "#38bdf8",
-          borderDownColor: "#fb7185",
-          wickUpColor: "#38bdf8",
-          wickDownColor: "#fb7185"
-        });
-
-        chartRef.current = chart;
-        seriesRef.current = series;
-        chartReadyRef.current = true;
-
-        chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
-          renderTradeOverlay();
-          setTooltip(null);
-        });
-
-        chart.timeScale().subscribeSizeChange(() => {
-          renderTradeOverlay();
-          setTooltip(null);
-        });
-      }
-
-      function drawPools(data) {
-        if (!chartRef.current || !seriesRef.current) return;
-
-        poolSeriesRef.current.forEach(s => {
-          try { chartRef.current.removeSeries(s); } catch(e) {}
-        });
-        poolSeriesRef.current = [];
-
-        const upper = [];
-        const lower = [];
-
-        for (let i = CFG.lookback; i < data.length; i++) {
-          let up = -Infinity;
-          let dn = Infinity;
-          for (let k = 1; k <= CFG.lookback; k++) {
-            up = Math.max(up, safeNumber(data[i-k].high));
-            dn = Math.min(dn, safeNumber(data[i-k].low));
-          }
-          upper.push({ time: data[i].time, value: up });
-          lower.push({ time: data[i].time, value: dn });
-        }
-
-        try {
-          const upS = chartRef.current.addLineSeries({
-            color: "rgba(244,63,94,.62)",
-            lineWidth: 1,
-            lineStyle: 2,
-            title: "UPPER POOL",
-            lastValueVisible: true,
-            priceLineVisible: false
-          });
-          upS.setData(upper);
-
-          const dnS = chartRef.current.addLineSeries({
-            color: "rgba(16,185,129,.62)",
-            lineWidth: 1,
-            lineStyle: 2,
-            title: "LOWER POOL",
-            lastValueVisible: true,
-            priceLineVisible: false
-          });
-          dnS.setData(lower);
-
-          poolSeriesRef.current = [upS, dnS];
-        } catch(e) {}
-      }
-
-      function tooltipHtml(t) {
-        const pnl = safeNumber(t.pnl, 0);
-        const direction = t.direction === "BUY" ? "BUY / вверх" : "SELL / вниз";
-        const result = t.result || "В процессе";
-        const color = pnl >= 0 ? "#059669" : "#e11d48";
-
-        return `
-          <div class="tooltip-title">${direction}</div>
-          <div class="tooltip-row"><span>Причина:</span><b>${t.reason || "Сигнал"}</b></div>
-          <div class="tooltip-row"><span>Сумма:</span><b>${formatRub(t.stake || CFG.baseStake)}</b></div>
-          <div class="tooltip-row"><span>Мартингейл:</span><b>${t.martingaleStep || 1} колено</b></div>
-          <div class="tooltip-row"><span>Сигнал:</span><b>${formatDateTime(t.signalTime)}</b></div>
-          <div class="tooltip-row"><span>Вход:</span><b>${formatDateTime(t.entryTime)}</b></div>
-          <div class="tooltip-row"><span>Выход:</span><b>${formatDateTime(t.exitTime)}</b></div>
-          <div class="tooltip-row"><span>Цена входа:</span><b>${formatPrice(t.entryPrice)}</b></div>
-          <div class="tooltip-row"><span>Цена выхода:</span><b>${t.exitPrice ? formatPrice(t.exitPrice) : "—"}</b></div>
-          <div class="tooltip-row"><span>Результат:</span><b>${result}</b></div>
-          <div class="tooltip-row"><span>PNL:</span><b style="color:${color}">${pnl > 0 ? "+" : ""}${formatRub(pnl)}</b></div>
-        `;
-      }
-
-      function renderTradeOverlay() {
-        if (!overlayRef.current || !chartRef.current || !seriesRef.current) return;
-
-        const overlay = overlayRef.current;
-        overlay.innerHTML = "";
-
-        const chart = chartRef.current;
-        const series = seriesRef.current;
-        const allTrades = tradesRef.current || [];
-        const currentLivePrice = livePriceRef.current;
-
-        allTrades.forEach(t => {
-          const resultClass =
-            t.state !== "TRADE_CLOSED" ? "active" :
-            t.result === "WIN" ? "win" :
-            t.result === "LOSS" ? "loss" : "active";
-
-          const isBuy = t.direction === "BUY";
-
-          const signalX = chart.timeScale().timeToCoordinate((normalizeCandleTimeMs(t.signalTime) || 0) / 1000);
-          const signalY = series.priceToCoordinate(
-            isBuy
-              ? safeNumber(t.signalLow, t.signalPrice) - safeNumber(t.atr, 0) * .35
-              : safeNumber(t.signalHigh, t.signalPrice) + safeNumber(t.atr, 0) * .35
-          );
-
-          const entryTime = normalizeCandleTimeMs(t.entryChartTime || t.entryTime);
-          const entryX = entryTime ? chart.timeScale().timeToCoordinate(entryTime / 1000) : null;
-          const entryY = t.entryPrice ? series.priceToCoordinate(t.entryPrice) : null;
-
-          const exitTime = t.exitTime ? normalizeCandleTimeMs(t.exitTime) : Date.now();
-          const exitX = entryTime ? chart.timeScale().timeToCoordinate(exitTime / 1000) : null;
-          const liveExitPrice = t.exitPrice || currentLivePrice || t.entryPrice || t.signalPrice;
-          const exitY = liveExitPrice ? series.priceToCoordinate(liveExitPrice) : null;
-
-          const showTip = (event) => {
-            setTooltip({
-              x: Math.min(window.innerWidth - 170, Math.max(150, event.clientX)),
-              y: Math.min(window.innerHeight - 150, Math.max(140, event.clientY)),
-              html: tooltipHtml(t)
-            });
-          };
-
-          const hideTip = () => setTooltip(null);
-
-          if (signalX != null && signalY != null) {
-            const arrow = document.createElement("div");
-            arrow.className = `signal-arrow ${isBuy ? "buy" : "sell"}`;
-            arrow.style.left = `${signalX}px`;
-            arrow.style.top = `${signalY}px`;
-            arrow.innerHTML = isBuy
-              ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>`
-              : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12l7 7 7-7"/></svg>`;
-            arrow.onmouseenter = showTip;
-            arrow.onmouseleave = hideTip;
-            overlay.appendChild(arrow);
-
-            const label = document.createElement("div");
-            label.className = `marker-label ${isBuy ? "buy" : "sell"}`;
-            label.style.left = `${signalX}px`;
-            label.style.top = `${signalY + (isBuy ? 24 : -24)}px`;
-            label.innerHTML = isBuy ? "BUY SIGNAL" : "SELL SIGNAL";
-            label.onmouseenter = showTip;
-            label.onmouseleave = hideTip;
-            overlay.appendChild(label);
-          }
-
-          if (entryX != null && entryY != null) {
-            const ent = document.createElement("div");
-            ent.className = "pt entry";
-            ent.style.left = `${entryX}px`;
-            ent.style.top = `${entryY}px`;
-            ent.onmouseenter = showTip;
-            ent.onmouseleave = hideTip;
-            overlay.appendChild(ent);
-
-            const entryLabel = document.createElement("div");
-            entryLabel.className = "marker-label entry";
-            entryLabel.style.left = `${entryX}px`;
-            entryLabel.style.top = `${entryY - 22}px`;
-            entryLabel.innerHTML = "ENTRY +6S";
-            entryLabel.onmouseenter = showTip;
-            entryLabel.onmouseleave = hideTip;
-            overlay.appendChild(entryLabel);
-          }
-
-          if (entryX != null && entryY != null && exitX != null && exitY != null) {
-            const left = Math.min(entryX, exitX);
-            const width = Math.max(8, Math.abs(exitX - entryX));
-            const top = Math.min(entryY, exitY) - 18;
-            const height = Math.max(28, Math.abs(exitY - entryY) + 36);
-
-            const box = document.createElement("div");
-            box.className = `trade-box ${resultClass}`;
-            box.style.left = `${left}px`;
-            box.style.top = `${top}px`;
-            box.style.width = `${width}px`;
-            box.style.height = `${height}px`;
-            box.onmouseenter = showTip;
-            box.onmouseleave = hideTip;
-            overlay.appendChild(box);
-
-            if (t.state === "TRADE_CLOSED") {
-              const exit = document.createElement("div");
-              exit.className = "pt exit";
-              exit.style.left = `${exitX}px`;
-              exit.style.top = `${exitY}px`;
-              exit.onmouseenter = showTip;
-              exit.onmouseleave = hideTip;
-              overlay.appendChild(exit);
-
-              const exitLabel = document.createElement("div");
-              exitLabel.className = "marker-label exit";
-              exitLabel.style.left = `${exitX}px`;
-              exitLabel.style.top = `${exitY + 22}px`;
-              exitLabel.innerHTML = "EXIT";
-              exitLabel.onmouseenter = showTip;
-              exitLabel.onmouseleave = hideTip;
-              overlay.appendChild(exitLabel);
-            }
-
-            const badge = document.createElement("div");
-            badge.className = `badge ${resultClass}`;
-            badge.style.left = `${exitX}px`;
-            badge.style.top = `${exitY}px`;
-            const pnl = safeNumber(t.pnl, 0);
-            badge.innerHTML =
-              t.state === "TRADE_CLOSED"
-                ? `${t.result} ${pnl > 0 ? "+" : ""}${formatRub(pnl)}`
-                : `В СДЕЛКЕ`;
-            badge.onmouseenter = showTip;
-            badge.onmouseleave = hideTip;
-            overlay.appendChild(badge);
-          }
-        });
-      }
-
-      function updateLiveCandle(candle) {
-        if (!candle || !Number.isFinite(candle.close)) return;
-
-        livePriceRef.current = candle.close;
-        setLivePrice(candle.close);
-
-        if (seriesRef.current) {
-          try {
-            seriesRef.current.update(candle);
-            lastChartTimeRef.current = Math.max(lastChartTimeRef.current, candle.time || 0);
-          } catch(e) {}
-        }
-
-        const old = candlesRef.current || [];
-        const last = old[old.length - 1];
-        let next;
-        if (last && last.time === candle.time) {
-          next = [...old.slice(0, -1), candle];
+        if (isNearUp || isNearDn) {
+          const key = isNearUp ? `UP_${upP.toFixed(2)}` : `DN_${dnP.toFixed(2)}`;
+          if (VoiceState.zoneActive && VoiceState.lastZoneKey === key) return;
+          if (Date.now() - VoiceState.lastVoiceAt < VoiceState.cooldownMs) return;
+          VoiceState.zoneActive = true; VoiceState.lastZoneKey = key; VoiceState.lastVoiceAt = Date.now();
+          Voice.speak("Цена подошла к потенциальной зоне входа. Наблюдаем.");
         } else {
-          next = [...old, candle].slice(-950);
-        }
-
-        candlesRef.current = next;
-        setCandles(next);
-        renderTradeOverlay();
-      }
-
-      async function checkLiveSignal() {
-        if (!activeRef.current) return;
-        if (tradesRef.current.some(t => t.state !== "TRADE_CLOSED")) return;
-
-        const data = candlesRef.current;
-        const closed = getClosedCandles(data);
-        const recent = closed.slice(-16);
-
-        const scanState = {
-          lastSignalIndex: lastLiveSignalRef.current?.lastIndex ?? null,
-          lastBuyPool: lastLiveSignalRef.current?.lastBuyPool ?? null,
-          lastSellPool: lastLiveSignalRef.current?.lastSellPool ?? null
-        };
-
-        for (const c of recent) {
-          const candleTime = normalizeCandleTimeMs(c.time);
-          const candleCloseTime = candleTime + CFG.timeframeMs;
-
-          if (candleCloseTime < Date.now() - CFG.timeframeMs * 4) continue;
-
-          const index = data.findIndex(x => normalizeCandleTimeMs(x.time) === candleTime);
-          if (index < 0) continue;
-
-          const res = evaluateSignal(data, index, scanState);
-          setScores(res.scores || basicScores());
-
-          const direction = res.isBuy ? "BUY" : res.isSell ? "SELL" : null;
-          if (!direction) continue;
-
-          const signalId = `${CFG.symbol}_${CFG.timeframe}_${candleTime}_${direction}`;
-          if (lastLiveSignalRef.current?.signalId === signalId) continue;
-
-          lastLiveSignalRef.current = {
-            signalId,
-            lastIndex: index,
-            lastBuyPool: direction === "BUY" ? res.lowerPool : scanState.lastBuyPool,
-            lastSellPool: direction === "SELL" ? res.upperPool : scanState.lastSellPool
-          };
-
-          await startLiveTrade({
-            signalId,
-            direction,
-            candle: c,
-            result: res
-          });
-
-          break;
-        }
-      }
-
-      async function startLiveTrade({ signalId, direction, candle, result }) {
-        window.speechSynthesis?.cancel();
-
-        const currentStats = buildStats(tradesRef.current);
-        const last = tradesRef.current[tradesRef.current.length - 1];
-        const lastStage = last && last.result === "LOSS" ? Math.min((last.martingaleStep || 1), CFG.martingaleLadder.length - 1) : 0;
-        const stake = CFG.martingaleLadder[lastStage] || CFG.baseStake;
-
-        const signalTime = normalizeCandleTimeMs(candle.time);
-        const signalPrice = safeNumber(candle.close);
-
-        const trade = {
-          tradeId: signalId,
-          mode: "live",
-          direction,
-          signalTime,
-          signalPrice,
-          signalHigh: safeNumber(candle.high),
-          signalLow: safeNumber(candle.low),
-          atr: result.atr,
-          reason: buildSignalReason(direction),
-          state: "SIGNAL_DETECTED",
-          entryTime: null,
-          entryChartTime: null,
-          entryPrice: null,
-          exitTime: null,
-          exitPrice: null,
-          result: null,
-          stake,
-          martingaleStep: lastStage + 1,
-          pnl: 0,
-          balanceBefore: currentStats.finalBalance,
-          balanceAfter: currentStats.finalBalance,
-          entryDelaySeconds: 6
-        };
-
-        tradesRef.current = [...tradesRef.current, trade];
-        setTrades([...tradesRef.current]);
-        setActiveSignal({ direction, stake });
-        setPhase("СИГНАЛ АКТИВЕН");
-        addLog(`СИГНАЛ ${direction}. Подготовка входа.`);
-
-        await speak(buildSignalReason(direction));
-        await new Promise(r => setTimeout(r, 3000));
-        await speak("Подготовьтесь. До входа три секунды.");
-        await new Promise(r => setTimeout(r, 3000));
-
-        trade.state = "TRADE_ACTIVE";
-        trade.entryTime = Date.now();
-        trade.entryChartTime = Date.now();
-        trade.entryPrice = livePriceRef.current || signalPrice;
-        trade.balanceBefore = buildStats(tradesRef.current.filter(t => t.tradeId !== trade.tradeId)).finalBalance;
-
-        tradesRef.current = tradesRef.current.map(t => t.tradeId === trade.tradeId ? trade : t);
-        setTrades([...tradesRef.current]);
-        addLog(`ВХОД ${direction}. Ставка ${formatRub(stake)}. Экспирация 25 минут.`);
-        renderTradeOverlay();
-
-        let seconds = CFG.expiryMinutes * 60;
-        setCountdown(seconds);
-
-        const timer = setInterval(() => {
-          seconds--;
-          setCountdown(seconds);
-          renderTradeOverlay();
-
-          if (seconds <= 0) {
-            clearInterval(timer);
-            closeLiveTrade(trade.tradeId);
+          if (VoiceState.zoneActive && Math.abs(c.close - upP) > atr * 0.5 && Math.abs(c.close - dnP) > atr * 0.5) {
+            if (Date.now() - VoiceState.lastLeaveAt < VoiceState.cooldownMs) return;
+            VoiceState.zoneActive = false; VoiceState.lastLeaveAt = Date.now();
+            Voice.speak("Цена ушла от потенциальной зоны. Ждём следующую возможность.");
           }
-        }, 1000);
-      }
-
-      async function closeLiveTrade(tradeId) {
-        const trade = tradesRef.current.find(t => t.tradeId === tradeId);
-        if (!trade) return;
-
-        const exitPrice = livePriceRef.current || trade.entryPrice;
-        const res = resultOfTrade(trade.direction, trade.entryPrice, exitPrice);
-        const pnl = res === "WIN" ? Math.round(trade.stake * CFG.payout) : -trade.stake;
-
-        trade.state = "TRADE_CLOSED";
-        trade.exitTime = Date.now();
-        trade.exitPrice = exitPrice;
-        trade.result = res;
-        trade.pnl = pnl;
-        trade.balanceAfter = safeNumber(trade.balanceBefore) + pnl;
-
-        tradesRef.current = tradesRef.current.map(t => t.tradeId === tradeId ? trade : t);
-        setTrades([...tradesRef.current]);
-
-        const newStats = buildStats(tradesRef.current);
-        setStats(newStats);
-        setCountdown(null);
-        setActiveSignal(null);
-        setPhase("СКАНИРОВАНИЕ ЛИКВИДНОСТИ (1M)");
-        renderTradeOverlay();
-
-        if (res === "WIN") {
-          addLog(`WIN: ${formatRub(pnl)}. Выход ${formatPrice(exitPrice)}.`);
-          await speak(`Сделка закрыта в плюс. Прибыль ${Math.abs(pnl)} рублей.`);
-        } else {
-          addLog(`LOSS: ${formatRub(pnl)}. Следующий шаг мартингейла.`);
-          await speak(`Сделка закрыта в минус. Следующий сигнал будет рассчитан с учётом мартингейла.`);
         }
+      },
+      getMidTradeStatus: (trade, currentPrice) => {
+        const dir = trade.dir; const entry = trade.entPrice;
+        const move = dir === "BUY" ? (currentPrice - entry) : (entry - currentPrice);
+        const safeAtr = Math.max(trade.atr || 0, 0.000001);
+        if (move >= safeAtr * 0.35) return { code: "STRONG_PLUS", text: "Сделка идёт в плюс, запас уверенный." };
+        if (move <= -safeAtr * 0.35) return { code: "STRONG_MINUS", text: "Сделка идёт в минус, давление против входа сохраняется." };
+        return { code: "EDGE", text: "Сделка на грани. Цена рядом с точкой входа." };
       }
+    };
 
-      function startWebSocket() {
-        try {
-          if (wsRef.current) wsRef.current.close();
-        } catch(e) {}
+    // --- SMART TOOLTIP LOGIC ---
+    let hideTtTid;
+    function hideTooltip() {
+      const tt = byId('tt');
+      if(tt) { tt.style.opacity = '0'; tt.style.pointerEvents = 'none'; }
+    }
+    
+    window.addEventListener('resize', hideTooltip);
+    window.addEventListener('scroll', hideTooltip, true);
+    document.addEventListener('mouseleave', hideTooltip);
 
-        const wsUrl = `wss://stream.binance.com:9443/ws/${CFG.symbol.toLowerCase()}@kline_${CFG.timeframe}`;
-        const ws = new WebSocket(wsUrl);
-        wsRef.current = ws;
-
-        ws.onopen = () => addLog(`LIVE STREAM ${CFG.timeframeLabel}: подключён`);
-        ws.onmessage = async (event) => {
-          try {
-            const msg = JSON.parse(event.data);
-            const k = msg.k;
-            if (!k) return;
-
-            const candle = {
-              time: Math.floor(Number(k.t) / 1000),
-              open: Number(k.o),
-              high: Number(k.h),
-              low: Number(k.l),
-              close: Number(k.c),
-              volume: Number(k.v)
-            };
-
-            updateLiveCandle(candle);
-
-            if (k.x === true) {
-              await checkLiveSignal();
-            }
-          } catch(e) {}
-        };
-
-        ws.onerror = () => {
-          addLog("WebSocket недоступен, включаю REST polling");
-          startPolling();
-        };
-
-        ws.onclose = () => {
-          if (activeRef.current) {
-            setTimeout(() => {
-              if (activeRef.current) startWebSocket();
-            }, 4000);
-          }
-        };
+    document.addEventListener('mousemove', (e) => {
+      const target = e.target.closest('.trade-box, .signal-arrow, .marker-dot');
+      if (target) {
+        clearTimeout(hideTtTid);
+        const tId = target.dataset.tradeId;
+        const t = State.trades.find(x => x.sigTime == tId) || (State.activeTrade && State.activeTrade.sigTime == tId ? State.activeTrade : null);
+        if (t) {
+          const tt = byId('tt');
+          if(!tt) return;
+          const c = (t.pnl||0)>=0 ? 'var(--good)' : 'var(--bad)';
+          tt.innerHTML = `
+            <div class="tt-r"><span style="color:var(--text-main);font-weight:bold">${t.type || 'TYPE A: Sweep Reclaim'}</span> <b style="color:${c}">${t.res || 'ACTIVE'}</b></div>
+            <div class="tt-r"><span>Направление:</span> <b>${t.dir} / ${t.dir==='BUY'?'ВВЕРХ':'ВНИЗ'}</b></div>
+            <div class="tt-r"><span>Причина:</span> <b style="white-space:normal; text-align:right; max-width:160px; font-size:9px">${t.reason}</b></div>
+            <div class="tt-r"><span>Сумма:</span> <b style="color:var(--text-main)">${t.stake} ₽ (${CONFIG.martingaleLadder.indexOf(t.stake)+1} колено)</b></div>
+            <div class="tt-r"><span>Вход / Выход:</span> <b>${t.entTime ? Utils.timeStr(t.entTime*1000) : '—'} / ${t.extTime ? Utils.timeStr(t.extTime*1000) : '—'}</b></div>
+            <div class="tt-r"><span>Цена Вх/Вых:</span> <b style="color:var(--text-main)">${t.entPrice?t.entPrice.toFixed(2):'-'} / ${t.extPrice?t.extPrice.toFixed(2):'-'}</b></div>
+            <div class="tt-r" style="border:none;margin-top:4px"><span style="color:var(--text-main)">PNL:</span> <b style="color:${c};font-size:14px">${Utils.formatRub(t.pnl||0)}</b></div>`;
+          
+          // Smart Positioning within chart bounds
+          const chartCont = byId('chartContainer');
+          const bounds = chartCont ? chartCont.getBoundingClientRect() : document.body.getBoundingClientRect();
+          const ttWidth = 260; const ttHeight = 150;
+          
+          let x = e.clientX + 15; 
+          let y = e.clientY - ttHeight - 15;
+          if (x + ttWidth > bounds.right) x = e.clientX - ttWidth - 15;
+          if (y < bounds.top) y = e.clientY + 15;
+          
+          tt.style.left = x + 'px'; tt.style.top = y + 'px';
+          tt.style.opacity = '1'; tt.style.pointerEvents = 'auto';
+        }
+      } else {
+        if (!hideTtTid) hideTtTid = setTimeout(hideTooltip, 100);
       }
+    });
 
-      function startPolling() {
-        if (pollRef.current) clearInterval(pollRef.current);
+    // --- NEW SCAN ORBS LOGIC ---
+    let scanRaf = null;
+    let scanIndex = 0;
+    let lastScanStep = 0;
 
-        pollRef.current = setInterval(async () => {
-          if (!activeRef.current) return;
-          const data = await API.getCandles(CFG.symbol, 5, CFG.timeframe);
-          if (data.length) updateLiveCandle(data[data.length - 1]);
-          await checkLiveSignal();
-        }, 2500);
-      }
+    function buildScanPoints(candles) {
+      if (!State.chart || !State.series || !Array.isArray(candles)) return [];
+      return candles.slice(-80).map((c, index) => {
+        const x = State.chart.timeScale().timeToCoordinate(c.time);
+        const y = State.series.priceToCoordinate(c.close);
+        if (x == null || y == null) return null;
+        return { index, time: c.time, x, y, candle: c };
+      }).filter(Boolean);
+    }
 
-      async function startTerminal() {
-        setStarted(true);
-        activeRef.current = true;
-        liveStartMsRef.current = Date.now();
+    function pulseScannedCandle(point) {
+      const layer = document.getElementById("scanOrbLayer");
+      if (!layer || !point) return;
 
-        try {
-          const ctx = new (window.AudioContext || window.webkitAudioContext)();
-          const osc = ctx.createOscillator();
-          osc.connect(ctx.destination);
-          osc.start();
-          osc.stop(ctx.currentTime + .01);
-        } catch(e) {}
+      const pulse = document.createElement("div");
+      pulse.className = "scan-candle-pulse";
+      pulse.style.left = `${point.x}px`;
+      pulse.style.top = `${point.y}px`;
+      layer.appendChild(pulse);
+      setTimeout(() => pulse.remove(), 520);
+    }
 
-        setPhase("ЗАГРУЗКА ДАННЫХ");
-        addLog("Запуск терминала...");
+    function startOrbScanner(candles) {
+      const orb = document.getElementById("scanOrb");
+      const layer = document.getElementById("scanOrbLayer");
+      if (!orb || !layer) return;
 
-        setTimeout(() => initChart(), 0);
-        await new Promise(r => setTimeout(r, 250));
+      const points = buildScanPoints(candles);
+      if (!points.length) return;
 
-        const data = await API.getCandles(CFG.symbol, 900, CFG.timeframe);
-        if (!data.length) {
-          setPhase("ОШИБКА API");
-          addLog("Нет связи с биржей.");
-          await speak("Ошибка связи с биржей.");
+      layer.classList.add("is-active");
+
+      function tick(now) {
+        if (!document.body.classList.contains("is-scanning")) {
+          scanRaf = requestAnimationFrame(tick);
           return;
         }
 
-        candlesRef.current = data;
-        setCandles(data);
-        livePriceRef.current = data[data.length - 1].close;
-        setLivePrice(data[data.length - 1].close);
+        if (now - lastScanStep > 170) {
+          lastScanStep = now;
+          const p = points[scanIndex % points.length];
+          // Dynamically get coordinates in case of scroll/zoom
+          const currX = State.chart.timeScale().timeToCoordinate(p.time);
+          const currY = State.series.priceToCoordinate(p.candle.close);
 
-        if (seriesRef.current) {
-          seriesRef.current.setData(data);
-          lastChartTimeRef.current = data[data.length - 1].time;
-          drawPools(data);
-          setTimeout(() => {
-            try { chartRef.current.timeScale().fitContent(); } catch(e) {}
-            renderTradeOverlay();
-          }, 100);
+          if (currX != null && currY != null) {
+            orb.style.transform = `translate(${currX}px, ${currY}px) translate(-50%, -50%)`;
+            pulseScannedCandle({x: currX, y: currY});
+          }
+          scanIndex++;
         }
-
-        const bt = buildHistoricalBacktest(data);
-        tradesRef.current = bt.trades;
-        setTrades(bt.trades);
-        setDebugStats(bt.stats);
-        setScores(bt.lastScores || basicScores());
-
-        const s = buildStats(bt.trades);
-        setStats(s);
-
-        setTimeout(renderTradeOverlay, 350);
-
-        const pnlText = s.pnl >= 0 ? `заработали ${Math.abs(Math.round(s.pnl))} рублей` : `получили минус ${Math.abs(Math.round(s.pnl))} рублей`;
-
-        await speak(`Терминал Про Макс запущен. За последние 12 часов было ${s.confirmedTrades} сделок. Плюсовых ${s.wins}, минусовых ${s.losses}. Если бы вход был по 500 рублей с учетом мартингейла до четвертого колена, вы бы ${pnlText}. Перехожу к сканированию рынка.`);
-
-        setPhase("СКАНИРОВАНИЕ ЛИКВИДНОСТИ (1M)");
-        startWebSocket();
-        startPolling();
+        scanRaf = requestAnimationFrame(tick);
       }
 
-      useEffect(() => {
-        return () => {
-          activeRef.current = false;
-          try { wsRef.current?.close(); } catch(e) {}
-          if (pollRef.current) clearInterval(pollRef.current);
-        };
-      }, []);
-
-      if (MAINTENANCE_MODE) {
-        return (
-          <div className="maintenance">
-            <div className="glass start-card">
-              <div className="author-shimmer text-lg mb-4">SLAVA GORDEEV</div>
-              <h1>ТЕРМИНАЛ<br/><span style={{ color: "#0ea5e9" }}>PRO MAX</span></h1>
-              <p className="text-slate-500 font-semibold">
-                Утилита находится на техническом обновлении. Идёт усиление стратегии и синхронизация сигналов.
-              </p>
-            </div>
-          </div>
-        );
-      }
-
-      if (!started) {
-        return (
-          <div className="start-screen">
-            <div className="glass start-card">
-              <div className="author-shimmer text-lg mb-5">SLAVA GORDEEV</div>
-              <div className="text-cyan-500 text-5xl mb-2">⚡</div>
-              <div className="start-title">
-                ТЕРМИНАЛ<br/>
-                <span style={{ color: "#0ea5e9" }}>PRO MAX</span>
-              </div>
-              <p className="text-slate-500 font-bold tracking-[.18em] uppercase text-xs">
-                SMC Pine Test / 1M / 25M
-              </p>
-              <button className="start-btn" onClick={startTerminal}>
-                Запуск системы
-              </button>
-            </div>
-          </div>
-        );
-      }
-
-      return (
-        <div className="app">
-          {tooltip && (
-            <div
-              className="tooltip"
-              style={{ left: tooltip.x, top: tooltip.y, transform: "translate(-50%, -105%)" }}
-              dangerouslySetInnerHTML={{ __html: tooltip.html }}
-            />
-          )}
-
-          <div className="top-ticker glass">
-            <div className="ticker-label oswald">◎ РАДАР СЕТИ</div>
-            <div className="overflow-hidden flex-1">
-              <div className="ticker-track oswald text-[11px] text-slate-500 font-bold tracking-widest">
-                {[0,1].map(n => (
-                  <div key={n} className="flex gap-14 pr-14">
-                    {NEWS.map((x, i) => (
-                      <span key={i} className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,.7)]"></span>
-                        {x.toUpperCase()}
-                      </span>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <header className="header">
-            <div>
-              <div className="title-main">
-                <span style={{ color: "#06b6d4", WebkitTextFillColor: "#06b6d4" }}>⚡</span>
-                ТЕРМИНАЛ <span>PRO MAX</span>
-              </div>
-              <div className="flex items-center gap-3 mt-2">
-                <div className="author-shimmer text-xs px-2 py-1 rounded-lg border border-slate-200 bg-white/45">
-                  SLAVA GORDEEV
-                </div>
-                <div className="text-[10px] text-slate-400 font-black tracking-[.22em] uppercase">
-                  SMC PINE TEST / 1M
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="status-pill">{phase}</div>
-              <div className="hidden sm:flex flex-col items-end gap-1">
-                <div className="text-[10px] text-slate-500 font-black uppercase tracking-widest bg-white/55 px-3 py-1 rounded-full border border-slate-200">
-                  ● синхронизация
-                </div>
-                <LiveClock />
-              </div>
-            </div>
-          </header>
-
-          <main className="main">
-            <section className="chart-card glass">
-              <div className="chart-top-info glass-soft">
-                <div className="text-[10px] text-slate-400 font-black tracking-widest uppercase mb-2">
-                  ● BITCOIN ({CFG.timeframeLabel})
-                </div>
-                <div className="chart-price">{livePrice ? formatPrice(livePrice) : "—"}</div>
-              </div>
-
-              <div className="chart-wrap">
-                <div id="chart" ref={chartContainerRef}></div>
-                <div className="trade-overlay" ref={overlayRef}></div>
-              </div>
-            </section>
-
-            <aside className="right glass">
-              <div className="right-head">{phase}</div>
-
-              <div className="right-body">
-                <a className="broker" href={CFG.referralUrl} target="_blank" rel="noopener noreferrer">
-                  <small>Брокер для входа</small>
-                  <strong>Торговать здесь</strong>
-                  <small>через брокера</small>
-                </a>
-
-                <MiniScanner candles={candles} phase={`Сканирование ликвидности (${CFG.timeframeLabel})`} />
-
-                <div className="gauges glass-soft">
-                  <Gauge value={scores.structure} label="структура" color="#eab308" />
-                  <Gauge value={scores.liquidity} label="ликвидность" color="#0ea5e9" />
-                  <Gauge value={scores.atr} label="ATR фильтр" color="#8b5cf6" />
-                  <Gauge value={scores.confidence} label="Smart Money" color="#06b6d4" />
-                </div>
-
-                <div className="stat-grid">
-                  <div className="stat-card glass-soft">
-                    <div className="stat-label">Баланс 12H</div>
-                    <div className="stat-value">{formatRub(stats.finalBalance)}</div>
-                    <div className={`text-xs font-black mt-1 ${stats.pnl >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
-                      {stats.pnl > 0 ? "+" : ""}{formatRub(stats.pnl)} PNL
-                    </div>
-                  </div>
-
-                  <div className="stat-card glass-soft">
-                    <div className="stat-label">Экспирация</div>
-                    <div className="stat-value text-cyan-600">
-                      {countdown != null
-                        ? `${Math.floor(countdown / 60)}:${String(countdown % 60).padStart(2, "0")}`
-                        : "25:00"}
-                    </div>
-                    <div className="text-xs font-black mt-1 text-slate-400">
-                      {activeSignal ? `${activeSignal.direction} / ${formatRub(activeSignal.stake)}` : "Ожидание"}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="logbox glass-soft">
-                  <div className="flex justify-between mb-2 oswald text-slate-700 font-bold tracking-widest text-xs">
-                    <span>СТАТИСТИКА 12H</span>
-                    <span>{stats.confirmedTrades} сделок</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 mb-2">
-                    <div className="bg-white/55 rounded-xl p-2">
-                      <div className="text-[9px] text-slate-400 font-black uppercase">Профит</div>
-                      <div className="oswald text-emerald-500 text-xl font-black">{stats.wins}</div>
-                    </div>
-                    <div className="bg-white/55 rounded-xl p-2 text-right">
-                      <div className="text-[9px] text-slate-400 font-black uppercase">Убыток</div>
-                      <div className="oswald text-rose-500 text-xl font-black">{stats.losses}</div>
-                    </div>
-                  </div>
-
-                  {debugStats && (
-                    <div className="mb-2 border-t border-slate-200/60 pt-2">
-                      <div className="flex justify-between"><span>RAW:</span><b>{debugStats.rawBuy + debugStats.rawSell}</b></div>
-                      <div className="flex justify-between"><span>RECLAIM:</span><b>{debugStats.reclaimBuy + debugStats.reclaimSell}</b></div>
-                      <div className="flex justify-between"><span>FINAL:</span><b>{debugStats.finalBuy + debugStats.finalSell}</b></div>
-                      <div className="flex justify-between"><span>TRADES:</span><b>{debugStats.ledgerTrades}</b></div>
-                    </div>
-                  )}
-
-                  <div className="border-t border-slate-200/60 pt-2">
-                    {logs.length ? logs.map((l, i) => (
-                      <div key={i} className="truncate">SMC: {l}</div>
-                    )) : <div>SMC: ожидание событий...</div>}
-                  </div>
-                </div>
-              </div>
-            </aside>
-          </main>
-
-          <footer className="footer">
-            <span>256-BIT ШИФРОВАНИЕ СИСТЕМЫ • СОЕДИНЕНИЕ БЕЗОПАСНО</span>
-            <span className="bg-slate-800 text-white px-3 py-1 rounded-lg">КРИПТО ИНВЕСТ PRO MAX</span>
-          </footer>
-        </div>
-      );
+      if (scanRaf) cancelAnimationFrame(scanRaf);
+      scanRaf = requestAnimationFrame(tick);
     }
 
-    const root = ReactDOM.createRoot(document.getElementById("root"));
-    root.render(<App />);
+    function stopOrbScanner() {
+      if (scanRaf) cancelAnimationFrame(scanRaf);
+      scanRaf = null;
+      const layer = document.getElementById("scanOrbLayer");
+      if (layer) layer.classList.remove("is-active");
+    }
+
+    // --- 6. STRATEGY ALGORITHM (Type A & B) ---
+    const Alg = {
+      getATR: (data, idx, len) => {
+        if(idx < len) return 0;
+        let sum = 0;
+        for(let i = idx - len + 1; i <= idx; i++) {
+          const c = data[i], p = data[i-1];
+          if(!c || !p) continue;
+          sum += Math.max(c.high - c.low, Math.abs(c.high - p.close), Math.abs(c.low - p.close));
+        }
+        return sum / len;
+      },
+      evaluateQuality: (ctx, conf) => {
+        const atr = Math.max(ctx.atr || 0, 0.000001);
+        let score = 0;
+        score += Math.min(24, (ctx.sweepDepth / (atr * conf.minSweepATR)) * 14);
+        score += Math.min(24, (ctx.reclaimDepth / (atr * conf.minReclaimATR)) * 14);
+        score += Math.min(16, (ctx.wickRatio / conf.minWickRatio) * 10);
+
+        if (ctx.edgeOk) score += 14;
+        if (ctx.microChoch) score += 10;
+        if (ctx.samePoolOk) score += 6;
+        if (ctx.rangeOk) score += 6;
+        if (ctx.volumeOk) score += 4;
+        if (ctx.isRetest) score += 8;
+
+        if (ctx.strongOppositeImpulse && !ctx.microChoch && !ctx.strongReclaim) score -= 22;
+        if (!ctx.edgeOk) score -= 20;
+        if (!ctx.samePoolOk) score -= 18;
+        if (!ctx.rangeOk) score -= 16;
+        if (ctx.lateEntry) score -= 25;
+
+        return Math.max(0, Math.min(100, Math.round(score)));
+      },
+      evaluate: (data, idx) => {
+        const result = { dir: null, type: null, score: 0, reason: "NO_RAW_SWEEP", metrics: {} };
+        const conf = getActiveConfig();
+        if(idx < conf.lookback + conf.atrLen) return result;
+
+        const c = data[idx];
+        const prev = data.slice(idx - conf.lookback, idx);
+        const upPool = Math.max(...prev.map(x => x.high));
+        const dnPool = Math.min(...prev.map(x => x.low));
+        const atr = Alg.getATR(data, idx, conf.atrLen);
+
+        if(atr <= 0) return result;
+
+        const range = Math.max(c.high - c.low, 0.0001);
+        const bodyRatio = Math.abs(c.close - c.open) / range;
+        const poolWidth = Math.max(upPool - dnPool, 0.000001);
+        
+        const center = dnPool + (poolWidth / 2);
+        let posInPool = 0;
+        if (c.close <= center) {
+            posInPool = (c.close - dnPool) / (poolWidth/2); // 0 to 1
+        } else {
+            posInPool = (upPool - c.close) / (poolWidth/2); // 0 to 1
+        }
+
+        result.metrics = { atr, upPool, dnPool, bodyRatio, posInPool, poolWidth };
+
+        let rejectReason = "NO_RAW_SWEEP";
+        const handleReject = (r) => { rejectReason = r; State.diag.rejected++; State.diag.reasons[r] = (State.diag.reasons[r] || 0) + 1; };
+
+        // TYPE B: Retest Reclaim
+        if (State.activeLiquidityZone && conf.enableRetestEntry && (idx <= State.activeLiquidityZone.expiresAtIdx)) {
+          const z = State.activeLiquidityZone;
+          const tol = atr * conf.retestToleranceATR;
+          
+          if (z.side === "BUY") {
+            const touched = c.low <= z.price + tol;
+            const closedAbove = c.close > z.price;
+            const lWickRatio = (Math.min(c.open, c.close) - c.low) / range;
+            const rejectOk = !conf.retestNeedsRejectWick || (lWickRatio >= conf.minWickRatio || c.close > c.open);
+            const distOk = Math.abs(c.close - z.price) <= atr * conf.maxEntryDistanceATR;
+            
+            if (touched && closedAbove) {
+              if (!rejectOk) { handleReject("WEAK_RETEST_REJECTION"); }
+              else if (!distOk) { handleReject("LATE_ENTRY"); }
+              else {
+                const qScore = Alg.evaluateQuality({ atr, sweepDepth: atr*0.1, reclaimDepth: c.close-z.price, wickRatio: lWickRatio, edgeOk: posInPool<=conf.edgeZonePercent, microChoch: c.close > c.open, samePoolOk: true, rangeOk: range<=atr*conf.maxRangeATR, strongOppositeImpulse: false, strongReclaim: true, lateEntry: false, volumeOk: true, isRetest: true }, conf);
+                State.diag.lastQs = qScore; result.score = qScore;
+                if (qScore >= conf.minRetestQualityScore) {
+                  State.diag.final++; State.diag.typeB++;
+                  result.dir = "BUY"; result.type = "TYPE B: Retest Reclaim"; result.reason = "Повторный тест нижней зоны и удержание.";
+                  State.activeLiquidityZone = null; return result;
+                } else handleReject("QUALITY_TOO_LOW");
+              }
+            }
+          } else if (z.side === "SELL") {
+            const touched = c.high >= z.price - tol;
+            const closedBelow = c.close < z.price;
+            const uWickRatio = (c.high - Math.max(c.open, c.close)) / range;
+            const rejectOk = !conf.retestNeedsRejectWick || (uWickRatio >= conf.minWickRatio || c.close < c.open);
+            const distOk = Math.abs(c.close - z.price) <= atr * conf.maxEntryDistanceATR;
+            
+            if (touched && closedBelow) {
+              if (!rejectOk) { handleReject("WEAK_RETEST_REJECTION"); }
+              else if (!distOk) { handleReject("LATE_ENTRY"); }
+              else {
+                const qScore = Alg.evaluateQuality({ atr, sweepDepth: atr*0.1, reclaimDepth: z.price-c.close, wickRatio: uWickRatio, edgeOk: posInPool>=1-conf.edgeZonePercent, microChoch: c.close < c.open, samePoolOk: true, rangeOk: range<=atr*conf.maxRangeATR, strongOppositeImpulse: false, strongReclaim: true, lateEntry: false, volumeOk: true, isRetest: true }, conf);
+                State.diag.lastQs = qScore; result.score = qScore;
+                if (qScore >= conf.minRetestQualityScore) {
+                  State.diag.final++; State.diag.typeB++;
+                  result.dir = "SELL"; result.type = "TYPE B: Retest Reclaim"; result.reason = "Повторный тест верхней зоны и удержание.";
+                  State.activeLiquidityZone = null; return result;
+                } else handleReject("QUALITY_TOO_LOW");
+              }
+            }
+          }
+        }
+
+        // TYPE A: Sweep Reclaim
+        const isSellRaw = c.high > upPool; const sellReclaim = isSellRaw && c.close < upPool;
+        const isBuyRaw = c.low < dnPool; const buyReclaim = isBuyRaw && c.close > dnPool;
+        if (isBuyRaw || isSellRaw) State.diag.raw++;
+        if (buyReclaim || sellReclaim) State.diag.reclaim++;
+
+        const checkImpulseAndChoch = (dir) => {
+          const start = Math.max(0, idx - conf.impulseLookback); const slice = data.slice(start, idx+1);
+          const move = slice[slice.length-1].close - slice[0].close; const strATR = Math.abs(move)/atr;
+          const isStrong = strATR >= conf.maxOppositeImpulseATR;
+          let microChoch = false;
+          if (dir==="BUY") { microChoch = c.close > Math.max(...data.slice(Math.max(0, idx-4), idx).map(x=>x.high)); } 
+          else { microChoch = c.close < Math.min(...data.slice(Math.max(0, idx-4), idx).map(x=>x.low)); }
+          return { strongOppositeImpulse: isStrong && ((dir==="BUY" && move < 0) || (dir==="SELL" && move > 0)), microChoch };
+        };
+
+        if (isBuyRaw && !buyReclaim) State.activeLiquidityZone = { side: "BUY", price: dnPool, expiresAtIdx: idx + conf.retestWindowBars };
+        if (isSellRaw && !sellReclaim) State.activeLiquidityZone = { side: "SELL", price: upPool, expiresAtIdx: idx + conf.retestWindowBars };
+
+        if (sellReclaim) {
+          State.activeLiquidityZone = { side: "SELL", price: upPool, expiresAtIdx: idx + conf.retestWindowBars }; // Save for Type B
+          const sWick = (c.high - Math.max(c.open, c.close)) / range; result.metrics.sellWickRatio = sWick;
+          const { strongOppositeImpulse, microChoch } = checkImpulseAndChoch("SELL");
+          const ctx = {
+            atr, sweepDepth: c.high - upPool, reclaimDepth: upPool - c.close, wickRatio: sWick,
+            edgeOk: posInPool >= 1 - conf.edgeZonePercent, microChoch, 
+            samePoolOk: !(conf.blockSamePoolSignals && State.lastSellPool && Math.abs(upPool - State.lastSellPool) < atr*conf.samePoolDistanceATR),
+            rangeOk: range <= atr * conf.maxRangeATR, strongOppositeImpulse, strongReclaim: (upPool - c.close) > atr * 0.08, 
+            lateEntry: Math.abs(c.close - upPool) > atr * conf.maxEntryDistanceATR, volumeOk: true, isRetest: false
+          };
+
+          if (ctx.lateEntry) { handleReject("LATE_ENTRY"); result.reason = rejectReason; return result; }
+          if (ctx.sweepDepth < atr * conf.minSweepATR) { handleReject("WEAK_SWEEP"); result.reason = rejectReason; return result; }
+          if (ctx.reclaimDepth < atr * conf.minReclaimATR) { handleReject("WEAK_RECLAIM"); result.reason = rejectReason; return result; }
+          if (sWick < conf.minWickRatio && bodyRatio < conf.minBodyRatio) { handleReject("WEAK_WICK_OR_BODY"); result.reason = rejectReason; return result; }
+          if (idx - State.lastSignalIndex <= conf.cooldownBars) { handleReject("COOLDOWN"); result.reason = rejectReason; return result; }
+          if (!ctx.samePoolOk) { handleReject("SAME_POOL_BLOCK"); result.reason = rejectReason; return result; }
+          if (!ctx.edgeOk) { handleReject("MIDDLE_RANGE"); result.reason = rejectReason; return result; }
+
+          const qScore = Alg.evaluateQuality(ctx, conf);
+          State.diag.lastQs = qScore; result.score = qScore;
+          if (qScore >= conf.minQualityScore) {
+            State.diag.final++; State.diag.typeA++;
+            result.dir = "SELL"; result.type = "TYPE A: Sweep Reclaim"; result.reason = "Цена сняла верхнюю ликвидность и вернулась в пул.";
+          } else { handleReject("QUALITY_TOO_LOW"); result.reason = rejectReason; }
+          return result;
+        }
+
+        if (buyReclaim) {
+          State.activeLiquidityZone = { side: "BUY", price: dnPool, expiresAtIdx: idx + conf.retestWindowBars };
+          const bWick = (Math.min(c.open, c.close) - c.low) / range; result.metrics.buyWickRatio = bWick;
+          const { strongOppositeImpulse, microChoch } = checkImpulseAndChoch("BUY");
+          const ctx = {
+            atr, sweepDepth: dnPool - c.low, reclaimDepth: c.close - dnPool, wickRatio: bWick,
+            edgeOk: posInPool <= conf.edgeZonePercent, microChoch, 
+            samePoolOk: !(conf.blockSamePoolSignals && State.lastBuyPool && Math.abs(dnPool - State.lastBuyPool) < atr*conf.samePoolDistanceATR),
+            rangeOk: range <= atr * conf.maxRangeATR, strongOppositeImpulse, strongReclaim: (c.close - dnPool) > atr * 0.08, 
+            lateEntry: Math.abs(c.close - dnPool) > atr * conf.maxEntryDistanceATR, volumeOk: true, isRetest: false
+          };
+
+          if (ctx.lateEntry) { handleReject("LATE_ENTRY"); result.reason = rejectReason; return result; }
+          if (ctx.sweepDepth < atr * conf.minSweepATR) { handleReject("WEAK_SWEEP"); result.reason = rejectReason; return result; }
+          if (ctx.reclaimDepth < conf.minReclaimATR * atr) { handleReject("WEAK_RECLAIM"); result.reason = rejectReason; return result; }
+          if (bWick < conf.minWickRatio && bodyRatio < conf.minBodyRatio) { handleReject("WEAK_WICK_OR_BODY"); result.reason = rejectReason; return result; }
+          if (idx - State.lastSignalIndex <= conf.cooldownBars) { handleReject("COOLDOWN"); result.reason = rejectReason; return result; }
+          if (!ctx.samePoolOk) { handleReject("SAME_POOL_BLOCK"); result.reason = rejectReason; return result; }
+          if (!ctx.edgeOk) { handleReject("MIDDLE_RANGE"); result.reason = rejectReason; return result; }
+
+          const qScore = Alg.evaluateQuality(ctx, conf);
+          State.diag.lastQs = qScore; result.score = qScore;
+          if (qScore >= conf.minQualityScore) {
+            State.diag.final++; State.diag.typeA++;
+            result.dir = "BUY"; result.type = "TYPE A: Sweep Reclaim"; result.reason = "Цена сняла нижнюю ликвидность и вернулась в пул.";
+          } else { handleReject("QUALITY_TOO_LOW"); result.reason = rejectReason; }
+          return result;
+        }
+
+        if (isSellRaw || isBuyRaw) handleReject("NO_RECLAIM");
+        return result;
+      },
+      processTradeResult: (dir, ent, ext, stake) => {
+        const win = dir === "BUY" ? ext > ent : ext < ent;
+        let pnl = 0;
+        if(win) { 
+          pnl = stake * CONFIG.payout; State.mgStep = 0; State.lossStreak = 0; State.isStrictMode = false;
+        } else { 
+          pnl = -stake; State.mgStep++; State.lossStreak++;
+          if(State.mgStep >= CONFIG.martingaleLadder.length) { State.mgStep = 0; }
+          if(State.lossStreak >= CONFIG.adaptiveTightenAfterLosses && CONFIG.adaptiveMode) { State.isStrictMode = true; }
+        }
+        if(State.canTradeSignals) {
+          State.stats.total++;
+          if(win) State.stats.win++; else State.stats.loss++;
+          State.stats.pnl += pnl;
+        }
+        return { res: win ? "WIN" : "LOSS", pnl };
+      }
+    };
+
+    // --- 7. UI MANAGER ---
+    const UI = {
+      sysLog: (txt, isErr = false) => {
+        const el = byId('sys-log'); if (!el) return;
+        el.innerHTML = `<div><span class="${isErr ? 'text-bad' : 'text-accent'}">[SYS]</span> ${txt}</div>` + el.innerHTML;
+        if(el.children.length > 5) el.lastChild.remove();
+      },
+      updateDiags: () => {
+        safeSetText('diag-raw', State.diag.raw);
+        safeSetText('diag-rec', State.diag.reclaim);
+        safeSetText('diag-ta', State.diag.typeA);
+        safeSetText('diag-tb', State.diag.typeB);
+        safeSetText('diag-fin', State.diag.final);
+        safeSetText('diag-rej', State.diag.rejected);
+      },
+      showNoRealDataState: () => {
+        const dSrc = byId('ui-data-source'); if (dSrc) { dSrc.innerText = "DATA SOURCE: NO REAL DATA"; dSrc.style.color = "var(--bad)"; }
+        const sStatus = byId('ui-scan-status'); if (sStatus) sStatus.innerText = "ОЖИДАНИЕ ДАННЫХ";
+        
+        const uiPnl = byId('ui-pnl'); if (uiPnl) { uiPnl.innerText = "--- ₽"; uiPnl.style.color = "var(--text-muted)"; }
+        safeSetText('ui-pnl-desc', "нет реальных данных");
+
+        safeSetHTML('ui-mid-text', "Реальные свечи BTCUSDT недоступны.<br>Сигналы не рассчитываются.");
+        safeSetHTML('ui-ob', `<div class="text-[11px] text-slate-400 text-center py-2 font-mono">Ожидание стакана...</div>`);
+        
+        const cov = byId('chart-overlay'); if (cov) cov.style.display = 'none';
+        const eMkt = byId('ui-empty-market'); if (eMkt) eMkt.style.display = 'flex';
+        stopOrbScanner();
+      },
+      updateStats: () => {
+        if (!State.canTradeSignals) return;
+        safeSetText('ui-t-total', State.stats.total);
+        safeSetText('ui-t-win', State.stats.win);
+        safeSetText('ui-t-loss', State.stats.loss);
+        const p = byId('ui-pnl'); 
+        if (p) {
+          p.innerText = Utils.formatRub(State.stats.pnl);
+          p.style.color = State.stats.pnl >= 0 ? "var(--good)" : "var(--bad)";
+        }
+      },
+      updateIndicators: (m, qScore) => {
+        if(!m || !m.atr) return;
+        const conf = getActiveConfig();
+        const str = safePercent((m.bodyRatio / conf.minBodyRatio)*50);
+        const liq = safePercent(60 + (m.sellWickRatio || m.buyWickRatio || 0)*200); 
+        const atrScore = safePercent((m.poolWidth / (m.atr*4))*100);
+        const smc = safePercent((str+liq+atrScore)/3);
+        const qs = safePercent(qScore || smc);
+        const edgeP = safePercent(Math.max(0, 1 - Math.abs(m.posInPool))*100);
+
+        updateGauges({ structure: str, liquidity: liq, atrRange: atrScore, smartMoney: smc, qualityScore: qs, edgeZone: edgeP, cooldown: 100 });
+      },
+      updateOB: (p) => {
+        const ob = byId('ui-ob');
+        if (!ob || !State.canTradeSignals) return; 
+        let html = '';
+        for(let i=3; i>=1; i--) {
+          const pA = p + (i * 0.5) + Math.random()*0.3;
+          html += `<div class="ob-row ask" style="--w:${Math.random()*60+20}%"><span>${pA.toFixed(2)}</span><span>${(Math.random()*2+.1).toFixed(3)}</span></div>`;
+        }
+        html += `<div class="ob-center">${p.toFixed(2)}</div>`;
+        for(let i=1; i<=3; i++) {
+          const pB = p - (i * 0.5) - Math.random()*0.3;
+          html += `<div class="ob-row bid" style="--w:${Math.random()*60+20}%"><span>${pB.toFixed(2)}</span><span>${(Math.random()*2+.1).toFixed(3)}</span></div>`;
+        }
+        ob.innerHTML = html;
+      },
+      drawOverlay: () => {
+        if(!State.chart || !State.series || !State.canTradeSignals) return;
+        const ov = byId('chart-overlay');
+        if (!ov) return;
+        ov.innerHTML = '';
+        const ts = State.chart.timeScale();
+        const ser = State.series;
+
+        const toDraw = [...State.trades].slice(-20);
+        if(State.activeTrade) toDraw.push(State.activeTrade);
+
+        toDraw.forEach(t => {
+          let cx, cy, eX, eY, xX, xY;
+          try {
+            cx = ts.timeToCoordinate(t.sigTime);
+            cy = ser.priceToCoordinate(t.dir === "BUY" ? t.sigPrice - t.atr*0.8 : t.sigPrice + t.atr*0.8);
+            if(t.entTime) {
+               eX = ts.timeToCoordinate(t.entTime);
+               eY = ser.priceToCoordinate(t.entPrice);
+               xX = ts.timeToCoordinate(t.extTime || Math.floor(Date.now()/1000));
+               xY = ser.priceToCoordinate(t.extPrice || State.livePrice);
+            }
+          } catch(e) { return; } 
+
+          if(cx && cy) {
+            const arr = document.createElement('div');
+            arr.className = `signal-arrow ${t.dir.toLowerCase()}`;
+            arr.style.left = `${cx}px`; arr.style.top = `${cy}px`;
+            arr.innerHTML = t.dir === "BUY" ? '↑' : '↓';
+            arr.dataset.tradeId = t.sigTime; // For Tooltip
+            ov.appendChild(arr);
+          }
+
+          if(eX && eY && xX && xY) {
+            const pE = document.createElement('div'); pE.className = 'marker-dot entry'; pE.style.left = `${eX}px`; pE.style.top = `${eY}px`; 
+            pE.dataset.tradeId = t.sigTime; ov.appendChild(pE);
+            
+            const l = Math.min(eX, xX), w = Math.max(8, Math.abs(xX-eX)), top = Math.min(eY, xY)-20, h = Math.abs(xY-eY)+40;
+            const b = document.createElement('div');
+            b.className = `trade-box ${t.state==='ACTIVE'?'active':(t.res==='WIN'?'win':'loss')}`;
+            b.style.left = `${l}px`; b.style.top = `${top}px`; b.style.width = `${w}px`; b.style.height = `${h}px`;
+            b.dataset.tradeId = t.sigTime; ov.appendChild(b);
+
+            if(t.state === 'CLOSED') {
+              const pX = document.createElement('div'); pX.className = 'marker-dot exit'; pX.style.left = `${xX}px`; pX.style.top = `${xY}px`; 
+              pX.dataset.tradeId = t.sigTime; ov.appendChild(pX);
+            }
+          }
+        });
+      }
+    };
+
+    // --- 8. MAIN ENGINE ---
+    const App = {
+      safeRunBacktest: () => {
+        try {
+          if (!State.canTradeSignals || State.candles.length < 100) return;
+          const lim = Date.now()/1000 - CONFIG.historicalLookbackHours*3600;
+          let i = CONFIG.lookback + CONFIG.atrLen;
+          while(i < State.candles.length - CONFIG.expiryCandles) {
+            if(State.candles[i].time < lim) { i++; continue; }
+            
+            const res = Alg.evaluate(State.candles, i);
+            if (res.dir) {
+              const en = State.candles[i+1], ex = State.candles[i+CONFIG.expiryCandles]; // Entry next candle, exit +5 candles
+              const stake = CONFIG.martingaleLadder[State.mgStep];
+              const trResult = Alg.processTradeResult(res.dir, en.open, ex.close, stake);
+              
+              State.trades.push({
+                state: 'CLOSED', dir: res.dir, type: res.type,
+                sigTime: State.candles[i].time, sigPrice: State.candles[i].close, atr: res.metrics.atr,
+                entTime: en.time, entPrice: en.open, extTime: ex.time, extPrice: ex.close, 
+                stake, reason: res.reason, ...trResult
+              });
+              
+              State.lastSignalIndex = i;
+              if(res.dir==="BUY") State.lastBuyPool = res.metrics.dnPool; else State.lastSellPool = res.metrics.upPool;
+              i += CONFIG.expiryCandles; // Jump forward 5 candles (25 mins)
+            } else {
+              i++;
+            }
+          }
+        } catch(e) { reportTerminalError('backtest', e); }
+      },
+
+      fetchDirectCandles: async () => {
+        const endpoints = [
+          { name: "BINANCE_SPOT", url: `https://api.binance.com/api/v3/klines?symbol=${CONFIG.symbol}&interval=${CONFIG.signalTimeframe}&limit=500` },
+          { name: "BINANCE_FUTURES", url: `https://fapi.binance.com/fapi/v1/klines?symbol=${CONFIG.symbol}&interval=${CONFIG.signalTimeframe}&limit=500` },
+          { name: "MEXC", url: `https://api.mexc.com/api/v3/klines?symbol=${CONFIG.symbol}&interval=${CONFIG.signalTimeframe}&limit=500` }
+        ];
+
+        for (const ep of endpoints) {
+          try {
+            console.log("[DATA] trying:", ep.name);
+            const res = await fetch(ep.url, { method: "GET", cache: "no-store" });
+            if (!res.ok) continue;
+
+            const raw = await res.json();
+            if (!Array.isArray(raw)) continue;
+
+            const parsed = raw.map(d => ({
+              time: Math.floor(Number(d[0]) / 1000),
+              open: Number(d[1]), high: Number(d[2]), low: Number(d[3]), close: Number(d[4]), vol: Number(d[5] || 0)
+            }));
+            const cands = Utils.sanitizeCandles(parsed);
+            
+            if (cands.length >= 100) {
+              State.candles = cands; State.source = "REAL API"; State.canTradeSignals = true;
+              safeSetText('ui-data-source', `DATA SOURCE: ${State.source}`);
+              const ds = byId('ui-data-source'); if(ds) ds.className = "text-[9px] font-bold text-emerald-500 mt-1 uppercase";
+              App.updateChartData();
+              return;
+            }
+          } catch (err) { /* silent try next */ }
+        }
+
+        State.source = "NO REAL DATA"; State.canTradeSignals = false; State.candles = [];
+      },
+
+      startSequence: async () => {
+        try {
+          // Initial Shell Render
+          const app = byId('app');
+          if (app) app.style.visibility = 'visible';
+
+          const bootSteps = [
+            'Подключение к источнику данных...',
+            'Загрузка истории BTCUSDT 5M...',
+            'Анализ ликвидности и пулов...',
+            'Построение истории сделок 12H...',
+            'Запуск сканирования...'
+          ];
+          
+          const btn = byId('btn-start'); if (btn) btn.style.display = 'none';
+          const lw = byId('loader-wrap'); if (lw) lw.style.display = 'flex';
+          const lt = byId('load-text');
+          const lb = byId('load-bar');
+
+          App.initChart();
+
+          for (let i = 0; i < bootSteps.length; i++) {
+            if (lt) lt.innerText = bootSteps[i];
+            if (lb) lb.style.width = `${((i+1)/bootSteps.length)*100}%`;
+            
+            if (i === 1) {
+               await App.fetchDirectCandles();
+            }
+            if (i === 3 && State.canTradeSignals) {
+               App.safeRunBacktest();
+               UI.updateStats();
+               updateGaugesFromCandles(State.candles);
+            }
+            await new Promise(r => setTimeout(r, 400));
+          }
+
+          const startup = byId('startup');
+          if (startup) startup.style.opacity = '0';
+          setTimeout(() => {
+            if (startup) startup.style.display = 'none';
+            
+            if (State.canTradeSignals) {
+              const pTxt = Utils.speakRub(State.stats.pnl);
+              document.body.classList.add("is-scanning");
+              startOrbScanner(State.candles);
+              Voice.speak(`Терминал Pro Max запущен. Основной режим: Bitcoin, график 5 минут. Установите время сделки 25 минут. За последние 12 часов найдено ${State.stats.total} сделок. При ставке 300 рублей и мартингейле до пятого колена результат составил ${pTxt}. Перехожу к сканированию.`);
+            } else {
+              UI.showNoRealDataState();
+              Voice.speak("Терминал Pro Max запущен. Реальные рыночные данные временно недоступны. Торговая аналитика не запущена.");
+            }
+
+            setInterval(() => {
+              const clk = byId('ui-clock');
+              if (clk) clk.innerText = new Date().toLocaleTimeString('ru-RU');
+            }, 1000);
+            setInterval(App.pollData, CONFIG.restPollingMs);
+            requestAnimationFrame(function loop() { UI.drawOverlay(); requestAnimationFrame(loop); });
+          }, 800);
+        } catch(e) { reportTerminalError('boot', e); }
+      },
+
+      initChart: () => {
+        try {
+          const c = byId('tv-chart');
+          if (!c) return;
+          const chart = LightweightCharts.createChart(c, {
+            layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#64748b' },
+            grid: { vertLines: { color: 'rgba(100,116,139,0.04)' }, horzLines: { color: 'rgba(100,116,139,0.04)' } },
+            timeScale: { timeVisible: true, borderVisible: false },
+            rightPriceScale: { borderVisible: false }
+          });
+          State.chart = chart;
+          State.series = chart.addCandlestickSeries({ upColor: '#10b981', downColor: '#ef5f73', borderVisible: false, wickUpColor: '#10b981', wickDownColor: '#ef5f73' });
+          State.upSeries = chart.addLineSeries({ color: 'rgba(239,95,115,0.4)', lineWidth: 1, lineStyle: 2, lastValueVisible: false, priceLineVisible: false });
+          State.dnSeries = chart.addLineSeries({ color: 'rgba(16,185,129,0.4)', lineWidth: 1, lineStyle: 2, lastValueVisible: false, priceLineVisible: false });
+          
+          new ResizeObserver(() => chart.applyOptions({ width: c.clientWidth, height: c.clientHeight })).observe(c);
+        } catch(e) { reportTerminalError('chart', e); }
+      },
+
+      updateChartData: () => {
+        try {
+          if (!State.canTradeSignals) return;
+          State.series.setData(State.candles);
+          const up=[], dn=[];
+          for(let i=CONFIG.lookback; i<State.candles.length; i++) {
+            const pr = State.candles.slice(i-CONFIG.lookback, i);
+            up.push({time:State.candles[i].time, value:Math.max(...pr.map(x=>x.high))});
+            dn.push({time:State.candles[i].time, value:Math.min(...pr.map(x=>x.low))});
+          }
+          State.upSeries.setData(up); State.dnSeries.setData(dn);
+          State.livePrice = State.candles[State.candles.length-1].close;
+          safeSetText('ui-price', Utils.formatPrice(State.livePrice));
+          UI.updateOB(State.livePrice);
+        } catch(e) { reportTerminalError('chartUpdate', e); }
+      },
+
+      pollData: async () => {
+        if (!State.canTradeSignals) return;
+        try {
+          const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${CONFIG.symbol}&interval=${CONFIG.signalTimeframe}&limit=2`);
+          if(res.ok) {
+            const raw = await res.json();
+            const parsed = raw.map(d => ({ time: Math.floor(Number(d[0]) / 1000), open: Number(d[1]), high: Number(d[2]), low: Number(d[3]), close: Number(d[4]), vol: Number(d[5] || 0) }));
+            if (parsed.length > 0) {
+              const c = parsed[0];
+              State.livePrice = c.close;
+              State.series.update(c);
+              safeSetText('ui-price', Utils.formatPrice(State.livePrice));
+              UI.updateOB(c.close);
+              
+              const last = State.candles[State.candles.length-1];
+              if(last.time === c.time) { 
+                State.candles[State.candles.length-1] = c; 
+                if(!State.activeTrade) Voice.checkPotentialZone(State.candles, State.candles.length-1);
+              } else { 
+                App.checkLogic(); 
+                State.candles.push(c); 
+                App.updateChartData(); 
+              }
+            }
+          }
+        } catch(e) { /* silent poll fail */ }
+      },
+
+      checkLogic: () => {
+        try {
+          if(State.activeTrade || !State.canTradeSignals) return;
+          const idx = State.candles.length - 2; 
+          
+          const res = Alg.evaluate(State.candles, idx);
+          UI.updateDiags();
+          UI.updateIndicators(res.metrics, res.score);
+
+          if (res.dir) App.triggerLiveSignal(res, State.candles[idx]);
+        } catch(e) { reportTerminalError('logic', e); }
+      },
+
+      triggerLiveSignal: async (res, sigCandle) => {
+        document.body.classList.remove("is-scanning");
+        stopOrbScanner();
+
+        const stake = CONFIG.martingaleLadder[State.mgStep];
+        State.activeTrade = {
+          state: 'PENDING', dir: res.dir, type: res.type,
+          sigTime: sigCandle.time, sigPrice: sigCandle.close,
+          atr: res.metrics.atr, stake, reason: res.reason, midDone: false
+        };
+        
+        Voice.speak(res.reason);
+        Voice.speak("Подготовка. Вход через три секунды.");
+        
+        const scanSt = byId('ui-scan-status');
+        if (scanSt) scanSt.innerText = "SIGNAL DETECTED";
+        
+        await new Promise(r => setTimeout(r, 6000));
+
+        const t = State.activeTrade;
+        t.state = 'ACTIVE'; t.entTime = Math.floor(Date.now()/1000); t.entPrice = State.livePrice;
+        
+        safeSetHTML('ui-mid-text', `Направление: <b style="color:var(--text-main)">${t.dir}</b><br>Вход: <b>${t.entPrice.toFixed(2)}</b><br>Таймер запущен...`);
+        
+        VoiceState.midTradeSpoken = false;
+        let rem = CONFIG.expiryMinutes * 60;
+        const tid = setInterval(() => {
+          rem--;
+          safeSetText('ui-mid-timer', `Осталось: ${Math.floor(rem/60)}:${String(rem%60).padStart(2,'0')}`);
+          
+          if(rem === Math.floor(CONFIG.expiryMinutes*60/2) && t && !VoiceState.midTradeSpoken) {
+            VoiceState.midTradeSpoken = true;
+            const mStatus = Voice.getMidTradeStatus(t, State.livePrice);
+            safeSetHTML('ui-mid-text', `Направление: <b style="color:var(--text-main)">${t.dir}</b><br>Вход: <b>${t.entPrice.toFixed(2)}</b><br>Анализ: <b style="color:var(--accent)">${mStatus.text}</b>`); 
+            Voice.speak(mStatus.text);
+          }
+          if(rem <= 0) { clearInterval(tid); App.closeLiveTrade(); }
+        }, 1000);
+      },
+
+      closeLiveTrade: () => {
+        if(!State.activeTrade) return;
+        const t = State.activeTrade;
+        t.state = 'CLOSED'; t.extTime = Math.floor(Date.now()/1000); t.extPrice = State.livePrice;
+        
+        const r = Alg.processTradeResult(t.dir, t.entPrice, t.extPrice, t.stake);
+        t.res = r.res; t.pnl = r.pnl;
+        State.trades.push(t); State.activeTrade = null;
+        
+        UI.updateStats();
+        UI.updateDiags();
+        
+        safeSetText('ui-scan-status', State.isStrictMode ? "STRICT MODE ACTIVE" : "BALANCED+ 5M / 25M");
+        safeSetHTML('ui-mid-text', "Сделок в данный момент нет.<br>Ожидание сигнала.");
+        safeSetText('ui-mid-timer', "");
+        
+        document.body.classList.add("is-scanning");
+        startOrbScanner(State.candles);
+        
+        UI.sysLog(`Закрыто. ${t.res} (${Utils.formatRub(t.pnl)})`);
+      }
+    };
   </script>
 </body>
 </html>
