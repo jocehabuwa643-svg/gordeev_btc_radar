@@ -645,6 +645,7 @@
           const failedZonesRef = useRef([]);
           const lastZoneStateRef = useRef('OUT');
           const lastNewsTimeRef = useRef(Date.now());
+          const lastProcessedClosedCandleTimeRef = useRef(0);
 
           const fetchNews = async () => {
               try {
@@ -707,14 +708,12 @@
               overlaysContainerRef.current.innerHTML = '';
               
               completedTradesRef.current.forEach((trade, idx) => {
-                  // LWC doesn't always map non-existing times. If it fails, approximate via interpolation
+                  // LWC exact coordinate interpolation
                   const getRobustX = (ts) => {
                       let x = timeScale.timeToCoordinate(ts);
                       if (x === null || isNaN(x)) {
                           const sigX = timeScale.timeToCoordinate(trade.signalTime);
                           if (sigX !== null && !isNaN(sigX)) {
-                              // Assuming 5m candles = 300s, typical width is approx 8-10px depending on zoom. 
-                              // We approximate 6s delay as a tiny fractional shift.
                               const diffSecs = ts - trade.signalTime;
                               x = sigX + (diffSecs / 300) * 10; 
                           }
@@ -726,7 +725,7 @@
                   let xExit = getRobustX(trade.exitTime || (Date.now() / 1000));
                   
                   if (xEntry === null || isNaN(xEntry)) return;
-                  if (xExit === null || isNaN(xExit)) xExit = timeScale.width(); // Extend to right edge if live
+                  if (xExit === null || isNaN(xExit)) xExit = timeScale.width();
 
                   const yEntry = series.priceToCoordinate(trade.entryPrice);
                   const yExit = series.priceToCoordinate(trade.currentPrice || trade.exitPrice || trade.entryPrice);
@@ -734,8 +733,8 @@
                   if (yEntry !== null && yExit !== null && !isNaN(yEntry) && !isNaN(yExit)) {
                       // 1. Draw Glass Box
                       const top = Math.min(yEntry, yExit);
-                      const height = Math.max(Math.abs(yEntry - yExit), 4); // min 4px height
-                      const width = Math.max(xExit - xEntry, 4); // min 4px width
+                      const height = Math.max(Math.abs(yEntry - yExit), 4);
+                      const width = Math.max(xExit - xEntry, 4);
                       
                       const box = document.createElement('div');
                       let resClass = 'active';
@@ -748,27 +747,21 @@
                       box.style.width = `${width}px`;
                       box.style.height = `${height}px`;
 
-                      // Attach hover event for tooltip directly to the DOM element
-                      box.onmouseenter = (e) => {
-                          setTooltipData({ ...trade, x: e.clientX, y: e.clientY });
-                      };
-                      box.onmousemove = (e) => {
-                          setTooltipData(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null);
-                      };
-                      box.onmouseleave = () => {
-                          setTooltipData(null);
-                      };
+                      // Attach hover event
+                      box.onmouseenter = (e) => setTooltipData({ ...trade, x: e.clientX, y: e.clientY });
+                      box.onmousemove = (e) => setTooltipData(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null);
+                      box.onmouseleave = () => setTooltipData(null);
 
                       overlaysContainerRef.current.appendChild(box);
 
-                      // 2. Draw precise ENTRY marker (Blue dot) slightly offset
+                      // 2. Draw precise ENTRY marker
                       const entryMarker = document.createElement('div');
                       entryMarker.className = 'trade-entry-marker';
                       entryMarker.style.left = `${xEntry}px`;
                       entryMarker.style.top = `${yEntry}px`;
                       overlaysContainerRef.current.appendChild(entryMarker);
 
-                      // 3. Draw precise EXIT badge if trade completed
+                      // 3. Draw precise EXIT badge
                       if (trade.result !== 'PENDING') {
                           const exitBadge = document.createElement('div');
                           exitBadge.className = `trade-exit-badge ${resClass}`;
@@ -804,7 +797,7 @@
                 candleSeries.current = mainChart.addCandlestickSeries({ 
                   upColor: '#3b82f6',       // Premium Steel Blue
                   downColor: '#475569',     // Graphite Gray
-                  borderVisible: false,     // Clean look without hard borders
+                  borderVisible: false,     
                   wickUpColor: '#60a5fa', 
                   wickDownColor: '#94a3b8'
                 });
@@ -815,9 +808,65 @@
                 chartInstance.current = mainChart;
 
                 mainChart.timeScale().subscribeVisibleLogicalRangeChange(syncGlassBoxes);
-                mainChart.subscribeCrosshairMove(syncGlassBoxes); // Refresh positions on move if needed
+                mainChart.subscribeCrosshairMove(syncGlassBoxes);
 
             } catch(e) { console.error("Chart Init Error", e); }
+          };
+
+          // --- UNIFIED EVALUATION FUNCTION ---
+          const evaluateSignal = (candles, idx, cUpper, cLower, cAtr, failedZones, diagStatsRef) => {
+              const currCandle = candles[idx];
+              const prevCandle = candles[idx - 1];
+              if (!currCandle || !prevCandle) return null;
+
+              let isCall = false, isPut = false, signalReason = '', isTypeB = false;
+
+              // 1. Sweep & Reclaim check
+              const sweepTop = currCandle.high > cUpper || prevCandle.high > cUpper;
+              const sweepBot = currCandle.low < cLower || prevCandle.low < cLower;
+              
+              if (sweepTop || sweepBot) diagStatsRef.sweeps++;
+
+              const reclaimTop = sweepTop && currCandle.close < cUpper;
+              const reclaimBot = sweepBot && currCandle.close > cLower;
+              
+              if (reclaimTop || reclaimBot) diagStatsRef.reclaims++;
+
+              // Structure Break / Rejection check (Smoothed for more signals: close below prev low OR close < open)
+              const structBreakTop = currCandle.close < prevCandle.low || currCandle.close < currCandle.open;
+              const structBreakBot = currCandle.close > prevCandle.high || currCandle.close > currCandle.open;
+
+              if (reclaimTop && structBreakTop) { isPut = true; signalReason = 'SMC PRIMARY: SWEEP & RECLAIM'; }
+              else if (reclaimBot && structBreakBot) { isCall = true; signalReason = 'SMC PRIMARY: SWEEP & RECLAIM'; }
+              else if (reclaimTop || reclaimBot) { diagStatsRef.rejected++; }
+
+              // 2. Type B / Retest Logic (If no primary signal)
+              if (!isCall && !isPut) {
+                  for (let fz of failedZones) {
+                      if (fz.used || currCandle.time > fz.expiryTime) continue;
+                      const dist = Math.abs(currCandle.close - fz.price) / cAtr;
+                      // Max 1.0 ATR distance to catch returns
+                      if (dist < 1.0) {
+                          const body = Math.abs(currCandle.close - currCandle.open);
+                          const total = currCandle.high - currCandle.low;
+                          const isRejectionPin = (total > 0) && (body / total <= 0.5); // Max body 50% for pinbar retest
+
+                          if (fz.type === 'PUT' && currCandle.high >= fz.price && currCandle.close < fz.price && isRejectionPin) {
+                              isPut = true; isTypeB = true; fz.used = true; signalReason = 'TYPE B: SECOND CHANCE RETEST'; break;
+                          }
+                          if (fz.type === 'CALL' && currCandle.low <= fz.price && currCandle.close > fz.price && isRejectionPin) {
+                              isCall = true; isTypeB = true; fz.used = true; signalReason = 'TYPE B: SECOND CHANCE RETEST'; break;
+                          }
+                      }
+                  }
+              }
+
+              if (isCall || isPut) {
+                  diagStatsRef.finalSignals++;
+                  if (isTypeB) diagStatsRef.typeB++;
+                  return { type: isCall ? 'CALL' : 'PUT', reason: signalReason, isTypeB };
+              }
+              return null;
           };
 
           // --- SMART SCANNER LIFECYCLE ---
@@ -900,8 +949,7 @@
               if (candleSeries.current) {
                   candleSeries.current.setData(data);
                   
-                  // CRITICAL: Sort markers exactly by time before applying, LWC drops unsorted markers.
-                  // Since we only use native markers for SIGNAL now, it's very clean.
+                  // CRITICAL: Sort native markers exactly by time before applying, LWC drops unsorted arrays.
                   const nativeMarkers = markersRef.current.sort((a, b) => a.time - b.time);
                   candleSeries.current.setMarkers(nativeMarkers);
                   
@@ -930,7 +978,7 @@
                 setLoadingState({ show: true, phase: 'PREPARING', text: 'Подготавливаю график и исторические сделки...', fading: false });
                 setApiStatus('АКТИВЕН');
                 
-                await initChart(); // Ensure chart exists before logic runs
+                await initChart(); 
 
                 const liqZones = calcLiquidityZones(initialData, 24); 
                 const atrSeries = calcATRSeries(initialData, 14);
@@ -938,93 +986,44 @@
                 const atrMap = new Map(atrSeries.map(i => [i.time, i.value]));
 
                 let tempWins = 0, tempLosses = 0, tempPnl = 0, mStep = 0;
-                let statSweeps = 0, statReclaims = 0, statTypeB = 0, statRejected = 0, statFinal = 0;
+                let localDiag = { sweeps: 0, reclaims: 0, typeB: 0, rejected: 0, finalSignals: 0 };
                 
                 const startIdx = initialData.length - 144; 
-                const endIdx = initialData.length - 6; // Leave room for 25m expiry
+                const endIdx = initialData.length - 6; 
 
                 for (let idx = startIdx; idx <= endIdx; idx++) {
                     const currTime = initialData[idx].time;
-                    const currCandle = initialData[idx];
-                    const prevCandle = initialData[idx - 1];
                     const zones = liqMap.get(currTime);
-                    const cAtr = atrMap.get(currTime) || (currCandle.close * 0.002);
+                    const cAtr = atrMap.get(currTime) || (initialData[idx].close * 0.002);
 
                     if (zones) {
-                        const { upper: cUpper, lower: cLower } = zones;
-                        let isCall = false, isPut = false, signalReason = '';
-                        let isTypeB = false;
+                        const sig = evaluateSignal(initialData, idx, zones.upper, zones.lower, cAtr, failedZonesRef.current, localDiag);
 
-                        const sweepTop = currCandle.high > cUpper || prevCandle.high > cUpper;
-                        const sweepBot = currCandle.low < cLower || prevCandle.low < cLower;
-                        
-                        if (sweepTop || sweepBot) statSweeps++;
-
-                        const reclaimTop = sweepTop && currCandle.close < cUpper;
-                        const reclaimBot = sweepBot && currCandle.close > cLower;
-                        
-                        if (reclaimTop || reclaimBot) statReclaims++;
-
-                        // Body rejection color check (Reclaim + Rejection)
-                        const isRedBody = currCandle.close < currCandle.open;
-                        const isGreenBody = currCandle.close > currCandle.open;
-
-                        if (reclaimTop && isRedBody) { isPut = true; signalReason = 'SMC PRIMARY: SWEEP & RECLAIM'; }
-                        else if (reclaimBot && isGreenBody) { isCall = true; signalReason = 'SMC PRIMARY: SWEEP & RECLAIM'; }
-                        else if (reclaimTop || reclaimBot) { statRejected++; }
-
-                        // Type B / Retest Logic (If no primary signal)
-                        if (!isCall && !isPut) {
-                            for (let fz of failedZonesRef.current) {
-                                if (fz.used || currCandle.time > fz.expiryTime) continue;
-                                const dist = Math.abs(currCandle.close - fz.price) / cAtr;
-                                // Expand distance check to 1.0 ATR for better retest catching
-                                if (dist < 1.0) {
-                                    const body = Math.abs(currCandle.close - currCandle.open);
-                                    const total = currCandle.high - currCandle.low;
-                                    const isRejectionPin = (total > 0) && (body / total <= 0.5);
-
-                                    if (fz.type === 'PUT' && currCandle.high >= fz.price && currCandle.close < fz.price && isRejectionPin) {
-                                        isPut = true; isTypeB = true; fz.used = true; signalReason = 'TYPE B: SECOND CHANCE RETEST'; break;
-                                    }
-                                    if (fz.type === 'CALL' && currCandle.low <= fz.price && currCandle.close > fz.price && isRejectionPin) {
-                                        isCall = true; isTypeB = true; fz.used = true; signalReason = 'TYPE B: SECOND CHANCE RETEST'; break;
-                                    }
-                                }
-                            }
-                        }
-
-                        if (isCall || isPut) {
-                            statFinal++;
-                            if (isTypeB) statTypeB++;
-                            
+                        if (sig) {
                             const signalTime = currTime;
-                            // Historical Approximation: We simulate 6s delay by taking the candle close 
-                            // But exact time for coordinate rendering will be signalTime + 6
-                            const entryTime = currTime + 6; 
-                            const entryPrice = currCandle.close; // Approximate
+                            const entryTime = currTime + 6; // Historic approx 6s delay
+                            const entryPrice = initialData[idx].close; // Approximate
                             
                             const exitCandle = initialData[idx + 5]; // +25 mins
                             if(!exitCandle) continue;
                             
                             const exitPrice = exitCandle.close;
-                            const isWin = (isCall && exitPrice >= entryPrice) || (isPut && exitPrice <= entryPrice);
+                            const isWin = (sig.type === 'CALL' && exitPrice >= entryPrice) || (sig.type === 'PUT' && exitPrice <= entryPrice);
                             const tradePnl = isWin ? MARTINGALE_LADDER[mStep] * PAYOUT_RATE : -MARTINGALE_LADDER[mStep];
 
-                            // ONLY store LWC native markers for the SIGNAL. Entry/Exit/Box drawn via DOM
                             markersRef.current.push({ 
                                 time: signalTime, 
-                                position: isCall ? 'belowBar' : 'aboveBar', 
-                                color: isCall ? '#3b82f6' : '#64748b', 
-                                shape: isCall ? 'arrowUp' : 'arrowDown', 
-                                text: isTypeB ? 'TYPE B' : 'SIGNAL', 
+                                position: sig.type === 'CALL' ? 'belowBar' : 'aboveBar', 
+                                color: sig.type === 'CALL' ? '#3b82f6' : '#64748b', 
+                                shape: sig.type === 'CALL' ? 'arrowUp' : 'arrowDown', 
+                                text: sig.isTypeB ? 'TYPE B' : 'SIGNAL', 
                                 size: 1.5 
                             });
 
                             completedTradesRef.current.push({
-                                type: isCall ? 'CALL' : 'PUT',
-                                signalReason, signalTime, entryTime, exitTime: exitCandle.time, exp: 25,
-                                signalPrice: currCandle.close, entryPrice, exitPrice, currentPrice: exitPrice,
+                                type: sig.type,
+                                signalReason: sig.reason, signalTime, entryTime, exitTime: exitCandle.time, exp: 25,
+                                signalPrice: initialData[idx].close, entryPrice, exitPrice, currentPrice: exitPrice,
                                 bet: MARTINGALE_LADDER[mStep], step: mStep + 1,
                                 result: isWin ? 'WIN' : 'LOSS', pnl: Math.round(tradePnl)
                             });
@@ -1032,7 +1031,7 @@
                             if (isWin) { tempWins++; tempPnl += tradePnl; mStep = 0; } 
                             else {
                                 tempLosses++; tempPnl += tradePnl;
-                                failedZonesRef.current.push({ price: isCall ? cLower : cUpper, type: isCall ? 'CALL' : 'PUT', expiryTime: exitCandle.time + 7200, used: false });
+                                failedZonesRef.current.push({ price: sig.type === 'CALL' ? zones.lower : zones.upper, type: sig.type, expiryTime: exitCandle.time + 7200, used: false });
                                 mStep = Math.min(mStep + 1, MARTINGALE_LADDER.length - 1);
                             }
                             idx += 5; // Skip inside trade duration
@@ -1042,9 +1041,12 @@
 
                 statsRef.current = { wins: tempWins, losses: tempLosses, pnl: Math.round(tempPnl) };
                 setTradeStats({ wins: tempWins, losses: tempLosses, winRate: tempWins+tempLosses > 0 ? Math.round((tempWins/(tempWins+tempLosses))*100) : 0, pnl: Math.round(tempPnl) });
-                setDiagStats({ sweeps: statSweeps, reclaims: statReclaims, typeB: statTypeB, rejected: statRejected, finalSignals: statFinal });
+                setDiagStats(localDiag);
 
-                updateChartAndData(initialData); // This applies data, sorts markers, and syncs glass boxes
+                updateChartAndData(initialData); 
+                
+                // Track last completed candle for live eval
+                lastProcessedClosedCandleTimeRef.current = initialData[initialData.length - 2].time;
 
                 upperSeriesRef.current.setData(liqZones.map(i => ({time: i.time, value: i.upper})));
                 lowerSeriesRef.current.setData(liqZones.map(i => ({time: i.time, value: i.lower})));
@@ -1054,10 +1056,10 @@
                 setLoadingState(prev => ({ ...prev, fading: true }));
                 setTimeout(() => setLoadingState({ show: false, phase: '', text: '', fading: false }), 700);
 
-                addLog(`Анализ 12H завершен. Сделок: ${statFinal}. PNL: ${Math.round(tempPnl)}₽`, true);
+                addLog(`Анализ 12H завершен. Сделок: ${localDiag.finalSignals}. PNL: ${Math.round(tempPnl)}₽`, true);
                 
                 // LIFECYCLE: СТРОГАЯ ОЧЕРЕДЬ ЗАПУСКА
-                window.speechQueue.say(`За последние 12 часов было ${statFinal} сделок. Результат ${Math.round(tempPnl)} рублей по ставке 1000 рублей с учётом мартингейла.`, {
+                window.speechQueue.say(`За последние 12 часов было ${localDiag.finalSignals} сделок. Результат ${Math.round(tempPnl)} рублей по ставке 1000 рублей с учётом мартингейла.`, {
                     key: "startup",
                     priority: 20,
                     onDone: () => {
@@ -1095,70 +1097,37 @@
                   const data = await ScannerAPI.getCandles(curAsset.symbol, 200, '5m'); 
                   if (data && data.length > 150) {
                       setApiStatus('АКТИВЕН');
-                      const lastIdx = data.length - 1;
-                      const currCandle = data[lastIdx];
-                      const prevCandle = data[lastIdx - 1];
-
                       updateChartAndData(data); // Safely applies new candle, markers, boxes
+
+                      const closedIdx = data.length - 2; // Last COMPLETELY closed candle
+                      const formingIdx = data.length - 1; // Currently jumping candle
+                      const closedCandle = data[closedIdx];
+                      const formingCandle = data[formingIdx];
 
                       const liqZones = calcLiquidityZones(data, 24); 
                       const atrSeries = calcATRSeries(data, 14);
                       
-                      const cUpper = liqZones[lastIdx].upper;
-                      const cLower = liqZones[lastIdx].lower;
-                      const cAtr = atrSeries[lastIdx]?.value || (cUpper - cLower) * 0.5 || currentPrice.current * 0.002;
+                      const cUpper = liqZones[closedIdx].upper;
+                      const cLower = liqZones[closedIdx].lower;
+                      const cAtr = atrSeries[closedIdx]?.value || (cUpper - cLower) * 0.5 || currentPrice.current * 0.002;
 
-                      upperSeriesRef.current.update({time: currCandle.time, value: cUpper});
-                      lowerSeriesRef.current.update({time: currCandle.time, value: cLower});
+                      // Update visual indicators based on forming candle to look active
+                      upperSeriesRef.current.update({time: formingCandle.time, value: liqZones[formingIdx].upper});
+                      lowerSeriesRef.current.update({time: formingCandle.time, value: liqZones[formingIdx].lower});
 
-                      let isCall = false, isPut = false, signalReason = '';
-
-                      // SMC Logic
-                      const sweepTop = currCandle.high > cUpper || prevCandle.high > cUpper;
-                      const sweepBot = currCandle.low < cLower || prevCandle.low < cLower;
-                      const reclaimTop = sweepTop && currCandle.close < cUpper;
-                      const reclaimBot = sweepBot && currCandle.close > cLower;
-                      
-                      if (reclaimTop && currCandle.close < currCandle.open) {
-                          isPut = true; signalReason = 'SMC PRIMARY: SWEEP & RECLAIM';
-                      }
-                      if (reclaimBot && currCandle.close > currCandle.open) {
-                          isCall = true; signalReason = 'SMC PRIMARY: SWEEP & RECLAIM';
-                      }
-
-                      // Type B Logic
-                      if (!isCall && !isPut) {
-                          for (let fz of failedZonesRef.current) {
-                              if (fz.used || currCandle.time > fz.expiryTime) continue;
-                              const dist = Math.abs(currCandle.close - fz.price) / cAtr;
-                              if (dist < 1.0) {
-                                  const body = Math.abs(currCandle.close - currCandle.open);
-                                  const total = currCandle.high - currCandle.low;
-                                  const isPinbar = (total > 0) && (body / total <= 0.5);
-
-                                  if (fz.type === 'PUT' && currCandle.high >= fz.price && currCandle.close < fz.price && isPinbar) {
-                                      isPut = true; fz.used = true; signalReason = 'TYPE B: SECOND CHANCE RETEST'; break;
-                                  }
-                                  if (fz.type === 'CALL' && currCandle.low <= fz.price && currCandle.close > fz.price && isPinbar) {
-                                      isCall = true; fz.used = true; signalReason = 'TYPE B: SECOND CHANCE RETEST'; break;
-                                  }
-                              }
-                          }
-                      }
-
-                      // Zone Approach Warning Logic
-                      const distTop = Math.abs(currCandle.close - cUpper) / cAtr;
-                      const distBot = Math.abs(currCandle.close - cLower) / cAtr;
+                      // Zone Approach Warning Logic (using forming candle)
+                      const distTop = Math.abs(formingCandle.close - liqZones[formingIdx].upper) / cAtr;
+                      const distBot = Math.abs(formingCandle.close - liqZones[formingIdx].lower) / cAtr;
                       const inZoneNow = (distTop < 0.35 || distBot < 0.35);
                       
-                      if (inZoneNow && !isCall && !isPut && isScannerRunningRef.current) {
+                      if (inZoneNow && isScannerRunningRef.current) {
                           setAppPhase('ЗОНА ИНТЕРЕСА');
                           window.speechQueue.say("Цена подошла к зоне возможного входа. Жду подтверждение.", {
                               key: "approach",
                               priority: 50,
                               cooldownMs: 120000 
                           });
-                      } else if (distTop > 0.65 && distBot > 0.65 && lastZoneStateRef.current === 'IN' && !isCall && !isPut) {
+                      } else if (distTop > 0.65 && distBot > 0.65 && lastZoneStateRef.current === 'IN') {
                           window.speechQueue.say("Цена ушла от зоны входа. Жду новый сетап.", {
                               key: "leave",
                               priority: 40,
@@ -1168,7 +1137,7 @@
                       
                       lastZoneStateRef.current = inZoneNow ? 'IN' : 'OUT';
                       
-                      if (!inZoneNow && !isCall && !isPut && isScannerRunningRef.current) {
+                      if (!inZoneNow && isScannerRunningRef.current) {
                           setAppPhase('СКАНИРОВАНИЕ АКТИВНО');
                           
                           // News Idle Logic
@@ -1183,127 +1152,149 @@
                           }
                       }
 
+                      // LIVE EVALUATION on completely CLOSED candle
+                      if (closedCandle.time > lastProcessedClosedCandleTimeRef.current) {
+                          
+                          let liveDiagRef = { sweeps: 0, reclaims: 0, typeB: 0, rejected: 0, finalSignals: 0 };
+                          const sig = evaluateSignal(data, closedIdx, cUpper, cLower, cAtr, failedZonesRef.current, liveDiagRef);
+                          
+                          // Update diagnostic UI
+                          setDiagStats(prev => ({
+                              sweeps: prev.sweeps + liveDiagRef.sweeps,
+                              reclaims: prev.reclaims + liveDiagRef.reclaims,
+                              typeB: prev.typeB + liveDiagRef.typeB,
+                              rejected: prev.rejected + liveDiagRef.rejected,
+                              finalSignals: prev.finalSignals + liveDiagRef.finalSignals
+                          }));
 
-                      if (isCall || isPut) {
-                          const dirText = isCall ? "BUY" : "SELL";
-                          setMetrics({ structure: 100, liquidity: 100, smartMoney: 95, edgeZone: 85 });
-                          playSound('found');
-                          
-                          const signalTime = currCandle.time;
-                          markersRef.current.push({ time: signalTime, position: isCall ? 'belowBar' : 'aboveBar', color: isCall ? '#3b82f6' : '#475569', shape: isCall ? 'arrowUp' : 'arrowDown', text: signalReason.includes('TYPE B') ? 'TYPE B' : 'SIGNAL', size: 2 });
-                          updateChartAndData(chartDataRef.current);
-                          
-                          setAppPhase(`ПОДГОТОВКА ВХОДА`);
-                          addLog(`Сигнал на ${dirText}. ${signalReason}`, true);
-                          
-                          let voiceReason = isCall ? "снятие нижней ликвидности" : "снятие верхней ликвидности";
-                          if (signalReason.includes('TYPE B')) voiceReason = "повторный тест зоны интереса";
-                          window.speechQueue.say(`Сигнал ${dirText}. Причина: ${voiceReason}. Подготовка ко входу.`, { priority: 90 });
+                          lastProcessedClosedCandleTimeRef.current = closedCandle.time;
 
-                          // DELAY 6 SEC
-                          for(let w=6; w>0; w--) {
-                              playSound('scan');
-                              await new Promise(r => setTimeout(r, 1000));
-                          }
+                          if (sig) {
+                              setMetrics({ structure: 100, liquidity: 100, smartMoney: 95, edgeZone: 85 });
+                              playSound('found');
+                              
+                              const signalTime = closedCandle.time;
+                              markersRef.current.push({ 
+                                  time: signalTime, 
+                                  position: sig.type === 'CALL' ? 'belowBar' : 'aboveBar', 
+                                  color: sig.type === 'CALL' ? '#3b82f6' : '#475569', 
+                                  shape: sig.type === 'CALL' ? 'arrowUp' : 'arrowDown', 
+                                  text: sig.isTypeB ? 'TYPE B' : 'SIGNAL', 
+                                  size: 2 
+                              });
+                              updateChartAndData(data); // Force render marker
+                              
+                              setAppPhase(`ПОДГОТОВКА ВХОДА`);
+                              addLog(`Сигнал на ${sig.type}. ${sig.reason}`, true);
+                              
+                              let voiceReason = sig.type === 'CALL' ? "снятие нижней ликвидности" : "снятие верхней ликвидности";
+                              if (sig.reason.includes('TYPE B')) voiceReason = "повторный тест зоны интереса";
+                              window.speechQueue.say(`Сигнал ${sig.type}. Причина: ${voiceReason}. Подготовка ко входу.`, { priority: 90 });
 
-                          // ENTRY
-                          playSound('start');
-                          window.speechQueue.say("Вход в сделку.", { priority: 80 });
-                          
-                          const entryData = await ScannerAPI.getCandles(curAsset.symbol, 2, '1m');
-                          const entryPriceReal = entryData.length ? entryData[entryData.length-1].close : currentPrice.current;
-                          const entryTime = Date.now() / 1000; // EXACT live entry time
-                          
-                          setAppPhase('СДЕЛКА АКТИВНА');
-                          const expMins = 25; 
-                          setSignal({ type: isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice: entryPriceReal });
-                          
-                          let activeTradeObj = {
-                              type: isCall ? 'CALL' : 'PUT', signalReason, signalTime,
-                              entryTime, exitTime: null, exp: expMins, signalPrice: currCandle.close, entryPrice: entryPriceReal, currentPrice: entryPriceReal,
-                              bet: MARTINGALE_LADDER[mLiveStep], step: mLiveStep + 1, result: 'PENDING'
-                          };
-                          completedTradesRef.current.push(activeTradeObj);
-                          syncGlassBoxes();
-
-                          let expirySeconds = expMins * 60;
-                          let isLive = true;
-                          let spokenMidpoint = false;
-                          
-                          const liveChartTask = (async () => {
-                            let localLastTime = 0;
-                            while (isLive && engineActive.current) {
-                              await new Promise(r => setTimeout(r, 2000));
-                              if (!isLive) break;
-                              const liveTickArray = await ScannerAPI.getCandles(curAsset.symbol, 2, '1m');
-                              if (liveTickArray.length) {
-                                  const tick = liveTickArray[liveTickArray.length - 1];
-                                  if (tick.time >= localLastTime && !isNaN(tick.close)) {
-                                      // Force LWC to accept partial tick updates
-                                      updateChartAndData(chartDataRef.current.slice(0, -1).concat([tick]));
-                                      localLastTime = Math.max(localLastTime, tick.time);
-                                      activeTradeObj.currentPrice = tick.close;
-                                      syncGlassBoxes(); // Re-render live extending box
-                                  }
+                              // DELAY 6 SEC
+                              for(let w=6; w>0; w--) {
+                                  playSound('scan');
+                                  await new Promise(r => setTimeout(r, 1000));
                               }
-                            }
-                          })();
 
-                          while(expirySeconds > 0) {
-                            setCountdown(expirySeconds);
-                            // MID-TRADE ANALYSIS
-                            if (expirySeconds === Math.floor((expMins * 60) / 2) && !spokenMidpoint) {
-                                 let diff = isCall ? currentPrice.current - entryPriceReal : entryPriceReal - currentPrice.current;
-                                 if (diff > cAtr * 0.15) {
-                                     window.speechQueue.say("Сделка уверенно в плюсе.", {priority: 60});
-                                 } else if (diff < -cAtr * 0.15) {
-                                     window.speechQueue.say("Сделка уходит в минус. Наблюдаю до экспирации.", {priority: 60});
-                                 } else {
-                                     window.speechQueue.say("Сделка рядом с точкой входа. Ситуация пограничная.", {priority: 60});
-                                 }
-                                 spokenMidpoint = true;
-                            }
-                            await new Promise(r => setTimeout(r, 1000));
-                            expirySeconds--;
+                              // ENTRY precisely at live moment
+                              playSound('start');
+                              window.speechQueue.say("Вход в сделку.", { priority: 80 });
+                              
+                              const entryPriceReal = currentPrice.current; // Exact live price from state
+                              const entryTime = Date.now() / 1000; // EXACT timestamp 
+                              
+                              setAppPhase('СДЕЛКА АКТИВНА');
+                              const expMins = 25; 
+                              setSignal({ type: sig.type, exp: expMins, entryPrice: entryPriceReal });
+                              
+                              let activeTradeObj = {
+                                  type: sig.type, signalReason: sig.reason, signalTime,
+                                  entryTime, exitTime: null, exp: expMins, signalPrice: closedCandle.close, 
+                                  entryPrice: entryPriceReal, currentPrice: entryPriceReal,
+                                  bet: MARTINGALE_LADDER[mLiveStep], step: mLiveStep + 1, result: 'PENDING'
+                              };
+                              completedTradesRef.current.push(activeTradeObj);
+                              syncGlassBoxes(); // Render DOM marker & box immediately
+
+                              let expirySeconds = expMins * 60;
+                              let isLive = true;
+                              let spokenMidpoint = false;
+                              
+                              const liveChartTask = (async () => {
+                                let localLastTime = 0;
+                                while (isLive && engineActive.current) {
+                                  await new Promise(r => setTimeout(r, 2000));
+                                  if (!isLive) break;
+                                  const liveTickArray = await ScannerAPI.getCandles(curAsset.symbol, 2, '1m');
+                                  if (liveTickArray.length) {
+                                      const tick = liveTickArray[liveTickArray.length - 1];
+                                      if (tick.time >= localLastTime && !isNaN(tick.close)) {
+                                          updateChartAndData(chartDataRef.current.slice(0, -1).concat([tick]));
+                                          localLastTime = Math.max(localLastTime, tick.time);
+                                          activeTradeObj.currentPrice = tick.close;
+                                          syncGlassBoxes(); // Extend box live
+                                      }
+                                  }
+                                }
+                              })();
+
+                              while(expirySeconds > 0) {
+                                setCountdown(expirySeconds);
+                                // MID-TRADE ANALYSIS
+                                if (expirySeconds === Math.floor((expMins * 60) / 2) && !spokenMidpoint) {
+                                     let diff = sig.type === 'CALL' ? currentPrice.current - entryPriceReal : entryPriceReal - currentPrice.current;
+                                     if (diff > cAtr * 0.15) {
+                                         window.speechQueue.say("Сделка уверенно в плюсе.", {priority: 60});
+                                     } else if (diff < -cAtr * 0.15) {
+                                         window.speechQueue.say("Сделка уходит в минус. Наблюдаю до экспирации.", {priority: 60});
+                                     } else {
+                                         window.speechQueue.say("Сделка рядом с точкой входа. Ситуация пограничная.", {priority: 60});
+                                     }
+                                     spokenMidpoint = true;
+                                }
+                                await new Promise(r => setTimeout(r, 1000));
+                                expirySeconds--;
+                              }
+                              
+                              isLive = false; setCountdown(null);
+
+                              // EXIT
+                              const resultData = await ScannerAPI.getCandles(curAsset.symbol, 1, '1m');
+                              const finalPrice = resultData.length ? resultData[resultData.length - 1].close : entryPriceReal;
+                              const isWin = (sig.type === 'CALL' && finalPrice >= entryPriceReal) || (sig.type === 'PUT' && finalPrice <= entryPriceReal);
+                              const exitTimeReal = Date.now() / 1000;
+
+                              let tradePnl = isWin ? MARTINGALE_LADDER[mLiveStep] * PAYOUT_RATE : -MARTINGALE_LADDER[mLiveStep];
+                              
+                              activeTradeObj.exitTime = exitTimeReal;
+                              activeTradeObj.exitPrice = finalPrice;
+                              activeTradeObj.result = isWin ? 'WIN' : 'LOSS';
+                              activeTradeObj.pnl = Math.round(tradePnl);
+                              syncGlassBoxes(); 
+
+                              if (isWin) {
+                                playSound('win');
+                                statsRef.current.wins++; statsRef.current.pnl += tradePnl; mLiveStep = 0; 
+                              } else {
+                                playSound('loss');
+                                statsRef.current.losses++; statsRef.current.pnl += tradePnl;
+                                failedZonesRef.current.push({ price: sig.type === 'CALL' ? cLower : cUpper, type: sig.type, expiryTime: exitTimeReal + 7200, used: false });
+                                mLiveStep = Math.min(mLiveStep + 1, MARTINGALE_LADDER.length - 1);
+                              }
+
+                              const newTotal = statsRef.current.wins + statsRef.current.losses;
+                              setTradeStats({ wins: statsRef.current.wins, losses: statsRef.current.losses, winRate: Math.round((statsRef.current.wins / newTotal) * 100), pnl: Math.round(statsRef.current.pnl) });
+
+                              addLog(`Итог сделки: ${isWin ? '+' : ''}${Math.round(tradePnl)}₽`);
+                              window.speechQueue.say(`Сделка закрыта в ${isWin ? 'плюс' : 'минус'}. Результат: ${Math.round(tradePnl)} рублей.`, { priority: 70 });
+
+                              setSignal(null);
+                              setAppPhase('СКАНИРОВАНИЕ АКТИВНО');
+                              lastNewsTimeRef.current = Date.now();
+                              
+                              await new Promise(r => setTimeout(r, 5000));
                           }
-                          
-                          isLive = false; setCountdown(null);
-
-                          // EXIT
-                          const resultData = await ScannerAPI.getCandles(curAsset.symbol, 1, '1m');
-                          const finalPrice = resultData.length ? resultData[resultData.length - 1].close : entryPriceReal;
-                          const isWin = (isCall && finalPrice >= entryPriceReal) || (isPut && finalPrice <= entryPriceReal);
-                          const exitTimeReal = Date.now() / 1000;
-
-                          let tradePnl = isWin ? MARTINGALE_LADDER[mLiveStep] * PAYOUT_RATE : -MARTINGALE_LADDER[mLiveStep];
-                          
-                          activeTradeObj.exitTime = exitTimeReal;
-                          activeTradeObj.exitPrice = finalPrice;
-                          activeTradeObj.result = isWin ? 'WIN' : 'LOSS';
-                          activeTradeObj.pnl = Math.round(tradePnl);
-                          syncGlassBoxes(); // Lock the glass box permanently
-
-                          if (isWin) {
-                            playSound('win');
-                            statsRef.current.wins++; statsRef.current.pnl += tradePnl; mLiveStep = 0; 
-                          } else {
-                            playSound('loss');
-                            statsRef.current.losses++; statsRef.current.pnl += tradePnl;
-                            failedZonesRef.current.push({ price: isCall ? cLower : cUpper, type: isCall ? 'CALL' : 'PUT', expiryTime: exitTimeReal + 7200, used: false });
-                            mLiveStep = Math.min(mLiveStep + 1, MARTINGALE_LADDER.length - 1);
-                          }
-
-                          const newTotal = statsRef.current.wins + statsRef.current.losses;
-                          setTradeStats({ wins: statsRef.current.wins, losses: statsRef.current.losses, winRate: Math.round((statsRef.current.wins / newTotal) * 100), pnl: Math.round(statsRef.current.pnl) });
-
-                          addLog(`Итог сделки: ${isWin ? '+' : ''}${Math.round(tradePnl)}₽`);
-                          window.speechQueue.say(`Сделка закрыта в ${isWin ? 'плюс' : 'минус'}. Результат: ${Math.round(tradePnl)} рублей.`, { priority: 70 });
-
-                          setSignal(null);
-                          setAppPhase('СКАНИРОВАНИЕ АКТИВНО');
-                          lastNewsTimeRef.current = Date.now(); // reset news timer
-                          
-                          await new Promise(r => setTimeout(r, 5000)); // short cooldown
                       }
                   } else {
                       setApiStatus('ОШИБКА СЕТИ'); setAppPhase('ПОВТОРНОЕ ПОДКЛЮЧЕНИЕ...');
