@@ -121,32 +121,66 @@
         /* Glass Trade Boxes */
         .glass-trade-box {
             position: absolute;
-            pointer-events: none;
             z-index: 10;
-            border-radius: 4px;
-            transition: width 0.3s linear, left 0.3s linear, top 0.3s linear, height 0.3s linear, background 0.5s, box-shadow 0.5s;
-            backdrop-filter: blur(1px);
+            border-radius: 6px;
+            transition: width 0.1s linear, left 0.1s linear, top 0.1s linear, height 0.1s linear, background 0.3s, box-shadow 0.3s;
+            backdrop-filter: blur(2px);
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            cursor: crosshair;
+            pointer-events: auto; /* Allow hover */
+        }
+        .glass-trade-box:hover {
+            z-index: 15;
+            filter: brightness(1.1);
         }
 
         .glass-trade-box.active {
             background: rgba(59, 130, 246, 0.15);
             border: 1px solid rgba(59, 130, 246, 0.5);
-            border-left: 2px solid rgba(59, 130, 246, 0.8);
+            border-left: 2px solid rgba(59, 130, 246, 0.9);
             box-shadow: 0 0 15px rgba(59, 130, 246, 0.2) inset, 0 4px 15px rgba(59, 130, 246, 0.1);
         }
         .glass-trade-box.win {
             background: rgba(16, 185, 129, 0.18);
             border: 1px solid rgba(16, 185, 129, 0.6);
-            border-left: 2px solid rgba(16, 185, 129, 0.8);
+            border-left: 2px solid rgba(16, 185, 129, 0.9);
             box-shadow: 0 0 20px rgba(16, 185, 129, 0.25) inset, 0 0 10px rgba(16, 185, 129, 0.2);
         }
         .glass-trade-box.loss {
             background: rgba(244, 63, 94, 0.18);
             border: 1px solid rgba(244, 63, 94, 0.6);
-            border-left: 2px solid rgba(244, 63, 94, 0.8);
+            border-left: 2px solid rgba(244, 63, 94, 0.9);
             box-shadow: 0 0 20px rgba(244, 63, 94, 0.25) inset, 0 0 10px rgba(244, 63, 94, 0.2);
         }
+
+        /* Custom DOM Markers */
+        .trade-entry-marker {
+            position: absolute;
+            width: 8px; height: 8px;
+            background: #0ea5e9;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 10px rgba(14,165,233,0.8);
+            transform: translate(-50%, -50%);
+            z-index: 12;
+            pointer-events: none;
+        }
+        .trade-exit-badge {
+            position: absolute;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 8px;
+            font-weight: 900;
+            color: white;
+            transform: translate(-50%, -150%);
+            z-index: 12;
+            pointer-events: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            font-family: 'Oswald', sans-serif;
+            letter-spacing: 0.05em;
+        }
+        .trade-exit-badge.win { background: #10b981; border: 1px solid #059669; }
+        .trade-exit-badge.loss { background: #f43f5e; border: 1px solid #e11d48; }
 
         /* Launch Screen Transitions */
         .launch-overlay {
@@ -163,13 +197,13 @@
         .scanner-overlay {
             position: absolute;
             inset: 0;
-            z-index: 12;
+            z-index: 5; /* Below boxes */
             pointer-events: none;
             overflow: hidden;
             transition: opacity 0.3s ease;
         }
         .scanner-overlay.is-soft {
-            opacity: 0.35;
+            opacity: 0.25;
         }
         
         .scanner-reticle {
@@ -286,30 +320,28 @@
 
         /* Trade Tooltip */
         .trade-tooltip {
-            position: absolute;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 15px 35px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(226, 232, 240, 0.5);
-            border-radius: 16px;
-            padding: 16px;
+            position: fixed; /* Fixed to viewport based on mouse */
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 15px 40px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+            border-radius: 12px;
+            padding: 14px;
             pointer-events: none;
-            z-index: 50;
-            width: 260px;
-            transition: opacity 0.2s, transform 0.1s linear;
-            transform: translate(-50%, -115%);
+            z-index: 1000;
+            width: 250px;
+            transition: opacity 0.15s ease-out;
+            transform: translate(-50%, calc(-100% - 15px));
         }
         .trade-tooltip::after {
             content: '';
-            position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%) rotate(45deg);
-            width: 12px; height: 12px;
-            background: rgba(248, 250, 252, 0.9);
-            border-right: 1px solid rgba(226, 232, 240, 0.5);
-            border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+            position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%) rotate(45deg);
+            width: 10px; height: 10px;
+            background: rgba(248, 250, 252, 0.95);
+            border-right: 1px solid rgba(226, 232, 240, 0.9);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.9);
         }
 
-        @keyframes hud-spin { 100% { transform: rotate(360deg); } }
-        @keyframes hud-pulse { 0%, 100% { opacity: 0.5; transform: scale(0.95); } 50% { opacity: 1; transform: scale(1.05); } }
     </style>
 </head>
 <body>
@@ -582,6 +614,8 @@
           const [currentTF, setCurrentTF] = useState('5M');
           const [diagStats, setDiagStats] = useState({ sweeps: 0, reclaims: 0, typeB: 0, rejected: 0, finalSignals: 0 });
           
+          const [liveDisplayPrice, setLiveDisplayPrice] = useState(null);
+
           const chartContainerRef = useRef(null);
           const overlaysContainerRef = useRef(null);
           const chartInstance = useRef(null);
@@ -672,33 +706,77 @@
               
               overlaysContainerRef.current.innerHTML = '';
               
-              completedTradesRef.current.forEach(trade => {
-                  const x1 = timeScale.timeToCoordinate(trade.entryTime);
-                  let x2 = timeScale.timeToCoordinate(trade.exitTime || (trade.entryTime + trade.exp * 60));
+              completedTradesRef.current.forEach((trade, idx) => {
+                  // LWC doesn't always map non-existing times. If it fails, approximate via interpolation
+                  const getRobustX = (ts) => {
+                      let x = timeScale.timeToCoordinate(ts);
+                      if (x === null || isNaN(x)) {
+                          const sigX = timeScale.timeToCoordinate(trade.signalTime);
+                          if (sigX !== null && !isNaN(sigX)) {
+                              // Assuming 5m candles = 300s, typical width is approx 8-10px depending on zoom. 
+                              // We approximate 6s delay as a tiny fractional shift.
+                              const diffSecs = ts - trade.signalTime;
+                              x = sigX + (diffSecs / 300) * 10; 
+                          }
+                      }
+                      return x;
+                  };
+
+                  const xEntry = getRobustX(trade.entryTime);
+                  let xExit = getRobustX(trade.exitTime || (Date.now() / 1000));
                   
-                  if (x1 === null) return;
-                  if (x2 === null || isNaN(x2)) x2 = timeScale.width();
+                  if (xEntry === null || isNaN(xEntry)) return;
+                  if (xExit === null || isNaN(xExit)) xExit = timeScale.width(); // Extend to right edge if live
 
                   const yEntry = series.priceToCoordinate(trade.entryPrice);
                   const yExit = series.priceToCoordinate(trade.currentPrice || trade.exitPrice || trade.entryPrice);
                   
-                  if (yEntry !== null && yExit !== null) {
+                  if (yEntry !== null && yExit !== null && !isNaN(yEntry) && !isNaN(yExit)) {
+                      // 1. Draw Glass Box
                       const top = Math.min(yEntry, yExit);
-                      const height = Math.max(Math.abs(yEntry - yExit), 2);
-                      const width = Math.max(x2 - x1, 5);
+                      const height = Math.max(Math.abs(yEntry - yExit), 4); // min 4px height
+                      const width = Math.max(xExit - xEntry, 4); // min 4px width
                       
                       const box = document.createElement('div');
-                      
                       let resClass = 'active';
                       if (trade.result === 'WIN') resClass = 'win';
                       else if (trade.result === 'LOSS') resClass = 'loss';
 
                       box.className = `glass-trade-box ${trade.type === 'PUT' ? 'put' : ''} ${resClass}`;
-                      box.style.left = `${x1}px`;
+                      box.style.left = `${xEntry}px`;
                       box.style.top = `${top}px`;
                       box.style.width = `${width}px`;
                       box.style.height = `${height}px`;
+
+                      // Attach hover event for tooltip directly to the DOM element
+                      box.onmouseenter = (e) => {
+                          setTooltipData({ ...trade, x: e.clientX, y: e.clientY });
+                      };
+                      box.onmousemove = (e) => {
+                          setTooltipData(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null);
+                      };
+                      box.onmouseleave = () => {
+                          setTooltipData(null);
+                      };
+
                       overlaysContainerRef.current.appendChild(box);
+
+                      // 2. Draw precise ENTRY marker (Blue dot) slightly offset
+                      const entryMarker = document.createElement('div');
+                      entryMarker.className = 'trade-entry-marker';
+                      entryMarker.style.left = `${xEntry}px`;
+                      entryMarker.style.top = `${yEntry}px`;
+                      overlaysContainerRef.current.appendChild(entryMarker);
+
+                      // 3. Draw precise EXIT badge if trade completed
+                      if (trade.result !== 'PENDING') {
+                          const exitBadge = document.createElement('div');
+                          exitBadge.className = `trade-exit-badge ${resClass}`;
+                          exitBadge.style.left = `${xExit}px`;
+                          exitBadge.style.top = `${yExit}px`;
+                          exitBadge.innerText = trade.result === 'WIN' ? 'WIN' : 'LOSS';
+                          overlaysContainerRef.current.appendChild(exitBadge);
+                      }
                   }
               });
           }, []);
@@ -737,19 +815,7 @@
                 chartInstance.current = mainChart;
 
                 mainChart.timeScale().subscribeVisibleLogicalRangeChange(syncGlassBoxes);
-                
-                mainChart.subscribeCrosshairMove((param) => {
-                    if (!param.time || !param.point) {
-                        setTooltipData(null);
-                        return;
-                    }
-                    const trade = completedTradesRef.current.find(t => param.time >= t.entryTime && param.time <= (t.exitTime || t.entryTime + t.exp*60));
-                    if (trade) {
-                        setTooltipData({ ...trade, x: param.point.x, y: param.point.y });
-                    } else {
-                        setTooltipData(null);
-                    }
-                });
+                mainChart.subscribeCrosshairMove(syncGlassBoxes); // Refresh positions on move if needed
 
             } catch(e) { console.error("Chart Init Error", e); }
           };
@@ -825,6 +891,24 @@
               loop();
           }, []);
 
+          const updateChartAndData = (data) => {
+              chartDataRef.current = data;
+              const lastCandle = data[data.length - 1];
+              currentPrice.current = lastCandle.close;
+              setLiveDisplayPrice(lastCandle.close); // Sync UI price
+
+              if (candleSeries.current) {
+                  candleSeries.current.setData(data);
+                  
+                  // CRITICAL: Sort markers exactly by time before applying, LWC drops unsorted markers.
+                  // Since we only use native markers for SIGNAL now, it's very clean.
+                  const nativeMarkers = markersRef.current.sort((a, b) => a.time - b.time);
+                  candleSeries.current.setMarkers(nativeMarkers);
+                  
+                  syncGlassBoxes();
+              }
+          };
+
           const runTerminalEngine = async () => {
             if (engineActive.current) return;
             engineActive.current = true;
@@ -837,17 +921,16 @@
             
             const curAsset = ASSETS[0];
             
-            // Artificial delay to show premium loading state briefly
             await new Promise(r => setTimeout(r, 600));
             setLoadingState({ show: true, phase: 'FETCHING', text: 'Загружаю котировки BTCUSDT 5M...', fading: false });
             
             const initialData = await ScannerAPI.getCandles(curAsset.symbol, 250, '5m');
             
             if (initialData && initialData.length > 150) {
-                setLoadingState({ show: true, phase: 'PREPARING', text: 'Подготавливаю график и зоны...', fading: false });
+                setLoadingState({ show: true, phase: 'PREPARING', text: 'Подготавливаю график и исторические сделки...', fading: false });
                 setApiStatus('АКТИВЕН');
-                chartDataRef.current = initialData;
-                currentPrice.current = initialData[initialData.length - 1].close;
+                
+                await initChart(); // Ensure chart exists before logic runs
 
                 const liqZones = calcLiquidityZones(initialData, 24); 
                 const atrSeries = calcATRSeries(initialData, 14);
@@ -858,14 +941,14 @@
                 let statSweeps = 0, statReclaims = 0, statTypeB = 0, statRejected = 0, statFinal = 0;
                 
                 const startIdx = initialData.length - 144; 
-                const endIdx = initialData.length - 6;
+                const endIdx = initialData.length - 6; // Leave room for 25m expiry
 
                 for (let idx = startIdx; idx <= endIdx; idx++) {
                     const currTime = initialData[idx].time;
                     const currCandle = initialData[idx];
                     const prevCandle = initialData[idx - 1];
                     const zones = liqMap.get(currTime);
-                    const cAtr = atrMap.get(currTime) || (currentPrice.current * 0.002);
+                    const cAtr = atrMap.get(currTime) || (currCandle.close * 0.002);
 
                     if (zones) {
                         const { upper: cUpper, lower: cLower } = zones;
@@ -882,29 +965,29 @@
                         
                         if (reclaimTop || reclaimBot) statReclaims++;
 
-                        // More realistic structure break for 1-candle inline scanner: body rejection color
-                        const structBreakTop = reclaimTop && currCandle.close < currCandle.open;
-                        const structBreakBot = reclaimBot && currCandle.close > currCandle.open;
+                        // Body rejection color check (Reclaim + Rejection)
+                        const isRedBody = currCandle.close < currCandle.open;
+                        const isGreenBody = currCandle.close > currCandle.open;
 
-                        if (structBreakTop) { isPut = true; signalReason = 'SMC PRIMARY: RECLAIM & REJECTION'; }
-                        else if (structBreakBot) { isCall = true; signalReason = 'SMC PRIMARY: RECLAIM & REJECTION'; }
+                        if (reclaimTop && isRedBody) { isPut = true; signalReason = 'SMC PRIMARY: SWEEP & RECLAIM'; }
+                        else if (reclaimBot && isGreenBody) { isCall = true; signalReason = 'SMC PRIMARY: SWEEP & RECLAIM'; }
                         else if (reclaimTop || reclaimBot) { statRejected++; }
 
-                        // Type B / Retest Logic
+                        // Type B / Retest Logic (If no primary signal)
                         if (!isCall && !isPut) {
                             for (let fz of failedZonesRef.current) {
                                 if (fz.used || currCandle.time > fz.expiryTime) continue;
                                 const dist = Math.abs(currCandle.close - fz.price) / cAtr;
-                                if (dist < 0.65) {
-                                    // Check pinbar / rejection
+                                // Expand distance check to 1.0 ATR for better retest catching
+                                if (dist < 1.0) {
                                     const body = Math.abs(currCandle.close - currCandle.open);
                                     const total = currCandle.high - currCandle.low;
-                                    const isPinbar = (total > 0) && (body / total < 0.4);
+                                    const isRejectionPin = (total > 0) && (body / total <= 0.5);
 
-                                    if (fz.type === 'PUT' && currCandle.high >= fz.price && currCandle.close < fz.price && isPinbar) {
+                                    if (fz.type === 'PUT' && currCandle.high >= fz.price && currCandle.close < fz.price && isRejectionPin) {
                                         isPut = true; isTypeB = true; fz.used = true; signalReason = 'TYPE B: SECOND CHANCE RETEST'; break;
                                     }
-                                    if (fz.type === 'CALL' && currCandle.low <= fz.price && currCandle.close > fz.price && isPinbar) {
+                                    if (fz.type === 'CALL' && currCandle.low <= fz.price && currCandle.close > fz.price && isRejectionPin) {
                                         isCall = true; isTypeB = true; fz.used = true; signalReason = 'TYPE B: SECOND CHANCE RETEST'; break;
                                     }
                                 }
@@ -915,18 +998,28 @@
                             statFinal++;
                             if (isTypeB) statTypeB++;
                             
-                            const entryPrice = currCandle.close;
                             const signalTime = currTime;
-                            const entryTime = initialData[idx+1]?.time || (currTime + 300); // Strict LWC alignment
-                            const exitCandle = initialData[Math.min(idx+5, initialData.length-1)];
+                            // Historical Approximation: We simulate 6s delay by taking the candle close 
+                            // But exact time for coordinate rendering will be signalTime + 6
+                            const entryTime = currTime + 6; 
+                            const entryPrice = currCandle.close; // Approximate
+                            
+                            const exitCandle = initialData[idx + 5]; // +25 mins
+                            if(!exitCandle) continue;
                             
                             const exitPrice = exitCandle.close;
                             const isWin = (isCall && exitPrice >= entryPrice) || (isPut && exitPrice <= entryPrice);
                             const tradePnl = isWin ? MARTINGALE_LADDER[mStep] * PAYOUT_RATE : -MARTINGALE_LADDER[mStep];
 
-                            markersRef.current.push({ time: signalTime, position: isCall ? 'belowBar' : 'aboveBar', color: isCall ? '#3b82f6' : '#475569', shape: isCall ? 'arrowUp' : 'arrowDown', text: isTypeB ? 'TYPE B' : 'SIGNAL', size: 1.5 });
-                            markersRef.current.push({ time: entryTime, position: isCall ? 'belowBar' : 'aboveBar', color: '#0ea5e9', shape: 'circle', text: 'ENTRY', size: 0.5 });
-                            markersRef.current.push({ time: exitCandle.time, position: isCall ? 'aboveBar' : 'belowBar', color: isWin ? '#10b981' : '#ef4444', shape: 'circle', text: isWin ? 'WIN' : 'LOSS', size: 1 });
+                            // ONLY store LWC native markers for the SIGNAL. Entry/Exit/Box drawn via DOM
+                            markersRef.current.push({ 
+                                time: signalTime, 
+                                position: isCall ? 'belowBar' : 'aboveBar', 
+                                color: isCall ? '#3b82f6' : '#64748b', 
+                                shape: isCall ? 'arrowUp' : 'arrowDown', 
+                                text: isTypeB ? 'TYPE B' : 'SIGNAL', 
+                                size: 1.5 
+                            });
 
                             completedTradesRef.current.push({
                                 type: isCall ? 'CALL' : 'PUT',
@@ -942,7 +1035,7 @@
                                 failedZonesRef.current.push({ price: isCall ? cLower : cUpper, type: isCall ? 'CALL' : 'PUT', expiryTime: exitCandle.time + 7200, used: false });
                                 mStep = Math.min(mStep + 1, MARTINGALE_LADDER.length - 1);
                             }
-                            idx += 5; 
+                            idx += 5; // Skip inside trade duration
                         }
                     }
                 }
@@ -951,18 +1044,13 @@
                 setTradeStats({ wins: tempWins, losses: tempLosses, winRate: tempWins+tempLosses > 0 ? Math.round((tempWins/(tempWins+tempLosses))*100) : 0, pnl: Math.round(tempPnl) });
                 setDiagStats({ sweeps: statSweeps, reclaims: statReclaims, typeB: statTypeB, rejected: statRejected, finalSignals: statFinal });
 
-                await initChart();
-                candleSeries.current.setData(initialData);
-                
-                // CRITICAL: Sort markers by time before setting to avoid silent drop by lightweight-charts
-                markersRef.current.sort((a, b) => a.time - b.time);
-                candleSeries.current.setMarkers(markersRef.current);
-                
+                updateChartAndData(initialData); // This applies data, sorts markers, and syncs glass boxes
+
                 upperSeriesRef.current.setData(liqZones.map(i => ({time: i.time, value: i.upper})));
                 lowerSeriesRef.current.setData(liqZones.map(i => ({time: i.time, value: i.lower})));
                 chartInstance.current.timeScale().fitContent();
-                syncGlassBoxes();
                 
+                // Fade out loading screen smoothly
                 setLoadingState(prev => ({ ...prev, fading: true }));
                 setTimeout(() => setLoadingState({ show: false, phase: '', text: '', fading: false }), 700);
 
@@ -1007,14 +1095,11 @@
                   const data = await ScannerAPI.getCandles(curAsset.symbol, 200, '5m'); 
                   if (data && data.length > 150) {
                       setApiStatus('АКТИВЕН');
-                      chartDataRef.current = data;
                       const lastIdx = data.length - 1;
                       const currCandle = data[lastIdx];
                       const prevCandle = data[lastIdx - 1];
-                      currentPrice.current = currCandle.close; 
 
-                      data.slice(-5).forEach(d => candleSeries.current.update(d));
-                      syncGlassBoxes();
+                      updateChartAndData(data); // Safely applies new candle, markers, boxes
 
                       const liqZones = calcLiquidityZones(data, 24); 
                       const atrSeries = calcATRSeries(data, 14);
@@ -1046,10 +1131,10 @@
                           for (let fz of failedZonesRef.current) {
                               if (fz.used || currCandle.time > fz.expiryTime) continue;
                               const dist = Math.abs(currCandle.close - fz.price) / cAtr;
-                              if (dist < 0.65) {
+                              if (dist < 1.0) {
                                   const body = Math.abs(currCandle.close - currCandle.open);
                                   const total = currCandle.high - currCandle.low;
-                                  const isPinbar = (total > 0) && (body / total < 0.4);
+                                  const isPinbar = (total > 0) && (body / total <= 0.5);
 
                                   if (fz.type === 'PUT' && currCandle.high >= fz.price && currCandle.close < fz.price && isPinbar) {
                                       isPut = true; fz.used = true; signalReason = 'TYPE B: SECOND CHANCE RETEST'; break;
@@ -1106,10 +1191,7 @@
                           
                           const signalTime = currCandle.time;
                           markersRef.current.push({ time: signalTime, position: isCall ? 'belowBar' : 'aboveBar', color: isCall ? '#3b82f6' : '#475569', shape: isCall ? 'arrowUp' : 'arrowDown', text: signalReason.includes('TYPE B') ? 'TYPE B' : 'SIGNAL', size: 2 });
-                          
-                          // Sort markers before update to prevent dropping them
-                          markersRef.current.sort((a, b) => a.time - b.time);
-                          candleSeries.current.setMarkers(markersRef.current);
+                          updateChartAndData(chartDataRef.current);
                           
                           setAppPhase(`ПОДГОТОВКА ВХОДА`);
                           addLog(`Сигнал на ${dirText}. ${signalReason}`, true);
@@ -1130,12 +1212,8 @@
                           
                           const entryData = await ScannerAPI.getCandles(curAsset.symbol, 2, '1m');
                           const entryPriceReal = entryData.length ? entryData[entryData.length-1].close : currentPrice.current;
-                          const entryTime = currCandle.time; // Live uses current 5m bar time so it aligns exactly
-
-                          markersRef.current.push({ time: entryTime, position: isCall ? 'belowBar' : 'aboveBar', color: '#0ea5e9', shape: 'circle', text: 'ENTRY', size: 1 });
-                          markersRef.current.sort((a, b) => a.time - b.time);
-                          candleSeries.current.setMarkers(markersRef.current);
-
+                          const entryTime = Date.now() / 1000; // EXACT live entry time
+                          
                           setAppPhase('СДЕЛКА АКТИВНА');
                           const expMins = 25; 
                           setSignal({ type: isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice: entryPriceReal });
@@ -1161,11 +1239,11 @@
                               if (liveTickArray.length) {
                                   const tick = liveTickArray[liveTickArray.length - 1];
                                   if (tick.time >= localLastTime && !isNaN(tick.close)) {
-                                      candleSeries.current.update(tick);
-                                      currentPrice.current = tick.close;
+                                      // Force LWC to accept partial tick updates
+                                      updateChartAndData(chartDataRef.current.slice(0, -1).concat([tick]));
                                       localLastTime = Math.max(localLastTime, tick.time);
                                       activeTradeObj.currentPrice = tick.close;
-                                      syncGlassBoxes();
+                                      syncGlassBoxes(); // Re-render live extending box
                                   }
                               }
                             }
@@ -1195,11 +1273,7 @@
                           const resultData = await ScannerAPI.getCandles(curAsset.symbol, 1, '1m');
                           const finalPrice = resultData.length ? resultData[resultData.length - 1].close : entryPriceReal;
                           const isWin = (isCall && finalPrice >= entryPriceReal) || (isPut && finalPrice <= entryPriceReal);
-                          const exitTimeReal = resultData.length ? resultData[0].time : entryTime + expMins * 60; // Usually falls nicely in Live
-
-                          markersRef.current.push({ time: exitTimeReal, position: isCall ? 'aboveBar' : 'belowBar', color: isWin ? '#10b981' : '#ef4444', shape: 'arrowDown', text: isWin ? 'EXIT (+)' : 'EXIT (-)', size: 1 });
-                          markersRef.current.sort((a, b) => a.time - b.time);
-                          candleSeries.current.setMarkers(markersRef.current);
+                          const exitTimeReal = Date.now() / 1000;
 
                           let tradePnl = isWin ? MARTINGALE_LADDER[mLiveStep] * PAYOUT_RATE : -MARTINGALE_LADDER[mLiveStep];
                           
@@ -1207,7 +1281,7 @@
                           activeTradeObj.exitPrice = finalPrice;
                           activeTradeObj.result = isWin ? 'WIN' : 'LOSS';
                           activeTradeObj.pnl = Math.round(tradePnl);
-                          syncGlassBoxes();
+                          syncGlassBoxes(); // Lock the glass box permanently
 
                           if (isWin) {
                             playSound('win');
@@ -1477,7 +1551,7 @@
                       
                       <div className="w-[65%] rounded-xl overflow-hidden bg-white/80 border border-white shadow-inner flex p-3 justify-center flex-col items-center text-center backdrop-blur-md">
                         <span className="text-[10px] font-bold text-slate-500 tracking-widest oswald-font border-b border-slate-200 pb-1 w-full uppercase">Текущая цена</span>
-                        <span className="text-xl md:text-2xl font-black text-slate-800 mono-font mt-1.5 drop-shadow-sm">{currentPrice.current ? formatPrice(currentPrice.current) : '---'}</span>
+                        <span className="text-xl md:text-2xl font-black text-slate-800 mono-font mt-1.5 drop-shadow-sm">{liveDisplayPrice ? formatPrice(liveDisplayPrice) : '---'}</span>
                       </div>
                     </div>
 
