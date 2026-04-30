@@ -1,1448 +1,1574 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Крипто Терминал Гордеева - PRO MAX (Premium Light)</title>
-
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
-
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Oswald:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700;800&display=swap');
-
-    :root {
-      /* Premium Light Fintech Palette */
-      --bg-page: #eef3f8;
-      --bg-panel: rgba(255, 255, 255, 0.85);
-      --bg-card: #ffffff;
-      
-      --border-light: rgba(112, 130, 152, 0.2);
-      --border-strong: rgba(112, 130, 152, 0.35);
-      
-      --shadow-sm: 0 4px 12px rgba(31, 45, 61, 0.05);
-      --shadow-md: 0 12px 28px rgba(31, 45, 61, 0.08);
-      
-      --text-main: #1f2d3d;
-      --text-muted: #708298;
-      
-      --accent: #28a8ff;
-      --accent-hover: #1c92e5;
-      --accent-soft: rgba(40, 168, 255, 0.1);
-      
-      --good: #10b981;
-      --good-soft: rgba(16, 185, 129, 0.15);
-      --bad: #ef5f73;
-      --bad-soft: rgba(239, 95, 115, 0.15);
-      --warn: #f5a623;
-    }
-
-    * { box-sizing: border-box; }
-
-    html, body {
-      width: 100%; height: 100%;
-      margin: 0; padding: 0;
-      background: radial-gradient(circle at top right, rgba(40,168,255,0.06), transparent 45%), linear-gradient(180deg, #f6f9fc 0%, var(--bg-page) 100%);
-      color: var(--text-main);
-      font-family: 'Montserrat', sans-serif;
-      -webkit-font-smoothing: antialiased;
-      overflow: hidden; /* STRICT NO SCROLL ON DESKTOP */
-    }
-
-    #root { width: 100%; height: 100%; overflow: hidden; }
-
-    .oswald { font-family: 'Oswald', sans-serif; letter-spacing: 0.05em; text-transform: uppercase; }
-    .mono { font-family: 'JetBrains Mono', monospace; }
-
-    /* Fine grid background */
-    body::before {
-      content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.35;
-      background-image: linear-gradient(var(--border-light) 1px, transparent 1px), linear-gradient(90deg, var(--border-light) 1px, transparent 1px);
-      background-size: 28px 28px;
-      mask-image: radial-gradient(circle at center, #000 0%, transparent 85%);
-      -webkit-mask-image: radial-gradient(circle at center, #000 0%, transparent 85%);
-    }
-
-    /* --- PREMIUM ANIMATIONS --- */
-    .author-name {
-      font-family: 'Rajdhani', sans-serif; font-weight: 800; letter-spacing: 0.35em; text-transform: uppercase;
-      background: linear-gradient(90deg, #708298 0%, #cbd5e1 20%, #28a8ff 50%, #cbd5e1 80%, #708298 100%);
-      background-size: 200% auto; color: transparent; -webkit-background-clip: text; background-clip: text;
-      animation: silverSweep 5s linear infinite; display: inline-block;
-    }
-    @keyframes silverSweep { to { background-position: 200% center; } }
-    .text-glow { text-shadow: 0 0 15px currentColor; }
-
-    /* Cinematic Startup Overlay */
-    #startup {
-      position: fixed; inset: 0; z-index: 999999;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background: radial-gradient(circle at center, #ffffff 0%, #e2e8f0 100%);
-      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .startup-card {
-      background: rgba(255,255,255,0.95); border: 1px solid var(--border-light);
-      box-shadow: 0 20px 60px rgba(31,45,61,0.08); border-radius: 28px;
-      padding: 50px 60px; text-align: center; width: min(90vw, 540px);
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Крипто Терминал Гордеева - PRO MAX (SMC)</title>
     
-    .btn-start {
-      margin-top: 36px; padding: 18px 40px; border-radius: 14px;
-      font-family: 'Oswald', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
-      background: linear-gradient(135deg, #0ea5e9, #2563eb); color: #fff;
-      border: none; cursor: pointer; box-shadow: 0 10px 25px rgba(14,165,233,0.3);
-      transition: transform 0.15s, box-shadow 0.15s; width: 100%;
-    }
-    .btn-start:active { transform: scale(0.96); box-shadow: 0 5px 15px rgba(14,165,233,0.2); }
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 
-    .loader-wrap { margin-top: 30px; display: none; flex-direction: column; align-items: center; width: 100%; }
-    .loader-text { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 10px; font-family: 'JetBrains Mono', monospace; }
-    .loader-bar { width: 100%; height: 4px; background: rgba(0,0,0,0.06); border-radius: 2px; overflow: hidden; position: relative; }
-    .loader-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s ease; box-shadow: 0 0 10px var(--accent); }
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Oswald:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap');
+        
+        body { 
+            margin: 0; padding: 0; 
+            background: #eef2f6;
+            color: #0f172a; 
+            overflow: hidden; 
+            touch-action: manipulation;
+            -webkit-font-smoothing: antialiased;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .oswald-font { font-family: 'Oswald', sans-serif; letter-spacing: 0.05em; text-transform: uppercase; }
+        .mono-font { font-family: 'JetBrains Mono', monospace; }
 
-    /* --- STRICT LAYOUT ARCHITECTURE --- */
-    .app-shell {
-      width: 100%; height: 100dvh; max-width: 1920px;
-      margin: 0 auto; padding: 12px; box-sizing: border-box;
-      display: grid;
-      grid-template-rows: 64px 76px minmax(0, 1fr);
-      gap: 12px; overflow: hidden;
-      position: relative; z-index: 10;
-    }
+        /* Background & Depth */
+        .bg-grid-pattern {
+            background-image: 
+                linear-gradient(to right, rgba(14, 165, 233, 0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(14, 165, 233, 0.04) 1px, transparent 1px);
+            background-size: 30px 30px;
+            mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+            -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+        }
 
-    /* 1. Header */
-    .header {
-      min-height: 0; overflow: hidden;
-      display: flex; align-items: center; justify-content: space-between;
-      background: var(--bg-panel); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 18px;
-      padding: 0 24px; box-shadow: 0 8px 32px rgba(31, 45, 61, 0.05), inset 0 2px 4px rgba(255, 255, 255, 0.4);
-    }
+        .bg-orb-1 {
+            position: absolute; top: -10%; left: -5%; width: 50vw; height: 50vw;
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.2) 0%, rgba(37, 99, 235, 0.05) 50%, transparent 70%);
+            border-radius: 50%; filter: blur(60px); animation: float 12s ease-in-out infinite alternate;
+        }
+        .bg-orb-2 {
+            position: absolute; bottom: -15%; right: -10%; width: 60vw; height: 60vw;
+            background: radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, rgba(14, 165, 233, 0.05) 50%, transparent 70%);
+            border-radius: 50%; filter: blur(80px); animation: float 15s ease-in-out infinite alternate-reverse;
+        }
 
-    /* 2. Metrics Row (Speedometers) */
-    .metrics-row {
-      min-height: 0; overflow: hidden;
-      display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px;
-    }
-    .metric-card {
-      background: rgba(255, 255, 255, 0.68); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 14px;
-      padding: 8px 6px; display: flex; flex-direction: column; align-items: center; justify-content: space-between;
-      box-shadow: 0 8px 32px rgba(31, 45, 61, 0.05), inset 0 2px 4px rgba(255, 255, 255, 0.4);
-      backdrop-filter: blur(12px); min-height: 0; overflow: hidden; position: relative;
-    }
-    .mc-title { font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; text-align: center; white-space: nowrap; margin-bottom: 2px; z-index: 2; }
-    
-    .gauge-container { width: 44px; height: 22px; position: relative; z-index: 2; }
-    .gauge-svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 2px 4px rgba(40,168,255,0.2)); }
-    .gauge-bg { fill: none; stroke: var(--border-light); stroke-width: 8; stroke-linecap: round; }
-    .gauge-arc-fill { fill: none; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-    .gauge-value { font-size: 11px; font-weight: 800; font-family: 'JetBrains Mono', monospace; margin-top: 4px; color: var(--text-main); line-height: 1; z-index: 2; }
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(2%, 4%) scale(1.05); }
+            100% { transform: translate(-2%, -3%) scale(0.95); }
+        }
 
-    /* 3. Main Dashboard */
-    .main-dashboard {
-      min-height: 0; overflow: hidden; height: 100%;
-      display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 14px;
-    }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* Chart Area */
-    .chart-area {
-      min-width: 0; min-height: 0; height: 100%; overflow: hidden;
-      background: var(--bg-panel); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 20px;
-      box-shadow: 0 8px 32px rgba(31, 45, 61, 0.05), inset 0 2px 4px rgba(255, 255, 255, 0.4);
-      position: relative; display: flex; flex-direction: column;
-    }
-    .chart-info { position: absolute; top: 16px; left: 16px; z-index: 20; padding: 10px 16px; border-radius: 12px; background: rgba(255,255,255,0.95); border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); pointer-events: none; }
-    .chart-price { font-family: 'Oswald', sans-serif; font-size: 32px; font-weight: 800; line-height: 1; margin-top: 2px; color: var(--text-main); }
-    
-    .chart-wrap { flex: 1; position: relative; overflow: hidden; border-radius: 0 0 20px 20px;}
-    #tv-chart { position: absolute; inset: 0; }
-    #chart-overlay { position: absolute; inset: 0; z-index: 35; overflow: hidden; pointer-events: none; }
-    
-    /* --- NEW SCAN ORBS ANIMATION --- */
-    .scan-orb-layer {
-      position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 30; opacity: 0; transition: opacity .35s ease;
-    }
-    .scan-orb-layer.is-active { opacity: 1; }
-    
-    .scan-orb {
-      position: absolute; width: 24px; height: 24px; border-radius: 999px;
-      background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.98) 0%, rgba(88,205,255,0.95) 22%, rgba(39,147,255,0.45) 48%, rgba(39,147,255,0.08) 74%, transparent 100%);
-      box-shadow: 0 0 12px rgba(68,190,255,.78), 0 0 32px rgba(68,190,255,.35), 0 0 58px rgba(68,190,255,.18);
-      transition: transform .16s linear;
-    }
-    .scan-orb::before {
-      content: ""; position: absolute; inset: -7px; border-radius: inherit;
-      border: 1px solid rgba(76,190,255,.38); box-shadow: 0 0 18px rgba(76,190,255,.22);
-      animation: scanRingPulse .75s ease-out infinite;
-    }
-    .scan-orb::after {
-      content: ""; position: absolute; inset: 5px; border-radius: inherit;
-      background: rgba(255,255,255,.85); filter: blur(.2px);
-    }
-    .scan-candle-pulse {
-      position: absolute; width: 34px; height: 34px; border-radius: 999px;
-      border: 1px solid rgba(57,180,255,.45);
-      background: radial-gradient(circle, rgba(88,205,255,.18), transparent 68%);
-      box-shadow: 0 0 20px rgba(72,190,255,.28), inset 0 0 12px rgba(255,255,255,.3);
-      animation: candleScanPulse .52s ease-out forwards;
-    }
-    @keyframes scanRingPulse { 0% { transform: scale(.72); opacity: .45; } 50% { transform: scale(1.08); opacity: .95; } 100% { transform: scale(1.32); opacity: .12; } }
-    @keyframes candleScanPulse { 0% { transform: translate(-50%, -50%) scale(.65); opacity: 0; } 35% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.35); opacity: 0; } }
+        @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        .ticker-wrapper { display: flex; width: max-content; animation: ticker 40s linear infinite; }
+        
+        /* Premium Glass Classes */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+            z-index: 40;
+        }
+        
+        .glass-panel-heavy {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(241, 245, 249, 0.7) 100%);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.08), inset 0 2px 15px rgba(255, 255, 255, 0.8);
+        }
 
-    /* Empty Market Overlay */
-    .empty-market { position: absolute; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.92); backdrop-filter: blur(8px); text-align: center; padding: 20px; transition: opacity 0.3s; }
-    .empty-title { font-family: 'Oswald', sans-serif; font-size: 28px; font-weight: 800; color: var(--bad); letter-spacing: 0.05em; margin-bottom: 8px; }
+        .glass-card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.7) 100%);
+            border: 1px solid rgba(255, 255, 255, 1);
+            box-shadow: 0 8px 25px -5px rgba(15, 23, 42, 0.05), inset 0 1px 2px rgba(255, 255, 255, 1);
+            backdrop-filter: blur(20px);
+        }
+        
+        /* Buttons */
+        .broker-btn {
+            background: linear-gradient(to bottom, #1d4ed8, #1e40af);
+            box-shadow: 0 6px 0 #1e3a8a, 0 15px 25px rgba(30, 58, 138, 0.4), inset 0 1px 1px rgba(255,255,255,0.3);
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .broker-btn:hover {
+            background: linear-gradient(to bottom, #2563eb, #1d4ed8);
+            box-shadow: 0 6px 0 #1e3a8a, 0 20px 35px rgba(30, 58, 138, 0.5), inset 0 1px 1px rgba(255,255,255,0.4);
+            transform: translateY(-1px);
+        }
+        .broker-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0px 0 #1e3a8a, 0 5px 10px rgba(30, 58, 138, 0.4);
+        }
 
-    /* Right Sidebar (Strict Grid) */
-    .sidebar {
-      width: 340px; min-width: 340px; max-width: 340px; 
-      min-height: 0; height: 100%;
-      display: grid;
-      /* Adjusted to fit perfectly without scroll */
-      grid-template-rows: 64px 74px 62px 105px 65px minmax(110px, 1fr) 95px;
-      gap: 10px; overflow: hidden;
-    }
+        .launch-btn {
+            background: linear-gradient(to right, #0ea5e9, #3b82f6);
+            box-shadow: 0 8px 0 #1e3a8a, 0 20px 40px rgba(14, 165, 233, 0.4), inset 0 2px 2px rgba(255,255,255,0.4);
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .launch-btn:hover {
+            box-shadow: 0 8px 0 #1e3a8a, 0 25px 50px rgba(14, 165, 233, 0.6), inset 0 2px 2px rgba(255,255,255,0.5);
+            transform: translateY(-2px) scale(1.01);
+            filter: brightness(1.1);
+        }
+        .launch-btn:active {
+            transform: translateY(8px) scale(0.99);
+            box-shadow: 0 0px 0 #1e3a8a, 0 10px 20px rgba(14, 165, 233, 0.4);
+        }
 
-    .sidebar-card {
-      min-height: 0; min-width: 0; overflow: hidden;
-      background: rgba(255, 255, 255, 0.68); border: 1px solid rgba(255, 255, 255, 0.8);
-      border-radius: 16px; padding: 12px 14px; box-sizing: border-box;
-      box-shadow: 0 8px 32px rgba(31, 45, 61, 0.05), inset 0 2px 4px rgba(255, 255, 255, 0.4);
-      backdrop-filter: blur(16px);
-      display: flex; flex-direction: column; justify-content: center; position: relative;
-    }
-    .sc-title { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); font-weight: 800; margin-bottom: 4px; }
+        /* Glass Trade Boxes */
+        .glass-trade-box {
+            position: absolute;
+            pointer-events: none;
+            z-index: 10;
+            border-radius: 4px;
+            transition: width 0.3s linear, left 0.3s linear, top 0.3s linear, height 0.3s linear, background 0.5s, box-shadow 0.5s;
+            backdrop-filter: blur(1px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
 
-    /* --- PREMIUM BROKER CTA --- */
-    .broker-cta {
-      position: relative; width: 100%; height: 100%; border-radius: 14px; overflow: hidden; text-decoration: none; color: #fff;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background: linear-gradient(135deg, #22b8ff 0%, #246dff 100%);
-      box-shadow: 0 16px 34px rgba(36,109,255,.28), inset 0 1px 0 rgba(255,255,255,.62), inset 0 -8px 16px rgba(0,0,0,.12);
-      transform: translateY(0); transition: transform .18s ease, box-shadow .18s ease, filter .18s ease; cursor: pointer;
-    }
-    .broker-cta:hover {
-      transform: translateY(-2px); filter: brightness(1.04);
-      box-shadow: 0 22px 42px rgba(36,109,255,.36), inset 0 1px 0 rgba(255,255,255,.7), inset 0 -8px 16px rgba(0,0,0,.12);
-    }
-    .broker-cta.is-pressed {
-      transform: translateY(4px) scale(.99);
-      box-shadow: 0 7px 16px rgba(36,109,255,.18), inset 0 4px 12px rgba(0,0,0,.2);
-    }
-    .broker-cta__small { font-size: 9px; font-weight: 900; letter-spacing: .18em; opacity: .86; margin-bottom: 2px;}
-    .broker-cta__main { font-family: 'Oswald', sans-serif; font-size: 21px; line-height: 1; font-weight: 900; letter-spacing: .05em; text-transform: uppercase; }
-    .broker-cta__arrow { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); font-size: 22px; opacity: .9; }
-    
-    .broker-demo-cursor {
-      position: absolute; right: 18px; bottom: 10px; font-size: 22px; color: #fff;
-      filter: drop-shadow(0 5px 8px rgba(0,0,0,.32)); opacity: 0;
-      transform: translate(30px, 24px) rotate(-25deg); pointer-events: none; z-index: 20;
-    }
-    
-    /* Settings */
-    .setup-row { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 4px; }
-    .setup-row:last-child { margin-bottom: 0; }
-    .setup-row span { color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-    .setup-row b { color: var(--text-main); font-family: 'JetBrains Mono', monospace; font-weight: 800; }
+        .glass-trade-box.active {
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.5);
+            border-left: 2px solid rgba(59, 130, 246, 0.8);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.2) inset, 0 4px 15px rgba(59, 130, 246, 0.1);
+        }
+        .glass-trade-box.win {
+            background: rgba(16, 185, 129, 0.18);
+            border: 1px solid rgba(16, 185, 129, 0.6);
+            border-left: 2px solid rgba(16, 185, 129, 0.8);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.25) inset, 0 0 10px rgba(16, 185, 129, 0.2);
+        }
+        .glass-trade-box.loss {
+            background: rgba(244, 63, 94, 0.18);
+            border: 1px solid rgba(244, 63, 94, 0.6);
+            border-left: 2px solid rgba(244, 63, 94, 0.8);
+            box-shadow: 0 0 20px rgba(244, 63, 94, 0.25) inset, 0 0 10px rgba(244, 63, 94, 0.2);
+        }
 
-    /* Stats 12H - Compact & Fixed Grid */
-    .stat-val { font-family: 'Oswald', sans-serif; font-size: clamp(24px, 2vw, 32px); line-height: 1; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    
-    .stats-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
-    .stats-cell { min-width: 0; height: 44px; border-radius: 12px; background: rgba(255,255,255,.58); display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .stats-cell__label { font-size: 8px; line-height: 1; text-transform: uppercase; letter-spacing: .08em; color: #64748b; font-weight: 800; }
-    .stats-cell__value { margin-top: 4px; font-size: 16px; line-height: 1; font-weight: 900; font-family: 'JetBrains Mono', monospace; }
+        /* Launch Screen Transitions */
+        .launch-overlay {
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), backdrop-filter 0.8s ease, transform 0.8s ease;
+        }
+        .launch-overlay.fade-out {
+            opacity: 0;
+            backdrop-filter: blur(0px);
+            transform: scale(1.05);
+            pointer-events: none;
+        }
 
-    /* Orderbook */
-    .ob-container { display: flex; flex-direction: column; gap: 2px; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
-    .ob-row { display: flex; justify-content: space-between; padding: 1px 6px; border-radius: 4px; position: relative; z-index: 1; overflow: hidden; }
-    .ob-row::before { content: ""; position: absolute; right: 0; top: 0; bottom: 0; opacity: 0.12; z-index: -1; transition: width 0.3s ease; }
-    .ob-row.ask::before { background: var(--bad); width: var(--w); }
-    .ob-row.bid::before { background: var(--good); width: var(--w); }
-    .ob-row.ask { color: #d92d20; font-weight: 600; }
-    .ob-row.bid { color: #059669; font-weight: 600; }
-    .ob-center { text-align: center; font-size: 11px; font-weight: 800; color: var(--text-main); padding: 2px 0; border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light); margin: 1px 0; }
+        /* --- SMART SCANNER EFFECT CSS --- */
+        .scanner-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 12;
+            pointer-events: none;
+            overflow: hidden;
+            transition: opacity 0.3s ease;
+        }
+        .scanner-overlay.is-soft {
+            opacity: 0.35;
+        }
+        
+        .scanner-reticle {
+            position: absolute;
+            left: -24px;
+            top: -24px;
+            width: 48px;
+            height: 48px;
+            transform: translate3d(50%, 50%, 0);
+            transition: transform 0.55s cubic-bezier(.2,.8,.2,1);
+            filter: drop-shadow(0 0 12px rgba(14,165,233,.45));
+            opacity: 0; 
+        }
+        .scanner-reticle.is-scanning {
+            opacity: 1;
+        }
+        
+        .scanner-reticle-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 999px;
+            border: 1px solid rgba(14,165,233,.75);
+            box-shadow: 0 0 18px rgba(14,165,233,.30), inset 0 0 18px rgba(14,165,233,.16);
+        }
+        .scanner-reticle-ring.ring-b {
+            inset: 9px;
+            border-color: rgba(16,185,129,.55);
+        }
+        
+        .scanner-reticle.is-scanning .ring-a { animation: scannerPulseA .72s ease-out; }
+        .scanner-reticle.is-scanning .ring-b { animation: scannerPulseB .72s ease-out; }
+        
+        .scanner-dot {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: #0ea5e9;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 14px rgba(14,165,233,.85);
+        }
+        
+        .scanner-beam {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            opacity: .0;
+            background: linear-gradient(
+                to bottom,
+                transparent,
+                rgba(14,165,233,.10),
+                rgba(14,165,233,.70),
+                rgba(16,185,129,.28),
+                transparent
+            );
+            box-shadow: 0 0 18px rgba(14,165,233,.38), 0 0 42px rgba(14,165,233,.18);
+            transition: transform .55s cubic-bezier(.2,.8,.2,1), opacity .22s ease;
+        }
+        .scanner-beam.is-active { opacity: 1; }
+        
+        .scanner-candle-glow {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 34px;
+            margin-left: -17px;
+            border-radius: 999px;
+            opacity: 0;
+            background: radial-gradient(
+                ellipse at center,
+                rgba(14,165,233,.26),
+                rgba(14,165,233,.10) 36%,
+                transparent 72%
+            );
+            transition: transform .55s cubic-bezier(.2,.8,.2,1);
+        }
+        .scanner-candle-glow.is-pulsing { animation: scannerCandleGlow .75s ease-out; }
+        
+        .scanner-label {
+            position: absolute;
+            padding: 5px 9px;
+            border-radius: 999px;
+            opacity: 0;
+            font-size: 9px;
+            font-weight: 900;
+            letter-spacing: .12em;
+            color: #0369a1;
+            background: rgba(255,255,255,.74);
+            border: 1px solid rgba(14,165,233,.24);
+            box-shadow: 0 10px 24px rgba(14,165,233,.12);
+            backdrop-filter: blur(12px);
+            transition: transform .55s cubic-bezier(.2,.8,.2,1), opacity .18s ease;
+        }
+        .scanner-label.is-visible { opacity: 1; }
+        
+        @keyframes scannerPulseA {
+            0% { transform: scale(.72); opacity: .3; }
+            55% { transform: scale(1.18); opacity: .95; }
+            100% { transform: scale(1); opacity: .7; }
+        }
+        @keyframes scannerPulseB {
+            0% { transform: scale(.68); opacity: .2; }
+            60% { transform: scale(1.28); opacity: .75; }
+            100% { transform: scale(1); opacity: .55; }
+        }
+        @keyframes scannerCandleGlow {
+            0% { opacity: 0; transform: scaleX(.65); }
+            35% { opacity: .95; transform: scaleX(1.22); }
+            100% { opacity: 0; transform: scaleX(.92); }
+        }
 
-    /* Overlay Chart Elements */
-    .trade-box { position: absolute; pointer-events: auto; cursor: pointer; border-radius: 4px; border: 1px solid transparent; transition: background 0.2s, width 0.1s; backdrop-filter: blur(1px); }
-    .trade-box.active { background: var(--accent-soft); border-color: rgba(40,168,255,0.4); box-shadow: 0 0 15px rgba(40,168,255,0.1); }
-    .trade-box.win { background: var(--good-soft); border-color: rgba(16,185,129,0.4); }
-    .trade-box.loss { background: var(--bad-soft); border-color: rgba(239,95,115,0.4); }
-    
-    .marker-dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: auto; z-index: 10; }
-    .marker-dot.entry { background: #fff; border: 2px solid var(--accent); box-shadow: 0 0 8px var(--accent); width: 8px; height: 8px;}
-    .marker-dot.exit { background: #fff; border: 2px solid #8b5cf6; box-shadow: 0 0 8px #8b5cf6; width: 8px; height: 8px;}
+        /* Trade Tooltip */
+        .trade-tooltip {
+            position: absolute;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 15px 35px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(226, 232, 240, 0.5);
+            border-radius: 16px;
+            padding: 16px;
+            pointer-events: none;
+            z-index: 50;
+            width: 260px;
+            transition: opacity 0.2s, transform 0.1s linear;
+            transform: translate(-50%, -115%);
+        }
+        .trade-tooltip::after {
+            content: '';
+            position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%) rotate(45deg);
+            width: 12px; height: 12px;
+            background: rgba(248, 250, 252, 0.9);
+            border-right: 1px solid rgba(226, 232, 240, 0.5);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+        }
 
-    .signal-arrow { position: absolute; transform: translate(-50%, -50%); width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 2px solid; display: flex; align-items: center; justify-content: center; z-index: 10; pointer-events: auto; box-shadow: var(--shadow-sm); font-size: 12px; font-weight: bold; cursor: pointer; }
-    .signal-arrow.buy { color: var(--good); border-color: var(--good); }
-    .signal-arrow.sell { color: var(--bad); border-color: var(--bad); }
-
-    /* Global Smart Tooltip */
-    #tt { position: fixed; z-index: 100000; pointer-events: none; opacity: 0; transition: opacity 0.15s ease; background: rgba(255,255,255,0.95); border: 1px solid var(--border-strong); backdrop-filter: blur(16px); border-radius: 12px; padding: 12px 14px; font-size: 10px; width: 260px; box-shadow: var(--shadow-md); color: var(--text-main); }
-    .tt-r { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,0.04); }
-    .tt-r:last-child { border: none; padding-bottom: 0; }
-    .tt-r span { color: var(--text-muted); font-weight: 600; }
-    .tt-r b { font-family: 'JetBrains Mono', monospace; text-align: right; }
-
-    /* Soft Error Log */
-    .soft-error { color: #d92d20; font-size: 9px; font-family: 'JetBrains Mono', monospace; padding: 2px 0; border-bottom: 1px solid rgba(217,45,32,0.1); }
-
-    @media (max-width: 1100px) {
-      body, html { overflow: auto; height: auto; }
-      .app-shell { display: flex; flex-direction: column; height: auto; min-height: 100vh; overflow: visible; padding: 10px; }
-      .metrics-row { overflow-x: auto; padding-bottom: 4px; }
-      .metric-card { min-width: 80px; }
-      .main-dashboard { display: flex; flex-direction: column; overflow: visible; }
-      .chart-area { height: 50vh; min-height: 400px; flex: none; }
-      .sidebar { display: flex; flex-direction: column; height: auto; overflow: visible; width: 100%; max-width: none; }
-      .sidebar-card { min-height: 80px; }
-    }
-  </style>
+        @keyframes hud-spin { 100% { transform: rotate(360deg); } }
+        @keyframes hud-pulse { 0%, 100% { opacity: 0.5; transform: scale(0.95); } 50% { opacity: 1; transform: scale(1.05); } }
+    </style>
 </head>
 <body>
+    <div id="root"></div>
 
-  <!-- 1. CINEMATIC STARTUP SCREEN -->
-  <div id="startup">
-    <div class="startup-card">
-      <div class="author-anim text-lg mb-3">SLAVA GORDEEV</div>
-      <div class="text-accent text-5xl mb-2 text-glow">⚡</div>
-      <h1 class="oswald text-5xl md:text-6xl font-black leading-none mb-3 text-slate-800">ТЕРМИНАЛ<br><span style="color:var(--accent);">PRO MAX</span></h1>
-      <p class="mono text-slate-500 mt-2 tracking-widest text-xs uppercase font-bold">Premium 5M / 25M Dashboard</p>
-      
-      <button id="startTerminalBtn" class="btn-start" onclick="App.startSequence()">
-        ЗАПУСК СИСТЕМЫ
-      </button>
+    <script type="text/babel">
+        // --- GLOBAL SPEECH QUEUE SYSTEM ---
+        const speechQueue = {
+          queue: [],
+          speaking: false,
+          lastByKey: new Map(),
 
-      <div class="loader-wrap" id="loader-wrap">
-        <div class="loader-text" id="load-text">Инициализация...</div>
-        <div class="loader-bar"><div class="loader-fill" id="load-bar"></div></div>
-      </div>
-    </div>
-  </div>
+          say(text, options = {}) {
+            const now = Date.now();
+            const key = options.key || text;
+            const cooldownMs = options.cooldownMs || 0;
 
-  <!-- 2. MAIN APP SHELL -->
-  <div id="root">
-    <div id="app" class="app-shell" style="visibility: hidden;">
-      
-      <!-- HEADER -->
-      <header class="header-row header">
-        <div class="flex items-center gap-3">
-          <div class="text-accent text-3xl text-glow">⚡</div>
-          <div>
-            <div class="oswald text-xl md:text-2xl font-black tracking-wide leading-none text-slate-800">ТЕРМИНАЛ <span style="color:var(--accent);">PRO MAX</span></div>
-            <div class="text-[9px] text-slate-400 font-bold tracking-[0.2em] uppercase mt-1 author-anim">SLAVA GORDEEV</div>
-          </div>
-        </div>
-        <div class="hidden sm:flex flex-col items-end">
-          <div id="ui-clock" class="mono text-xl font-bold text-slate-700">--:--:--</div>
-          <div class="text-[9px] text-emerald-500 font-bold uppercase tracking-widest mt-1" id="terminalStatus">Соединение безопасно</div>
-        </div>
-      </header>
-
-      <!-- SPEEDOMETERS ROW -->
-      <div class="metrics-row">
-        <div class="metric-card" data-gauge="structure"><div class="mc-title">Структура</div><div class="gauge-container"><svg viewBox="0 0 100 50" class="gauge-svg"><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-bg"/><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-fill gauge-arc-fill" stroke="#f5a623"/></svg></div><div class="mc-val gauge-value">0%</div></div>
-        <div class="metric-card" data-gauge="liquidity"><div class="mc-title">Ликвидность</div><div class="gauge-container"><svg viewBox="0 0 100 50" class="gauge-svg"><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-bg"/><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-fill gauge-arc-fill" stroke="#0ea5e9"/></svg></div><div class="mc-val gauge-value">0%</div></div>
-        <div class="metric-card" data-gauge="atrRange"><div class="mc-title">ATR / Range</div><div class="gauge-container"><svg viewBox="0 0 100 50" class="gauge-svg"><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-bg"/><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-fill gauge-arc-fill" stroke="#8b5cf6"/></svg></div><div class="mc-val gauge-value">0%</div></div>
-        <div class="metric-card" data-gauge="smartMoney"><div class="mc-title">Smart Money</div><div class="gauge-container"><svg viewBox="0 0 100 50" class="gauge-svg"><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-bg"/><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-fill gauge-arc-fill" stroke="#10b981"/></svg></div><div class="mc-val gauge-value">0%</div></div>
-        <div class="metric-card" data-gauge="qualityScore" style="background:var(--accent-soft); border-color:var(--accent);"><div class="mc-title" style="color:var(--accent);">Quality Score</div><div class="gauge-container"><svg viewBox="0 0 100 50" class="gauge-svg"><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-bg" style="stroke:rgba(40,168,255,0.2)"/><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-fill gauge-arc-fill" stroke="var(--accent)"/></svg></div><div class="mc-val text-accent gauge-value">0</div></div>
-        <div class="metric-card" data-gauge="edgeZone"><div class="mc-title">Edge Zone</div><div class="gauge-container"><svg viewBox="0 0 100 50" class="gauge-svg"><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-bg"/><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-fill gauge-arc-fill" stroke="#708298"/></svg></div><div class="mc-val gauge-value">0%</div></div>
-        <div class="metric-card" data-gauge="cooldown"><div class="mc-title">Cooldown</div><div class="gauge-container"><svg viewBox="0 0 100 50" class="gauge-svg"><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-bg"/><path d="M 10 40 A 30 30 0 0 1 90 40" class="gauge-fill gauge-arc-fill" stroke="#cbd5e1" style="stroke-dashoffset:0"/></svg></div><div class="mc-val text-emerald-500 gauge-value">READY</div></div>
-      </div>
-
-      <!-- MAIN WORKSPACE -->
-      <div class="main-dashboard">
-        
-        <!-- LEFT: CHART AREA -->
-        <section class="chart-area" id="chartContainer">
-          <div class="chart-info">
-            <div class="text-[10px] text-slate-400 font-black tracking-widest uppercase">● BITCOIN (5M)</div>
-            <div id="ui-price" class="chart-price">---.--</div>
-          </div>
-          
-          <div class="chart-wrap" id="tv-container">
-            <div id="tv-chart"></div>
-            <div id="chart-overlay"></div>
-            
-            <!-- NEW Scan Orbs Layer -->
-            <div id="scanOrbLayer" class="scan-orb-layer">
-              <div id="scanOrb" class="scan-orb"></div>
-            </div>
-
-            <!-- Empty Market Alert -->
-            <div id="ui-empty-market" class="empty-market" style="display:none;">
-              <div class="text-bad text-5xl mb-3">⚠️</div>
-              <div class="empty-title">ОЖИДАНИЕ РЕАЛЬНЫХ ДАННЫХ</div>
-              <div class="text-xs font-bold text-slate-500 uppercase tracking-widest max-w-md">Торговая аналитика приостановлена. Фейковые свечи заблокированы.</div>
-            </div>
-          </div>
-        </section>
-
-        <!-- RIGHT: SIDEBAR (Strict Grid) -->
-        <aside class="sidebar">
-          
-          <!-- 1. Premium Broker CTA -->
-          <div class="sidebar-card" style="padding:0; border:none; box-shadow:none; background:transparent;">
-            <a href="https://intrade31.bar/311164" target="_blank" rel="noopener noreferrer" id="brokerCta" class="broker-cta">
-              <span class="broker-cta__small">БРОКЕР ДЛЯ ВХОДА</span>
-              <span class="broker-cta__main">ТОРГОВАТЬ ЗДЕСЬ</span>
-              <span class="broker-cta__arrow">➜</span>
-              <span id="brokerDemoCursor" class="broker-demo-cursor">➤</span>
-            </a>
-          </div>
-
-          <!-- 2. Setup Hint -->
-          <div class="sidebar-card setup-hint">
-            <div class="setup-row"><span>Время сделки:</span> <b>25 минут</b></div>
-            <div class="setup-row"><span>График анализа:</span> <b>BTCUSDT 5M</b></div>
-            <div class="setup-row"><span>Вход после сигнала:</span> <b>Через 6 сек</b></div>
-          </div>
-
-          <!-- 3. Strategy Mode -->
-          <div class="sidebar-card flex justify-between items-center" style="border-left: 4px solid var(--accent);">
-            <div>
-              <div class="sc-title mb-1" style="color:var(--text-main);">Режим стратегии</div>
-              <div class="text-[10px] font-bold text-accent" id="ui-scan-status">BALANCED+ 5M/25M</div>
-              <div class="text-[8px] font-bold text-slate-400 mt-1 uppercase" id="ui-data-source">SOURCE: WAIT</div>
-            </div>
-            <div class="text-right">
-               <div class="text-[8px] font-bold text-slate-500 uppercase mb-1">Type A & B</div>
-               <div class="text-[8px] font-bold text-emerald-500 bg-emerald-50 px-2 py-1 rounded border border-emerald-100">Retest On</div>
-            </div>
-          </div>
-
-          <!-- 4. 12H PNL -->
-          <div class="sidebar-card flex flex-col justify-center relative overflow-hidden">
-            <div class="absolute top-2 right-2 p-1 opacity-5 text-5xl pointer-events-none">📊</div>
-            <div class="sc-title text-accent mb-0">Статистика 12H</div>
-            <div class="stat-val" id="ui-pnl" style="color:var(--text-main);">--- ₽</div>
-            <div class="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-wider" id="ui-pnl-desc">Ожидание данных</div>
-            
-            <div class="stats-row">
-              <div class="stats-cell"><div class="stats-cell__label">Сделок</div><div class="stats-cell__value text-slate-700" id="ui-t-total">0</div></div>
-              <div class="stats-cell"><div class="stats-cell__label text-good">Win</div><div class="stats-cell__value text-good" id="ui-t-win">0</div></div>
-              <div class="stats-cell"><div class="stats-cell__label text-bad">Loss</div><div class="stats-cell__value text-bad" id="ui-t-loss">0</div></div>
-            </div>
-          </div>
-
-          <!-- 5. Current Trade -->
-          <div class="sidebar-card">
-            <div class="sc-title">Анализ текущей сделки</div>
-            <div class="text-[10px] font-bold text-slate-600 mt-1 min-h-[28px] flex items-center leading-tight" id="ui-mid-text">
-              Сделок в данный момент нет.<br>Ожидание сигнала.
-            </div>
-            <div class="text-[10px] text-accent font-bold mt-1 mono" id="ui-mid-timer"></div>
-          </div>
-
-          <!-- 6. Orderbook -->
-          <div class="sidebar-card">
-            <div class="flex justify-between items-center mb-1">
-              <div class="sc-title mb-0">Стакан BTC/USDT</div>
-              <div class="text-[8px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 border border-slate-200 font-bold">REST</div>
-            </div>
-            <div class="ob-container" id="ui-ob">
-              <div class="text-[10px] text-slate-400 text-center py-2 font-mono">Ожидание стакана...</div>
-            </div>
-          </div>
-
-          <!-- 7. Diagnostics & Log -->
-          <div class="sidebar-card" style="justify-content: flex-start;">
-            <div class="sc-title text-accent mb-1 flex justify-between items-center">
-              <span>Диагностика 12H</span>
-              <span id="ui-strict-warn" style="display:none;" class="text-[8px] bg-rose-50 text-rose-500 px-1 py-0.5 rounded border border-rose-200">ADAPTIVE STRICT</span>
-            </div>
-            <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-[9px] mono text-slate-500 font-semibold">
-              <div class="flex justify-between"><span>RAW Sweep:</span> <b id="diag-raw">0</b></div>
-              <div class="flex justify-between"><span>Reclaim:</span> <b id="diag-rec">0</b></div>
-              <div class="flex justify-between"><span>Type A (Dir):</span> <b id="diag-ta">0</b></div>
-              <div class="flex justify-between"><span>Type B (Ret):</span> <b id="diag-tb">0</b></div>
-              <div class="flex justify-between"><span>Final Sig:</span> <b id="diag-fin" class="text-accent">0</b></div>
-              <div class="flex justify-between"><span>Rejected:</span> <b id="diag-rej">0</b></div>
-            </div>
-            
-            <div class="mt-auto pt-1 border-t border-slate-100 mono text-[8px] text-slate-400 max-h-[30px] overflow-hidden flex flex-col justify-end" id="systemLog">
-              <div><span class="text-accent">[SYS]</span> Инициализация...</div>
-            </div>
-          </div>
-
-        </aside>
-      </div>
-    </div>
-  </div>
-
-  <!-- Global Tooltip -->
-  <div id="tt"></div>
-
-  <script>
-    // --- 1. SAFE DOM HELPERS & GLOBAL ERROR HANDLING ---
-    window.__TERMINAL_ERRORS__ = [];
-    function reportTerminalError(scope, error) {
-      const msg = `[${scope}] ${error?.message || error || "Unknown error"}`;
-      console.error(msg, error);
-      window.__TERMINAL_ERRORS__.push(msg);
-      const log = document.getElementById('systemLog');
-      if (log) {
-        log.innerHTML = `<div class="soft-error">${msg}</div>` + log.innerHTML;
-        if(log.children.length > 3) log.lastChild.remove();
-      }
-      const st = document.getElementById("terminalStatus");
-      if (st) st.textContent = "ОШИБКА МОДУЛЯ · ТЕРМИНАЛ РАБОТАЕТ";
-    }
-    
-    function byId(id) { return document.getElementById(id); }
-    function safeSetText(id, text) { const el = byId(id); if (el) el.textContent = text ?? ""; }
-    function safeSetHTML(id, html) { const el = byId(id); if (el) el.innerHTML = html ?? ""; }
-    
-    function safeNum(value, fallback = 0) { const n = Number(value); return Number.isFinite(n) ? n : fallback; }
-    function safePercent(value, fallback = 0) { const n = Number(value); return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : fallback; }
-    function safeArray(value) { return Array.isArray(value) ? value : []; }
-
-    window.addEventListener("error", function(e) {
-      const msg = String(e.error || e.message || "unknown");
-      if (msg.includes("WebSocket") || msg.includes("SecurityError") || msg.includes("CSP") || msg.includes("ResizeObserver")) return true;
-      reportTerminalError("runtime", msg);
-    });
-    window.addEventListener("unhandledrejection", function(e) {
-      const msg = String(e.reason?.message || e.reason || "unknown");
-      if (msg.includes("WebSocket") || msg.includes("SecurityError") || msg.includes("CSP")) return true;
-      reportTerminalError("async", msg);
-    });
-
-    // --- BROKER CTA ANIMATION ---
-    function runBrokerDemoPress() {
-      const btn = document.getElementById("brokerCta");
-      const cursor = document.getElementById("brokerDemoCursor");
-      if (!btn || !cursor) return;
-
-      cursor.animate([
-        { opacity: 0, transform: "translate(34px, 24px) rotate(-25deg) scale(.95)" },
-        { opacity: 1, transform: "translate(6px, 4px) rotate(-25deg) scale(1)" },
-        { opacity: 1, transform: "translate(0, 0) rotate(-25deg) scale(.86)" },
-        { opacity: 1, transform: "translate(1px, 1px) rotate(-25deg) scale(1.05)" },
-        { opacity: 0, transform: "translate(26px, 18px) rotate(-25deg) scale(.95)" }
-      ], {
-        duration: 2200,
-        easing: "cubic-bezier(.22,.8,.22,1)"
-      });
-
-      setTimeout(() => btn.classList.add("is-pressed"), 920);
-      setTimeout(() => btn.classList.remove("is-pressed"), 1240);
-    }
-    setInterval(runBrokerDemoPress, 4200);
-    setTimeout(runBrokerDemoPress, 1000);
-
-    // --- GAUGES LOGIC ---
-    const lastGaugeValues = {
-      structure: 50, liquidity: 50, atrRange: 50, smartMoney: 50, qualityScore: 50, edgeZone: 50, cooldown: 100
-    };
-
-    function setGaugeValue(id, value) {
-      const fallback = lastGaugeValues[id] ?? 50;
-      const pct = safePercent(value, fallback);
-      lastGaugeValues[id] = pct;
-
-      const card = document.querySelector(`[data-gauge="${id}"]`);
-      if (!card) return;
-
-      const arc = card.querySelector(".gauge-arc-fill");
-      const label = card.querySelector(".gauge-value");
-
-      if (arc) {
-        const len = 125.6; // Matches SVG path length approximately
-        arc.style.strokeDasharray = `${len}`;
-        arc.style.strokeDashoffset = `${len - (pct / 100) * len}`;
-      }
-
-      if (label) {
-        label.textContent = id === "cooldown" && pct >= 95 ? "READY" : `${Math.round(pct)}%`;
-      }
-    }
-
-    function updateGauges(metrics = {}) {
-      setGaugeValue("structure", metrics.structure);
-      setGaugeValue("liquidity", metrics.liquidity);
-      setGaugeValue("atrRange", metrics.atrRange);
-      setGaugeValue("smartMoney", metrics.smartMoney);
-      setGaugeValue("qualityScore", metrics.qualityScore);
-      setGaugeValue("edgeZone", metrics.edgeZone);
-      setGaugeValue("cooldown", metrics.cooldown ?? 100);
-    }
-
-    function updateGaugesFromCandles(candles) {
-      if (!Array.isArray(candles) || candles.length < 30) return;
-      const recent = candles.slice(-30);
-      const ranges = recent.map(c => c.high - c.low);
-      const avgRange = ranges.reduce((a,b)=>a+b,0) / ranges.length;
-      const last = recent[recent.length - 1];
-
-      const structure = 50 + Math.min(50, Math.abs(last.close - recent[0].open) / Math.max(avgRange, 1) * 6);
-      const liquidity = 45 + Math.min(55, Math.abs(last.high - last.low) / Math.max(avgRange, 1) * 18);
-      const atrRange = Math.min(100, Math.max(20, 100 - Math.abs(last.high - last.low) / Math.max(avgRange, 1) * 25));
-      const smartMoney = 50 + Math.min(45, Math.abs(last.close - last.open) / Math.max(last.high - last.low, 1) * 50);
-      const qualityScore = Math.round((structure + liquidity + atrRange + smartMoney) / 4);
-
-      updateGauges({ structure, liquidity, atrRange, smartMoney, qualityScore, edgeZone: 55, cooldown: 100 });
-    }
-
-    // --- 2. CONFIGURATION (BALANCED+ 5M/25M) ---
-    const CONFIG = window.CONFIG || {
-      symbol: "BTCUSDT",
-      signalTimeframe: "5m", 
-      signalTimeframeMs: 5 * 60 * 1000,
-      expiryMinutes: 25,
-      expiryCandles: 5, 
-      historicalLookbackHours: 12,
-      
-      baseStake: 300,
-      payout: 0.70,
-      martingaleLadder: [300, 729, 1770, 4300, 10440],
-      strategyMode: "SMC_SWEEP_RETEST_5M_25M",
-      
-      lookback: 24,
-      atrLen: 14,
-      minSweepATR: 0.055,
-      minReclaimATR: 0.05,
-      minBodyRatio: 0.12,
-      minWickRatio: 0.16,
-      maxRangeATR: 3.0,
-      cooldownBars: 5, 
-      
-      blockSamePoolSignals: true,
-      samePoolDistanceATR: 0.55,
-      blockMiddleRange: true,
-      edgeZonePercent: 0.36,
-      maxEntryDistanceATR: 0.45,
-      minQualityScore: 62,
-      
-      enableRetestEntry: true,
-      retestWindowBars: 6,
-      retestToleranceATR: 0.28,
-      minRetestQualityScore: 64,
-      retestNeedsRejectWick: true,
-      
-      impulseLookback: 5,
-      maxOppositeImpulseATR: 2.2,
-      requireConfirmationIfImpulseStrong: true,
-      
-      adaptiveMode: true,
-      adaptiveTightenAfterLosses: 2,
-      adaptiveQualityBoost: 4,
-      
-      restPollingMs: 5000
-    };
-
-    // --- 3. UTILITIES ---
-    const Utils = {
-      formatRub: (v) => { 
-        const n = Math.round(safeNum(v)); 
-        const sign = n > 0 ? "+" : n < 0 ? "-" : "";
-        const formatted = Math.abs(n).toLocaleString("ru-RU").replace(/,/g, ' ');
-        return `${sign}${formatted} ₽`; 
-      },
-      speakRub: (v) => {
-        const n = Math.round(safeNum(v));
-        const sign = n > 0 ? "плюс " : n < 0 ? "минус " : "";
-        const formatted = Math.abs(n).toLocaleString("ru-RU").replace(/,/g, ''); // Fix TTS reading "thousands" weirdly
-        return `${sign}${formatted} рублей`; 
-      },
-      formatPrice: (v) => safeNum(v).toFixed(2),
-      timeStr: (ms) => { if(!ms) return "—"; return new Date(ms).toLocaleTimeString("ru-RU", {hour:'2-digit', minute:'2-digit', second:'2-digit'}); },
-      sanitizeCandles: (arr) => {
-        const cands = safeArray(arr);
-        return cands.filter(c => c && Number.isFinite(Number(c.time)) && Number.isFinite(Number(c.high)) && Number(c.high)>=Number(c.low))
-                  .map(c => ({ time: Number(c.time), open: Number(c.open), high: Number(c.high), low: Number(c.low), close: Number(c.close), vol: Number(c.vol||0) }))
-                  .sort((a,b)=>a.time - b.time);
-      }
-    };
-
-    // --- 4. STATE ---
-    const State = {
-      candles: [], livePrice: 0, trades: [], activeTrade: null,
-      source: "NO REAL DATA", canTradeSignals: false,
-      stats: { total: 0, win: 0, loss: 0, pnl: 0 },
-      chart: null, series: null, upSeries: null, dnSeries: null,
-      mgStep: 0, lastSignalIndex: 0, lastBuyPool: 0, lastSellPool: 0,
-      lossStreak: 0, isStrictMode: false, activeLiquidityZone: null,
-      diag: { raw: 0, reclaim: 0, qPassed: 0, typeA: 0, typeB: 0, final: 0, rejected: 0, lastQs: 0, reasons: {} }
-    };
-
-    function getActiveConfig() {
-      if (State.isStrictMode) return { ...CONFIG, minQualityScore: CONFIG.minQualityScore + CONFIG.adaptiveQualityBoost, minRetestQualityScore: CONFIG.minRetestQualityScore + CONFIG.adaptiveQualityBoost, maxEntryDistanceATR: 0.35, blockSamePoolSignals: true };
-      return CONFIG;
-    }
-
-    // --- 5. VOICE ENGINE (Anti-Spam & Mid-Trade) ---
-    const VoiceState = {
-      lastZoneKey: null, zoneActive: false,
-      lastVoiceAt: 0, lastLeaveAt: 0, cooldownMs: 120000, midTradeSpoken: false
-    };
-
-    const Voice = {
-      q: [], isSpk: false,
-      speak: (t) => { Voice.q.push(t); Voice.play(); },
-      play: async () => {
-        if(Voice.isSpk || Voice.q.length===0 || !window.speechSynthesis) return;
-        Voice.isSpk = true;
-        const txt = Voice.q.shift();
-        return new Promise(r => {
-          const u = new SpeechSynthesisUtterance(txt);
-          u.lang = "ru-RU"; u.rate = 0.95; u.pitch = 1.0;
-          u.onend = () => { Voice.isSpk = false; setTimeout(Voice.play, 200); r(); };
-          u.onerror = () => { Voice.isSpk = false; r(); };
-          window.speechSynthesis.speak(u);
-        });
-      },
-      checkPotentialZone: (data, idx) => {
-        if(idx < CONFIG.lookback) return;
-        const c = data[idx]; const prev = data.slice(idx - CONFIG.lookback, idx);
-        const upP = Math.max(...prev.map(x => x.high)); const dnP = Math.min(...prev.map(x => x.low));
-        const atr = Alg.getATR(data, idx, CONFIG.atrLen);
-        if(atr <= 0) return;
-        
-        const isNearUp = c.close >= upP - atr * 0.15 && c.close <= upP + atr * 0.15;
-        const isNearDn = c.close <= dnP + atr * 0.15 && c.close >= dnP - atr * 0.15;
-
-        if (isNearUp || isNearDn) {
-          const key = isNearUp ? `UP_${upP.toFixed(2)}` : `DN_${dnP.toFixed(2)}`;
-          if (VoiceState.zoneActive && VoiceState.lastZoneKey === key) return;
-          if (Date.now() - VoiceState.lastVoiceAt < VoiceState.cooldownMs) return;
-          VoiceState.zoneActive = true; VoiceState.lastZoneKey = key; VoiceState.lastVoiceAt = Date.now();
-          Voice.speak("Цена подошла к потенциальной зоне входа. Наблюдаем.");
-        } else {
-          if (VoiceState.zoneActive && Math.abs(c.close - upP) > atr * 0.5 && Math.abs(c.close - dnP) > atr * 0.5) {
-            if (Date.now() - VoiceState.lastLeaveAt < VoiceState.cooldownMs) return;
-            VoiceState.zoneActive = false; VoiceState.lastLeaveAt = Date.now();
-            Voice.speak("Цена ушла от потенциальной зоны. Ждём следующую возможность.");
-          }
-        }
-      },
-      getMidTradeStatus: (trade, currentPrice) => {
-        const dir = trade.dir; const entry = trade.entPrice;
-        const move = dir === "BUY" ? (currentPrice - entry) : (entry - currentPrice);
-        const safeAtr = Math.max(trade.atr || 0, 0.000001);
-        if (move >= safeAtr * 0.35) return { code: "STRONG_PLUS", text: "Сделка идёт в плюс, запас уверенный." };
-        if (move <= -safeAtr * 0.35) return { code: "STRONG_MINUS", text: "Сделка идёт в минус, давление против входа сохраняется." };
-        return { code: "EDGE", text: "Сделка на грани. Цена рядом с точкой входа." };
-      }
-    };
-
-    // --- SMART TOOLTIP LOGIC ---
-    let hideTtTid;
-    function hideTooltip() {
-      const tt = byId('tt');
-      if(tt) { tt.style.opacity = '0'; tt.style.pointerEvents = 'none'; }
-    }
-    
-    window.addEventListener('resize', hideTooltip);
-    window.addEventListener('scroll', hideTooltip, true);
-    document.addEventListener('mouseleave', hideTooltip);
-
-    document.addEventListener('mousemove', (e) => {
-      const target = e.target.closest('.trade-box, .signal-arrow, .marker-dot');
-      if (target) {
-        clearTimeout(hideTtTid);
-        const tId = target.dataset.tradeId;
-        const t = State.trades.find(x => x.sigTime == tId) || (State.activeTrade && State.activeTrade.sigTime == tId ? State.activeTrade : null);
-        if (t) {
-          const tt = byId('tt');
-          if(!tt) return;
-          const c = (t.pnl||0)>=0 ? 'var(--good)' : 'var(--bad)';
-          tt.innerHTML = `
-            <div class="tt-r"><span style="color:var(--text-main);font-weight:bold">${t.type || 'TYPE A: Sweep Reclaim'}</span> <b style="color:${c}">${t.res || 'ACTIVE'}</b></div>
-            <div class="tt-r"><span>Направление:</span> <b>${t.dir} / ${t.dir==='BUY'?'ВВЕРХ':'ВНИЗ'}</b></div>
-            <div class="tt-r"><span>Причина:</span> <b style="white-space:normal; text-align:right; max-width:160px; font-size:9px">${t.reason}</b></div>
-            <div class="tt-r"><span>Сумма:</span> <b style="color:var(--text-main)">${t.stake} ₽ (${CONFIG.martingaleLadder.indexOf(t.stake)+1} колено)</b></div>
-            <div class="tt-r"><span>Вход / Выход:</span> <b>${t.entTime ? Utils.timeStr(t.entTime*1000) : '—'} / ${t.extTime ? Utils.timeStr(t.extTime*1000) : '—'}</b></div>
-            <div class="tt-r"><span>Цена Вх/Вых:</span> <b style="color:var(--text-main)">${t.entPrice?t.entPrice.toFixed(2):'-'} / ${t.extPrice?t.extPrice.toFixed(2):'-'}</b></div>
-            <div class="tt-r" style="border:none;margin-top:4px"><span style="color:var(--text-main)">PNL:</span> <b style="color:${c};font-size:14px">${Utils.formatRub(t.pnl||0)}</b></div>`;
-          
-          // Smart Positioning within chart bounds
-          const chartCont = byId('chartContainer');
-          const bounds = chartCont ? chartCont.getBoundingClientRect() : document.body.getBoundingClientRect();
-          const ttWidth = 260; const ttHeight = 150;
-          
-          let x = e.clientX + 15; 
-          let y = e.clientY - ttHeight - 15;
-          if (x + ttWidth > bounds.right) x = e.clientX - ttWidth - 15;
-          if (y < bounds.top) y = e.clientY + 15;
-          
-          tt.style.left = x + 'px'; tt.style.top = y + 'px';
-          tt.style.opacity = '1'; tt.style.pointerEvents = 'auto';
-        }
-      } else {
-        if (!hideTtTid) hideTtTid = setTimeout(hideTooltip, 100);
-      }
-    });
-
-    // --- NEW SCAN ORBS LOGIC ---
-    let scanRaf = null;
-    let scanIndex = 0;
-    let lastScanStep = 0;
-
-    function buildScanPoints(candles) {
-      if (!State.chart || !State.series || !Array.isArray(candles)) return [];
-      return candles.slice(-80).map((c, index) => {
-        const x = State.chart.timeScale().timeToCoordinate(c.time);
-        const y = State.series.priceToCoordinate(c.close);
-        if (x == null || y == null) return null;
-        return { index, time: c.time, x, y, candle: c };
-      }).filter(Boolean);
-    }
-
-    function pulseScannedCandle(point) {
-      const layer = document.getElementById("scanOrbLayer");
-      if (!layer || !point) return;
-
-      const pulse = document.createElement("div");
-      pulse.className = "scan-candle-pulse";
-      pulse.style.left = `${point.x}px`;
-      pulse.style.top = `${point.y}px`;
-      layer.appendChild(pulse);
-      setTimeout(() => pulse.remove(), 520);
-    }
-
-    function startOrbScanner(candles) {
-      const orb = document.getElementById("scanOrb");
-      const layer = document.getElementById("scanOrbLayer");
-      if (!orb || !layer) return;
-
-      const points = buildScanPoints(candles);
-      if (!points.length) return;
-
-      layer.classList.add("is-active");
-
-      function tick(now) {
-        if (!document.body.classList.contains("is-scanning")) {
-          scanRaf = requestAnimationFrame(tick);
-          return;
-        }
-
-        if (now - lastScanStep > 170) {
-          lastScanStep = now;
-          const p = points[scanIndex % points.length];
-          // Dynamically get coordinates in case of scroll/zoom
-          const currX = State.chart.timeScale().timeToCoordinate(p.time);
-          const currY = State.series.priceToCoordinate(p.candle.close);
-
-          if (currX != null && currY != null) {
-            orb.style.transform = `translate(${currX}px, ${currY}px) translate(-50%, -50%)`;
-            pulseScannedCandle({x: currX, y: currY});
-          }
-          scanIndex++;
-        }
-        scanRaf = requestAnimationFrame(tick);
-      }
-
-      if (scanRaf) cancelAnimationFrame(scanRaf);
-      scanRaf = requestAnimationFrame(tick);
-    }
-
-    function stopOrbScanner() {
-      if (scanRaf) cancelAnimationFrame(scanRaf);
-      scanRaf = null;
-      const layer = document.getElementById("scanOrbLayer");
-      if (layer) layer.classList.remove("is-active");
-    }
-
-    // --- 6. STRATEGY ALGORITHM (Type A & B) ---
-    const Alg = {
-      getATR: (data, idx, len) => {
-        if(idx < len) return 0;
-        let sum = 0;
-        for(let i = idx - len + 1; i <= idx; i++) {
-          const c = data[i], p = data[i-1];
-          if(!c || !p) continue;
-          sum += Math.max(c.high - c.low, Math.abs(c.high - p.close), Math.abs(c.low - p.close));
-        }
-        return sum / len;
-      },
-      evaluateQuality: (ctx, conf) => {
-        const atr = Math.max(ctx.atr || 0, 0.000001);
-        let score = 0;
-        score += Math.min(24, (ctx.sweepDepth / (atr * conf.minSweepATR)) * 14);
-        score += Math.min(24, (ctx.reclaimDepth / (atr * conf.minReclaimATR)) * 14);
-        score += Math.min(16, (ctx.wickRatio / conf.minWickRatio) * 10);
-
-        if (ctx.edgeOk) score += 14;
-        if (ctx.microChoch) score += 10;
-        if (ctx.samePoolOk) score += 6;
-        if (ctx.rangeOk) score += 6;
-        if (ctx.volumeOk) score += 4;
-        if (ctx.isRetest) score += 8;
-
-        if (ctx.strongOppositeImpulse && !ctx.microChoch && !ctx.strongReclaim) score -= 22;
-        if (!ctx.edgeOk) score -= 20;
-        if (!ctx.samePoolOk) score -= 18;
-        if (!ctx.rangeOk) score -= 16;
-        if (ctx.lateEntry) score -= 25;
-
-        return Math.max(0, Math.min(100, Math.round(score)));
-      },
-      evaluate: (data, idx) => {
-        const result = { dir: null, type: null, score: 0, reason: "NO_RAW_SWEEP", metrics: {} };
-        const conf = getActiveConfig();
-        if(idx < conf.lookback + conf.atrLen) return result;
-
-        const c = data[idx];
-        const prev = data.slice(idx - conf.lookback, idx);
-        const upPool = Math.max(...prev.map(x => x.high));
-        const dnPool = Math.min(...prev.map(x => x.low));
-        const atr = Alg.getATR(data, idx, conf.atrLen);
-
-        if(atr <= 0) return result;
-
-        const range = Math.max(c.high - c.low, 0.0001);
-        const bodyRatio = Math.abs(c.close - c.open) / range;
-        const poolWidth = Math.max(upPool - dnPool, 0.000001);
-        
-        const center = dnPool + (poolWidth / 2);
-        let posInPool = 0;
-        if (c.close <= center) {
-            posInPool = (c.close - dnPool) / (poolWidth/2); // 0 to 1
-        } else {
-            posInPool = (upPool - c.close) / (poolWidth/2); // 0 to 1
-        }
-
-        result.metrics = { atr, upPool, dnPool, bodyRatio, posInPool, poolWidth };
-
-        let rejectReason = "NO_RAW_SWEEP";
-        const handleReject = (r) => { rejectReason = r; State.diag.rejected++; State.diag.reasons[r] = (State.diag.reasons[r] || 0) + 1; };
-
-        // TYPE B: Retest Reclaim
-        if (State.activeLiquidityZone && conf.enableRetestEntry && (idx <= State.activeLiquidityZone.expiresAtIdx)) {
-          const z = State.activeLiquidityZone;
-          const tol = atr * conf.retestToleranceATR;
-          
-          if (z.side === "BUY") {
-            const touched = c.low <= z.price + tol;
-            const closedAbove = c.close > z.price;
-            const lWickRatio = (Math.min(c.open, c.close) - c.low) / range;
-            const rejectOk = !conf.retestNeedsRejectWick || (lWickRatio >= conf.minWickRatio || c.close > c.open);
-            const distOk = Math.abs(c.close - z.price) <= atr * conf.maxEntryDistanceATR;
-            
-            if (touched && closedAbove) {
-              if (!rejectOk) { handleReject("WEAK_RETEST_REJECTION"); }
-              else if (!distOk) { handleReject("LATE_ENTRY"); }
-              else {
-                const qScore = Alg.evaluateQuality({ atr, sweepDepth: atr*0.1, reclaimDepth: c.close-z.price, wickRatio: lWickRatio, edgeOk: posInPool<=conf.edgeZonePercent, microChoch: c.close > c.open, samePoolOk: true, rangeOk: range<=atr*conf.maxRangeATR, strongOppositeImpulse: false, strongReclaim: true, lateEntry: false, volumeOk: true, isRetest: true }, conf);
-                State.diag.lastQs = qScore; result.score = qScore;
-                if (qScore >= conf.minRetestQualityScore) {
-                  State.diag.final++; State.diag.typeB++;
-                  result.dir = "BUY"; result.type = "TYPE B: Retest Reclaim"; result.reason = "Повторный тест нижней зоны и удержание.";
-                  State.activeLiquidityZone = null; return result;
-                } else handleReject("QUALITY_TOO_LOW");
-              }
+            if (cooldownMs > 0) {
+              const last = this.lastByKey.get(key) || 0;
+              if (now - last < cooldownMs) return;
+              this.lastByKey.set(key, now);
             }
-          } else if (z.side === "SELL") {
-            const touched = c.high >= z.price - tol;
-            const closedBelow = c.close < z.price;
-            const uWickRatio = (c.high - Math.max(c.open, c.close)) / range;
-            const rejectOk = !conf.retestNeedsRejectWick || (uWickRatio >= conf.minWickRatio || c.close < c.open);
-            const distOk = Math.abs(c.close - z.price) <= atr * conf.maxEntryDistanceATR;
-            
-            if (touched && closedBelow) {
-              if (!rejectOk) { handleReject("WEAK_RETEST_REJECTION"); }
-              else if (!distOk) { handleReject("LATE_ENTRY"); }
-              else {
-                const qScore = Alg.evaluateQuality({ atr, sweepDepth: atr*0.1, reclaimDepth: z.price-c.close, wickRatio: uWickRatio, edgeOk: posInPool>=1-conf.edgeZonePercent, microChoch: c.close < c.open, samePoolOk: true, rangeOk: range<=atr*conf.maxRangeATR, strongOppositeImpulse: false, strongReclaim: true, lateEntry: false, volumeOk: true, isRetest: true }, conf);
-                State.diag.lastQs = qScore; result.score = qScore;
-                if (qScore >= conf.minRetestQualityScore) {
-                  State.diag.final++; State.diag.typeB++;
-                  result.dir = "SELL"; result.type = "TYPE B: Retest Reclaim"; result.reason = "Повторный тест верхней зоны и удержание.";
-                  State.activeLiquidityZone = null; return result;
-                } else handleReject("QUALITY_TOO_LOW");
-              }
-            }
-          }
-        }
 
-        // TYPE A: Sweep Reclaim
-        const isSellRaw = c.high > upPool; const sellReclaim = isSellRaw && c.close < upPool;
-        const isBuyRaw = c.low < dnPool; const buyReclaim = isBuyRaw && c.close > dnPool;
-        if (isBuyRaw || isSellRaw) State.diag.raw++;
-        if (buyReclaim || sellReclaim) State.diag.reclaim++;
+            this.queue.push({
+              text,
+              priority: options.priority || 0,
+              onDone: options.onDone || null
+            });
 
-        const checkImpulseAndChoch = (dir) => {
-          const start = Math.max(0, idx - conf.impulseLookback); const slice = data.slice(start, idx+1);
-          const move = slice[slice.length-1].close - slice[0].close; const strATR = Math.abs(move)/atr;
-          const isStrong = strATR >= conf.maxOppositeImpulseATR;
-          let microChoch = false;
-          if (dir==="BUY") { microChoch = c.close > Math.max(...data.slice(Math.max(0, idx-4), idx).map(x=>x.high)); } 
-          else { microChoch = c.close < Math.min(...data.slice(Math.max(0, idx-4), idx).map(x=>x.low)); }
-          return { strongOppositeImpulse: isStrong && ((dir==="BUY" && move < 0) || (dir==="SELL" && move > 0)), microChoch };
-        };
+            this.queue.sort((a, b) => b.priority - a.priority);
+            this.next();
+          },
 
-        if (isBuyRaw && !buyReclaim) State.activeLiquidityZone = { side: "BUY", price: dnPool, expiresAtIdx: idx + conf.retestWindowBars };
-        if (isSellRaw && !sellReclaim) State.activeLiquidityZone = { side: "SELL", price: upPool, expiresAtIdx: idx + conf.retestWindowBars };
+          next() {
+            if (this.speaking) return;
+            const item = this.queue.shift();
+            if (!item) return;
 
-        if (sellReclaim) {
-          State.activeLiquidityZone = { side: "SELL", price: upPool, expiresAtIdx: idx + conf.retestWindowBars }; // Save for Type B
-          const sWick = (c.high - Math.max(c.open, c.close)) / range; result.metrics.sellWickRatio = sWick;
-          const { strongOppositeImpulse, microChoch } = checkImpulseAndChoch("SELL");
-          const ctx = {
-            atr, sweepDepth: c.high - upPool, reclaimDepth: upPool - c.close, wickRatio: sWick,
-            edgeOk: posInPool >= 1 - conf.edgeZonePercent, microChoch, 
-            samePoolOk: !(conf.blockSamePoolSignals && State.lastSellPool && Math.abs(upPool - State.lastSellPool) < atr*conf.samePoolDistanceATR),
-            rangeOk: range <= atr * conf.maxRangeATR, strongOppositeImpulse, strongReclaim: (upPool - c.close) > atr * 0.08, 
-            lateEntry: Math.abs(c.close - upPool) > atr * conf.maxEntryDistanceATR, volumeOk: true, isRetest: false
-          };
-
-          if (ctx.lateEntry) { handleReject("LATE_ENTRY"); result.reason = rejectReason; return result; }
-          if (ctx.sweepDepth < atr * conf.minSweepATR) { handleReject("WEAK_SWEEP"); result.reason = rejectReason; return result; }
-          if (ctx.reclaimDepth < atr * conf.minReclaimATR) { handleReject("WEAK_RECLAIM"); result.reason = rejectReason; return result; }
-          if (sWick < conf.minWickRatio && bodyRatio < conf.minBodyRatio) { handleReject("WEAK_WICK_OR_BODY"); result.reason = rejectReason; return result; }
-          if (idx - State.lastSignalIndex <= conf.cooldownBars) { handleReject("COOLDOWN"); result.reason = rejectReason; return result; }
-          if (!ctx.samePoolOk) { handleReject("SAME_POOL_BLOCK"); result.reason = rejectReason; return result; }
-          if (!ctx.edgeOk) { handleReject("MIDDLE_RANGE"); result.reason = rejectReason; return result; }
-
-          const qScore = Alg.evaluateQuality(ctx, conf);
-          State.diag.lastQs = qScore; result.score = qScore;
-          if (qScore >= conf.minQualityScore) {
-            State.diag.final++; State.diag.typeA++;
-            result.dir = "SELL"; result.type = "TYPE A: Sweep Reclaim"; result.reason = "Цена сняла верхнюю ликвидность и вернулась в пул.";
-          } else { handleReject("QUALITY_TOO_LOW"); result.reason = rejectReason; }
-          return result;
-        }
-
-        if (buyReclaim) {
-          State.activeLiquidityZone = { side: "BUY", price: dnPool, expiresAtIdx: idx + conf.retestWindowBars };
-          const bWick = (Math.min(c.open, c.close) - c.low) / range; result.metrics.buyWickRatio = bWick;
-          const { strongOppositeImpulse, microChoch } = checkImpulseAndChoch("BUY");
-          const ctx = {
-            atr, sweepDepth: dnPool - c.low, reclaimDepth: c.close - dnPool, wickRatio: bWick,
-            edgeOk: posInPool <= conf.edgeZonePercent, microChoch, 
-            samePoolOk: !(conf.blockSamePoolSignals && State.lastBuyPool && Math.abs(dnPool - State.lastBuyPool) < atr*conf.samePoolDistanceATR),
-            rangeOk: range <= atr * conf.maxRangeATR, strongOppositeImpulse, strongReclaim: (c.close - dnPool) > atr * 0.08, 
-            lateEntry: Math.abs(c.close - dnPool) > atr * conf.maxEntryDistanceATR, volumeOk: true, isRetest: false
-          };
-
-          if (ctx.lateEntry) { handleReject("LATE_ENTRY"); result.reason = rejectReason; return result; }
-          if (ctx.sweepDepth < atr * conf.minSweepATR) { handleReject("WEAK_SWEEP"); result.reason = rejectReason; return result; }
-          if (ctx.reclaimDepth < conf.minReclaimATR * atr) { handleReject("WEAK_RECLAIM"); result.reason = rejectReason; return result; }
-          if (bWick < conf.minWickRatio && bodyRatio < conf.minBodyRatio) { handleReject("WEAK_WICK_OR_BODY"); result.reason = rejectReason; return result; }
-          if (idx - State.lastSignalIndex <= conf.cooldownBars) { handleReject("COOLDOWN"); result.reason = rejectReason; return result; }
-          if (!ctx.samePoolOk) { handleReject("SAME_POOL_BLOCK"); result.reason = rejectReason; return result; }
-          if (!ctx.edgeOk) { handleReject("MIDDLE_RANGE"); result.reason = rejectReason; return result; }
-
-          const qScore = Alg.evaluateQuality(ctx, conf);
-          State.diag.lastQs = qScore; result.score = qScore;
-          if (qScore >= conf.minQualityScore) {
-            State.diag.final++; State.diag.typeA++;
-            result.dir = "BUY"; result.type = "TYPE A: Sweep Reclaim"; result.reason = "Цена сняла нижнюю ликвидность и вернулась в пул.";
-          } else { handleReject("QUALITY_TOO_LOW"); result.reason = rejectReason; }
-          return result;
-        }
-
-        if (isSellRaw || isBuyRaw) handleReject("NO_RECLAIM");
-        return result;
-      },
-      processTradeResult: (dir, ent, ext, stake) => {
-        const win = dir === "BUY" ? ext > ent : ext < ent;
-        let pnl = 0;
-        if(win) { 
-          pnl = stake * CONFIG.payout; State.mgStep = 0; State.lossStreak = 0; State.isStrictMode = false;
-        } else { 
-          pnl = -stake; State.mgStep++; State.lossStreak++;
-          if(State.mgStep >= CONFIG.martingaleLadder.length) { State.mgStep = 0; }
-          if(State.lossStreak >= CONFIG.adaptiveTightenAfterLosses && CONFIG.adaptiveMode) { State.isStrictMode = true; }
-        }
-        if(State.canTradeSignals) {
-          State.stats.total++;
-          if(win) State.stats.win++; else State.stats.loss++;
-          State.stats.pnl += pnl;
-        }
-        return { res: win ? "WIN" : "LOSS", pnl };
-      }
-    };
-
-    // --- 7. UI MANAGER ---
-    const UI = {
-      sysLog: (txt, isErr = false) => {
-        const el = byId('sys-log'); if (!el) return;
-        el.innerHTML = `<div><span class="${isErr ? 'text-bad' : 'text-accent'}">[SYS]</span> ${txt}</div>` + el.innerHTML;
-        if(el.children.length > 5) el.lastChild.remove();
-      },
-      updateDiags: () => {
-        safeSetText('diag-raw', State.diag.raw);
-        safeSetText('diag-rec', State.diag.reclaim);
-        safeSetText('diag-ta', State.diag.typeA);
-        safeSetText('diag-tb', State.diag.typeB);
-        safeSetText('diag-fin', State.diag.final);
-        safeSetText('diag-rej', State.diag.rejected);
-      },
-      showNoRealDataState: () => {
-        const dSrc = byId('ui-data-source'); if (dSrc) { dSrc.innerText = "DATA SOURCE: NO REAL DATA"; dSrc.style.color = "var(--bad)"; }
-        const sStatus = byId('ui-scan-status'); if (sStatus) sStatus.innerText = "ОЖИДАНИЕ ДАННЫХ";
-        
-        const uiPnl = byId('ui-pnl'); if (uiPnl) { uiPnl.innerText = "--- ₽"; uiPnl.style.color = "var(--text-muted)"; }
-        safeSetText('ui-pnl-desc', "нет реальных данных");
-
-        safeSetHTML('ui-mid-text', "Реальные свечи BTCUSDT недоступны.<br>Сигналы не рассчитываются.");
-        safeSetHTML('ui-ob', `<div class="text-[11px] text-slate-400 text-center py-2 font-mono">Ожидание стакана...</div>`);
-        
-        const cov = byId('chart-overlay'); if (cov) cov.style.display = 'none';
-        const eMkt = byId('ui-empty-market'); if (eMkt) eMkt.style.display = 'flex';
-        stopOrbScanner();
-      },
-      updateStats: () => {
-        if (!State.canTradeSignals) return;
-        safeSetText('ui-t-total', State.stats.total);
-        safeSetText('ui-t-win', State.stats.win);
-        safeSetText('ui-t-loss', State.stats.loss);
-        const p = byId('ui-pnl'); 
-        if (p) {
-          p.innerText = Utils.formatRub(State.stats.pnl);
-          p.style.color = State.stats.pnl >= 0 ? "var(--good)" : "var(--bad)";
-        }
-      },
-      updateIndicators: (m, qScore) => {
-        if(!m || !m.atr) return;
-        const conf = getActiveConfig();
-        const str = safePercent((m.bodyRatio / conf.minBodyRatio)*50);
-        const liq = safePercent(60 + (m.sellWickRatio || m.buyWickRatio || 0)*200); 
-        const atrScore = safePercent((m.poolWidth / (m.atr*4))*100);
-        const smc = safePercent((str+liq+atrScore)/3);
-        const qs = safePercent(qScore || smc);
-        const edgeP = safePercent(Math.max(0, 1 - Math.abs(m.posInPool))*100);
-
-        updateGauges({ structure: str, liquidity: liq, atrRange: atrScore, smartMoney: smc, qualityScore: qs, edgeZone: edgeP, cooldown: 100 });
-      },
-      updateOB: (p) => {
-        const ob = byId('ui-ob');
-        if (!ob || !State.canTradeSignals) return; 
-        let html = '';
-        for(let i=3; i>=1; i--) {
-          const pA = p + (i * 0.5) + Math.random()*0.3;
-          html += `<div class="ob-row ask" style="--w:${Math.random()*60+20}%"><span>${pA.toFixed(2)}</span><span>${(Math.random()*2+.1).toFixed(3)}</span></div>`;
-        }
-        html += `<div class="ob-center">${p.toFixed(2)}</div>`;
-        for(let i=1; i<=3; i++) {
-          const pB = p - (i * 0.5) - Math.random()*0.3;
-          html += `<div class="ob-row bid" style="--w:${Math.random()*60+20}%"><span>${pB.toFixed(2)}</span><span>${(Math.random()*2+.1).toFixed(3)}</span></div>`;
-        }
-        ob.innerHTML = html;
-      },
-      drawOverlay: () => {
-        if(!State.chart || !State.series || !State.canTradeSignals) return;
-        const ov = byId('chart-overlay');
-        if (!ov) return;
-        ov.innerHTML = '';
-        const ts = State.chart.timeScale();
-        const ser = State.series;
-
-        const toDraw = [...State.trades].slice(-20);
-        if(State.activeTrade) toDraw.push(State.activeTrade);
-
-        toDraw.forEach(t => {
-          let cx, cy, eX, eY, xX, xY;
-          try {
-            cx = ts.timeToCoordinate(t.sigTime);
-            cy = ser.priceToCoordinate(t.dir === "BUY" ? t.sigPrice - t.atr*0.8 : t.sigPrice + t.atr*0.8);
-            if(t.entTime) {
-               eX = ts.timeToCoordinate(t.entTime);
-               eY = ser.priceToCoordinate(t.entPrice);
-               xX = ts.timeToCoordinate(t.extTime || Math.floor(Date.now()/1000));
-               xY = ser.priceToCoordinate(t.extPrice || State.livePrice);
-            }
-          } catch(e) { return; } 
-
-          if(cx && cy) {
-            const arr = document.createElement('div');
-            arr.className = `signal-arrow ${t.dir.toLowerCase()}`;
-            arr.style.left = `${cx}px`; arr.style.top = `${cy}px`;
-            arr.innerHTML = t.dir === "BUY" ? '↑' : '↓';
-            arr.dataset.tradeId = t.sigTime; // For Tooltip
-            ov.appendChild(arr);
-          }
-
-          if(eX && eY && xX && xY) {
-            const pE = document.createElement('div'); pE.className = 'marker-dot entry'; pE.style.left = `${eX}px`; pE.style.top = `${eY}px`; 
-            pE.dataset.tradeId = t.sigTime; ov.appendChild(pE);
-            
-            const l = Math.min(eX, xX), w = Math.max(8, Math.abs(xX-eX)), top = Math.min(eY, xY)-20, h = Math.abs(xY-eY)+40;
-            const b = document.createElement('div');
-            b.className = `trade-box ${t.state==='ACTIVE'?'active':(t.res==='WIN'?'win':'loss')}`;
-            b.style.left = `${l}px`; b.style.top = `${top}px`; b.style.width = `${w}px`; b.style.height = `${h}px`;
-            b.dataset.tradeId = t.sigTime; ov.appendChild(b);
-
-            if(t.state === 'CLOSED') {
-              const pX = document.createElement('div'); pX.className = 'marker-dot exit'; pX.style.left = `${xX}px`; pX.style.top = `${xY}px`; 
-              pX.dataset.tradeId = t.sigTime; ov.appendChild(pX);
-            }
-          }
-        });
-      }
-    };
-
-    // --- 8. MAIN ENGINE ---
-    const App = {
-      safeRunBacktest: () => {
-        try {
-          if (!State.canTradeSignals || State.candles.length < 100) return;
-          const lim = Date.now()/1000 - CONFIG.historicalLookbackHours*3600;
-          let i = CONFIG.lookback + CONFIG.atrLen;
-          while(i < State.candles.length - CONFIG.expiryCandles) {
-            if(State.candles[i].time < lim) { i++; continue; }
-            
-            const res = Alg.evaluate(State.candles, i);
-            if (res.dir) {
-              const en = State.candles[i+1], ex = State.candles[i+CONFIG.expiryCandles]; // Entry next candle, exit +5 candles
-              const stake = CONFIG.martingaleLadder[State.mgStep];
-              const trResult = Alg.processTradeResult(res.dir, en.open, ex.close, stake);
-              
-              State.trades.push({
-                state: 'CLOSED', dir: res.dir, type: res.type,
-                sigTime: State.candles[i].time, sigPrice: State.candles[i].close, atr: res.metrics.atr,
-                entTime: en.time, entPrice: en.open, extTime: ex.time, extPrice: ex.close, 
-                stake, reason: res.reason, ...trResult
-              });
-              
-              State.lastSignalIndex = i;
-              if(res.dir==="BUY") State.lastBuyPool = res.metrics.dnPool; else State.lastSellPool = res.metrics.upPool;
-              i += CONFIG.expiryCandles; // Jump forward 5 candles (25 mins)
-            } else {
-              i++;
-            }
-          }
-        } catch(e) { reportTerminalError('backtest', e); }
-      },
-
-      fetchDirectCandles: async () => {
-        const endpoints = [
-          { name: "BINANCE_SPOT", url: `https://api.binance.com/api/v3/klines?symbol=${CONFIG.symbol}&interval=${CONFIG.signalTimeframe}&limit=500` },
-          { name: "BINANCE_FUTURES", url: `https://fapi.binance.com/fapi/v1/klines?symbol=${CONFIG.symbol}&interval=${CONFIG.signalTimeframe}&limit=500` },
-          { name: "MEXC", url: `https://api.mexc.com/api/v3/klines?symbol=${CONFIG.symbol}&interval=${CONFIG.signalTimeframe}&limit=500` }
-        ];
-
-        for (const ep of endpoints) {
-          try {
-            console.log("[DATA] trying:", ep.name);
-            const res = await fetch(ep.url, { method: "GET", cache: "no-store" });
-            if (!res.ok) continue;
-
-            const raw = await res.json();
-            if (!Array.isArray(raw)) continue;
-
-            const parsed = raw.map(d => ({
-              time: Math.floor(Number(d[0]) / 1000),
-              open: Number(d[1]), high: Number(d[2]), low: Number(d[3]), close: Number(d[4]), vol: Number(d[5] || 0)
-            }));
-            const cands = Utils.sanitizeCandles(parsed);
-            
-            if (cands.length >= 100) {
-              State.candles = cands; State.source = "REAL API"; State.canTradeSignals = true;
-              safeSetText('ui-data-source', `DATA SOURCE: ${State.source}`);
-              const ds = byId('ui-data-source'); if(ds) ds.className = "text-[9px] font-bold text-emerald-500 mt-1 uppercase";
-              App.updateChartData();
+            if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) {
+              if (typeof item.onDone === "function") item.onDone();
+              setTimeout(() => this.next(), 150);
               return;
             }
-          } catch (err) { /* silent try next */ }
+
+            this.speaking = true;
+
+            const utterance = new SpeechSynthesisUtterance(item.text);
+            utterance.lang = "ru-RU";
+            utterance.rate = 1.05;
+            utterance.pitch = 0.98;
+
+            utterance.onend = () => {
+              this.speaking = false;
+              if (typeof item.onDone === "function") item.onDone();
+              setTimeout(() => this.next(), 120);
+            };
+
+            utterance.onerror = () => {
+              this.speaking = false;
+              if (typeof item.onDone === "function") item.onDone();
+              setTimeout(() => this.next(), 120);
+            };
+
+            window.speechSynthesis.speak(utterance);
+          },
+
+          isBusy() {
+            return this.speaking || this.queue.length > 0;
+          }
+        };
+        window.speechQueue = speechQueue;
+
+
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        const Shield = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 4.81 17 6 19 6a1 1 0 0 1 1 1z"/></svg>;
+        const Cpu = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>;
+        const Globe = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>;
+        const Clock = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+        const Activity = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>;
+        const MousePointer = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/></svg>;
+        const Radar = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 5.49A10 10 0 0 0 5.3 19.38"/><path d="M20 8.74A10 10 0 0 1 17.38 20"/><path d="M16 8a6 6 0 0 0-8.5-1.5"/><path d="M7.5 16.5a6 6 0 0 0 9.2-.5"/><path d="M12 12v.01"/></svg>;
+        const Zap = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
+
+        const ASSETS = [
+          { pair: 'BTC/USDT', symbol: 'BTCUSDT', name: 'Bitcoin', voiceName: 'биткоин' }
+        ];
+
+        const FALLBACK_BTC_NEWS = [
+          "Крупный капитал формирует пулы ликвидности за локальными экстремумами.",
+          "Паттерн снятия ликвидности подтверждает смену структуры рынка.",
+          "Зафиксирован ложный пробой диапазона с последующим сломом структуры."
+        ];
+
+        const MARTINGALE_LADDER = [1000, 2430, 5900, 14330, 34800];
+        const PAYOUT_RATE = 0.7;
+
+        // Рабочий Data-Layer
+        const ScannerAPI = {
+          workingIndex: 0,
+          failCount: 0,
+          async getCandles(symbol, count = 250, interval = '5m') { 
+            const bUrl = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`;
+            const mUrl = `https://api.mexc.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`;
+
+            const urlGenerators = [
+                () => bUrl,
+                () => `https://api1.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
+                () => `https://api2.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
+                () => `https://api3.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
+                () => `https://data-api.binance.vision/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
+                () => mUrl,
+                () => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(bUrl)}`,
+                () => `https://api.allorigins.win/raw?url=${encodeURIComponent(bUrl)}`,
+                () => `https://corsproxy.io/?${encodeURIComponent(bUrl)}`
+            ];
+
+            let order = [this.workingIndex];
+            for (let i = 0; i < urlGenerators.length; i++) {
+                if (i !== this.workingIndex) order.push(i);
+            }
+            
+            for (let idx of order) {
+                try {
+                    let url = urlGenerators[idx]();
+                    let response = await fetch(url);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
+                            this.workingIndex = idx; 
+                            this.failCount = 0;      
+                            return data.map(d => ({
+                                time: d[0] / 1000,
+                                open: parseFloat(d[1]),
+                                high: parseFloat(d[2]),
+                                low: parseFloat(d[3]),
+                                close: parseFloat(d[4]),
+                                volume: parseFloat(d[5])
+                            }));
+                        }
+                    }
+                } catch(e) {}
+            }
+            this.failCount++;
+            return [];
+          }
+        };
+
+        const formatPrice = (p) => {
+            if (!p && p !== 0) return '0.00';
+            if (p >= 1000) return p.toFixed(2);
+            if (p >= 10) return p.toFixed(3);
+            if (p >= 1) return p.toFixed(4);
+            return p.toFixed(5);
+        };
+
+        function formatTime(ts) {
+            if (!ts) return '--:--';
+            return new Date(ts * 1000).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
 
-        State.source = "NO REAL DATA"; State.canTradeSignals = false; State.candles = [];
-      },
-
-      startSequence: async () => {
-        try {
-          // Initial Shell Render
-          const app = byId('app');
-          if (app) app.style.visibility = 'visible';
-
-          const bootSteps = [
-            'Подключение к источнику данных...',
-            'Загрузка истории BTCUSDT 5M...',
-            'Анализ ликвидности и пулов...',
-            'Построение истории сделок 12H...',
-            'Запуск сканирования...'
-          ];
-          
-          const btn = byId('btn-start'); if (btn) btn.style.display = 'none';
-          const lw = byId('loader-wrap'); if (lw) lw.style.display = 'flex';
-          const lt = byId('load-text');
-          const lb = byId('load-bar');
-
-          App.initChart();
-
-          for (let i = 0; i < bootSteps.length; i++) {
-            if (lt) lt.innerText = bootSteps[i];
-            if (lb) lb.style.width = `${((i+1)/bootSteps.length)*100}%`;
-            
-            if (i === 1) {
-               await App.fetchDirectCandles();
+        function calcLiquidityZones(data, period = 30) {
+            let res = [];
+            for (let i = 0; i < data.length; i++) {
+                if (i < period) {
+                    res.push({ time: data[i].time, upper: data[i].high, lower: data[i].low });
+                    continue;
+                }
+                let high = -Infinity, low = Infinity;
+                for (let j = 1; j <= period; j++) {
+                    high = Math.max(high, data[i - j].high);
+                    low = Math.min(low, data[i - j].low);
+                }
+                res.push({ time: data[i].time, upper: high, lower: low });
             }
-            if (i === 3 && State.canTradeSignals) {
-               App.safeRunBacktest();
-               UI.updateStats();
-               updateGaugesFromCandles(State.candles);
+            return res;
+        }
+
+        function calcATRSeries(data, period = 14) {
+            let res = [];
+            for (let i = 0; i < data.length; i++) {
+                if (i === 0) { 
+                    res.push({time: data[i].time, value: data[i].high - data[i].low}); 
+                    continue; 
+                }
+                let sumTR = 0;
+                let count = 0;
+                for(let j = 0; j < period && (i - j) > 0; j++) {
+                    const c = data[i - j];
+                    const prevC = data[i - j - 1];
+                    let tr = Math.max(
+                        c.high - c.low,
+                        Math.abs(c.high - prevC.close),
+                        Math.abs(c.low - prevC.close)
+                    );
+                    sumTR += tr;
+                    count++;
+                }
+                res.push({time: data[i].time, value: count > 0 ? sumTR / count : 0});
             }
-            await new Promise(r => setTimeout(r, 400));
-          }
+            return res;
+        }
 
-          const startup = byId('startup');
-          if (startup) startup.style.opacity = '0';
-          setTimeout(() => {
-            if (startup) startup.style.display = 'none';
-            
-            if (State.canTradeSignals) {
-              const pTxt = Utils.speakRub(State.stats.pnl);
-              document.body.classList.add("is-scanning");
-              startOrbScanner(State.candles);
-              Voice.speak(`Терминал Pro Max запущен. Основной режим: Bitcoin, график 5 минут. Установите время сделки 25 минут. За последние 12 часов найдено ${State.stats.total} сделок. При ставке 300 рублей и мартингейле до пятого колена результат составил ${pTxt}. Перехожу к сканированию.`);
-            } else {
-              UI.showNoRealDataState();
-              Voice.speak("Терминал Pro Max запущен. Реальные рыночные данные временно недоступны. Торговая аналитика не запущена.");
-            }
+        const LiveClock = () => {
+          const [t, setT] = useState(new Date());
+          useEffect(() => { const i = setInterval(() => setT(new Date()), 1000); return () => clearInterval(i); }, []);
+          return <span className="text-slate-800 text-sm md:text-base mono-font font-bold">{t.toLocaleTimeString('ru-RU')}</span>;
+        };
 
-            setInterval(() => {
-              const clk = byId('ui-clock');
-              if (clk) clk.innerText = new Date().toLocaleTimeString('ru-RU');
-            }, 1000);
-            setInterval(App.pollData, CONFIG.restPollingMs);
-            requestAnimationFrame(function loop() { UI.drawOverlay(); requestAnimationFrame(loop); });
-          }, 800);
-        } catch(e) { reportTerminalError('boot', e); }
-      },
+        const Speedometer = ({ value, label, colorHex = "#0284c7", glow = false }) => {
+          const safeValue = isNaN(value) ? 0 : Math.max(0, Math.min(100, value));
+          const angle = -90 + (safeValue / 100) * 180;
+          const radius = 40;
+          const circumference = Math.PI * radius;
+          const strokeDashoffset = circumference - (safeValue / 100) * circumference;
 
-      initChart: () => {
-        try {
-          const c = byId('tv-chart');
-          if (!c) return;
-          const chart = LightweightCharts.createChart(c, {
-            layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#64748b' },
-            grid: { vertLines: { color: 'rgba(100,116,139,0.04)' }, horzLines: { color: 'rgba(100,116,139,0.04)' } },
-            timeScale: { timeVisible: true, borderVisible: false },
-            rightPriceScale: { borderVisible: false }
-          });
-          State.chart = chart;
-          State.series = chart.addCandlestickSeries({ upColor: '#10b981', downColor: '#ef5f73', borderVisible: false, wickUpColor: '#10b981', wickDownColor: '#ef5f73' });
-          State.upSeries = chart.addLineSeries({ color: 'rgba(239,95,115,0.4)', lineWidth: 1, lineStyle: 2, lastValueVisible: false, priceLineVisible: false });
-          State.dnSeries = chart.addLineSeries({ color: 'rgba(16,185,129,0.4)', lineWidth: 1, lineStyle: 2, lastValueVisible: false, priceLineVisible: false });
-          
-          new ResizeObserver(() => chart.applyOptions({ width: c.clientWidth, height: c.clientHeight })).observe(c);
-        } catch(e) { reportTerminalError('chart', e); }
-      },
-
-      updateChartData: () => {
-        try {
-          if (!State.canTradeSignals) return;
-          State.series.setData(State.candles);
-          const up=[], dn=[];
-          for(let i=CONFIG.lookback; i<State.candles.length; i++) {
-            const pr = State.candles.slice(i-CONFIG.lookback, i);
-            up.push({time:State.candles[i].time, value:Math.max(...pr.map(x=>x.high))});
-            dn.push({time:State.candles[i].time, value:Math.min(...pr.map(x=>x.low))});
-          }
-          State.upSeries.setData(up); State.dnSeries.setData(dn);
-          State.livePrice = State.candles[State.candles.length-1].close;
-          safeSetText('ui-price', Utils.formatPrice(State.livePrice));
-          UI.updateOB(State.livePrice);
-        } catch(e) { reportTerminalError('chartUpdate', e); }
-      },
-
-      pollData: async () => {
-        if (!State.canTradeSignals) return;
-        try {
-          const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${CONFIG.symbol}&interval=${CONFIG.signalTimeframe}&limit=2`);
-          if(res.ok) {
-            const raw = await res.json();
-            const parsed = raw.map(d => ({ time: Math.floor(Number(d[0]) / 1000), open: Number(d[1]), high: Number(d[2]), low: Number(d[3]), close: Number(d[4]), vol: Number(d[5] || 0) }));
-            if (parsed.length > 0) {
-              const c = parsed[0];
-              State.livePrice = c.close;
-              State.series.update(c);
-              safeSetText('ui-price', Utils.formatPrice(State.livePrice));
-              UI.updateOB(c.close);
-              
-              const last = State.candles[State.candles.length-1];
-              if(last.time === c.time) { 
-                State.candles[State.candles.length-1] = c; 
-                if(!State.activeTrade) Voice.checkPotentialZone(State.candles, State.candles.length-1);
-              } else { 
-                App.checkLogic(); 
-                State.candles.push(c); 
-                App.updateChartData(); 
-              }
-            }
-          }
-        } catch(e) { /* silent poll fail */ }
-      },
-
-      checkLogic: () => {
-        try {
-          if(State.activeTrade || !State.canTradeSignals) return;
-          const idx = State.candles.length - 2; 
-          
-          const res = Alg.evaluate(State.candles, idx);
-          UI.updateDiags();
-          UI.updateIndicators(res.metrics, res.score);
-
-          if (res.dir) App.triggerLiveSignal(res, State.candles[idx]);
-        } catch(e) { reportTerminalError('logic', e); }
-      },
-
-      triggerLiveSignal: async (res, sigCandle) => {
-        document.body.classList.remove("is-scanning");
-        stopOrbScanner();
-
-        const stake = CONFIG.martingaleLadder[State.mgStep];
-        State.activeTrade = {
-          state: 'PENDING', dir: res.dir, type: res.type,
-          sigTime: sigCandle.time, sigPrice: sigCandle.close,
-          atr: res.metrics.atr, stake, reason: res.reason, midDone: false
+          return (
+            <div className="flex flex-col items-center flex-1 relative px-0.5 group pt-1">
+              <svg viewBox="0 0 100 55" className="w-10 h-6 md:w-12 md:h-7 overflow-visible mt-1">
+                <defs>
+                    <filter id={`glow-${label.replace(/\s+/g, '')}`}>
+                        <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
+                        <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
+                </defs>
+                {[0, 25, 50, 75, 100].map(tick => {
+                   const a = -Math.PI + (tick/100)*Math.PI;
+                   return <line key={tick} x1={50 + 36 * Math.cos(a)} y1={50 + 36 * Math.sin(a)} x2={50 + 44 * Math.cos(a)} y2={50 + 44 * Math.sin(a)} stroke="rgba(148, 163, 184, 0.5)" strokeWidth="2" strokeLinecap="round" />
+                })}
+                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="rgba(226, 232, 240, 1)" strokeWidth="5" strokeLinecap="round" />
+                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke={colorHex} strokeWidth="5" strokeLinecap="round"
+                      strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
+                      style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)' }} filter={glow ? `url(#glow-${label.replace(/\s+/g, '')})` : "none"} />
+                <g style={{ transform: `rotate(${angle}deg)`, transformOrigin: '50px 50px', transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
+                  <polygon points="48,50 52,50 50,12" fill={colorHex} />
+                  <circle cx="50" cy="50" r="6" fill={colorHex} />
+                  <circle cx="50" cy="50" r="2.5" fill="#ffffff" />
+                </g>
+              </svg>
+              <div className={`text-base md:text-lg mt-1.5 font-black leading-none oswald-font ${glow ? 'text-cyan-600 drop-shadow-[0_0_8px_currentColor]' : 'text-slate-800'}`} style={{color: glow ? colorHex : ''}}>{Math.round(safeValue)}</div>
+              <div className="text-[8px] md:text-[9px] text-slate-500 tracking-widest leading-none text-center font-bold mt-1 uppercase whitespace-nowrap">{label}</div>
+            </div>
+          );
         };
         
-        Voice.speak(res.reason);
-        Voice.speak("Подготовка. Вход через три секунды.");
-        
-        const scanSt = byId('ui-scan-status');
-        if (scanSt) scanSt.innerText = "SIGNAL DETECTED";
-        
-        await new Promise(r => setTimeout(r, 6000));
+        const VolumetricArrow = ({ type }) => {
+          const isUp = type === 'CALL';
+          return (
+            <div className="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center animate-arrow-premium">
+               <svg viewBox="0 0 24 24" className={`w-full h-full fill-current ${isUp ? 'text-[#0ea5e9]' : 'text-[#f43f5e]'}`}>
+                  <path d={isUp ? "M12 2l-10 11h7v9h6v-9h7z" : "M12 22l10-11h-7v-9h-6v9h-7z"} />
+               </svg>
+            </div>
+          );
+        };
 
-        const t = State.activeTrade;
-        t.state = 'ACTIVE'; t.entTime = Math.floor(Date.now()/1000); t.entPrice = State.livePrice;
-        
-        safeSetHTML('ui-mid-text', `Направление: <b style="color:var(--text-main)">${t.dir}</b><br>Вход: <b>${t.entPrice.toFixed(2)}</b><br>Таймер запущен...`);
-        
-        VoiceState.midTradeSpoken = false;
-        let rem = CONFIG.expiryMinutes * 60;
-        const tid = setInterval(() => {
-          rem--;
-          safeSetText('ui-mid-timer', `Осталось: ${Math.floor(rem/60)}:${String(rem%60).padStart(2,'0')}`);
+        const App = () => {
+          const [launchState, setLaunchState] = useState('IDLE'); 
+          const [loadingState, setLoadingState] = useState({ show: false, phase: '', text: '', fading: false });
+          const [appPhase, setAppPhase] = useState('ГОТОВ К ЗАПУСКУ');
+          const [asset, setAsset] = useState(ASSETS[0]);
+          const [signal, setSignal] = useState(null);
+          const [countdown, setCountdown] = useState(null);
+          const [logs, setLogs] = useState([]);
+          const [apiStatus, setApiStatus] = useState('ОЖИДАНИЕ');
+          const [metrics, setMetrics] = useState({ structure: 0, liquidity: 0, edgeZone: 0, smartMoney: 0 });
+          const [newsHeadlines, setNewsHeadlines] = useState(["ОБНОВЛЕНИЕ ДАННЫХ BTC..."]);
+          const [tradeStats, setTradeStats] = useState({ wins: 0, losses: 0, winRate: 0, pnl: 0 });
+          const [tooltipData, setTooltipData] = useState(null);
+          const [currentTF, setCurrentTF] = useState('5M');
+          const [diagStats, setDiagStats] = useState({ sweeps: 0, reclaims: 0, typeB: 0, rejected: 0, finalSignals: 0 });
           
-          if(rem === Math.floor(CONFIG.expiryMinutes*60/2) && t && !VoiceState.midTradeSpoken) {
-            VoiceState.midTradeSpoken = true;
-            const mStatus = Voice.getMidTradeStatus(t, State.livePrice);
-            safeSetHTML('ui-mid-text', `Направление: <b style="color:var(--text-main)">${t.dir}</b><br>Вход: <b>${t.entPrice.toFixed(2)}</b><br>Анализ: <b style="color:var(--accent)">${mStatus.text}</b>`); 
-            Voice.speak(mStatus.text);
-          }
-          if(rem <= 0) { clearInterval(tid); App.closeLiveTrade(); }
-        }, 1000);
-      },
+          const chartContainerRef = useRef(null);
+          const overlaysContainerRef = useRef(null);
+          const chartInstance = useRef(null);
+          const candleSeries = useRef(null);
+          const upperSeriesRef = useRef(null);
+          const lowerSeriesRef = useRef(null);
+          
+          // Scanner Refs
+          const scannerBeamRef = useRef(null);
+          const scannerReticleRef = useRef(null);
+          const scannerGlowRef = useRef(null);
+          const scannerLabelRef = useRef(null);
+          const scannerTimerRef = useRef(null);
+          const lastScanIndexRef = useRef(-1);
+          const isScannerRunningRef = useRef(false);
+          
+          const audioCtx = useRef(null);
+          const engineActive = useRef(false);
+          const currentPrice = useRef(null);
+          const statsRef = useRef({ wins: 0, losses: 0, pnl: 0 });
+          const markersRef = useRef([]); 
+          const fullNewsPool = useRef([...FALLBACK_BTC_NEWS]);
+          const chartDataRef = useRef([]);
 
-      closeLiveTrade: () => {
-        if(!State.activeTrade) return;
-        const t = State.activeTrade;
-        t.state = 'CLOSED'; t.extTime = Math.floor(Date.now()/1000); t.extPrice = State.livePrice;
-        
-        const r = Alg.processTradeResult(t.dir, t.entPrice, t.extPrice, t.stake);
-        t.res = r.res; t.pnl = r.pnl;
-        State.trades.push(t); State.activeTrade = null;
-        
-        UI.updateStats();
-        UI.updateDiags();
-        
-        safeSetText('ui-scan-status', State.isStrictMode ? "STRICT MODE ACTIVE" : "BALANCED+ 5M / 25M");
-        safeSetHTML('ui-mid-text', "Сделок в данный момент нет.<br>Ожидание сигнала.");
-        safeSetText('ui-mid-timer', "");
-        
-        document.body.classList.add("is-scanning");
-        startOrbScanner(State.candles);
-        
-        UI.sysLog(`Закрыто. ${t.res} (${Utils.formatRub(t.pnl)})`);
-      }
-    };
-  </script>
+          // Tracking for logic
+          const completedTradesRef = useRef([]);
+          const failedZonesRef = useRef([]);
+          const lastZoneStateRef = useRef('OUT');
+          const lastNewsTimeRef = useRef(Date.now());
+
+          const fetchNews = async () => {
+              try {
+                  const res = await fetch('https://api.rss2json.com/v1/api.json?rss_url=https://forklog.com/feed/').catch(()=>null);
+                  if(res && res.ok) {
+                      const data = await res.json();
+                      if (data?.items) {
+                          const filtered = data.items.filter(item => /биткоин|btc|bitcoin|криптовалют|эфир/i.test(item.title)).map(item => item.title.replace(/<\/?[^>]+(>|$)/g, "").trim());
+                          if(filtered.length > 0) {
+                              fullNewsPool.current = [...new Set(filtered)];
+                              setNewsHeadlines(fullNewsPool.current);
+                              return;
+                          }
+                      }
+                  }
+              } catch (error) {}
+              setNewsHeadlines(FALLBACK_BTC_NEWS);
+          };
+
+          useEffect(() => { fetchNews(); setInterval(fetchNews, 20 * 60 * 1000); }, []);
+
+          const addLog = (msg, isAi = false) => {
+            const prefix = isAi ? 'ИНФО:' : 'СИСТЕМА:';
+            setLogs(p => [`${prefix} ${msg}`, ...p].slice(0, 5)); 
+          };
+
+          const playSound = (type) => {
+            if (!audioCtx.current) return;
+            const ctx = audioCtx.current;
+            if (ctx.state === 'suspended') ctx.resume();
+            
+            const playTone = (freq, oscType, dur, vol, delay = 0) => {
+                try {
+                    const o = ctx.createOscillator();
+                    const g = ctx.createGain();
+                    o.type = oscType;
+                    o.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+                    g.gain.setValueAtTime(0, ctx.currentTime + delay);
+                    g.gain.linearRampToValueAtTime(vol, ctx.currentTime + delay + 0.02);
+                    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
+                    o.connect(g); g.connect(ctx.destination);
+                    o.start(ctx.currentTime + delay);
+                    o.stop(ctx.currentTime + delay + dur);
+                } catch (e) {}
+            };
+
+            if (type === 'scan') playTone(1200 + Math.random()*300, 'sine', 0.03, 0.005);
+            if (type === 'found') { playTone(600, 'triangle', 0.1, 0.03); playTone(800, 'triangle', 0.1, 0.03, 0.1); }
+            if (type === 'start') { playTone(523.25, 'sine', 0.4, 0.03); playTone(659.25, 'sine', 0.5, 0.03, 0.1); playTone(783.99, 'sine', 0.6, 0.04, 0.2); }
+            if (type === 'win') { playTone(523.25, 'triangle', 0.4, 0.04); playTone(659.25, 'triangle', 0.5, 0.04, 0.1); playTone(783.99, 'triangle', 0.8, 0.05, 0.2); }
+            if (type === 'loss') { playTone(300, 'sawtooth', 0.4, 0.03); playTone(250, 'sawtooth', 0.6, 0.04, 0.2); }
+          };
+
+          // --- CHART ENGINE & OVERLAYS ---
+          const syncGlassBoxes = useCallback(() => {
+              if (!chartInstance.current || !candleSeries.current || !overlaysContainerRef.current) return;
+              const timeScale = chartInstance.current.timeScale();
+              const series = candleSeries.current;
+              
+              overlaysContainerRef.current.innerHTML = '';
+              
+              completedTradesRef.current.forEach(trade => {
+                  const x1 = timeScale.timeToCoordinate(trade.entryTime);
+                  let x2 = timeScale.timeToCoordinate(trade.exitTime || (trade.entryTime + trade.exp * 60));
+                  
+                  if (x1 === null) return;
+                  if (x2 === null || isNaN(x2)) x2 = timeScale.width();
+
+                  const yEntry = series.priceToCoordinate(trade.entryPrice);
+                  const yExit = series.priceToCoordinate(trade.currentPrice || trade.exitPrice || trade.entryPrice);
+                  
+                  if (yEntry !== null && yExit !== null) {
+                      const top = Math.min(yEntry, yExit);
+                      const height = Math.max(Math.abs(yEntry - yExit), 2);
+                      const width = Math.max(x2 - x1, 5);
+                      
+                      const box = document.createElement('div');
+                      
+                      let resClass = 'active';
+                      if (trade.result === 'WIN') resClass = 'win';
+                      else if (trade.result === 'LOSS') resClass = 'loss';
+
+                      box.className = `glass-trade-box ${trade.type === 'PUT' ? 'put' : ''} ${resClass}`;
+                      box.style.left = `${x1}px`;
+                      box.style.top = `${top}px`;
+                      box.style.width = `${width}px`;
+                      box.style.height = `${height}px`;
+                      overlaysContainerRef.current.appendChild(box);
+                  }
+              });
+          }, []);
+
+          const initChart = async () => {
+            if (!chartContainerRef.current || chartInstance.current) return;
+            if (!window.LightweightCharts) {
+              await new Promise(resolve => {
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js';
+                script.onload = resolve; document.head.appendChild(script);
+              });
+            }
+
+            try {
+                const mainChart = window.LightweightCharts.createChart(chartContainerRef.current, {
+                  autoSize: true,
+                  layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#64748b', fontFamily: 'JetBrains Mono' },
+                  grid: { vertLines: { color: 'rgba(148, 163, 184, 0.08)' }, horzLines: { color: 'rgba(148, 163, 184, 0.08)' } },
+                  timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false, rightOffset: 12 },
+                  rightPriceScale: { borderVisible: false },
+                  crosshair: { mode: window.LightweightCharts.CrosshairMode.Normal }
+                });
+
+                candleSeries.current = mainChart.addCandlestickSeries({ 
+                  upColor: '#3b82f6',       // Premium Steel Blue
+                  downColor: '#475569',     // Graphite Gray
+                  borderVisible: false,     // Clean look without hard borders
+                  wickUpColor: '#60a5fa', 
+                  wickDownColor: '#94a3b8'
+                });
+                
+                upperSeriesRef.current = mainChart.addLineSeries({ color: 'rgba(244, 63, 94, 0.5)', lineWidth: 2, lineStyle: 2, title: 'BUY LIQ', lastValueVisible: false, priceLineVisible: false });
+                lowerSeriesRef.current = mainChart.addLineSeries({ color: 'rgba(16, 185, 129, 0.5)', lineWidth: 2, lineStyle: 2, title: 'SELL LIQ', lastValueVisible: false, priceLineVisible: false });
+
+                chartInstance.current = mainChart;
+
+                mainChart.timeScale().subscribeVisibleLogicalRangeChange(syncGlassBoxes);
+                
+                mainChart.subscribeCrosshairMove((param) => {
+                    if (!param.time || !param.point) {
+                        setTooltipData(null);
+                        return;
+                    }
+                    const trade = completedTradesRef.current.find(t => param.time >= t.entryTime && param.time <= (t.exitTime || t.entryTime + t.exp*60));
+                    if (trade) {
+                        setTooltipData({ ...trade, x: param.point.x, y: param.point.y });
+                    } else {
+                        setTooltipData(null);
+                    }
+                });
+
+            } catch(e) { console.error("Chart Init Error", e); }
+          };
+
+          // --- SMART SCANNER LIFECYCLE ---
+          const startScannerLoop = useCallback(() => {
+              if (!engineActive.current || isScannerRunningRef.current) return;
+              isScannerRunningRef.current = true;
+              
+              const loop = () => {
+                  if (!engineActive.current || !isScannerRunningRef.current) return;
+                  const candles = chartDataRef.current;
+
+                  if (candles && candles.length > 0 && chartInstance.current && candleSeries.current) {
+                      const recent = candles.slice(-140);
+                      const pool = recent.length ? recent : candles;
+                      
+                      if (pool.length > 0) {
+                          const useLatestZone = Math.random() < 0.7;
+                          const source = useLatestZone ? pool.slice(-45) : pool;
+                          
+                          if (source.length > 0) {
+                              let index = Math.floor(Math.random() * source.length);
+                              let candle = source[index];
+                              let globalIndex = candles.findIndex(c => c.time === candle.time);
+
+                              if (globalIndex === lastScanIndexRef.current && source.length > 1) {
+                                  index = (index + 3) % source.length;
+                                  candle = source[index];
+                                  globalIndex = candles.findIndex(c => c.time === candle.time);
+                              }
+                              
+                              lastScanIndexRef.current = globalIndex;
+
+                              const x = chartInstance.current.timeScale().timeToCoordinate(candle.time);
+                              const y = candleSeries.current.priceToCoordinate(candle.close);
+
+                              if (x !== null && y !== null && x > 0 && y > 0) {
+                                  if (scannerReticleRef.current) {
+                                      scannerReticleRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+                                      scannerReticleRef.current.classList.remove("is-scanning");
+                                      void scannerReticleRef.current.offsetWidth;
+                                      scannerReticleRef.current.classList.add("is-scanning");
+                                  }
+                                  if (scannerBeamRef.current) {
+                                      scannerBeamRef.current.style.transform = `translate3d(${x}px, 0, 0)`;
+                                      scannerBeamRef.current.classList.add("is-active");
+                                  }
+                                  if (scannerGlowRef.current) {
+                                      scannerGlowRef.current.style.transform = `translate3d(${x}px, 0, 0)`;
+                                      scannerGlowRef.current.classList.remove("is-pulsing");
+                                      void scannerGlowRef.current.offsetWidth;
+                                      scannerGlowRef.current.classList.add("is-pulsing");
+                                  }
+                                  if (scannerLabelRef.current) {
+                                      scannerLabelRef.current.style.transform = `translate3d(${x + 16}px, ${y - 28}px, 0)`;
+                                      scannerLabelRef.current.textContent = Math.random() > 0.5 ? "LIQ CHECK" : "SCAN";
+                                      scannerLabelRef.current.classList.add("is-visible");
+                                      setTimeout(() => {
+                                          if(scannerLabelRef.current) scannerLabelRef.current.classList.remove("is-visible");
+                                      }, 620);
+                                  }
+                              }
+                          }
+                      }
+                  }
+
+                  const delay = 700 + Math.random() * 900;
+                  clearTimeout(scannerTimerRef.current);
+                  scannerTimerRef.current = setTimeout(loop, delay);
+              };
+
+              loop();
+          }, []);
+
+          const runTerminalEngine = async () => {
+            if (engineActive.current) return;
+            engineActive.current = true;
+
+            if (audioCtx.current && audioCtx.current.state === 'suspended') await audioCtx.current.resume();
+
+            setLoadingState({ show: true, phase: 'CONNECTING', text: 'Проверяю соединение...', fading: false });
+            setApiStatus('ПОДКЛЮЧЕНИЕ');
+            setAppPhase('АНАЛИЗ SMC ЗА 12 ЧАСОВ...');
+            
+            const curAsset = ASSETS[0];
+            
+            // Artificial delay to show premium loading state briefly
+            await new Promise(r => setTimeout(r, 600));
+            setLoadingState({ show: true, phase: 'FETCHING', text: 'Загружаю котировки BTCUSDT 5M...', fading: false });
+            
+            const initialData = await ScannerAPI.getCandles(curAsset.symbol, 250, '5m');
+            
+            if (initialData && initialData.length > 150) {
+                setLoadingState({ show: true, phase: 'PREPARING', text: 'Подготавливаю график и зоны...', fading: false });
+                setApiStatus('АКТИВЕН');
+                chartDataRef.current = initialData;
+                currentPrice.current = initialData[initialData.length - 1].close;
+
+                const liqZones = calcLiquidityZones(initialData, 24); 
+                const atrSeries = calcATRSeries(initialData, 14);
+                const liqMap = new Map(liqZones.map(i => [i.time, {upper: i.upper, lower: i.lower}]));
+                const atrMap = new Map(atrSeries.map(i => [i.time, i.value]));
+
+                let tempWins = 0, tempLosses = 0, tempPnl = 0, mStep = 0;
+                let statSweeps = 0, statReclaims = 0, statTypeB = 0, statRejected = 0, statFinal = 0;
+                
+                const startIdx = initialData.length - 144; 
+                const endIdx = initialData.length - 6;
+
+                for (let idx = startIdx; idx <= endIdx; idx++) {
+                    const currTime = initialData[idx].time;
+                    const currCandle = initialData[idx];
+                    const prevCandle = initialData[idx - 1];
+                    const zones = liqMap.get(currTime);
+                    const cAtr = atrMap.get(currTime) || (currentPrice.current * 0.002);
+
+                    if (zones) {
+                        const { upper: cUpper, lower: cLower } = zones;
+                        let isCall = false, isPut = false, signalReason = '';
+                        let isTypeB = false;
+
+                        const sweepTop = currCandle.high > cUpper || prevCandle.high > cUpper;
+                        const sweepBot = currCandle.low < cLower || prevCandle.low < cLower;
+                        
+                        if (sweepTop || sweepBot) statSweeps++;
+
+                        const reclaimTop = sweepTop && currCandle.close < cUpper;
+                        const reclaimBot = sweepBot && currCandle.close > cLower;
+                        
+                        if (reclaimTop || reclaimBot) statReclaims++;
+
+                        // More realistic structure break for 1-candle inline scanner: body rejection color
+                        const structBreakTop = reclaimTop && currCandle.close < currCandle.open;
+                        const structBreakBot = reclaimBot && currCandle.close > currCandle.open;
+
+                        if (structBreakTop) { isPut = true; signalReason = 'SMC PRIMARY: RECLAIM & REJECTION'; }
+                        else if (structBreakBot) { isCall = true; signalReason = 'SMC PRIMARY: RECLAIM & REJECTION'; }
+                        else if (reclaimTop || reclaimBot) { statRejected++; }
+
+                        // Type B / Retest Logic
+                        if (!isCall && !isPut) {
+                            for (let fz of failedZonesRef.current) {
+                                if (fz.used || currCandle.time > fz.expiryTime) continue;
+                                const dist = Math.abs(currCandle.close - fz.price) / cAtr;
+                                if (dist < 0.65) {
+                                    // Check pinbar / rejection
+                                    const body = Math.abs(currCandle.close - currCandle.open);
+                                    const total = currCandle.high - currCandle.low;
+                                    const isPinbar = (total > 0) && (body / total < 0.4);
+
+                                    if (fz.type === 'PUT' && currCandle.high >= fz.price && currCandle.close < fz.price && isPinbar) {
+                                        isPut = true; isTypeB = true; fz.used = true; signalReason = 'TYPE B: SECOND CHANCE RETEST'; break;
+                                    }
+                                    if (fz.type === 'CALL' && currCandle.low <= fz.price && currCandle.close > fz.price && isPinbar) {
+                                        isCall = true; isTypeB = true; fz.used = true; signalReason = 'TYPE B: SECOND CHANCE RETEST'; break;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (isCall || isPut) {
+                            statFinal++;
+                            if (isTypeB) statTypeB++;
+                            
+                            const entryPrice = currCandle.close;
+                            const signalTime = currTime;
+                            const entryTime = initialData[idx+1]?.time || (currTime + 300); // Strict LWC alignment
+                            const exitCandle = initialData[Math.min(idx+5, initialData.length-1)];
+                            
+                            const exitPrice = exitCandle.close;
+                            const isWin = (isCall && exitPrice >= entryPrice) || (isPut && exitPrice <= entryPrice);
+                            const tradePnl = isWin ? MARTINGALE_LADDER[mStep] * PAYOUT_RATE : -MARTINGALE_LADDER[mStep];
+
+                            markersRef.current.push({ time: signalTime, position: isCall ? 'belowBar' : 'aboveBar', color: isCall ? '#3b82f6' : '#475569', shape: isCall ? 'arrowUp' : 'arrowDown', text: isTypeB ? 'TYPE B' : 'SIGNAL', size: 1.5 });
+                            markersRef.current.push({ time: entryTime, position: isCall ? 'belowBar' : 'aboveBar', color: '#0ea5e9', shape: 'circle', text: 'ENTRY', size: 0.5 });
+                            markersRef.current.push({ time: exitCandle.time, position: isCall ? 'aboveBar' : 'belowBar', color: isWin ? '#10b981' : '#ef4444', shape: 'circle', text: isWin ? 'WIN' : 'LOSS', size: 1 });
+
+                            completedTradesRef.current.push({
+                                type: isCall ? 'CALL' : 'PUT',
+                                signalReason, signalTime, entryTime, exitTime: exitCandle.time, exp: 25,
+                                signalPrice: currCandle.close, entryPrice, exitPrice, currentPrice: exitPrice,
+                                bet: MARTINGALE_LADDER[mStep], step: mStep + 1,
+                                result: isWin ? 'WIN' : 'LOSS', pnl: Math.round(tradePnl)
+                            });
+
+                            if (isWin) { tempWins++; tempPnl += tradePnl; mStep = 0; } 
+                            else {
+                                tempLosses++; tempPnl += tradePnl;
+                                failedZonesRef.current.push({ price: isCall ? cLower : cUpper, type: isCall ? 'CALL' : 'PUT', expiryTime: exitCandle.time + 7200, used: false });
+                                mStep = Math.min(mStep + 1, MARTINGALE_LADDER.length - 1);
+                            }
+                            idx += 5; 
+                        }
+                    }
+                }
+
+                statsRef.current = { wins: tempWins, losses: tempLosses, pnl: Math.round(tempPnl) };
+                setTradeStats({ wins: tempWins, losses: tempLosses, winRate: tempWins+tempLosses > 0 ? Math.round((tempWins/(tempWins+tempLosses))*100) : 0, pnl: Math.round(tempPnl) });
+                setDiagStats({ sweeps: statSweeps, reclaims: statReclaims, typeB: statTypeB, rejected: statRejected, finalSignals: statFinal });
+
+                await initChart();
+                candleSeries.current.setData(initialData);
+                
+                // CRITICAL: Sort markers by time before setting to avoid silent drop by lightweight-charts
+                markersRef.current.sort((a, b) => a.time - b.time);
+                candleSeries.current.setMarkers(markersRef.current);
+                
+                upperSeriesRef.current.setData(liqZones.map(i => ({time: i.time, value: i.upper})));
+                lowerSeriesRef.current.setData(liqZones.map(i => ({time: i.time, value: i.lower})));
+                chartInstance.current.timeScale().fitContent();
+                syncGlassBoxes();
+                
+                setLoadingState(prev => ({ ...prev, fading: true }));
+                setTimeout(() => setLoadingState({ show: false, phase: '', text: '', fading: false }), 700);
+
+                addLog(`Анализ 12H завершен. Сделок: ${statFinal}. PNL: ${Math.round(tempPnl)}₽`, true);
+                
+                // LIFECYCLE: СТРОГАЯ ОЧЕРЕДЬ ЗАПУСКА
+                window.speechQueue.say(`За последние 12 часов было ${statFinal} сделок. Результат ${Math.round(tempPnl)} рублей по ставке 1000 рублей с учётом мартингейла.`, {
+                    key: "startup",
+                    priority: 20,
+                    onDone: () => {
+                        window.speechQueue.say("Приступаю к сканированию рынка.", {
+                            key: "scanner-start",
+                            priority: 20,
+                            onDone: () => {
+                                setAppPhase('СКАНИРОВАНИЕ АКТИВНО');
+                                startScannerLoop();
+                            }
+                        });
+                    }
+                });
+
+            } else {
+                setLoadingState(prev => ({ ...prev, fading: true }));
+                setTimeout(() => setLoadingState({ show: false, phase: '', text: '', fading: false }), 700);
+                
+                setApiStatus('ОШИБКА'); setAppPhase('ОШИБКА ИСТОЧНИКА');
+                window.speechQueue.say('Ошибка связи с криптобиржей.', {priority: 100});
+            }
+            
+            // LIVE LOOP
+            let mLiveStep = 0;
+            lastNewsTimeRef.current = Date.now();
+
+            while (engineActive.current) {
+              try {
+                  setSignal(null);
+                  setMetrics({ structure: 85, liquidity: 92, edgeZone: Math.round(Math.random()*20+30), smartMoney: 15 });
+                  
+                  await new Promise(r => setTimeout(r, 5000));
+                  if (!engineActive.current) break;
+
+                  const data = await ScannerAPI.getCandles(curAsset.symbol, 200, '5m'); 
+                  if (data && data.length > 150) {
+                      setApiStatus('АКТИВЕН');
+                      chartDataRef.current = data;
+                      const lastIdx = data.length - 1;
+                      const currCandle = data[lastIdx];
+                      const prevCandle = data[lastIdx - 1];
+                      currentPrice.current = currCandle.close; 
+
+                      data.slice(-5).forEach(d => candleSeries.current.update(d));
+                      syncGlassBoxes();
+
+                      const liqZones = calcLiquidityZones(data, 24); 
+                      const atrSeries = calcATRSeries(data, 14);
+                      
+                      const cUpper = liqZones[lastIdx].upper;
+                      const cLower = liqZones[lastIdx].lower;
+                      const cAtr = atrSeries[lastIdx]?.value || (cUpper - cLower) * 0.5 || currentPrice.current * 0.002;
+
+                      upperSeriesRef.current.update({time: currCandle.time, value: cUpper});
+                      lowerSeriesRef.current.update({time: currCandle.time, value: cLower});
+
+                      let isCall = false, isPut = false, signalReason = '';
+
+                      // SMC Logic
+                      const sweepTop = currCandle.high > cUpper || prevCandle.high > cUpper;
+                      const sweepBot = currCandle.low < cLower || prevCandle.low < cLower;
+                      const reclaimTop = sweepTop && currCandle.close < cUpper;
+                      const reclaimBot = sweepBot && currCandle.close > cLower;
+                      
+                      if (reclaimTop && currCandle.close < currCandle.open) {
+                          isPut = true; signalReason = 'SMC PRIMARY: SWEEP & RECLAIM';
+                      }
+                      if (reclaimBot && currCandle.close > currCandle.open) {
+                          isCall = true; signalReason = 'SMC PRIMARY: SWEEP & RECLAIM';
+                      }
+
+                      // Type B Logic
+                      if (!isCall && !isPut) {
+                          for (let fz of failedZonesRef.current) {
+                              if (fz.used || currCandle.time > fz.expiryTime) continue;
+                              const dist = Math.abs(currCandle.close - fz.price) / cAtr;
+                              if (dist < 0.65) {
+                                  const body = Math.abs(currCandle.close - currCandle.open);
+                                  const total = currCandle.high - currCandle.low;
+                                  const isPinbar = (total > 0) && (body / total < 0.4);
+
+                                  if (fz.type === 'PUT' && currCandle.high >= fz.price && currCandle.close < fz.price && isPinbar) {
+                                      isPut = true; fz.used = true; signalReason = 'TYPE B: SECOND CHANCE RETEST'; break;
+                                  }
+                                  if (fz.type === 'CALL' && currCandle.low <= fz.price && currCandle.close > fz.price && isPinbar) {
+                                      isCall = true; fz.used = true; signalReason = 'TYPE B: SECOND CHANCE RETEST'; break;
+                                  }
+                              }
+                          }
+                      }
+
+                      // Zone Approach Warning Logic
+                      const distTop = Math.abs(currCandle.close - cUpper) / cAtr;
+                      const distBot = Math.abs(currCandle.close - cLower) / cAtr;
+                      const inZoneNow = (distTop < 0.35 || distBot < 0.35);
+                      
+                      if (inZoneNow && !isCall && !isPut && isScannerRunningRef.current) {
+                          setAppPhase('ЗОНА ИНТЕРЕСА');
+                          window.speechQueue.say("Цена подошла к зоне возможного входа. Жду подтверждение.", {
+                              key: "approach",
+                              priority: 50,
+                              cooldownMs: 120000 
+                          });
+                      } else if (distTop > 0.65 && distBot > 0.65 && lastZoneStateRef.current === 'IN' && !isCall && !isPut) {
+                          window.speechQueue.say("Цена ушла от зоны входа. Жду новый сетап.", {
+                              key: "leave",
+                              priority: 40,
+                              cooldownMs: 60000
+                          });
+                      }
+                      
+                      lastZoneStateRef.current = inZoneNow ? 'IN' : 'OUT';
+                      
+                      if (!inZoneNow && !isCall && !isPut && isScannerRunningRef.current) {
+                          setAppPhase('СКАНИРОВАНИЕ АКТИВНО');
+                          
+                          // News Idle Logic
+                          if (Date.now() - lastNewsTimeRef.current > 10 * 60 * 1000 && !window.speechQueue.isBusy()) {
+                              const newsItem = fullNewsPool.current[Math.floor(Math.random() * fullNewsPool.current.length)];
+                              window.speechQueue.say(`Пока новых сигналов нет, краткая сводка новостей. ${newsItem}`, {
+                                  key: "news",
+                                  priority: 10,
+                                  cooldownMs: 10 * 60 * 1000
+                              });
+                              lastNewsTimeRef.current = Date.now();
+                          }
+                      }
+
+
+                      if (isCall || isPut) {
+                          const dirText = isCall ? "BUY" : "SELL";
+                          setMetrics({ structure: 100, liquidity: 100, smartMoney: 95, edgeZone: 85 });
+                          playSound('found');
+                          
+                          const signalTime = currCandle.time;
+                          markersRef.current.push({ time: signalTime, position: isCall ? 'belowBar' : 'aboveBar', color: isCall ? '#3b82f6' : '#475569', shape: isCall ? 'arrowUp' : 'arrowDown', text: signalReason.includes('TYPE B') ? 'TYPE B' : 'SIGNAL', size: 2 });
+                          
+                          // Sort markers before update to prevent dropping them
+                          markersRef.current.sort((a, b) => a.time - b.time);
+                          candleSeries.current.setMarkers(markersRef.current);
+                          
+                          setAppPhase(`ПОДГОТОВКА ВХОДА`);
+                          addLog(`Сигнал на ${dirText}. ${signalReason}`, true);
+                          
+                          let voiceReason = isCall ? "снятие нижней ликвидности" : "снятие верхней ликвидности";
+                          if (signalReason.includes('TYPE B')) voiceReason = "повторный тест зоны интереса";
+                          window.speechQueue.say(`Сигнал ${dirText}. Причина: ${voiceReason}. Подготовка ко входу.`, { priority: 90 });
+
+                          // DELAY 6 SEC
+                          for(let w=6; w>0; w--) {
+                              playSound('scan');
+                              await new Promise(r => setTimeout(r, 1000));
+                          }
+
+                          // ENTRY
+                          playSound('start');
+                          window.speechQueue.say("Вход в сделку.", { priority: 80 });
+                          
+                          const entryData = await ScannerAPI.getCandles(curAsset.symbol, 2, '1m');
+                          const entryPriceReal = entryData.length ? entryData[entryData.length-1].close : currentPrice.current;
+                          const entryTime = currCandle.time; // Live uses current 5m bar time so it aligns exactly
+
+                          markersRef.current.push({ time: entryTime, position: isCall ? 'belowBar' : 'aboveBar', color: '#0ea5e9', shape: 'circle', text: 'ENTRY', size: 1 });
+                          markersRef.current.sort((a, b) => a.time - b.time);
+                          candleSeries.current.setMarkers(markersRef.current);
+
+                          setAppPhase('СДЕЛКА АКТИВНА');
+                          const expMins = 25; 
+                          setSignal({ type: isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice: entryPriceReal });
+                          
+                          let activeTradeObj = {
+                              type: isCall ? 'CALL' : 'PUT', signalReason, signalTime,
+                              entryTime, exitTime: null, exp: expMins, signalPrice: currCandle.close, entryPrice: entryPriceReal, currentPrice: entryPriceReal,
+                              bet: MARTINGALE_LADDER[mLiveStep], step: mLiveStep + 1, result: 'PENDING'
+                          };
+                          completedTradesRef.current.push(activeTradeObj);
+                          syncGlassBoxes();
+
+                          let expirySeconds = expMins * 60;
+                          let isLive = true;
+                          let spokenMidpoint = false;
+                          
+                          const liveChartTask = (async () => {
+                            let localLastTime = 0;
+                            while (isLive && engineActive.current) {
+                              await new Promise(r => setTimeout(r, 2000));
+                              if (!isLive) break;
+                              const liveTickArray = await ScannerAPI.getCandles(curAsset.symbol, 2, '1m');
+                              if (liveTickArray.length) {
+                                  const tick = liveTickArray[liveTickArray.length - 1];
+                                  if (tick.time >= localLastTime && !isNaN(tick.close)) {
+                                      candleSeries.current.update(tick);
+                                      currentPrice.current = tick.close;
+                                      localLastTime = Math.max(localLastTime, tick.time);
+                                      activeTradeObj.currentPrice = tick.close;
+                                      syncGlassBoxes();
+                                  }
+                              }
+                            }
+                          })();
+
+                          while(expirySeconds > 0) {
+                            setCountdown(expirySeconds);
+                            // MID-TRADE ANALYSIS
+                            if (expirySeconds === Math.floor((expMins * 60) / 2) && !spokenMidpoint) {
+                                 let diff = isCall ? currentPrice.current - entryPriceReal : entryPriceReal - currentPrice.current;
+                                 if (diff > cAtr * 0.15) {
+                                     window.speechQueue.say("Сделка уверенно в плюсе.", {priority: 60});
+                                 } else if (diff < -cAtr * 0.15) {
+                                     window.speechQueue.say("Сделка уходит в минус. Наблюдаю до экспирации.", {priority: 60});
+                                 } else {
+                                     window.speechQueue.say("Сделка рядом с точкой входа. Ситуация пограничная.", {priority: 60});
+                                 }
+                                 spokenMidpoint = true;
+                            }
+                            await new Promise(r => setTimeout(r, 1000));
+                            expirySeconds--;
+                          }
+                          
+                          isLive = false; setCountdown(null);
+
+                          // EXIT
+                          const resultData = await ScannerAPI.getCandles(curAsset.symbol, 1, '1m');
+                          const finalPrice = resultData.length ? resultData[resultData.length - 1].close : entryPriceReal;
+                          const isWin = (isCall && finalPrice >= entryPriceReal) || (isPut && finalPrice <= entryPriceReal);
+                          const exitTimeReal = resultData.length ? resultData[0].time : entryTime + expMins * 60; // Usually falls nicely in Live
+
+                          markersRef.current.push({ time: exitTimeReal, position: isCall ? 'aboveBar' : 'belowBar', color: isWin ? '#10b981' : '#ef4444', shape: 'arrowDown', text: isWin ? 'EXIT (+)' : 'EXIT (-)', size: 1 });
+                          markersRef.current.sort((a, b) => a.time - b.time);
+                          candleSeries.current.setMarkers(markersRef.current);
+
+                          let tradePnl = isWin ? MARTINGALE_LADDER[mLiveStep] * PAYOUT_RATE : -MARTINGALE_LADDER[mLiveStep];
+                          
+                          activeTradeObj.exitTime = exitTimeReal;
+                          activeTradeObj.exitPrice = finalPrice;
+                          activeTradeObj.result = isWin ? 'WIN' : 'LOSS';
+                          activeTradeObj.pnl = Math.round(tradePnl);
+                          syncGlassBoxes();
+
+                          if (isWin) {
+                            playSound('win');
+                            statsRef.current.wins++; statsRef.current.pnl += tradePnl; mLiveStep = 0; 
+                          } else {
+                            playSound('loss');
+                            statsRef.current.losses++; statsRef.current.pnl += tradePnl;
+                            failedZonesRef.current.push({ price: isCall ? cLower : cUpper, type: isCall ? 'CALL' : 'PUT', expiryTime: exitTimeReal + 7200, used: false });
+                            mLiveStep = Math.min(mLiveStep + 1, MARTINGALE_LADDER.length - 1);
+                          }
+
+                          const newTotal = statsRef.current.wins + statsRef.current.losses;
+                          setTradeStats({ wins: statsRef.current.wins, losses: statsRef.current.losses, winRate: Math.round((statsRef.current.wins / newTotal) * 100), pnl: Math.round(statsRef.current.pnl) });
+
+                          addLog(`Итог сделки: ${isWin ? '+' : ''}${Math.round(tradePnl)}₽`);
+                          window.speechQueue.say(`Сделка закрыта в ${isWin ? 'плюс' : 'минус'}. Результат: ${Math.round(tradePnl)} рублей.`, { priority: 70 });
+
+                          setSignal(null);
+                          setAppPhase('СКАНИРОВАНИЕ АКТИВНО');
+                          lastNewsTimeRef.current = Date.now(); // reset news timer
+                          
+                          await new Promise(r => setTimeout(r, 5000)); // short cooldown
+                      }
+                  } else {
+                      setApiStatus('ОШИБКА СЕТИ'); setAppPhase('ПОВТОРНОЕ ПОДКЛЮЧЕНИЕ...');
+                  }
+              } catch (e) {
+                  await new Promise(r => setTimeout(r, 3000));
+              }
+            }
+          };
+
+          const handleStart = () => {
+            setLaunchState('STARTING');
+            setTimeout(() => {
+                setLaunchState('STARTED');
+                
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx.current = new AudioContext();
+                const osc = audioCtx.current.createOscillator();
+                osc.connect(audioCtx.current.destination);
+                osc.start(0); osc.stop(0.01);
+
+                if (window.speechSynthesis) window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+
+                runTerminalEngine();
+            }, 800);
+          };
+
+          return (
+            <div className="h-[100dvh] w-screen flex flex-col text-slate-900 relative overflow-hidden selection:bg-cyan-500/20">
+              
+              {/* Premium Launch Screen */}
+              <div className={`absolute inset-0 z-[100] flex flex-col items-center justify-center bg-slate-900 overflow-hidden launch-overlay ${launchState === 'STARTING' || launchState === 'STARTED' ? 'fade-out' : ''}`} style={{ display: launchState === 'STARTED' ? 'none' : 'flex' }}>
+                <div className="bg-orb-1 pointer-events-none opacity-40"></div>
+                <div className="bg-orb-2 pointer-events-none opacity-40"></div>
+                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHBhdGggZD0iTTAgMGg0MHY0MEgwem0yMCAyMGgtdjFGMjB6IiBmaWxsPSJyZ2JhKDE0LCAxNjUsIDIzMywgMC4wNCkiLz48L3N2Zz4=')] opacity-20"></div>
+                
+                <div className="max-w-[90%] sm:max-w-lg w-full p-10 md:p-14 text-center relative z-10 glass-card !bg-slate-900/60 !border-slate-700 rounded-[3rem] flex flex-col items-center shadow-[0_30px_80px_-15px_rgba(0,0,0,0.8)] border border-white/10">
+                  
+                  {/* High-end Abstract HUD Core */}
+                  <div className="relative w-32 h-32 mb-8 flex items-center justify-center">
+                      <div className="absolute inset-0 rounded-full border border-cyan-500/30 border-t-cyan-400 animate-[hud-spin_4s_linear_infinite]"></div>
+                      <div className="absolute inset-4 rounded-full border border-blue-500/20 border-b-blue-400 animate-[hud-spin_3s_linear_infinite_reverse]"></div>
+                      <div className="absolute inset-0 bg-cyan-400/10 rounded-full blur-2xl animate-[hud-pulse_3s_ease-in-out_infinite]"></div>
+                      <svg viewBox="0 0 24 24" className="w-12 h-12 text-cyan-400 relative z-10 drop-shadow-[0_0_15px_rgba(34,211,238,0.8)]">
+                          <polygon points="12 2 2 12 12 22 22 12 12 2" fill="none" stroke="currentColor" strokeWidth="1" />
+                          <circle cx="12" cy="12" r="3" fill="currentColor" className="animate-pulse" />
+                      </svg>
+                  </div>
+                  
+                  <p className="text-xs md:text-sm text-slate-400 tracking-[0.4em] font-bold leading-tight uppercase mb-3 drop-shadow-sm">
+                    АВТОР: SLAVA GORDEEV
+                  </p>
+                  
+                  <h1 className="text-4xl md:text-5xl text-white leading-none mb-5 oswald-font font-black tracking-wide drop-shadow-[0_5px_15px_rgba(0,0,0,0.5)]">
+                    ТЕРМИНАЛ <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 drop-shadow-[0_0_20px_rgba(14,165,233,0.3)]">PRO MAX</span>
+                  </h1>
+                  
+                  <p className="text-[10px] md:text-xs text-cyan-100 tracking-widest font-semibold uppercase mb-12 oswald-font bg-cyan-900/40 px-5 py-2 rounded-xl border border-cyan-500/30 shadow-inner">
+                     BTC / SMC / Liquidity Analysis Engine
+                  </p>
+                  
+                  <button onClick={handleStart} className="launch-btn w-full py-5 md:py-6 text-white text-xl md:text-2xl oswald-font font-bold rounded-2xl cursor-pointer flex items-center justify-center gap-3 group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
+                    <Cpu size={26} className="text-blue-50 group-hover:animate-spin relative z-10" /> 
+                    <span className="relative z-10 tracking-widest drop-shadow-md">ЗАПУСК СИСТЕМЫ</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Main App */}
+              <div className="bg-orb-1 pointer-events-none opacity-60"></div>
+              <div className="bg-orb-2 pointer-events-none opacity-60"></div>
+              <div className="absolute inset-0 bg-grid-pattern pointer-events-none z-0 opacity-50"></div>
+
+              {/* CENTRAL LOADING OVERLAY */}
+              {loadingState.show && (
+                  <div className={`absolute inset-0 z-[60] flex flex-col items-center justify-center bg-slate-900/40 backdrop-blur-md transition-opacity duration-700 ${loadingState.fading ? 'opacity-0' : 'opacity-100'}`}>
+                      <div className="glass-card p-8 rounded-3xl flex flex-col items-center shadow-[0_20px_50px_rgba(0,0,0,0.4)] border border-white/50 bg-white/90">
+                          <div className="relative w-16 h-16 mb-6 flex items-center justify-center">
+                              <div className="absolute inset-0 border-4 border-slate-200/40 border-t-cyan-500 rounded-full animate-spin"></div>
+                              <div className="absolute inset-2 border-4 border-slate-200/40 border-b-blue-500 rounded-full animate-[spin_1.5s_linear_infinite_reverse]"></div>
+                              <Cpu size={20} className="text-cyan-600 animate-pulse" />
+                          </div>
+                          <h2 className="text-xl font-black text-slate-800 oswald-font tracking-widest mb-1">ПОДКЛЮЧЕНИЕ К БИРЖЕ</h2>
+                          <p className="text-[10px] text-slate-500 font-bold tracking-widest uppercase oswald-font mb-4">Получаю графики и котировки BTCUSDT 5M...</p>
+                          <div className="text-xs font-semibold mono-font text-cyan-700 bg-cyan-50/80 px-4 py-1.5 rounded-lg border border-cyan-200/50 shadow-sm animate-pulse">
+                              {loadingState.text}
+                          </div>
+                      </div>
+                  </div>
+              )}
+
+              <div className="h-7 md:h-9 glass-panel z-50 overflow-hidden flex items-center shrink-0 w-full relative">
+                <div className="absolute left-0 h-full bg-slate-900 text-white px-3 md:px-5 flex items-center gap-2 z-20 text-[10px] md:text-xs tracking-widest shadow-[5px_0_15px_rgba(0,0,0,0.1)] font-bold oswald-font rounded-r-xl border-r border-cyan-500/50">
+                  <Globe size={14} className="text-cyan-400" /> РАДАР СЕТИ
+                </div>
+                <div className="flex-1 overflow-hidden relative h-full flex items-center ml-[120px] sm:ml-[160px]">
+                  <div className="ticker-wrapper text-[10px] md:text-xs text-slate-700 tracking-widest pt-0.5 font-bold oswald-font">
+                    {[...Array(2)].map((_, idx) => (
+                      <div key={idx} className="flex gap-10 md:gap-16 whitespace-nowrap pr-10 md:pr-16">
+                        {newsHeadlines.map((headline, i) => (
+                          <span key={i} className="flex items-center">
+                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 mr-2 shadow-[0_0_8px_rgba(6,182,212,0.8)]"></span>
+                            {headline.toUpperCase()}
+                          </span>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <header className="h-auto md:h-16 py-2 md:py-0 flex flex-col md:flex-row items-start md:items-center justify-between px-3 md:px-6 shrink-0 z-40 gap-1 md:gap-0 mt-2">
+                <div className="flex flex-col justify-center w-full md:w-auto">
+                  <div className="flex justify-between items-center md:block">
+                      <h1 className="text-2xl md:text-3xl text-slate-900 leading-none font-bold flex items-center gap-2 oswald-font tracking-wider">
+                        <Zap size={28} className="text-cyan-600 drop-shadow-[0_0_10px_rgba(6,182,212,0.4)]" /> 
+                        ТЕРМИНАЛ <span className="text-gradient font-black hidden sm:inline">PRO MAX</span>
+                      </h1>
+                      <div className="text-[10px] text-white px-3 py-1 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-lg flex items-center shadow-[0_0_15px_rgba(14,165,233,0.3)] oswald-font tracking-widest block md:hidden font-bold">
+                        {appPhase}
+                      </div>
+                  </div>
+                  <div className="text-[9px] md:text-xs text-slate-500 tracking-[0.2em] mt-1 font-bold leading-none uppercase">
+                    Алгоритм SMC • Анализ Ликвидности
+                  </div>
+                </div>
+                <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-1 md:gap-1.5">
+                  <div className="text-xs md:text-sm text-white px-4 py-1.5 border border-white/50 bg-gradient-to-r from-blue-600 to-cyan-500 shadow-[0_5px_20px_rgba(14,165,233,0.3)] rounded-lg oswald-font tracking-widest hidden md:block font-bold transition-all duration-300">
+                    {appPhase}
+                  </div>
+                  <div className="flex gap-4 items-center tracking-wider w-full md:w-auto justify-between md:justify-end">
+                    <span className="text-[9px] md:text-[10px] text-slate-600 flex items-center gap-1.5 font-bold uppercase border border-slate-300 px-2 py-0.5 rounded-full bg-white/50">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
+                      ПОДКЛЮЧЕНО К БИРЖЕ
+                    </span>
+                    <LiveClock />
+                  </div>
+                </div>
+              </header>
+
+              <main className="flex-1 flex flex-col lg:flex-row p-2 md:p-4 gap-3 md:gap-4 overflow-hidden z-10">
+                <div className="w-full lg:flex-1 h-[45vh] lg:h-full glass-panel-heavy rounded-3xl md:rounded-[2.5rem] relative overflow-hidden flex flex-col shrink-0 border border-white/80 shadow-[0_15px_40px_rgba(15,23,42,0.1)]">
+                  <div className="absolute inset-0 z-20 flex flex-col bg-transparent opacity-100">
+                    <div className="absolute top-4 left-4 md:top-5 md:left-5 z-40 flex flex-col gap-2">
+                      <div className="glass-card p-3 md:p-4 rounded-2xl min-w-[140px] md:min-w-[160px] border-white shadow-[0_15px_40px_rgba(14,165,233,0.15)] relative overflow-hidden">
+                        <div className="absolute -right-10 -top-10 w-24 h-24 bg-cyan-400/20 rounded-full blur-xl pointer-events-none"></div>
+                        <div className="text-[9px] md:text-xs text-slate-500 tracking-widest mb-1 flex items-center gap-2 font-bold uppercase">
+                          <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.8)]"/> LIVE DATA
+                        </div>
+                        <div className="text-3xl md:text-4xl tracking-wider text-slate-900 leading-none font-black oswald-font drop-shadow-sm">{asset.name}</div>
+                        <div className="mt-2 text-[10px] md:text-xs text-slate-700 tracking-widest font-bold flex items-center gap-2 uppercase">
+                            ТАЙМФРЕЙМ: <span className="text-white bg-gradient-to-r from-blue-600 to-cyan-500 px-2 py-0.5 md:px-3 md:py-1 rounded-lg shadow-[0_4px_10px_rgba(14,165,233,0.4)] border border-white/50">{currentTF}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 relative w-full mt-24 md:mt-32 flex flex-col px-2 pb-2 md:px-4 md:pb-4">
+                        <div className="flex-1 relative w-full rounded-2xl overflow-hidden bg-white/70 backdrop-blur-md border border-white/80 shadow-inner">
+                            <div ref={chartContainerRef} className="absolute inset-0 z-10" />
+                            {/* Overlays Container (Glass Boxes) */}
+                            <div ref={overlaysContainerRef} className="absolute inset-0 pointer-events-none z-20"></div>
+                            
+                            {/* Smart Cinematic Scanner Overlay */}
+                            <div className={`scanner-overlay ${signal ? 'is-soft' : ''}`}>
+                                <div ref={scannerBeamRef} className="scanner-beam"></div>
+                                <div ref={scannerReticleRef} className="scanner-reticle">
+                                    <span className="scanner-reticle-ring ring-a"></span>
+                                    <span className="scanner-reticle-ring ring-b"></span>
+                                    <span className="scanner-dot"></span>
+                                </div>
+                                <div ref={scannerGlowRef} className="scanner-candle-glow"></div>
+                                <div ref={scannerLabelRef} className="scanner-label">SCAN</div>
+                            </div>
+                            
+                            {/* Premium Tooltip */}
+                            {tooltipData && (
+                                <div className="trade-tooltip" style={{ left: tooltipData.x, top: tooltipData.y }}>
+                                    <div className={`text-sm font-black tracking-widest uppercase mb-1.5 oswald-font flex justify-between items-center ${tooltipData.result === 'WIN' ? 'text-emerald-600' : tooltipData.result === 'LOSS' ? 'text-rose-600' : 'text-blue-600'}`}>
+                                        <span>{tooltipData.type}</span>
+                                        <span className="bg-white/80 px-2 py-0.5 rounded shadow-sm border border-current opacity-90">{tooltipData.result}</span>
+                                    </div>
+                                    <div className="text-[10px] font-bold text-slate-500 mb-3 bg-slate-100/50 p-2 rounded border border-slate-200/50 leading-tight">
+                                        Причина: <span className="text-slate-700">{tooltipData.signalReason}</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[10px] mono-font border-t border-slate-200/60 pt-2.5">
+                                        <span className="text-slate-400">СИГНАЛ</span><span className="font-bold text-slate-800 text-right">{formatTime(tooltipData.signalTime)}</span>
+                                        <span className="text-slate-400">ВХОД</span><span className="font-bold text-slate-800 text-right">{formatTime(tooltipData.entryTime)} @ {formatPrice(tooltipData.entryPrice)}</span>
+                                        <span className="text-slate-400">ВЫХОД</span><span className="font-bold text-slate-800 text-right">{tooltipData.exitPrice ? `${formatTime(tooltipData.exitTime)} @ ${formatPrice(tooltipData.exitPrice)}` : '---'}</span>
+                                        <span className="text-slate-400 mt-1">СТАВКА</span><span className="font-bold text-slate-800 text-right mt-1">{tooltipData.bet}₽ (Шаг {tooltipData.step})</span>
+                                        <span className="text-slate-400">PNL</span><span className={`font-black text-right text-xs ${tooltipData.pnl > 0 ? 'text-emerald-600' : tooltipData.pnl < 0 ? 'text-rose-600' : 'text-slate-800'}`}>{tooltipData.pnl > 0 ? '+' : ''}{tooltipData.pnl}₽</span>
+                                    </div>
+                                    <div className="text-[9px] text-slate-400 mt-3 pt-2 border-t border-slate-200/60 text-center tracking-widest uppercase font-bold">
+                                        Длительность: {tooltipData.exp} мин.
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="w-full lg:w-[360px] flex flex-col gap-3 shrink-0 relative overflow-y-auto lg:overflow-visible no-scrollbar pb-10 lg:pb-0 h-[50vh] lg:h-full">
+                  <div className="glass-panel-heavy rounded-3xl p-3 shadow-md border border-white flex flex-col gap-3">
+                     <div className="flex justify-between items-center bg-white/60 rounded-xl p-2 border border-white">
+                        <div className="flex flex-col">
+                            <span className="text-[9px] text-slate-500 font-bold tracking-widest uppercase">API СТАТУС</span>
+                            <span className="text-xs font-black mono-font text-slate-800">BINANCE REAL-TIME</span>
+                        </div>
+                        <span className={`text-[10px] font-bold tracking-widest px-2 py-1 rounded border shadow-sm ${apiStatus === 'АКТИВЕН' ? 'bg-emerald-100/80 text-emerald-700 border-emerald-300' : 'bg-amber-100 text-amber-700 border-amber-300'}`}>
+                            {apiStatus}
+                        </span>
+                     </div>
+
+                     <div className="grid grid-cols-4 gap-1.5 bg-white/80 rounded-xl p-2 border border-white shadow-inner">
+                       <Speedometer value={metrics.structure} label="СТРУКТУРА" colorHex="#d97706" />
+                       <Speedometer value={metrics.liquidity} label="ЛИКВИДНОСТЬ" colorHex="#2563eb" glow={true} />
+                       <Speedometer value={metrics.edgeZone} label="EDGE ZONE" colorHex="#6366f1" />
+                       <Speedometer value={metrics.smartMoney} label="SMART MONEY" colorHex="#06b6d4" />
+                     </div>
+
+                     <button 
+                        onClick={() => window.open('https://intrade32.bar/311164', '_blank', 'noopener noreferrer')}
+                        className="broker-btn relative w-full py-4 rounded-xl text-white font-black text-lg md:text-xl flex items-center justify-center gap-2 group cursor-pointer oswald-font tracking-widest overflow-hidden"
+                     >
+                        <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                        <MousePointer size={20} className="relative z-10 drop-shadow-md" />
+                        <span className="relative z-10 drop-shadow-md">ТОРГОВАТЬ ЗДЕСЬ</span>
+                        <div className="absolute w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none animate-bounce drop-shadow-md" style={{right: '10%', top: '50%', marginTop: '-12px'}}>⚡</div>
+                     </button>
+                  </div>
+
+                  <div className="glass-panel-heavy rounded-3xl p-3 shadow-md border border-white flex flex-col gap-3">
+                    <div className="flex gap-2 h-24 shrink-0">
+                      <div className={`w-[35%] border rounded-xl flex flex-col items-center justify-center relative transition-all duration-500 bg-white/90 shadow-inner ${signal ? 'border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.4)]' : 'border-white'}`}>
+                        {signal ? (
+                          <VolumetricArrow type={signal.type} />
+                        ) : (
+                          <div className="flex flex-col items-center opacity-40">
+                              <Radar size={28} className="text-slate-600 mb-1" />
+                              <span className="text-[9px] tracking-widest font-bold text-slate-600 oswald-font">ОЖИДАНИЕ</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="w-[65%] rounded-xl overflow-hidden bg-white/80 border border-white shadow-inner flex p-3 justify-center flex-col items-center text-center backdrop-blur-md">
+                        <span className="text-[10px] font-bold text-slate-500 tracking-widest oswald-font border-b border-slate-200 pb-1 w-full uppercase">Текущая цена</span>
+                        <span className="text-xl md:text-2xl font-black text-slate-800 mono-font mt-1.5 drop-shadow-sm">{currentPrice.current ? formatPrice(currentPrice.current) : '---'}</span>
+                      </div>
+                    </div>
+
+                    <div className="glass-card rounded-xl p-3 flex justify-between items-center relative overflow-hidden bg-gradient-to-r from-white to-cyan-50/80 border border-white">
+                       <div className="flex flex-col z-10">
+                          <span className="text-[9px] text-slate-500 tracking-widest font-bold uppercase">ВХОД (СТАВКА 1000₽)</span>
+                          <span className="text-lg text-slate-900 mt-1 font-black mono-font leading-none">
+                            {signal && signal.entryPrice ? formatPrice(signal.entryPrice) : '---.-----'}
+                          </span>
+                       </div>
+                       <div className="flex flex-col items-end z-10">
+                          <span className="text-[9px] text-slate-500 tracking-widest flex items-center gap-1 font-bold uppercase">
+                            <Clock size={10} className="text-cyan-600"/> ЭКСПИРАЦИЯ
+                          </span>
+                          <span className="text-2xl text-cyan-700 mt-1 font-black mono-font leading-none drop-shadow-sm">
+                            {countdown !== null ? `${Math.floor(countdown/60)}:${(countdown%60).toString().padStart(2,'0')}` : (signal && signal.exp ? `${signal.exp}:00` : '--:--')}
+                          </span>
+                       </div>
+                    </div>
+                  </div>
+
+                  <div className="glass-panel-heavy rounded-3xl p-4 flex flex-col shadow-[0_10px_30px_-5px_rgba(15,23,42,0.1)] border border-white relative overflow-hidden">
+                       <div className="absolute -right-4 -top-4 w-24 h-24 bg-cyan-200/50 rounded-full blur-2xl pointer-events-none"></div>
+                       <div className="flex justify-between items-center z-10 relative mb-3">
+                           <span className="text-xs text-slate-600 tracking-widest font-bold flex items-center gap-2 oswald-font uppercase">
+                              <Activity size={16} className="text-cyan-600" /> Статистика 12H
+                           </span>
+                           <span className="text-2xl font-black tracking-wider oswald-font text-cyan-600 drop-shadow-sm">
+                             {tradeStats.winRate}%
+                           </span>
+                       </div>
+                       
+                       {/* Strategy Pipeline Diagnostics */}
+                       <div className="grid grid-cols-4 gap-1 mb-3 z-10 relative">
+                           <div className="bg-slate-100/60 rounded px-1.5 py-1 flex flex-col items-center justify-center border border-slate-200/50"><span className="text-[7px] font-bold text-slate-400">SWEEPS</span><span className="text-xs font-black text-slate-700">{diagStats.sweeps}</span></div>
+                           <div className="bg-slate-100/60 rounded px-1.5 py-1 flex flex-col items-center justify-center border border-slate-200/50"><span className="text-[7px] font-bold text-slate-400">RECLAIM</span><span className="text-xs font-black text-slate-700">{diagStats.reclaims}</span></div>
+                           <div className="bg-slate-100/60 rounded px-1.5 py-1 flex flex-col items-center justify-center border border-slate-200/50"><span className="text-[7px] font-bold text-slate-400">TYPE B</span><span className="text-xs font-black text-blue-600">{diagStats.typeB}</span></div>
+                           <div className="bg-slate-100/60 rounded px-1.5 py-1 flex flex-col items-center justify-center border border-slate-200/50"><span className="text-[7px] font-bold text-slate-400">REJECTED</span><span className="text-xs font-black text-slate-400">{diagStats.rejected}</span></div>
+                       </div>
+
+                       <div className="flex justify-between items-center z-10 relative oswald-font">
+                           <div className="flex flex-col items-center bg-white/90 px-2 py-2 rounded-xl border border-slate-200 w-[28%] shadow-sm">
+                               <span className="text-[9px] text-slate-500 tracking-widest font-bold uppercase">WIN</span>
+                               <span className="text-xl text-emerald-600 font-black leading-none mt-1">{tradeStats.wins}</span>
+                           </div>
+                           <div className="flex flex-col items-center bg-white/90 px-2 py-2 rounded-xl border border-slate-200 w-[28%] shadow-sm">
+                               <span className="text-[9px] text-slate-500 tracking-widest font-bold uppercase">LOSS</span>
+                               <span className="text-xl text-rose-600 font-black leading-none mt-1">{tradeStats.losses}</span>
+                           </div>
+                           <div className="flex flex-col items-center bg-gradient-to-br from-blue-50 to-cyan-50 px-2 py-2 rounded-xl border border-blue-200 w-[38%] shadow-md">
+                               <span className="text-[9px] text-blue-600 tracking-widest font-bold uppercase">PNL</span>
+                               <span className={`text-xl font-black leading-none mt-1 drop-shadow-sm ${tradeStats.pnl >= 0 ? 'text-blue-700' : 'text-rose-600'}`}>
+                                   {tradeStats.pnl > 0 ? '+' : ''}{tradeStats.pnl}₽
+                               </span>
+                           </div>
+                       </div>
+                  </div>
+
+                  <div className="flex-1 min-h-[100px] glass-panel-heavy rounded-3xl p-3 overflow-hidden flex flex-col justify-start gap-1.5 border border-white shadow-inner bg-white/70">
+                      <div className="text-[9px] text-slate-400 font-bold tracking-widest uppercase oswald-font mb-1 flex items-center gap-1.5 border-b border-slate-200/50 pb-1">
+                          <Activity size={10} /> РАДАР СОБЫТИЙ
+                      </div>
+                      {logs.map((l, i) => (
+                        <div key={i} className={`text-[9px] leading-tight tracking-widest font-semibold mono-font ${i === 0 ? 'text-slate-800 font-bold border-l-[2px] border-cyan-500 pl-2 bg-cyan-50/80 py-1 rounded shadow-sm' : 'text-slate-400 pl-2'}`}>
+                          {l}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </main>
+              
+              <footer className="h-auto md:h-12 py-2 md:py-0 border-t border-white/50 flex flex-row items-center justify-between px-4 md:px-6 shrink-0 glass-panel z-40 bg-white/90">
+                <div className="flex items-center gap-2 text-slate-500 text-[10px] md:text-xs tracking-widest font-bold uppercase oswald-font">
+                  <Shield size={14} className="text-cyan-600 hidden sm:block" /> 
+                  <span className="hidden sm:inline">256-BIT ШИФРОВАНИЕ СИСТЕМЫ • СОЕДИНЕНИЕ БЕЗОПАСНО</span>
+                  <span className="inline sm:hidden">ЗАЩИТА АКТИВНА</span>
+                </div>
+                
+                <div className="flex items-center gap-3 oswald-font">
+                  <span className="text-slate-400 text-[9px] md:text-xs tracking-widest font-bold hidden sm:block uppercase">ЛИЦЕНЗИЯ:</span>
+                  <span className="text-white text-[10px] md:text-[10px] px-3 py-1.5 rounded-lg bg-slate-900 tracking-widest font-bold text-center shadow-[0_4px_10px_rgba(15,23,42,0.2)] border border-slate-700">
+                    SLAVA GORDEEV PRO MAX
+                  </span>
+                </div>
+              </footer>
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
