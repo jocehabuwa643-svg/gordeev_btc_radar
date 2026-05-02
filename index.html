@@ -205,6 +205,9 @@
         .scanner-overlay.is-soft {
             opacity: 0.15; /* Subdued during active signals/trades */
         }
+        .scanner-overlay.is-paused {
+            opacity: 0; /* Fully hidden when locked */
+        }
         
         .scanner-reticle {
             position: absolute;
@@ -353,6 +356,8 @@
             border-bottom: 1px solid rgba(226, 232, 240, 0.9);
         }
 
+        .ticker-unavailable { color: #94a3b8 !important; }
+
     </style>
 </head>
 <body>
@@ -360,21 +365,22 @@
 
     <script type="text/babel">
 
-        // --- GLOBAL REACT & HOOKS ---
-        const { useState, useEffect, useRef, useCallback } = React;
-
         // --- GLOBAL FLAGS & SAFE INIT ---
         const APP_FLAGS = {
             safeMode: false,
             cryptoTickerEnabled: true,
-            premiumScannerEnabled: true,
-            idleVoiceEnabled: true
+            premiumScannerEnabled: true
         };
 
         window.__appBootStarted = false;
         window.__cryptoTickerStarted = false;
         window.__scannerStarted = false;
-        window.__voiceStarted = false;
+        
+        // Anti-Duplicate & Global Locks
+        window.activeSignal = false;
+        window.entryCountdownActive = false;
+        window.activeTrade = false;
+        window.signalLifecycleLocked = false;
 
         function safeInit(name, fn, timeoutMs = 5000) {
             return new Promise((resolve) => {
@@ -413,26 +419,6 @@
             });
         }
 
-        // --- CONSTANTS ---
-        const ASSETS = [
-          { pair: 'BTC/USDT', symbol: 'BTCUSDT', name: 'Bitcoin', voiceName: 'биткоин' }
-        ];
-
-        const MONEY_CONFIG = {
-            baseStake: 1000,
-            payout: 0.70,
-            martingale: [1000, 2430, 5900, 14330, 34800]
-        };
-
-        const SCANNER_CONFIG = {
-            enabled: true,
-            intervalMinMs: 1200,
-            intervalMaxMs: 2600,
-            clusterChance: 0.45,
-            minClusterSize: 2,
-            maxClusterSize: 5
-        };
-
         // --- UTILS ---
         const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
         const delayUntil = targetTime => delay(Math.max(0, targetTime - Date.now()));
@@ -455,6 +441,13 @@
             if (!ts) return '--:--';
             return new Date(ts * 1000).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
+
+        // --- MATH & PAYOUT ---
+        const MONEY_CONFIG = {
+            baseStake: 1000,
+            payout: 0.70,
+            martingale: [1000, 2430, 5900, 14330, 34800]
+        };
 
         function calcTradePnl(result, stake) {
             const safeStake = Number(stake) || MONEY_CONFIG.baseStake;
@@ -591,21 +584,24 @@
             return `${words} ${usd}`;
         }
 
-        // --- GLOBAL SPEECH QUEUE SYSTEM ---
+        // --- GLOBAL SPEECH QUEUE & ANTI-DUPLICATE SYSTEM ---
         const speechQueue = {
           queue: [],
           speaking: false,
-          lastByKey: new Map(),
+          spoken: new Map(), 
 
           say(text, options = {}) {
             const now = Date.now();
-            const key = options.key || text;
-            const cooldownMs = options.cooldownMs || 0;
+            const key = options.key;
+            const cooldownMs = options.cooldownMs ?? 0;
 
-            if (cooldownMs > 0) {
-              const last = this.lastByKey.get(key) || 0;
-              if (now - last < cooldownMs) return;
-              this.lastByKey.set(key, now);
+            if (key) {
+                const prev = this.spoken.get(key);
+                if (prev !== undefined) {
+                    if (cooldownMs === 0) return false; // Never repeat if 0
+                    if (now - prev < cooldownMs) return false; // In cooldown
+                }
+                this.spoken.set(key, now);
             }
 
             this.queue.push({
@@ -616,17 +612,19 @@
 
             this.queue.sort((a, b) => b.priority - a.priority);
             this.next();
+            return true;
           },
 
           sayAsync(text, options = {}) {
             return new Promise(resolve => {
-              this.say(text, {
+              const added = this.say(text, {
                 ...options,
                 onDone: () => {
                   if (options.onDone) options.onDone();
                   resolve();
                 }
               });
+              if (!added) resolve(); // Resolve immediately if deduplicated
             });
           },
 
@@ -863,7 +861,6 @@
 
             canSpeak() {
                 if (Date.now() - this.lastSpokenAt < CRYPTO_TICKER_CONFIG.speakMs) return false;
-
                 if (window.activeSignal) return false;
                 if (window.entryCountdownActive) return false;
                 if (window.activeTrade) return false;
@@ -872,7 +869,6 @@
                 if (window.speechQueue && typeof window.speechQueue.isBusy === "function") {
                     if (window.speechQueue.isBusy()) return false;
                 }
-
                 return true;
             },
 
@@ -899,12 +895,7 @@
 
                 if (window.speechQueue && typeof window.speechQueue.sayAsync === "function") {
                     await window.speechQueue.sayAsync(text, {
-                        key: `crypto-market-${item.pair}-${Date.now()}`,
-                        priority: 10
-                    });
-                } else if (window.speechQueue && typeof window.speechQueue.say === "function") {
-                    window.speechQueue.say(text, {
-                        key: `crypto-market-${item.pair}-${Date.now()}`,
+                        key: `market-update-${item.pair}-${Date.now()}`,
                         priority: 10
                     });
                 }
@@ -961,21 +952,8 @@
           }
         };
 
-        function initOptionalModulesAfterBoot() {
-            if (APP_FLAGS.safeMode) {
-                console.warn("[BOOT] SafeMode enabled. Optional modules are disabled.");
-                return;
-            }
+        const { useState, useEffect, useRef, useCallback } = React;
 
-            if (APP_FLAGS.cryptoTickerEnabled && window.CryptoTickerManager && !window.__cryptoTickerStarted) {
-                window.__cryptoTickerStarted = true;
-                safeInit("CryptoTickerManager", () => window.CryptoTickerManager.init(), 4000);
-            }
-
-            // Scanner and voice will be initialized directly inside the App flow where they have access to context refs.
-        }
-
-        // --- COMPONENTS ---
         const Shield = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 4.81 17 6 19 6a1 1 0 0 1 1 1z"/></svg>;
         const Cpu = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>;
         const Globe = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>;
@@ -1038,11 +1016,15 @@
           );
         };
 
+        const ASSETS_ARR = [
+          { pair: 'BTC/USDT', symbol: 'BTCUSDT', name: 'Bitcoin', voiceName: 'биткоин' }
+        ];
+
         const App = () => {
           const [launchState, setLaunchState] = useState('IDLE'); 
           const [loadingState, setLoadingState] = useState({ show: false, phase: '', text: '', fading: false });
           const [appPhase, setAppPhase] = useState('ГОТОВ К ЗАПУСКУ');
-          const [asset, setAsset] = useState(ASSETS[0]);
+          const [asset, setAsset] = useState(ASSETS_ARR[0]);
           const [signal, setSignal] = useState(null);
           const [countdown, setCountdown] = useState(null);
           const [logs, setLogs] = useState([]);
@@ -1084,11 +1066,32 @@
           // Tracking for logic
           const completedTradesRef = useRef([]);
           const failedZonesRef = useRef([]);
-          const lastZoneStateRef = useRef('OUT');
           const lastProcessedClosedCandleTimeRef = useRef(0);
+
+          const zoneStateRef = useRef({
+              buy: { state: "OUTSIDE", lastSpeakAt: 0 },
+              sell: { state: "OUTSIDE", lastSpeakAt: 0 }
+          });
 
           useEffect(() => {
               window.setReactTickerItems = setTickerItems;
+          }, []);
+
+          const initOptionalModulesAfterBoot = useCallback(() => {
+              if (APP_FLAGS.safeMode) {
+                  console.warn("[BOOT] SafeMode enabled. Optional modules are disabled.");
+                  return;
+              }
+
+              if (APP_FLAGS.cryptoTickerEnabled && window.CryptoTickerManager && !window.__cryptoTickerStarted) {
+                  window.__cryptoTickerStarted = true;
+                  safeInit("CryptoTickerManager", () => window.CryptoTickerManager.init(), 4000);
+              }
+
+              if (APP_FLAGS.premiumScannerEnabled && !window.__scannerStarted) {
+                  window.__scannerStarted = true;
+                  safeInit("PremiumScanner", () => startScannerLoop(), 3000);
+              }
           }, []);
 
           const addLog = (msg, isAi = false) => {
@@ -1291,7 +1294,6 @@
               const loop = () => {
                   if (!engineActive.current || !isScannerRunningRef.current) return;
                   
-                  // Respect active lifecycle lock or active trade
                   if (window.signalLifecycleLocked || window.entryCountdownActive) {
                       if (scannerReticleRef.current) scannerReticleRef.current.classList.remove("is-scanning");
                       if (scannerClusterRef.current) scannerClusterRef.current.classList.remove("is-active");
@@ -1399,7 +1401,7 @@
                       }
                   }
 
-                  const delayTime = 700 + Math.random() * 900;
+                  const delayTime = SCANNER_CONFIG.intervalMinMs + Math.random() * (SCANNER_CONFIG.intervalMaxMs - SCANNER_CONFIG.intervalMinMs);
                   clearTimeout(scannerTimerRef.current);
                   scannerTimerRef.current = setTimeout(loop, delayTime);
               };
@@ -1431,7 +1433,7 @@
             setApiStatus('ПОДКЛЮЧЕНИЕ');
             setAppPhase('АНАЛИЗ SMC ЗА 12 ЧАСОВ...');
             
-            const curAsset = ASSETS[0];
+            const curAsset = ASSETS_ARR[0];
             
             await delay(600);
             setLoadingState({ show: true, phase: 'FETCHING', text: 'Загружаю котировки BTCUSDT 5M...', fading: false });
@@ -1465,8 +1467,8 @@
 
                         if (sig) {
                             const signalTime = currTime;
-                            const entryTime = currTime + 6; 
-                            const entryPrice = initialData[idx].close; 
+                            const entryTime = currTime + 6; // Historical approximation
+                            const entryPrice = initialData[idx].close; // Historical approximation
                             
                             const exitCandle = initialData[idx + 5]; 
                             if(!exitCandle) continue;
@@ -1478,7 +1480,7 @@
                             markersRef.current.push({ 
                                 time: signalTime, 
                                 position: sig.type === 'CALL' ? 'belowBar' : 'aboveBar', 
-                                color: sig.type === 'CALL' ? '#3b82f6' : '#64748b', 
+                                color: sig.type === 'CALL' ? '#3b82f6' : '#475569', 
                                 shape: sig.type === 'CALL' ? 'arrowUp' : 'arrowDown', 
                                 text: sig.isTypeB ? 'TYPE B' : 'SIGNAL', 
                                 size: 1.5 
@@ -1523,6 +1525,7 @@
                 
                 window.appReady = true;
                 window.chartReady = true;
+                
                 initOptionalModulesAfterBoot();
 
                 const closedTradesNum = Number(localDiag.finalSignals) || 0;
@@ -1544,13 +1547,10 @@
                     `прибыль с одной успешной сделки составляет ${formatRubSpeech(profitPerWin).replace(/^плюс /, "").replace(/^минус /, "")}. ` +
                     `Общий результат составил ${formatRubSpeech(pnlNum)}.`;
 
-                await window.speechQueue.sayAsync(startupText, { key: "startup-report", priority: 30 });
-                await window.speechQueue.sayAsync("Приступаю к сканированию рынка.", { key: "scanner-start", priority: 30 });
+                await window.speechQueue.sayAsync(startupText, { key: "startup-report", priority: 30, cooldownMs: 0 });
+                await window.speechQueue.sayAsync("Терминал приступает к сканированию рынка.", { key: "scanner-start", priority: 30, cooldownMs: 0 });
                 
                 setAppPhase('СКАНИРОВАНИЕ АКТИВНО');
-                if (APP_FLAGS.premiumScannerEnabled) {
-                    startScannerLoop();
-                }
 
             } else {
                 setLoadingState(prev => ({ ...prev, fading: true }));
@@ -1563,11 +1563,6 @@
             // LIVE LOOP
             let mLiveStep = 0;
             
-            window.activeSignal = false;
-            window.entryCountdownActive = false;
-            window.activeTrade = false;
-            window.signalLifecycleLocked = false;
-
             while (engineActive.current) {
               try {
                   if (!signalLockedRef.current) {
@@ -1597,23 +1592,47 @@
                           lowerSeriesRef.current.update({time: formingCandle.time, value: liqZones[formingIdx].lower});
                       }
 
-                      // Zone Warning Logic
+                      // Zone Warning Logic with Strict State Machine
                       if (!signalLockedRef.current) {
                           const distTop = Math.abs(formingCandle.close - liqZones[formingIdx].upper) / cAtr;
                           const distBot = Math.abs(formingCandle.close - liqZones[formingIdx].lower) / cAtr;
-                          const inZoneNow = (distTop < 0.35 || distBot < 0.35);
+                          const approachThreshold = 0.35;
+                          const leaveThreshold = 0.65;
+                          const cooldownMs = 90000;
+                          const nowMs = Date.now();
+
+                          const checkZone = (side, dist) => {
+                              const stateObj = zoneStateRef.current[side];
+                              const wasNear = stateObj.state === "APPROACHING" || stateObj.state === "INSIDE";
+                              const isNear = dist <= approachThreshold;
+                              const isFar = dist >= leaveThreshold;
+
+                              if (!wasNear && isNear) {
+                                  stateObj.state = "INSIDE";
+                                  if (nowMs - stateObj.lastSpeakAt > cooldownMs) {
+                                      stateObj.lastSpeakAt = nowMs;
+                                      const text = side === "buy" 
+                                          ? "Цена подходит к нижней зоне интереса. Жду подтверждение стратегии."
+                                          : "Цена подходит к верхней зоне интереса. Жду подтверждение стратегии.";
+                                      window.speechQueue.sayAsync(text, { key: `approach-${side}`, priority: 45, cooldownMs: 0 });
+                                  }
+                              } else if (wasNear && isFar) {
+                                  stateObj.state = "OUTSIDE";
+                                  const text = side === "buy"
+                                      ? "Цена отошла от нижней зоны входа. Жду новый сетап."
+                                      : "Цена отошла от верхней зоны входа. Жду новый сетап.";
+                                  window.speechQueue.sayAsync(text, { key: `leave-${side}-${nowMs}`, priority: 45, cooldownMs: 0 });
+                                  window.speechQueue.spoken.delete(`approach-${side}`);
+                              }
+                          };
+
+                          checkZone("sell", distTop);
+                          checkZone("buy", distBot);
                           
-                          if (inZoneNow && isScannerRunningRef.current) {
-                              setAppPhase('ЗОНА ИНТЕРЕСА');
-                              window.speechQueue.say("Цена подошла к зоне возможного входа. Жду подтверждение.", { key: "approach", priority: 45, cooldownMs: 120000 });
-                          } else if (distTop > 0.65 && distBot > 0.65 && lastZoneStateRef.current === 'IN') {
-                              window.speechQueue.say("Цена ушла от зоны входа. Жду новый сетап.", { key: "leave", priority: 45, cooldownMs: 60000 });
-                          }
-                          
-                          lastZoneStateRef.current = inZoneNow ? 'IN' : 'OUT';
-                          
-                          if (!inZoneNow && isScannerRunningRef.current) {
-                              setAppPhase('СКАНИРОВАНИЕ АКТИВНО');
+                          if (zoneStateRef.current.sell.state === "INSIDE" || zoneStateRef.current.buy.state === "INSIDE") {
+                              if (isScannerRunningRef.current) setAppPhase('ЗОНА ИНТЕРЕСА');
+                          } else {
+                              if (isScannerRunningRef.current) setAppPhase('СКАНИРОВАНИЕ АКТИВНО');
                           }
                       }
 
@@ -1641,6 +1660,7 @@
                               setMetrics({ structure: 100, liquidity: 100, smartMoney: 95, edgeZone: 85 });
                               playSound('found');
                               
+                              // T0: SIGNAL MARKER
                               markersRef.current.push({ 
                                   time: closedCandle.time, 
                                   position: sig.type === 'CALL' ? 'belowBar' : 'aboveBar', 
@@ -1657,9 +1677,8 @@
                               let voiceReason = sig.type === 'CALL' ? "Цена сняла нижнюю ликвидность и вернулась в диапазон." : "Цена сняла верхнюю ликвидность и закрепилась обратно.";
                               if (sig.reason.includes('TYPE B')) voiceReason = "Повторный тест зоны интереса.";
                               
-                              // EXACT LIFECYCLE 6 SECONDS
-                              await window.speechQueue.sayAsync(`Сигнал на ${sig.type === 'CALL' ? 'покупку' : 'продажу'}. ${voiceReason}`, { priority: 90, key: `sig-reason-${signalTimeMs}` });
-                              
+                              // T0-T3: EXACT LIFECYCLE 3 SECONDS (Reason)
+                              await window.speechQueue.sayAsync(`Сигнал на ${sig.type === 'CALL' ? 'покупку' : 'продажу'}. ${voiceReason}`, { priority: 90, key: `sig-reason-${closedCandle.time}`, cooldownMs: 0 });
                               await delayUntil(signalTimeMs + 3000);
                               
                               window.activeSignal = false;
@@ -1667,22 +1686,24 @@
                               setAppPhase(`ПОДГОТОВКА ВХОДА`);
                               setSignal({ type: sig.type, pending: true, exp: 25 });
                               
-                              window.speechQueue.sayAsync("Подготовка ко входу. Три секунды.", { priority: 85, key: `sig-prep-${signalTimeMs}` });
+                              // T3-T6: EXACT LIFECYCLE 3 SECONDS (Countdown)
+                              window.speechQueue.sayAsync("Подготовка ко входу. Три секунды.", { priority: 85, key: `sig-prep-${closedCandle.time}`, cooldownMs: 0 });
                               for(let w=3; w>0; w--) {
+                                  setCountdown(w); // Visible UI countdown
                                   playSound('scan');
                                   await delayUntil(signalTimeMs + 6000 - ((w-1)*1000));
                               }
-
+                              setCountdown(null);
                               await delayUntil(signalTimeMs + 6000);
 
-                              // EXACT ENTRY FIX
+                              // T6: EXACT ENTRY
                               window.entryCountdownActive = false;
                               window.activeTrade = true;
 
                               playSound('start');
-                              window.speechQueue.sayAsync("Вход зафиксирован. Сделка активна.", { priority: 80 });
+                              window.speechQueue.sayAsync("Вход зафиксирован. Сделка активна.", { priority: 80, key: `entry-conf-${closedCandle.time}`, cooldownMs: 0 });
                               
-                              const entryPriceReal = currentPrice.current; 
+                              const entryPriceReal = currentPrice.current; // Real price at exactly T6
                               const entryTimeSec = Date.now() / 1000; 
                               
                               setAppPhase('СДЕЛКА АКТИВНА');
@@ -1722,23 +1743,23 @@
 
                               while(expirySeconds > 0) {
                                 setCountdown(expirySeconds);
-                                // MID-TRADE ANALYSIS at 12.5 mins exactly
+                                // MID-TRADE ANALYSIS exactly once at 12.5 mins
                                 if (expirySeconds === Math.floor((expMins * 60) / 2) && !spokenMidpoint) {
                                      let statusText = "";
                                      const nearThreshold = cAtr * 0.14; 
                                      const curP = currentPrice.current;
                                      
                                      if (sig.type === 'CALL') {
-                                         if (curP > entryPriceReal + nearThreshold) statusText = "Мы на середине сделки. Сейчас сделка уверенно идёт в плюс.";
-                                         else if (curP < entryPriceReal - nearThreshold) statusText = "Мы на середине сделки. Сейчас сделка уходит в минус, наблюдаю до экспирации.";
-                                         else statusText = "Мы на середине сделки. Цена рядом с точкой входа, ситуация пограничная.";
+                                         if (curP > entryPriceReal + nearThreshold) statusText = "Мы находимся на середине сделки. Сейчас позиция идёт в плюс.";
+                                         else if (curP < entryPriceReal - nearThreshold) statusText = "Мы находимся на середине сделки. Сейчас позиция идёт в минус.";
+                                         else statusText = "Мы находимся на середине сделки. Цена рядом с точкой входа, ситуация пограничная.";
                                      } else {
-                                         if (curP < entryPriceReal - nearThreshold) statusText = "Мы на середине сделки. Сейчас сделка уверенно идёт в плюс.";
-                                         else if (curP > entryPriceReal + nearThreshold) statusText = "Мы на середине сделки. Сейчас сделка уходит в минус, наблюдаю до экспирации.";
-                                         else statusText = "Мы на середине сделки. Цена рядом с точкой входа, ситуация пограничная.";
+                                         if (curP < entryPriceReal - nearThreshold) statusText = "Мы находимся на середине сделки. Сейчас позиция идёт в плюс.";
+                                         else if (curP > entryPriceReal + nearThreshold) statusText = "Мы находимся на середине сделки. Сейчас позиция идёт в минус.";
+                                         else statusText = "Мы находимся на середине сделки. Цена рядом с точкой входа, ситуация пограничная.";
                                      }
 
-                                     window.speechQueue.sayAsync(statusText, { priority: 60 });
+                                     window.speechQueue.sayAsync(statusText, { priority: 60, key: `mid-trade-${entryTimeSec}`, cooldownMs: 0 });
                                      spokenMidpoint = true;
                                 }
                                 await delay(1000);
@@ -1777,7 +1798,7 @@
 
                               addLog(`Итог сделки: ${isWin ? '+' : ''}${Math.round(tradePnl)}₽`);
                               const resultWord = isWin ? 'плюс' : 'минус';
-                              window.speechQueue.sayAsync(`Сделка закрыта в ${resultWord}. Результат: ${formatRubSpeech(tradePnl)}.`, { priority: 70 });
+                              window.speechQueue.sayAsync(`Сделка закрыта в ${resultWord}. Результат: ${formatRubSpeech(tradePnl)}.`, { priority: 70, key: `trade-res-${entryTimeSec}`, cooldownMs: 0 });
 
                               setSignal(null);
                               setAppPhase('СКАНИРОВАНИЕ АКТИВНО');
@@ -2063,7 +2084,7 @@
                             <Clock size={10} className="text-cyan-600"/> ЭКСПИРАЦИЯ
                           </span>
                           <span className="text-2xl text-cyan-700 mt-1 font-black mono-font leading-none drop-shadow-sm">
-                            {countdown !== null ? `${Math.floor(countdown/60)}:${(countdown%60).toString().padStart(2,'0')}` : (signal && !signal.pending && signal.exp ? `${signal.exp}:00` : '--:--')}
+                            {countdown !== null ? (window.entryCountdownActive ? `00:0${countdown}` : `${Math.floor(countdown/60)}:${(countdown%60).toString().padStart(2,'0')}`) : (signal && !signal.pending && signal.exp ? `${signal.exp}:00` : '--:--')}
                           </span>
                        </div>
                     </div>
