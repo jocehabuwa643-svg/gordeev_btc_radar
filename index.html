@@ -1091,8 +1091,8 @@
           const lastProcessedClosedCandleTimeRef = useRef(0);
 
           const zoneStateRef = useRef({
-              buy: { state: "OUTSIDE", lastSpeakAt: 0 },
-              sell: { state: "OUTSIDE", lastSpeakAt: 0 }
+              buy: { inside: false, enteredWarned: false, exitedWarned: false },
+              sell: { inside: false, enteredWarned: false, exitedWarned: false }
           });
 
           useEffect(() => {
@@ -1200,7 +1200,7 @@
 
                       overlaysContainerRef.current.appendChild(box);
 
-                      // Создание DOM метки ENTRY
+                      // Создание DOM метки ENTRY (появляется только от Entry, не от Signal)
                       const entryMarker = document.createElement('div');
                       entryMarker.className = 'trade-entry-marker';
                       entryMarker.style.left = `${xEntry}px`;
@@ -1290,6 +1290,23 @@
               else if (reclaimBot && structBreakBot) { isCall = true; signalReason = 'SMC PRIMARY: SWEEP & RECLAIM'; }
               else if (reclaimTop || reclaimBot) { diagStatsRef.rejected++; }
 
+              const bodyRatio = Math.abs(currCandle.close - currCandle.open) / (currCandle.high - currCandle.low || 1);
+              const distTop = Math.abs(currCandle.close - cUpper) / cAtr;
+              const distBot = Math.abs(currCandle.close - cLower) / cAtr;
+
+              // Вторичный ретест
+              if (!isCall && !isPut) {
+                  // SECONDARY RETEST TOP
+                  if (reclaimTop && distTop <= 0.15 && bodyRatio >= 0.10 && diagStatsRef.rejected > 0) {
+                      isPut = true; signalReason = 'SECONDARY RETEST: RECLAIM'; isTypeB = true;
+                  }
+                  // SECONDARY RETEST BOT
+                  else if (reclaimBot && distBot <= 0.15 && bodyRatio >= 0.10 && diagStatsRef.rejected > 0) {
+                      isCall = true; signalReason = 'SECONDARY RETEST: RECLAIM'; isTypeB = true;
+                  }
+              }
+
+              // Старый TYPE B
               if (!isCall && !isPut) {
                   for (let fz of failedZones) {
                       if (fz.used || currCandle.time > fz.expiryTime) continue;
@@ -1505,8 +1522,9 @@
 
                         if (sig) {
                             const signalTime = currTime;
-                            const entryTime = currTime + 6; // Historical approximation
-                            const entryPrice = initialData[idx].close; // Historical approximation
+                            // СТАТИСТИКА: Entry Time = Signal Time + 5000ms
+                            const entryTime = currTime + 5;
+                            const entryPrice = initialData[idx + 1] ? initialData[idx + 1].open : initialData[idx].close; // Оценка на 5с вперед
                             
                             // --- EXPIRATION OPTIMIZER EVALUATION ---
                             [15, 20, 25, 30, 35].forEach(expMins => {
@@ -1685,40 +1703,27 @@
                       if (!signalLockedRef.current) {
                           const distTop = Math.abs(formingCandle.close - liqZones[formingIdx].upper) / cAtr;
                           const distBot = Math.abs(formingCandle.close - liqZones[formingIdx].lower) / cAtr;
-                          const approachThreshold = 0.35;
-                          const leaveThreshold = 0.65;
-                          const cooldownMs = 90000;
-                          const nowMs = Date.now();
 
                           const checkZone = (side, dist) => {
                               const stateObj = zoneStateRef.current[side];
-                              const wasNear = stateObj.state === "APPROACHING" || stateObj.state === "INSIDE";
-                              const isNear = dist <= approachThreshold;
-                              const isFar = dist >= leaveThreshold;
+                              const enterThreshold = 0.25;
+                              const leaveThreshold = 0.40;
 
-                              if (!wasNear && isNear) {
-                                  stateObj.state = "INSIDE";
-                                  if (nowMs - stateObj.lastSpeakAt > cooldownMs) {
-                                      stateObj.lastSpeakAt = nowMs;
-                                      const text = side === "buy" 
-                                          ? "Цена подходит к нижней зоне интереса. Жду подтверждение стратегии."
-                                          : "Цена подходит к верхней зоне интереса. Жду подтверждение стратегии.";
-                                      window.speechQueue.sayAsync(text, { key: `approach-${side}`, priority: 45, cooldownMs: 0 });
-                                  }
-                              } else if (wasNear && isFar) {
-                                  stateObj.state = "OUTSIDE";
-                                  const text = side === "buy"
-                                      ? "Цена отошла от нижней зоны входа. Жду новый сетап."
-                                      : "Цена отошла от верхней зоны входа. Жду новый сетап.";
-                                  window.speechQueue.sayAsync(text, { key: `leave-${side}-${nowMs}`, priority: 45, cooldownMs: 0 });
-                                  window.speechQueue.spoken.delete(`approach-${side}`);
+                              if (!stateObj.inside && dist <= enterThreshold) {
+                                  stateObj.inside = true;
+                                  // Срабатывает только 1 раз при входе
+                                  window.speechQueue.sayAsync("Цена подошла к зоне интереса. Возможен сигнал.", { key: `approach-enter-${side}-${Date.now()}`, priority: 45, cooldownMs: 0 });
+                              } else if (stateObj.inside && dist >= leaveThreshold) {
+                                  stateObj.inside = false;
+                                  // Срабатывает только 1 раз при выходе
+                                  window.speechQueue.sayAsync("Цена отошла от зоны интереса.", { key: `approach-leave-${side}-${Date.now()}`, priority: 45, cooldownMs: 0 });
                               }
                           };
 
                           checkZone("sell", distTop);
                           checkZone("buy", distBot);
                           
-                          if (zoneStateRef.current.sell.state === "INSIDE" || zoneStateRef.current.buy.state === "INSIDE") {
+                          if (zoneStateRef.current.sell.inside || zoneStateRef.current.buy.inside) {
                               if (isScannerRunningRef.current) setAppPhase('ЗОНА ИНТЕРЕСА');
                           } else {
                               if (isScannerRunningRef.current) setAppPhase('СКАНИРОВАНИЕ АКТИВНО');
@@ -1740,7 +1745,7 @@
                           lastProcessedClosedCandleTimeRef.current = closedCandle.time;
 
                           if (sig) {
-                              // --- 1. SET GLOBAL LOCKS ---
+                              // --- 1. SIGNAL DETECTED & PENDING ---
                               signalLockedRef.current = true;
                               window.signalLifecycleLocked = true;
                               window.activeSignal = true;
@@ -1751,7 +1756,7 @@
                               setMetrics({ structure: 100, liquidity: 100, smartMoney: 95, edgeZone: 85 });
                               playSound('found');
                               
-                              // --- 2. T0: NATIVE SIGNAL MARKER ONLY ---
+                              // Наносим маркер SIGNAL
                               markersRef.current.push({ 
                                   time: signalCandleTime, 
                                   position: sig.type === 'CALL' ? 'belowBar' : 'aboveBar', 
@@ -1762,54 +1767,60 @@
                               });
                               updateChartAndData(data); 
                               
-                              // --- 3. T0 - T3: REASON PHASE ---
                               setAppPhase(`ОБЪЯСНЕНИЕ СИГНАЛА`);
-                              // Устанавливаем фазу REASON без инициализации данных о входе и таймера
+                              // Фаза REASON без активной стрелки
                               setSignal({ type: sig.type, phase: 'REASON', exp: null, entryPrice: null });
                               addLog(`Сигнал на ${dirText}. ${sig.reason}`, true);
                               
                               let voiceReason = "снятие ликвидности и возврат за границу пула";
-                              if (sig.reason.includes('TYPE B')) voiceReason = "повторный тест зоны интереса";
+                              if (sig.reason.includes('TYPE B') || sig.reason.includes('SECONDARY')) voiceReason = "повторный тест зоны интереса";
                               
-                              const voiceKey1 = `sig-reason-${signalCandleTime}`;
-                              // Озвучиваем причину строго один раз
-                              window.speechQueue.sayAsync(`Внимание. Появился сигнал на ${sig.type === 'CALL' ? 'покупку' : 'продажу'}. Причина: ${voiceReason}.`, { priority: 90, key: voiceKey1, cooldownMs: 0 });
+                              // Произносим 1 раз при обнаружении
+                              const voiceKey1 = `sig-detect-${signalCandleTime}`;
+                              window.speechQueue.sayAsync(`Внимание. Появился сигнал на ${sig.type === 'CALL' ? 'покупку' : 'продажу'}. Причина: ${voiceReason}. Подготовка ко входу пять секунд.`, { priority: 90, key: voiceKey1, cooldownMs: 0 });
                               
-                              await delayUntil(signalTimeMs + 3000);
+                              await delayUntil(signalTimeMs + 2000);
                               
-                              // --- 4. T3 - T6: PREPARE/COUNTDOWN PHASE ---
+                              // Опциональная проверка отмены
+                              const liveDist = Math.abs(currentPrice.current - closedCandle.close) / cAtr;
+                              if (liveDist > 1.5) { 
+                                  setAppPhase('СИГНАЛ ОТМЕНЁН');
+                                  setSignal(null);
+                                  window.speechQueue.sayAsync("Сигнал отменён. Условия для входа исчезли.", { priority: 90, key: `sig-cancel-${signalCandleTime}`, cooldownMs: 0 });
+                                  signalLockedRef.current = false;
+                                  window.signalLifecycleLocked = false;
+                                  continue;
+                              }
+
+                              // --- 2. COUNTDOWN PHASE ---
                               window.activeSignal = false;
                               window.entryCountdownActive = true;
                               setAppPhase(`ПОДГОТОВКА К ВХОДУ`);
                               setSignal({ type: sig.type, phase: 'PREPARE', exp: 25, entryPrice: null });
                               
-                              const voiceKey2 = `sig-prep-${signalCandleTime}`;
-                              // Озвучиваем подготовку строго один раз
-                              window.speechQueue.sayAsync("Подготовка к входу. Три. Два. Один.", { priority: 85, key: voiceKey2, cooldownMs: 0 });
-                              
                               for(let w=3; w>0; w--) {
                                   setCountdown(w); 
                                   playSound('scan');
-                                  await delayUntil(signalTimeMs + 6000 - ((w-1)*1000));
+                                  await delayUntil(signalTimeMs + 5000 - ((w-1)*1000));
                               }
                               setCountdown(null);
-                              await delayUntil(signalTimeMs + 6000);
 
-                              // --- 5. T6: EXACT ENTRY ---
+                              // --- 3. EXACT ENTRY AFTER 5 SECONDS ---
                               window.entryCountdownActive = false;
                               window.activeTrade = true;
 
                               playSound('start');
                               const voiceKey3 = `entry-conf-${signalCandleTime}`;
-                              // Озвучиваем вход строго один раз
+                              // Произносим 1 раз вход
                               window.speechQueue.sayAsync("Вход подтверждён. Сделка активна.", { priority: 80, key: voiceKey3, cooldownMs: 0 });
                               
+                              // Точно фиксируем данные ВХОДА
                               const entryPriceReal = currentPrice.current; 
                               const entryTimeSec = Date.now() / 1000; 
                               
                               setAppPhase('СДЕЛКА АКТИВНА');
                               const expMins = 25; 
-                              // Активация стрелки и передача реальной цены только сейчас
+                              // Только сейчас зажигаем стрелку
                               setSignal({ type: sig.type, phase: 'ACTIVE', exp: expMins, entryPrice: entryPriceReal });
                               
                               let activeTradeObj = {
@@ -1819,7 +1830,7 @@
                                   bet: MONEY_CONFIG.martingale[mLiveStep], step: mLiveStep + 1, result: 'PENDING'
                               };
                               completedTradesRef.current.push(activeTradeObj);
-                              syncGlassBoxes(); // Это отрисует ENTRY box
+                              syncGlassBoxes(); // Это отрисует ENTRY box и маркер ENTRY
 
                               let expirySeconds = expMins * 60;
                               let isLive = true;
@@ -1845,7 +1856,7 @@
 
                               while(expirySeconds > 0) {
                                 setCountdown(expirySeconds);
-                                // MID-TRADE ANALYSIS exactly once at 12.5 mins
+                                // MID-TRADE ANALYSIS exactly once
                                 if (expirySeconds === Math.floor((expMins * 60) / 2) && !spokenMidpoint) {
                                      let statusText = "";
                                      const nearThreshold = cAtr * 0.14; 
@@ -2157,7 +2168,7 @@
 
                   <div className="glass-panel-heavy rounded-3xl p-3 shadow-md border border-white flex flex-col gap-3">
                     <div className="flex gap-2 h-24 shrink-0">
-                      <div className={`w-[35%] border rounded-xl flex flex-col items-center justify-center relative transition-all duration-500 bg-white/90 shadow-inner ${signal ? 'border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.4)]' : 'border-white'}`}>
+                      <div className={`w-[35%] border rounded-xl flex flex-col items-center justify-center relative transition-all duration-500 bg-white/90 shadow-inner ${signal && signal.phase === 'ACTIVE' ? 'border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.4)]' : 'border-white'}`}>
                         {signal ? (
                           <VolumetricArrow type={signal.type} phase={signal.phase} />
                         ) : (
@@ -2182,7 +2193,7 @@
                                         {signal.phase === 'REASON' ? 'ОБЪЯСНЕНИЕ СИГНАЛА' : 'ПОДГОТОВКА К ВХОДУ'}
                                     </span>
                                     <span className="text-xs text-slate-600 font-bold mt-0.5">
-                                        {signal.phase === 'REASON' ? 'Вход через 6 секунд' : 'Ожидайте...'}
+                                        {signal.phase === 'REASON' ? 'Вход через 5 секунд' : 'Ожидайте...'}
                                     </span>
                                 </div>
                                 <div className="text-3xl text-blue-600 font-black mono-font drop-shadow-sm w-12 text-right">
