@@ -372,6 +372,14 @@
             premiumScannerEnabled: true
         };
 
+        const SCANNER_CONFIG = {
+            intervalMinMs: 1500,
+            intervalMaxMs: 4000,
+            clusterChance: 0.15,
+            minClusterSize: 3,
+            maxClusterSize: 8
+        };
+
         window.__appBootStarted = false;
         window.__cryptoTickerStarted = false;
         window.__scannerStarted = false;
@@ -1005,10 +1013,15 @@
           );
         };
         
-        const VolumetricArrow = ({ type, pending = false }) => {
+        const VolumetricArrow = ({ type, phase }) => {
           const isUp = type === 'CALL';
+          let stateClass = '';
+          if (phase === 'REASON') stateClass = 'opacity-20 scale-90 grayscale';
+          else if (phase === 'PREPARE') stateClass = 'opacity-50 scale-95 animate-pulse';
+          else if (phase === 'ACTIVE') stateClass = 'opacity-100 scale-100 drop-shadow-[0_0_15px_currentColor]';
+
           return (
-            <div className={`relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center animate-arrow-premium ${pending ? 'opacity-50 scale-90 animate-pulse' : ''}`}>
+            <div className={`relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center transition-all duration-300 ${stateClass}`}>
                <svg viewBox="0 0 24 24" className={`w-full h-full fill-current ${isUp ? 'text-[#0ea5e9]' : 'text-[#f43f5e]'}`}>
                   <path d={isUp ? "M12 2l-10 11h7v9h6v-9h7z" : "M12 22l10-11h-7v-9h-6v9h-7z"} />
                </svg>
@@ -1036,6 +1049,15 @@
           const [currentTF, setCurrentTF] = useState('5M');
           const [diagStats, setDiagStats] = useState({ sweeps: 0, reclaims: 0, typeB: 0, rejected: 0, finalSignals: 0 });
           
+          const [expStats, setExpStats] = useState({
+              15: { trades: 0, wins: 0, losses: 0, pnl: 0 },
+              20: { trades: 0, wins: 0, losses: 0, pnl: 0 },
+              25: { trades: 0, wins: 0, losses: 0, pnl: 0 },
+              30: { trades: 0, wins: 0, losses: 0, pnl: 0 },
+              35: { trades: 0, wins: 0, losses: 0, pnl: 0 }
+          });
+          const [bestExpMsg, setBestExpMsg] = useState('Ожидание данных...');
+
           const [liveDisplayPrice, setLiveDisplayPrice] = useState(null);
 
           const chartContainerRef = useRef(null);
@@ -1178,10 +1200,18 @@
 
                       overlaysContainerRef.current.appendChild(box);
 
+                      // Создание DOM метки ENTRY
                       const entryMarker = document.createElement('div');
                       entryMarker.className = 'trade-entry-marker';
                       entryMarker.style.left = `${xEntry}px`;
                       entryMarker.style.top = `${yEntry}px`;
+
+                      // Текстовая плашка ENTRY рядом с точкой входа
+                      const entryLabel = document.createElement('div');
+                      entryLabel.className = 'absolute top-1.5 left-2 text-[8px] font-black text-white bg-blue-500/90 px-1 py-0.5 rounded shadow-sm oswald-font tracking-widest pointer-events-none whitespace-nowrap';
+                      entryLabel.innerText = 'ENTRY';
+                      entryMarker.appendChild(entryLabel);
+
                       overlaysContainerRef.current.appendChild(entryMarker);
 
                       if (trade.result !== 'PENDING') {
@@ -1454,6 +1484,14 @@
                 let tempWins = 0, tempLosses = 0, tempPnl = 0, mStep = 0;
                 let localDiag = { sweeps: 0, reclaims: 0, typeB: 0, rejected: 0, finalSignals: 0 };
                 
+                let tempExpStats = {
+                    15: { trades: 0, wins: 0, losses: 0, pnl: 0 },
+                    20: { trades: 0, wins: 0, losses: 0, pnl: 0 },
+                    25: { trades: 0, wins: 0, losses: 0, pnl: 0 },
+                    30: { trades: 0, wins: 0, losses: 0, pnl: 0 },
+                    35: { trades: 0, wins: 0, losses: 0, pnl: 0 }
+                };
+
                 const startIdx = initialData.length - 144; 
                 const endIdx = initialData.length - 6; 
 
@@ -1470,6 +1508,20 @@
                             const entryTime = currTime + 6; // Historical approximation
                             const entryPrice = initialData[idx].close; // Historical approximation
                             
+                            // --- EXPIRATION OPTIMIZER EVALUATION ---
+                            [15, 20, 25, 30, 35].forEach(expMins => {
+                                const offset = expMins / 5;
+                                const testExitCandle = initialData[idx + offset];
+                                if (testExitCandle) {
+                                    const isWin = (sig.type === 'CALL' && testExitCandle.close >= entryPrice) || (sig.type === 'PUT' && testExitCandle.close <= entryPrice);
+                                    const expPnl = isWin ? Math.round(1000 * MONEY_CONFIG.payout) : -1000;
+                                    tempExpStats[expMins].trades++;
+                                    if (isWin) tempExpStats[expMins].wins++; else tempExpStats[expMins].losses++;
+                                    tempExpStats[expMins].pnl += expPnl;
+                                }
+                            });
+                            // ---------------------------------------
+
                             const exitCandle = initialData[idx + 5]; 
                             if(!exitCandle) continue;
                             
@@ -1482,7 +1534,7 @@
                                 position: sig.type === 'CALL' ? 'belowBar' : 'aboveBar', 
                                 color: sig.type === 'CALL' ? '#3b82f6' : '#475569', 
                                 shape: sig.type === 'CALL' ? 'arrowUp' : 'arrowDown', 
-                                text: sig.isTypeB ? 'TYPE B' : 'SIGNAL', 
+                                text: sig.isTypeB ? 'TYPE B SIGNAL' : 'SIGNAL', 
                                 size: 1.5 
                             });
 
@@ -1509,6 +1561,43 @@
                 const winrate = localDiag.finalSignals > 0 ? Math.round((tempWins / localDiag.finalSignals) * 100) : 0;
                 setTradeStats({ wins: tempWins, losses: tempLosses, winRate: winrate, pnl: Math.round(tempPnl) });
                 setDiagStats(localDiag);
+
+                // --- EXPIRATION OPTIMIZER RESULTS ---
+                setExpStats(tempExpStats);
+                const base25 = tempExpStats[25];
+                let newBestMsg = "";
+                if (base25.trades < 10) {
+                    newBestMsg = "Недостаточно данных для смены основной экспирации.";
+                } else {
+                    const pnl25 = base25.pnl;
+                    const pnl30 = tempExpStats[30].pnl;
+                    const pnl20 = tempExpStats[20].pnl;
+
+                    const is30Better = (pnl30 - pnl25) >= Math.max(1, Math.abs(pnl25) * 0.15);
+                    const is20Better = (pnl20 - pnl25) >= Math.max(1, Math.abs(pnl25) * 0.15);
+
+                    if (is30Better && pnl30 > pnl20) {
+                        newBestMsg = "30M показывает преимущество, требуется дополнительная проверка.";
+                    } else if (is20Better && pnl20 > pnl30) {
+                        newBestMsg = "20M показывает быстрый edge, требуется дополнительная проверка.";
+                    } else {
+                        let bestExp = 25;
+                        let maxPnl = pnl25;
+                        for (const e of [15, 20, 30, 35]) {
+                            if (tempExpStats[e].pnl > maxPnl) {
+                                maxPnl = tempExpStats[e].pnl;
+                                bestExp = e;
+                            }
+                        }
+                        if (bestExp === 25) {
+                            newBestMsg = "25M оптимальна на текущей выборке.";
+                        } else {
+                            newBestMsg = `${bestExp}M показывает лучший PNL, но отрыв менее 15%.`;
+                        }
+                    }
+                }
+                setBestExpMsg(newBestMsg);
+                // ------------------------------------
 
                 updateChartAndData(initialData); 
                 
@@ -1651,73 +1740,86 @@
                           lastProcessedClosedCandleTimeRef.current = closedCandle.time;
 
                           if (sig) {
+                              // --- 1. SET GLOBAL LOCKS ---
                               signalLockedRef.current = true;
                               window.signalLifecycleLocked = true;
                               window.activeSignal = true;
 
                               const signalTimeMs = Date.now();
+                              const signalCandleTime = closedCandle.time;
                               const dirText = sig.type === 'CALL' ? "BUY" : "SELL";
                               setMetrics({ structure: 100, liquidity: 100, smartMoney: 95, edgeZone: 85 });
                               playSound('found');
                               
-                              // T0: SIGNAL MARKER
+                              // --- 2. T0: NATIVE SIGNAL MARKER ONLY ---
                               markersRef.current.push({ 
-                                  time: closedCandle.time, 
+                                  time: signalCandleTime, 
                                   position: sig.type === 'CALL' ? 'belowBar' : 'aboveBar', 
                                   color: sig.type === 'CALL' ? '#3b82f6' : '#475569', 
                                   shape: sig.type === 'CALL' ? 'arrowUp' : 'arrowDown', 
-                                  text: sig.isTypeB ? 'TYPE B' : 'SIGNAL', 
+                                  text: sig.isTypeB ? 'TYPE B SIGNAL' : 'SIGNAL', 
                                   size: 2 
                               });
                               updateChartAndData(data); 
                               
-                              setAppPhase(`СИГНАЛ ОБНАРУЖЕН`);
+                              // --- 3. T0 - T3: REASON PHASE ---
+                              setAppPhase(`ОБЪЯСНЕНИЕ СИГНАЛА`);
+                              // Устанавливаем фазу REASON без инициализации данных о входе и таймера
+                              setSignal({ type: sig.type, phase: 'REASON', exp: null, entryPrice: null });
                               addLog(`Сигнал на ${dirText}. ${sig.reason}`, true);
                               
-                              let voiceReason = sig.type === 'CALL' ? "Цена сняла нижнюю ликвидность и вернулась в диапазон." : "Цена сняла верхнюю ликвидность и закрепилась обратно.";
-                              if (sig.reason.includes('TYPE B')) voiceReason = "Повторный тест зоны интереса.";
+                              let voiceReason = "снятие ликвидности и возврат за границу пула";
+                              if (sig.reason.includes('TYPE B')) voiceReason = "повторный тест зоны интереса";
                               
-                              // T0-T3: EXACT LIFECYCLE 3 SECONDS (Reason)
-                              await window.speechQueue.sayAsync(`Сигнал на ${sig.type === 'CALL' ? 'покупку' : 'продажу'}. ${voiceReason}`, { priority: 90, key: `sig-reason-${closedCandle.time}`, cooldownMs: 0 });
+                              const voiceKey1 = `sig-reason-${signalCandleTime}`;
+                              // Озвучиваем причину строго один раз
+                              window.speechQueue.sayAsync(`Внимание. Появился сигнал на ${sig.type === 'CALL' ? 'покупку' : 'продажу'}. Причина: ${voiceReason}.`, { priority: 90, key: voiceKey1, cooldownMs: 0 });
+                              
                               await delayUntil(signalTimeMs + 3000);
                               
+                              // --- 4. T3 - T6: PREPARE/COUNTDOWN PHASE ---
                               window.activeSignal = false;
                               window.entryCountdownActive = true;
-                              setAppPhase(`ПОДГОТОВКА ВХОДА`);
-                              setSignal({ type: sig.type, pending: true, exp: 25 });
+                              setAppPhase(`ПОДГОТОВКА К ВХОДУ`);
+                              setSignal({ type: sig.type, phase: 'PREPARE', exp: 25, entryPrice: null });
                               
-                              // T3-T6: EXACT LIFECYCLE 3 SECONDS (Countdown)
-                              window.speechQueue.sayAsync("Подготовка ко входу. Три секунды.", { priority: 85, key: `sig-prep-${closedCandle.time}`, cooldownMs: 0 });
+                              const voiceKey2 = `sig-prep-${signalCandleTime}`;
+                              // Озвучиваем подготовку строго один раз
+                              window.speechQueue.sayAsync("Подготовка к входу. Три. Два. Один.", { priority: 85, key: voiceKey2, cooldownMs: 0 });
+                              
                               for(let w=3; w>0; w--) {
-                                  setCountdown(w); // Visible UI countdown
+                                  setCountdown(w); 
                                   playSound('scan');
                                   await delayUntil(signalTimeMs + 6000 - ((w-1)*1000));
                               }
                               setCountdown(null);
                               await delayUntil(signalTimeMs + 6000);
 
-                              // T6: EXACT ENTRY
+                              // --- 5. T6: EXACT ENTRY ---
                               window.entryCountdownActive = false;
                               window.activeTrade = true;
 
                               playSound('start');
-                              window.speechQueue.sayAsync("Вход зафиксирован. Сделка активна.", { priority: 80, key: `entry-conf-${closedCandle.time}`, cooldownMs: 0 });
+                              const voiceKey3 = `entry-conf-${signalCandleTime}`;
+                              // Озвучиваем вход строго один раз
+                              window.speechQueue.sayAsync("Вход подтверждён. Сделка активна.", { priority: 80, key: voiceKey3, cooldownMs: 0 });
                               
-                              const entryPriceReal = currentPrice.current; // Real price at exactly T6
+                              const entryPriceReal = currentPrice.current; 
                               const entryTimeSec = Date.now() / 1000; 
                               
                               setAppPhase('СДЕЛКА АКТИВНА');
                               const expMins = 25; 
-                              setSignal({ type: sig.type, exp: expMins, entryPrice: entryPriceReal, pending: false });
+                              // Активация стрелки и передача реальной цены только сейчас
+                              setSignal({ type: sig.type, phase: 'ACTIVE', exp: expMins, entryPrice: entryPriceReal });
                               
                               let activeTradeObj = {
-                                  type: sig.type, signalReason: sig.reason, signalTime: closedCandle.time,
+                                  type: sig.type, signalReason: sig.reason, signalTime: signalCandleTime,
                                   entryTime: entryTimeSec, exitTime: null, exp: expMins, signalPrice: closedCandle.close, 
                                   entryPrice: entryPriceReal, currentPrice: entryPriceReal,
                                   bet: MONEY_CONFIG.martingale[mLiveStep], step: mLiveStep + 1, result: 'PENDING'
                               };
                               completedTradesRef.current.push(activeTradeObj);
-                              syncGlassBoxes(); 
+                              syncGlassBoxes(); // Это отрисует ENTRY box
 
                               let expirySeconds = expMins * 60;
                               let isLive = true;
@@ -2057,7 +2159,7 @@
                     <div className="flex gap-2 h-24 shrink-0">
                       <div className={`w-[35%] border rounded-xl flex flex-col items-center justify-center relative transition-all duration-500 bg-white/90 shadow-inner ${signal ? 'border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.4)]' : 'border-white'}`}>
                         {signal ? (
-                          <VolumetricArrow type={signal.type} pending={signal.pending} />
+                          <VolumetricArrow type={signal.type} phase={signal.phase} />
                         ) : (
                           <div className="flex flex-col items-center opacity-40">
                               <Radar size={28} className="text-slate-600 mb-1" />
@@ -2073,20 +2175,38 @@
                     </div>
 
                     <div className="glass-card rounded-xl p-3 flex justify-between items-center relative overflow-hidden bg-gradient-to-r from-white to-cyan-50/80 border border-white">
-                       <div className="flex flex-col z-10">
-                          <span className="text-[9px] text-slate-500 tracking-widest font-bold uppercase">ВХОД (СТАВКА 1000₽)</span>
-                          <span className="text-lg text-slate-900 mt-1 font-black mono-font leading-none">
-                            {signal && signal.entryPrice && !signal.pending ? formatPrice(signal.entryPrice) : '---.-----'}
-                          </span>
-                       </div>
-                       <div className="flex flex-col items-end z-10">
-                          <span className="text-[9px] text-slate-500 tracking-widest flex items-center gap-1 font-bold uppercase">
-                            <Clock size={10} className="text-cyan-600"/> ЭКСПИРАЦИЯ
-                          </span>
-                          <span className="text-2xl text-cyan-700 mt-1 font-black mono-font leading-none drop-shadow-sm">
-                            {countdown !== null ? (window.entryCountdownActive ? `00:0${countdown}` : `${Math.floor(countdown/60)}:${(countdown%60).toString().padStart(2,'0')}`) : (signal && !signal.pending && signal.exp ? `${signal.exp}:00` : '--:--')}
-                          </span>
-                       </div>
+                        {signal && signal.phase !== 'ACTIVE' ? (
+                            <div className="flex w-full justify-between items-center z-10 px-1 py-1">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] text-blue-600 tracking-widest font-bold uppercase animate-pulse">
+                                        {signal.phase === 'REASON' ? 'ОБЪЯСНЕНИЕ СИГНАЛА' : 'ПОДГОТОВКА К ВХОДУ'}
+                                    </span>
+                                    <span className="text-xs text-slate-600 font-bold mt-0.5">
+                                        {signal.phase === 'REASON' ? 'Вход через 6 секунд' : 'Ожидайте...'}
+                                    </span>
+                                </div>
+                                <div className="text-3xl text-blue-600 font-black mono-font drop-shadow-sm w-12 text-right">
+                                    {signal.phase === 'PREPARE' ? countdown : ''}
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                               <div className="flex flex-col z-10">
+                                  <span className="text-[9px] text-slate-500 tracking-widest font-bold uppercase">ВХОД (СТАВКА {MONEY_CONFIG.martingale[0]}₽)</span>
+                                  <span className="text-lg text-slate-900 mt-1 font-black mono-font leading-none">
+                                    {signal && signal.entryPrice ? formatPrice(signal.entryPrice) : '---.-----'}
+                                  </span>
+                               </div>
+                               <div className="flex flex-col items-end z-10">
+                                  <span className="text-[9px] text-slate-500 tracking-widest flex items-center gap-1 font-bold uppercase">
+                                    <Clock size={10} className="text-cyan-600"/> ЭКСПИРАЦИЯ
+                                  </span>
+                                  <span className="text-2xl text-cyan-700 mt-1 font-black mono-font leading-none drop-shadow-sm">
+                                    {countdown !== null && !window.entryCountdownActive ? `${Math.floor(countdown/60)}:${(countdown%60).toString().padStart(2,'0')}` : (signal && signal.exp ? `${signal.exp}:00` : '--:--')}
+                                  </span>
+                               </div>
+                            </>
+                        )}
                     </div>
                   </div>
 
@@ -2125,6 +2245,30 @@
                                </span>
                            </div>
                        </div>
+                  </div>
+
+                  <div className="glass-panel-heavy rounded-3xl p-3 shadow-md border border-white flex flex-col gap-2 relative overflow-hidden bg-white/70">
+                      <div className="text-[9px] text-slate-500 font-bold tracking-widest uppercase oswald-font border-b border-slate-200/50 pb-1 flex items-center gap-1.5">
+                          <Activity size={10} className="text-cyan-600" /> EXP OPTIMIZER
+                      </div>
+                      <div className="grid grid-cols-5 gap-1 text-center mt-1">
+                         {[15, 20, 25, 30, 35].map(exp => {
+                             const st = expStats[exp];
+                             const wr = st.trades > 0 ? Math.round((st.wins/st.trades)*100) : 0;
+                             return (
+                                 <div key={exp} className="flex flex-col bg-white/80 rounded-lg border border-slate-200 p-1.5 shadow-sm">
+                                     <span className="text-[9px] font-bold text-slate-500 oswald-font">{exp}M</span>
+                                     <span className={`text-[10px] font-black ${wr >= 60 ? 'text-emerald-600' : (wr >= 50 ? 'text-slate-700' : 'text-rose-500')}`}>{wr}%</span>
+                                     <span className={`text-[9px] font-bold ${st.pnl > 0 ? 'text-emerald-600' : (st.pnl < 0 ? 'text-rose-600' : 'text-slate-500')} mt-0.5`}>
+                                       {st.pnl > 0 ? `+${st.pnl}` : st.pnl}
+                                     </span>
+                                 </div>
+                             );
+                         })}
+                      </div>
+                      <div className="text-[9px] font-bold text-slate-600 bg-slate-100/50 p-2 mt-1 rounded-lg border border-slate-200/50 leading-tight text-center">
+                          {bestExpMsg}
+                      </div>
                   </div>
 
                   <div className="flex-1 min-h-[100px] glass-panel-heavy rounded-3xl p-3 overflow-hidden flex flex-col justify-start gap-1.5 border border-white shadow-inner bg-white/70">
