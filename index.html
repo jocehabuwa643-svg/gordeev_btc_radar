@@ -635,6 +635,14 @@
                         let xExit = xExitRaw;
                         
                         if (trade.isLive && xExit === null) {
+                            // Perfect 5-candle interpolation on a 5M chart
+                            const logicalEntry = timeScale.coordinateToLogical(xEntry);
+                            if (logicalEntry !== null) {
+                                xExit = timeScale.logicalToCoordinate(logicalEntry + 5);
+                            }
+                        }
+                        
+                        if (trade.isLive && xExit === null) {
                             xExit = overlayRef.current.clientWidth;
                         }
 
@@ -650,8 +658,8 @@
                             const maxPriceY = Math.min(yEntry, yExit); 
                             const minPriceY = Math.max(yEntry, yExit);
                             
-                            const top = maxPriceY - 25; 
-                            const height = Math.max(50, (minPriceY - maxPriceY) + 50);
+                            const top = maxPriceY - 40; 
+                            const height = Math.max(80, (minPriceY - maxPriceY) + 80);
                             
                             box.style.left = `${left}px`;
                             box.style.width = `${width}px`;
@@ -714,6 +722,10 @@
                                     {trade.isLive ? 'ACTIVE' : 'EXIT'}
                                 </span>
                             </div>
+
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[9px] font-bold tracking-widest uppercase oswald-font bg-white/90 px-2 py-0.5 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-slate-800 border border-slate-200 pointer-events-none">
+                                {trade.isLive ? 'ACTIVE TRADE' : `25 MIN • ${trade.isWin ? 'WIN' : 'LOSS'}`}
+                            </div>
                         </div>
                     ))}
 
@@ -763,7 +775,7 @@
                                 </span>
                             </div>
                             <div className="mt-3 pt-2 border-t border-slate-200/60 text-center text-[9px] text-slate-400 font-bold uppercase tracking-widest">
-                                {hoveredTrade.trade.reason} • Q-SCORE: {hoveredTrade.trade.quality || 'N/A'}
+                                {hoveredTrade.trade.reason}
                             </div>
                         </div>
                     )}
@@ -948,6 +960,17 @@
           }, [isStarted]);
 
           useEffect(() => {
+              const loadSparklines = async () => {
+                  const data = await ScannerAPI.getCandles('BTCUSDT', 50, '5m'); 
+                  if (data && data.length > 0) {
+                      setSparklines({'BTCUSDT': data});
+                      currentPrice.current = data[data.length - 1].close;
+                  }
+              };
+              loadSparklines();
+          }, []);
+
+          useEffect(() => {
             fetchCryptoQuotes();
             const quotesInterval = setInterval(fetchCryptoQuotes, 60 * 1000); 
             return () => clearInterval(quotesInterval);
@@ -1056,6 +1079,16 @@
               } catch(e) {}
           };
 
+          const drawEntryLine = (price) => {
+            if (!candleSeries.current) return;
+            try {
+                const line = candleSeries.current.createPriceLine({
+                    price: price, color: '#1d4ed8', lineWidth: 2, lineStyle: 3, axisLabelVisible: true, title: `ВХОД`
+                });
+                priceLinesRef.current.push(line);
+            } catch(e) {}
+          };
+
           const updateStatus = (phase, colorClass) => {
               setAppPhase(phase);
               setStatusColorClass(colorClass);
@@ -1155,127 +1188,76 @@
                         const returnedInsideBot = currCandle.close > cLower;
                         const structureBreakBot = currCandle.close > prevCandle.high && isGreenCandle;
 
-                        const isNearTop = (cUpper - currCandle.high) < cAtr * 0.5;
-                        const isNearBot = (currCandle.low - cLower) < cAtr * 0.5;
-
-                        let isCall = false, isPut = false, signalType = '', baseScore = 0;
+                        const strongWickTop = currCandle.high >= cUpper && upperWick > body * 2.0 && returnedInsideTop && isRedCandle;
+                        const strongWickBot = currCandle.low <= cLower && lowerWick > body * 2.0 && returnedInsideBot && isGreenCandle;
 
                         if (isRangeValid) {
+                            let isCall = false, isPut = false, signalType = '', baseScore = 0;
+
                             if (sweptTop && returnedInsideTop && structureBreakTop) {
-                                isPut = true; signalType = 'Primary Sweep'; baseScore = 85;
-                            } else if (isNearTop && upperWick > body * 1.5 && isRedCandle) {
-                                isPut = true; signalType = 'Wick Rejection'; baseScore = 75;
-                            } else if (currCandle.high >= cUpper && currCandle.close < cUpper && upperWick > cAtr * 0.3) {
-                                isPut = true; signalType = 'Edge Reaction'; baseScore = 75;
-                            } else if (isNearTop && prevCandle.high > cUpper && isRedCandle && currCandle.close < prevCandle.close) {
-                                isPut = true; signalType = 'Liquidity Return'; baseScore = 72;
+                                isPut = true; signalType = 'Primary Sweep';
+                            } else if (sweptBot && returnedInsideBot && structureBreakBot) {
+                                isCall = true; signalType = 'Primary Sweep';
+                            } else if (strongWickTop) {
+                                isPut = true; signalType = 'Strong Rejection';
+                            } else if (strongWickBot) {
+                                isCall = true; signalType = 'Strong Rejection';
                             }
 
-                            if (sweptBot && returnedInsideBot && structureBreakBot) {
-                                isCall = true; signalType = 'Primary Sweep'; baseScore = 85;
-                            } else if (isNearBot && lowerWick > body * 1.5 && isGreenCandle) {
-                                isCall = true; signalType = 'Wick Rejection'; baseScore = 75;
-                            } else if (currCandle.low <= cLower && currCandle.close > cLower && lowerWick > cAtr * 0.3) {
-                                isCall = true; signalType = 'Edge Reaction'; baseScore = 75;
-                            } else if (isNearBot && prevCandle.low < cLower && isGreenCandle && currCandle.close > prevCandle.close) {
-                                isCall = true; signalType = 'Liquidity Return'; baseScore = 72;
-                            }
-                        }
+                            if (isCall || isPut) {
+                                const entryIdx = idx + 1; 
+                                const exitIdx = entryIdx + 5; 
+                                if(exitIdx >= initialData.length) break;
 
-                        if (isCall || isPut) {
-                            let qScore = baseScore;
-                            let rejectReason = '';
+                                const entryPrice = initialData[entryIdx].open;
+                                const exitPrice = initialData[exitIdx].close;
+                                let isWin = false;
 
-                            let threshold = 70;
-                            if (signalType === 'Primary Sweep') threshold = 65;
-                            if (signalType === 'Edge Reaction' || signalType === 'Wick Rejection') threshold = 72;
-
-                            if (histConsecutiveLosses >= 2) threshold += 8;
-
-                            const midPoint = cLower + rangeWidth / 2;
-                            const distToMid = Math.abs(currCandle.close - midPoint);
-                            if (distToMid < rangeWidth * 0.15) { 
-                                qScore -= 30; rejectReason = 'middle range';
-                            }
-
-                            const candlesSinceLast = (currTime - histLastSignalTime) / (5 * 60); 
-                            if (candlesSinceLast < 3) {
-                                qScore -= 50; rejectReason = 'cooldown';
-                            } else if (candlesSinceLast < 6) {
-                                if (Math.abs(currCandle.close - histLastSignalPrice) < cAtr * 0.45) {
-                                    qScore -= 20; rejectReason = 'same zone cooldown';
+                                if ((isCall && exitPrice > entryPrice) || (isPut && exitPrice < entryPrice) || exitPrice === entryPrice) {
+                                    isWin = true;
                                 }
+
+                                markersRef.current.push({
+                                    time: currTime,
+                                    position: isCall ? 'belowBar' : 'aboveBar',
+                                    color: isCall ? '#0ea5e9' : '#f43f5e',
+                                    shape: isCall ? 'arrowUp' : 'arrowDown',
+                                    text: 'SIGNAL',
+                                    size: 1
+                                });
+
+                                let betAmount = getBetAmount(mStep);
+
+                                newTradesHistory.push({
+                                    id: `hist_trade_${currTime}`,
+                                    type: isCall ? 'CALL' : 'PUT',
+                                    signalTime: currTime,
+                                    entryTime: initialData[entryIdx].time,
+                                    exitTime: initialData[exitIdx].time,
+                                    entryPrice: entryPrice,
+                                    exitPrice: exitPrice,
+                                    isWin: isWin,
+                                    betAmount: betAmount,
+                                    reason: signalType
+                                });
+
+                                if (isWin) {
+                                    historicalWins++;
+                                    mPnl += betAmount * 0.7;
+                                    mStepsLocal[mStep].w++;
+                                    mStep = 1;
+                                    histConsecutiveLosses = 0;
+                                } else {
+                                    historicalLosses++;
+                                    mPnl -= betAmount;
+                                    mStepsLocal[mStep].l++;
+                                    mStep = Math.min(5, mStep + 1);
+                                    if (mStep > mMaxStep) mMaxStep = mStep;
+                                    if (mStep > 5) mStep = 1; 
+                                    histConsecutiveLosses++;
+                                }
+                                idx += 5; 
                             }
-
-                            if (isCall && prevCandle.close < prevCandle.open && (prevCandle.open - prevCandle.close) > cAtr * 1.2) {
-                                qScore -= 15; rejectReason = 'impulse risk';
-                            }
-                            if (isPut && prevCandle.close > prevCandle.open && (prevCandle.close - prevCandle.open) > cAtr * 1.2) {
-                                qScore -= 15; rejectReason = 'impulse risk';
-                            }
-
-                            if (qScore < threshold) {
-                                isCall = false; isPut = false;
-                                rejectedCountLocal++;
-                            } else {
-                                histLastSignalTime = currTime;
-                                histLastSignalPrice = currCandle.close;
-                            }
-                        }
-
-                        if (isCall || isPut) {
-                            const entryIdx = idx + 1; 
-                            const exitIdx = entryIdx + 5; 
-                            if(exitIdx >= initialData.length) break;
-
-                            const entryPrice = initialData[entryIdx].open;
-                            const exitPrice = initialData[exitIdx].close;
-                            let isWin = false;
-
-                            if ((isCall && exitPrice > entryPrice) || (isPut && exitPrice < entryPrice) || exitPrice === entryPrice) {
-                                isWin = true;
-                            }
-
-                            markersRef.current.push({
-                                time: currTime,
-                                position: isCall ? 'belowBar' : 'aboveBar',
-                                color: isCall ? '#0ea5e9' : '#f43f5e',
-                                shape: isCall ? 'arrowUp' : 'arrowDown',
-                                text: 'SIGNAL',
-                                size: 1
-                            });
-
-                            let betAmount = getBetAmount(mStep);
-
-                            newTradesHistory.push({
-                                id: `hist_trade_${currTime}`,
-                                type: isCall ? 'CALL' : 'PUT',
-                                signalTime: currTime,
-                                entryTime: initialData[entryIdx].time,
-                                exitTime: initialData[exitIdx].time,
-                                entryPrice: entryPrice,
-                                exitPrice: exitPrice,
-                                isWin: isWin,
-                                betAmount: betAmount,
-                                reason: signalType
-                            });
-
-                            if (isWin) {
-                                historicalWins++;
-                                mPnl += betAmount * 0.7;
-                                mStepsLocal[mStep].w++;
-                                mStep = 1;
-                                histConsecutiveLosses = 0;
-                            } else {
-                                historicalLosses++;
-                                mPnl -= betAmount;
-                                mStepsLocal[mStep].l++;
-                                mStep = Math.min(5, mStep + 1);
-                                if (mStep > mMaxStep) mMaxStep = mStep;
-                                if (mStep > 5) mStep = 1; 
-                                histConsecutiveLosses++;
-                            }
-                            idx += 5; 
                         }
                     }
                 }
@@ -1305,7 +1287,7 @@
                     addLog(`ИСТОРИЯ ЗА 12 ЧАСОВ: НАЙДЕНО СДЕЛОК: ${total}, ВИНРЕЙТ: ${wr}%`, true);
                     const quality = wr >= 60 ? 'отличное' : (wr >= 50 ? 'удовлетворительное' : 'низкое');
                     await speakAsync(`За последние 12 часов найдено ${total} ${plural(total, ['сделка', 'сделки', 'сделок'])}.`, 'startup-2');
-                    await speakAsync(`Из них ${historicalWins} ${plural(historicalWins, ['плюсовая', 'плюсовые', 'плюсовых'])} и ${historicalLosses} ${plural(historicalLosses, ['минусовая', 'минусовые', 'минусовых'])}.`, 'startup-3');
+                    await speakAsync(`Из них ${historicalWins} ${plural(historicalWins, ['плюсовая', 'плюсовые', 'плюх'])} и ${historicalLosses} ${plural(historicalLosses, ['минусовая', 'минусовые', 'минусовых'])}.`, 'startup-3');
                     await speakAsync(`Винрейт ${wr} процентов. Качество результатов ${quality}.`, 'startup-4');
                     
                     const safePnlStr = Math.round(Math.abs(mPnl)).toString();
@@ -1408,8 +1390,6 @@
                       let isCall = false, isPut = false, signalType = '';
                       let triggerCandleIdx = lastIdx;
 
-                      // Evaluate ONLY the most recently closed candle for a new signal
-                      // i.e., lastIdx - 1
                       const evaluateIdx = lastIdx - 1;
                       if (evaluateIdx >= 100) {
                           const currTime = data[evaluateIdx].time;
@@ -1440,73 +1420,46 @@
                               const returnedInsideBot = currCandle.close > cLower;
                               const structureBreakBot = currCandle.close > prevCandle.high && isGreenCandle;
 
-                              const isNearTop = (cUpper - currCandle.high) < cAtr * 0.5;
-                              const isNearBot = (currCandle.low - cLower) < cAtr * 0.5;
-
-                              let rawSignal = false, baseScore = 0;
+                              const strongWickTop = currCandle.high >= cUpper && upperWick > body * 2.0 && returnedInsideTop && isRedCandle;
+                              const strongWickBot = currCandle.low <= cLower && lowerWick > body * 2.0 && returnedInsideBot && isGreenCandle;
 
                               if (isRangeValid) {
                                   if (sweptTop && returnedInsideTop && structureBreakTop) {
-                                      isPut = true; signalType = 'Primary Sweep'; baseScore = 85; rawSignal = true;
-                                  } else if (isNearTop && upperWick > body * 1.5 && isRedCandle) {
-                                      isPut = true; signalType = 'Wick Rejection'; baseScore = 75; rawSignal = true;
-                                  } else if (currCandle.high >= cUpper && currCandle.close < cUpper && upperWick > cAtr * 0.3) {
-                                      isPut = true; signalType = 'Edge Reaction'; baseScore = 75; rawSignal = true;
-                                  } else if (isNearTop && prevCandle.high > cUpper && isRedCandle && currCandle.close < prevCandle.close) {
-                                      isPut = true; signalType = 'Liquidity Return'; baseScore = 72; rawSignal = true;
-                                  }
-
-                                  if (sweptBot && returnedInsideBot && structureBreakBot) {
-                                      isCall = true; signalType = 'Primary Sweep'; baseScore = 85; rawSignal = true;
-                                  } else if (isNearBot && lowerWick > body * 1.5 && isGreenCandle) {
-                                      isCall = true; signalType = 'Wick Rejection'; baseScore = 75; rawSignal = true;
-                                  } else if (currCandle.low <= cLower && currCandle.close > cLower && lowerWick > cAtr * 0.3) {
-                                      isCall = true; signalType = 'Edge Reaction'; baseScore = 75; rawSignal = true;
-                                  } else if (isNearBot && prevCandle.low < cLower && isGreenCandle && currCandle.close > prevCandle.close) {
-                                      isCall = true; signalType = 'Liquidity Return'; baseScore = 72; rawSignal = true;
+                                      isPut = true; signalType = 'Primary Sweep'; 
+                                  } else if (sweptBot && returnedInsideBot && structureBreakBot) {
+                                      isCall = true; signalType = 'Primary Sweep'; 
+                                  } else if (strongWickTop) {
+                                      isPut = true; signalType = 'Strong Rejection'; 
+                                  } else if (strongWickBot) {
+                                      isCall = true; signalType = 'Strong Rejection'; 
                                   }
                               }
 
-                              if (rawSignal) {
-                                  let qScore = baseScore;
-                                  let rejectReason = '';
-
-                                  let threshold = 70;
-                                  if (signalType === 'Primary Sweep') threshold = 65;
-                                  if (signalType === 'Edge Reaction' || signalType === 'Wick Rejection') threshold = 72;
-
-                                  if (consecutiveLossesRef.current >= 2) threshold += 8;
-
+                              if (isCall || isPut) {
+                                  let isRejected = false;
+                                  
+                                  const candlesSinceLast = (currTime - lastSignalTimeRef.current) / (5 * 60); 
+                                  if (candlesSinceLast < 7) { 
+                                      isRejected = true;
+                                  }
+                                  
                                   const midPoint = cLower + rangeWidth / 2;
                                   const distToMid = Math.abs(currCandle.close - midPoint);
                                   if (distToMid < rangeWidth * 0.15) { 
-                                      qScore -= 30; rejectReason = 'middle range';
-                                  }
-
-                                  const candlesSinceLast = (currTime - lastSignalTimeRef.current) / (5 * 60); 
-                                  if (candlesSinceLast < 3) {
-                                      qScore -= 50; rejectReason = 'cooldown (too fast)';
-                                  } else if (candlesSinceLast < 6) {
-                                      if (Math.abs(currCandle.close - lastSignalPriceRef.current) < cAtr * 0.45) {
-                                          qScore -= 20; rejectReason = 'same zone cooldown';
-                                      }
+                                      isRejected = true;
                                   }
 
                                   if (isCall && prevCandle.close < prevCandle.open && (prevCandle.open - prevCandle.close) > cAtr * 1.2) {
-                                      qScore -= 15; rejectReason = 'impulse risk';
+                                      isRejected = true;
                                   }
                                   if (isPut && prevCandle.close > prevCandle.open && (prevCandle.close - prevCandle.open) > cAtr * 1.2) {
-                                      qScore -= 15; rejectReason = 'impulse risk';
+                                      isRejected = true;
                                   }
 
-                                  if (qScore < threshold) {
-                                      if (!rejectReason) rejectReason = 'low quality score';
-                                      addLog(`Rejected: ${rejectReason} (${qScore})`, true);
+                                  if (isRejected) {
                                       isCall = false; isPut = false;
-                                      setMartingale(prev => ({...prev, rejected: prev.rejected + 1}));
                                   } else {
                                       lastSignalTimeRef.current = currTime;
-                                      lastSignalPriceRef.current = currCandle.close;
                                       triggerCandleIdx = evaluateIdx;
                                   }
                               }
@@ -1544,7 +1497,7 @@
                           currentPrice.current = data[lastIdx].close;
                           
                           updateStatus(`ОБЪЯСНЕНИЕ СИГНАЛА...`, 'text-cyan-600 font-bold animate-pulse');
-                          addLog(`Accepted: ${signalType}`, true);
+                          addLog(`ЗАФИКСИРОВАНО: ${signalType}`, true);
 
                           const directionText = isCall ? "повышение" : "понижение";
                           
@@ -1553,10 +1506,12 @@
                           signalPhaseRef.current = 'COUNTDOWN';
                           setSignalPhase('COUNTDOWN');
                           for(let w=5; w>0; w--) {
+                              setCountdown(w);
                               updateStatus(`ПОДГОТОВКА: ${w}С`, 'text-cyan-600 font-bold');
                               playSound('scan');
                               await new Promise(r => setTimeout(r, 1000));
                           }
+                          setCountdown(null);
 
                           let tradeCancelled = false;
                           updateStatus('СНАЙПЕР: ФИНАЛЬНЫЙ ЧЕК СТРУКТУРЫ', 'text-slate-800 font-bold');
@@ -1600,7 +1555,6 @@
                           const actualEntryTime = liveChartData && liveChartData.length > 0 ? liveChartData[liveChartData.length - 1].time : data[data.length-1].time; 
                           
                           setSignal({ type: isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice });
-                          drawEntryLine(entryPrice);
 
                           addLog(`ВХОД ${isCall ? 'ВВЕРХ' : 'ВНИЗ'} НА 25 МИНУТ.`, true);
                           enqueueSpeech(`Вход на ${directionText}! Время 25 минут. Жмите кнопку!`, `trade-entry-${triggerCandleIdx}`);
@@ -1660,9 +1614,9 @@
                             if (expirySeconds === 750) { 
                                 const isWinningNow = (isCall && currentPrice.current > entryPrice) || (!isCall && currentPrice.current < entryPrice);
                                 if (isWinningNow) {
-                                    enqueueSpeech('Сделка уверенно идет в плюс. Все в порядке.', 'trade-mid-status-win');
+                                    enqueueSpeech('Середина сделки. Сейчас позиция идёт в плюс. Продолжаем сопровождение.', 'trade-mid-status-win');
                                 } else {
-                                    enqueueSpeech('Сделка временно идет в минус. Ничего страшного, при необходимости следующая сделка увеличивается в два с половиной раза.', 'trade-mid-status-loss');
+                                    enqueueSpeech('Середина сделки. Сейчас позиция временно идёт в минус. Ничего страшного, ждём закрытия по экспирации.', 'trade-mid-status-loss');
                                 }
                             }
 
@@ -1910,7 +1864,7 @@
                               </div>
                               <div className="flex flex-col items-end">
                                   <div className="flex items-center gap-2 text-slate-900 bg-white/80 px-4 py-2 rounded-xl shadow-[0_10px_20px_rgba(15,23,42,0.05)] border border-slate-200">
-                                      <span className="text-xs md:text-sm font-bold tracking-widest uppercase">Balanced 5M+ Mode</span>
+                                      <span className="text-xs md:text-sm font-bold tracking-widest uppercase">Safe Strict Mode</span>
                                       <Radar size={18} className="animate-spin text-cyan-500" />
                                   </div>
                               </div>
@@ -1996,10 +1950,10 @@
                               {signalPhase === 'COUNTDOWN' ? (
                                   <div className="text-4xl font-black text-cyan-600 drop-shadow-sm mb-1">{countdown}</div>
                               ) : (
-                                  <Radar size={28} className={`text-slate-600 mb-2 ${signalPhase !== 'NONE' ? 'animate-spin text-cyan-500' : ''}`} />
+                                  <Radar size={28} className={`text-slate-600 mb-2 ${(signalPhase === 'EXPLAINING' || signalPhase === 'COUNTDOWN') ? 'animate-spin text-cyan-500' : ''}`} />
                               )}
                               <span className="text-[9px] md:text-[10px] tracking-widest font-bold text-slate-700 oswald-font leading-tight">
-                                  {signalPhase === 'EXPLAINING' ? 'ОБЪЯСНЕНИЕ' : signalPhase === 'COUNTDOWN' ? 'ПОДГОТОВКА' : 'ОЖИДАНИЕ'}
+                                  {signalPhase === 'EXPLAINING' ? 'ОБЪЯСНЕНИЕ СИГНАЛА' : signalPhase === 'COUNTDOWN' ? 'ПОДГОТОВКА К ВХОДУ' : 'ОЖИДАНИЕ СИГНАЛА'}
                               </span>
                           </div>
                         )}
@@ -2057,7 +2011,9 @@
                             <Clock size={12} className="text-cyan-600"/> ЭКСПИРАЦИЯ
                           </span>
                           <span className="text-3xl md:text-4xl text-cyan-700 mt-1 font-black mono-font tracking-wider leading-none drop-shadow-sm">
-                            {signalPhase === 'ACTIVE' && countdown !== null ? `${Math.floor(countdown/60)}:${(countdown%60).toString().padStart(2,'0')}` : (signalPhase === 'ACTIVE' && signal && signal.exp ? `0${signal.exp}:00` : '--:--')}
+                            {signalPhase === 'ACTIVE' && countdown !== null 
+                                ? `${Math.floor(countdown/60).toString().padStart(2,'0')}:${(countdown%60).toString().padStart(2,'0')}` 
+                                : (signalPhase === 'ACTIVE' && signal && signal.exp ? `${signal.exp}:00` : '--:--')}
                           </span>
                        </div>
                     </div>
