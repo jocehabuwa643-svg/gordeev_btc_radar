@@ -161,7 +161,6 @@
 
         /* ================= PREMIUM UI ADDITIONS ================= */
         
-        /* Silver Author Badge */
         .silver-badge {
             background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
             border: 1px solid rgba(255, 255, 255, 0.9);
@@ -192,7 +191,6 @@
             text-shadow: 0px 1px 1px rgba(255,255,255,0.6);
         }
 
-        /* Broker Button */
         .broker-btn {
             background: linear-gradient(135deg, #0ea5e9 0%, #1d4ed8 100%);
             box-shadow: 
@@ -212,7 +210,6 @@
             box-shadow: 0 4px 10px -5px rgba(14, 165, 233, 0.5);
         }
 
-        /* Animated Cursor Pointer */
         .animated-cursor {
             animation: cursor-click 4s infinite;
         }
@@ -257,8 +254,8 @@
         const TrendingUp = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>;
         const Radar = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 5.49A10 10 0 0 0 5.3 19.38"/><path d="M20 8.74A10 10 0 0 1 17.38 20"/><path d="M16 8a6 6 0 0 0-8.5-1.5"/><path d="M7.5 16.5a6 6 0 0 0 9.2-.5"/><path d="M12 12v.01"/></svg>;
         const Zap = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
+        const Activity = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>;
         
-        // Mouse Pointer Icon for the broker button
         const MousePointer = ({ size = 24, className = "" }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="rgba(255,255,255,0.9)" stroke="#0f172a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
                 <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
@@ -270,12 +267,30 @@
           { pair: 'BTC/USDT', symbol: 'BTCUSDT', name: 'Bitcoin' }
         ];
 
-        const FALLBACK_BTC_NEWS = [
-          "Крупный капитал формирует пулы ликвидности за локальными экстремумами.",
-          "Паттерн снятия ликвидности (SMC) подтверждает смену структуры рынка.",
-          "Зафиксирован ложный пробой диапазона с последующим CHoCH.",
-          "Маркетмейкер собирает стопы розничных трейдеров перед разворотом."
-        ];
+        // TOP 20 Crypto map for API validation and naming
+        const TOP_CRYPTO_MAP = {
+            'BTCUSDT': 'Bitcoin',
+            'ETHUSDT': 'Ethereum',
+            'DOGEUSDT': 'Dogecoin',
+            'SOLUSDT': 'Solana',
+            'BNBUSDT': 'BNB',
+            'XRPUSDT': 'XRP',
+            'ADAUSDT': 'Cardano',
+            'TONUSDT': 'Toncoin',
+            'SHIBUSDT': 'Shiba Inu',
+            'AVAXUSDT': 'Avalanche',
+            'DOTUSDT': 'Polkadot',
+            'TRXUSDT': 'TRON',
+            'LINKUSDT': 'Chainlink',
+            'MATICUSDT': 'Polygon',
+            'POLUSDT': 'Polygon',
+            'LTCUSDT': 'Litecoin',
+            'BCHUSDT': 'Bitcoin Cash',
+            'UNIUSDT': 'Uniswap',
+            'APTUSDT': 'Aptos',
+            'ARBUSDT': 'Arbitrum',
+            'OPUSDT': 'Optimism'
+        };
 
         const plural = (number, titles) => {
             const cases = [2, 0, 1, 1, 1, 2];
@@ -307,7 +322,6 @@
                     }
                 } catch(e) { continue; }
             }
-            console.error("Нет связи с Binance API");
             return [];
           }
         };
@@ -369,7 +383,6 @@
           return <span className="text-slate-800 text-sm md:text-base mono-font font-bold">{t.toLocaleTimeString('ru-RU')}</span>;
         };
 
-        /* Premium Scanner MiniChart */
         const MiniChart = ({ data }) => {
           const [scanIndex, setScanIndex] = useState(0);
           const [isDeepScan, setIsDeepScan] = useState(false);
@@ -601,7 +614,6 @@
           )
         };
 
-        /* Handles Glass Box rendering for both historical and live active trades */
         const ChartOverlays = ({ chart, series, trades }) => {
             const overlayRef = useRef(null);
             const [hoveredTrade, setHoveredTrade] = useState(null);
@@ -620,11 +632,9 @@
                         if (!trade) return;
 
                         const xEntry = timeScale.timeToCoordinate(trade.entryTime);
-                        
                         let xExitRaw = timeScale.timeToCoordinate(trade.exitTime);
                         let xExit = xExitRaw;
                         
-                        // If live trade is actively extending into the future, map to rightmost edge
                         if (trade.isLive && xExit === null) {
                             xExit = overlayRef.current.clientWidth;
                         }
@@ -772,8 +782,7 @@
           const [asset, setAsset] = useState(ASSETS[0]);
           const [sparklines, setSparklines] = useState({});
           
-          // Strict Lifecycle States
-          const [signalPhase, setSignalPhase] = useState('NONE'); // 'NONE' | 'EXPLAINING' | 'COUNTDOWN' | 'ACTIVE'
+          const [signalPhase, setSignalPhase] = useState('NONE'); 
           const [signal, setSignal] = useState(null);
           
           const [countdown, setCountdown] = useState(null);
@@ -782,13 +791,16 @@
           const [zoneState, setZoneState] = useState('OUT');
           
           const [metrics, setMetrics] = useState({ structure: 50, liquidity: 50, filterLevel: 1.0, smartMoney: 0, buyPressure: 50 });
-          const [newsHeadlines, setNewsHeadlines] = useState(["ОБНОВЛЕНИЕ ДАННЫХ BTC..."]);
+          const [cryptoQuotes, setCryptoQuotes] = useState([]);
           
           const [tradeStats, setTradeStats] = useState({ count: 0, wins: 0, losses: 0, winRate: 0, pnl: 0 });
           const [tradesHistory, setTradesHistory] = useState([]);
           const [activeLiveTrade, setActiveLiveTrade] = useState(null);
           
           const [statusColorClass, setStatusColorClass] = useState('text-slate-800');
+          
+          const [dataHealth, setDataHealth] = useState({ age: 0, status: 'LIVE' });
+          const lastDataTimeRef = useRef(Date.now());
           
           const chartContainerRef = useRef(null);
           const chartInstance = useRef(null);
@@ -803,10 +815,11 @@
           const markersRef = useRef([]); 
           
           const zoneStateRef = useRef('OUT'); 
+          const signalPhaseRef = useRef('NONE');
           const logsContainerRef = useRef(null); 
-          const fullNewsPool = useRef([...FALLBACK_BTC_NEWS]);
+          const cryptoQuotesRef = useRef([]);
 
-          // Promise-based Voice Queue
+          // Strict Sequential Speech Queue
           const speechQueueRef = useRef([]);
           const isSpeakingRef = useRef(false);
 
@@ -821,7 +834,6 @@
               });
           };
 
-          // Non-blocking for background items like news
           const enqueueSpeech = (text, key = null) => {
               if (key && speechQueueRef.current.some(item => item.key === key)) return;
               speechQueueRef.current.push({ text, key, onDone: null });
@@ -863,57 +875,65 @@
               }
           };
 
-          const fetchNews = async () => {
+          const awaitSpeechCompletion = () => new Promise(resolve => {
+              const check = setInterval(() => {
+                  if (!isSpeakingRef.current && speechQueueRef.current.length === 0) {
+                      clearInterval(check);
+                      resolve();
+                  }
+              }, 400);
+          });
+
+          // Fetch Crypto Ticker Top 20 API
+          const fetchCryptoQuotes = async () => {
               try {
-                  const urls = [
-                      'https://api.rss2json.com/v1/api.json?rss_url=https://forklog.com/feed/',
-                      'https://api.rss2json.com/v1/api.json?rss_url=https://bits.media/rss2/'
-                  ];
-                  
-                  let btcItems = [];
-                  for(let u of urls) {
-                      let res = await fetch(u).catch(()=>null);
-                      if(res && res.ok) {
-                          let data = await res.json();
-                          if (data && data.items) {
-                              let filtered = data.items
-                                  .filter(item => /биткоин|btc|bitcoin/i.test(item.title))
-                                  .map(item => item.title.replace(/<\/?[^>]+(>|$)/g, "").trim());
-                              btcItems = [...btcItems, ...filtered];
-                          }
+                  const res = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+                  if (res.ok) {
+                      const data = await res.json();
+                      const filtered = data.filter(item => TOP_CRYPTO_MAP[item.symbol]);
+                      const formatted = filtered.map(item => ({
+                          symbol: item.symbol.replace('USDT', ''),
+                          name: TOP_CRYPTO_MAP[item.symbol],
+                          price: parseFloat(item.lastPrice),
+                          change: parseFloat(item.priceChangePercent)
+                      })).sort((a, b) => b.price - a.price);
+                      
+                      if (formatted.length > 0) {
+                          cryptoQuotesRef.current = formatted;
+                          setCryptoQuotes(formatted);
                       }
                   }
-                  
-                  if (btcItems.length > 0) {
-                      btcItems = [...new Set(btcItems)];
-                      fullNewsPool.current = btcItems;
-                      setNewsHeadlines(btcItems);
-                  } else {
-                      fullNewsPool.current = [...FALLBACK_BTC_NEWS];
-                      setNewsHeadlines(FALLBACK_BTC_NEWS);
-                  }
-              } catch (error) { 
-                  fullNewsPool.current = [...FALLBACK_BTC_NEWS];
-                  setNewsHeadlines(FALLBACK_BTC_NEWS); 
+              } catch (e) {
+                  console.error("Failed to fetch crypto quotes");
               }
           };
 
+          // Periodic Crypto Reading (Every 10 mins)
           useEffect(() => {
               if (!isStarted) return;
-              const newsTimer = setInterval(() => {
-                  if (fullNewsPool.current && fullNewsPool.current.length > 0) {
-                      const idx = Math.floor(Math.random() * fullNewsPool.current.length);
-                      const newsItem = fullNewsPool.current[idx];
-                      const prefix = ["Обновление рынка. Биткоин.", "Информационная сводка. Биткоин."][Math.floor(Math.random() * 2)];
-                      enqueueSpeech(`${prefix} ${newsItem}`, 'news_update');
-                      addLog(`СВОДКА: ${newsItem.substring(0, 40)}...`, true);
+              const voiceTimer = setInterval(() => {
+                  if (cryptoQuotesRef.current && cryptoQuotesRef.current.length > 0) {
+                      const idx = Math.floor(Math.random() * cryptoQuotesRef.current.length);
+                      const q = cryptoQuotesRef.current[idx];
+                      const changeWord = q.change >= 0 ? 'выросла на' : 'снизилась на';
+                      const changeVal = Math.abs(q.change).toFixed(1);
+                      const intPrice = Math.floor(q.price);
+                      const pStr = plural(Math.round(Math.abs(q.change)), ['процент', 'процента', 'процентов']);
+                      
+                      const text = `${q.name} сейчас торгуется около ${intPrice} долларов. За последние 24 часа цена ${changeWord} ${changeVal} ${pStr}.`;
+                      enqueueSpeech(text, `quote-update-${Date.now()}`);
                   }
               }, 10 * 60 * 1000); 
-              return () => clearInterval(newsTimer);
+              return () => clearInterval(voiceTimer);
           }, [isStarted]);
 
           useEffect(() => {
             if(!isStarted) return;
+            const healthTimer = setInterval(() => {
+                const age = Math.floor((Date.now() - lastDataTimeRef.current) / 1000);
+                setDataHealth({ age, status: age > 90 ? 'STALE' : 'LIVE' });
+            }, 1000);
+
             const interval = setInterval(() => {
                 setMetrics(prev => ({
                     ...prev,
@@ -922,7 +942,7 @@
                     buyPressure: Math.max(20, Math.min(80, prev.buyPressure + (Math.random() - 0.5) * 6))
                 }));
             }, 1000);
-            return () => clearInterval(interval);
+            return () => { clearInterval(interval); clearInterval(healthTimer); };
           }, [isStarted]);
 
           useEffect(() => {
@@ -937,9 +957,9 @@
           }, []);
 
           useEffect(() => {
-            fetchNews();
-            const newsInterval = setInterval(fetchNews, 20 * 60 * 1000); 
-            return () => clearInterval(newsInterval);
+            fetchCryptoQuotes();
+            const quotesInterval = setInterval(fetchCryptoQuotes, 60 * 1000); 
+            return () => clearInterval(quotesInterval);
           }, []);
 
           const addLog = (msg, isAi = false) => {
@@ -1045,9 +1065,27 @@
               } catch(e) {}
           };
 
+          const drawEntryLine = (price) => {
+            if (!candleSeries.current) return;
+            try {
+                const line = candleSeries.current.createPriceLine({
+                    price: price, color: '#1d4ed8', lineWidth: 2, lineStyle: 3, axisLabelVisible: true, title: `ВХОД`
+                });
+                priceLinesRef.current.push(line);
+            } catch(e) {}
+          };
+
           const updateStatus = (phase, colorClass) => {
               setAppPhase(phase);
               setStatusColorClass(colorClass);
+          };
+
+          const syncModeView = () => {
+              if (zoneStateRef.current === 'OUT' && signalPhaseRef.current === 'NONE') {
+                  setViewMode('SCREENER');
+              } else {
+                  setViewMode('DETAIL');
+              }
           };
 
           const runTerminalEngine = async () => {
@@ -1058,9 +1096,10 @@
 
             let lastCancelledTime = 0;
 
-            await speakAsync("Терминал Pro Max запущен.", 'startup-1');
-
             markersRef.current = [];
+            
+            // Set INITIAL STATE to DETAIL (Historical view) BEFORE speaking
+            setViewMode('DETAIL');
             updateStatus('БЭКТЕСТ: АНАЛИЗ СТРУКТУРЫ (12H)...', 'text-cyan-600');
             addLog(`ЗАПУСК ПОИСКА ЛИКВИДНОСТИ 12 ЧАСОВ...`, true);
 
@@ -1068,6 +1107,7 @@
             const initialData = await ScannerAPI.getCandles(curAsset.symbol, 800, '1m');
             
             if (initialData && initialData.length > 200) {
+                lastDataTimeRef.current = Date.now();
                 setSparklines(prev => ({...prev, [curAsset.symbol]: initialData}));
                 currentPrice.current = initialData[initialData.length - 1].close;
 
@@ -1173,6 +1213,17 @@
                 setTradeStats({ count: total, wins: historicalWins, losses: historicalLosses, winRate: wr, pnl: histPnl });
                 setTradesHistory(newTradesHistory);
 
+                setAsset(curAsset);
+                await initChart();
+                if (candleSeries.current) {
+                    candleSeries.current.setData(initialData);
+                    candleSeries.current.setMarkers(markersRef.current);
+                    drawIndicators(upperData, lowerData);
+                    try { chartInstance.current.timeScale().fitContent(); } catch(e) {}
+                }
+
+                // NOW speak the history while chart is showing history
+                await speakAsync("Терминал Pro Max запущен.", 'startup-1');
                 if (total > 0) {
                     addLog(`ИСТОРИЯ ЗА 12 ЧАСОВ: НАЙДЕНО СДЕЛОК: ${total}, ВИНРЕЙТ: ${wr}%`, true);
                     filterStrictness.current = wr >= 60 ? 1.0 : 1.5;
@@ -1185,27 +1236,19 @@
                     const safePnlStr = Math.round(Math.abs(histPnl)).toString();
                     const profitLossStr = histPnl >= 0 ? "ваша прибыль составила бы" : "ваш убыток составил бы";
                     await speakAsync(`При стартовой ставке пятьсот рублей, с учётом мартингейла, за последние 12 часов ${profitLossStr} ${safePnlStr} ${plural(Math.round(Math.abs(histPnl)), ['рубль', 'рубля', 'рублей'])}.`, 'startup-5');
+                    playSound('win');
                 } else {
                     addLog(`ЗА 12 ЧАСОВ СИГНАЛОВ ПО СТРАТЕГИИ НЕ НАЙДЕНО.`, true);
                     await speakAsync("За последние 12 часов по текущей стратегии сигналов не найдено.", 'startup-no-signals');
                 }
 
-                setAsset(curAsset);
-                setViewMode('DETAIL');
-                await initChart();
-                if (candleSeries.current) {
-                    candleSeries.current.setData(initialData);
-                    candleSeries.current.setMarkers(markersRef.current);
-                    drawIndicators(upperData, lowerData);
-                    try { chartInstance.current.timeScale().fitContent(); } catch(e) {}
-                }
+                // Wait for all startup speech to finish completely BEFORE going to scanner mode
+                await awaitSpeechCompletion();
 
-                if (total > 0) playSound('win');
-                
                 updateStatus('АКТИВАЦИЯ ПРЕМИУМ СКАНЕРА...', 'text-cyan-600');
                 await new Promise(r => setTimeout(r, 1000));
                 
-                setViewMode('SCREENER');
+                syncModeView(); // Transition to scanner if no zones active
             } else {
                 addLog("ОШИБКА: НЕТ СВЯЗИ С БИРЖЕЙ BINANCE", true);
                 updateStatus('ОШИБКА API BINANCE', 'text-rose-600');
@@ -1214,12 +1257,21 @@
             
             while (engineActive.current) {
               try {
-                  if (zoneStateRef.current === 'OUT' && signalPhase === 'NONE') {
-                      setViewMode('SCREENER');
+                  const currentAge = Math.floor((Date.now() - lastDataTimeRef.current) / 1000);
+                  
+                  if (currentAge > 90) {
+                      updateStatus('ДАННЫЕ ОБНОВЛЯЮТСЯ. СИГНАЛЫ ПРИОСТАНОВЛЕНЫ.', 'text-rose-600 font-bold animate-pulse');
+                      await new Promise(r => setTimeout(r, 2000));
+                      const data = await ScannerAPI.getCandles(curAsset.symbol, 400, '1m'); 
+                      if (data && data.length > 200) lastDataTimeRef.current = Date.now();
+                      continue;
+                  }
+
+                  syncModeView();
+                  if (zoneStateRef.current === 'OUT' && signalPhaseRef.current === 'NONE') {
                       updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-700');
-                  } else if (zoneStateRef.current === 'IN' && signalPhase === 'NONE') {
-                      setViewMode('DETAIL');
-                      updateStatus('ЗОНА ИНТЕРЕСА: АНАЛИЗ...', 'text-amber-600 font-bold animate-pulse');
+                  } else if (zoneStateRef.current === 'IN' && signalPhaseRef.current === 'NONE') {
+                      updateStatus('ЗОНА ИНТЕРЕСА: ВОЗМОЖЕН СИГНАЛ', 'text-amber-600 font-bold animate-pulse');
                   }
                   
                   setCurrentTF('1M');
@@ -1233,10 +1285,15 @@
                     const data = await ScannerAPI.getCandles(cur.symbol, 400, '1m'); 
                     
                     if (data && data.length > 200) {
+                      lastDataTimeRef.current = Date.now();
                       setSparklines(prev => ({...prev, [cur.symbol]: data}));
 
                       const lastIdx = data.length - 1;
                       currentPrice.current = data[lastIdx].close; 
+                      
+                      if (candleSeries.current && (zoneStateRef.current === 'IN' || signalPhaseRef.current !== 'NONE')) {
+                          data.slice(-10).forEach(d => { try { candleSeries.current.update(d); } catch(e){} });
+                      }
 
                       const liqZones = calcLiquidityZones(data, 30); 
                       const atrSeries = calcATRSeries(data, 14);    
@@ -1249,7 +1306,7 @@
 
                       const latestZone = liqZones[liqZones.length - 1];
                       const latestAtr = atrSeries[atrSeries.length - 1].value;
-                      if (latestZone && latestAtr) {
+                      if (latestZone && latestAtr && signalPhaseRef.current === 'NONE') {
                           const distTop = latestZone.upper - currentPrice.current;
                           const distBot = currentPrice.current - latestZone.lower;
                           
@@ -1258,17 +1315,17 @@
                                   zoneStateRef.current = 'IN';
                                   setZoneState('IN');
                                   addLog('ЦЕНА ВОШЛА В ЗОНУ ИНТЕРЕСА');
-                                  enqueueSpeech('Внимание. Цена подошла к зоне интереса. Возможно появление сигнала.', 'interest-zone-enter');
-                                  setViewMode('DETAIL');
-                                  updateStatus('ВНИМАНИЕ: ЗОНА ИНТЕРЕСА', 'text-amber-600 font-bold animate-pulse');
+                                  enqueueSpeech('Цена подошла к зоне интереса. Возможен сигнал. Будьте готовы.', 'interest-zone-enter');
+                                  syncModeView();
+                                  updateStatus('ЗОНА ИНТЕРЕСА: ВОЗМОЖЕН СИГНАЛ', 'text-amber-600 font-bold animate-pulse');
                               }
                           } else if (distTop > latestAtr * 2.5 && distBot > latestAtr * 2.5) {
                               if (zoneStateRef.current === 'IN') {
                                   zoneStateRef.current = 'OUT';
                                   setZoneState('OUT');
                                   addLog('ЦЕНА ПОКИНУЛА ЗОНУ ИНТЕРЕСА');
-                                  enqueueSpeech('Цена отошла от зоны интереса. Возвращаюсь к штатному сканированию.', 'interest-zone-exit');
-                                  if (signalPhase === 'NONE') setViewMode('SCREENER');
+                                  enqueueSpeech('Цена отошла от зоны интереса. Возвращаюсь к сканированию.', 'interest-zone-exit');
+                                  syncModeView();
                                   updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-700');
                               }
                           }
@@ -1322,19 +1379,17 @@
                           signalFound = true;
                           
                           setAsset(cur);
-                          setViewMode('DETAIL');
+                          signalPhaseRef.current = 'EXPLAINING';
                           setSignalPhase('EXPLAINING');
+                          syncModeView();
                           
                           const structureValue = isCall ? 100 : 0;
                           setMetrics(prev => ({ ...prev, structure: structureValue, liquidity: 90, smartMoney: 85, buyPressure: isCall ? 85 : 15 }));
 
-                          await initChart();
                           playSound('found');
                           
                           if(candleSeries.current) {
                               try { 
-                                  // Clean array set to prevent graph gaps/glitches
-                                  candleSeries.current.setData(data);
                                   markersRef.current.push({
                                       time: data[triggerCandleIdx].time,
                                       position: isCall ? 'belowBar' : 'aboveBar',
@@ -1355,9 +1410,9 @@
 
                           const directionText = isCall ? "повышение" : "понижение";
                           
-                          // Wait completely for explanation to finish before starting countdown
-                          await speakAsync(`Зафиксировано снятие ликвидности. Подготовьте Биткоин. Время 25 минут. Направление на ${directionText}.`, `signal-detect-${triggerCandleIdx}`);
+                          await speakAsync(`Внимание. Появился сигнал на ${directionText}. Причина: снятие ликвидности.`, `signal-detect-${triggerCandleIdx}`);
 
+                          signalPhaseRef.current = 'COUNTDOWN';
                           setSignalPhase('COUNTDOWN');
                           for(let w=5; w>0; w--) {
                               updateStatus(`ПОДГОТОВКА: ${w}С`, 'text-cyan-600 font-bold');
@@ -1370,6 +1425,7 @@
                           
                           try {
                               const liveData = await ScannerAPI.getCandles(cur.symbol, 2, '1m');
+                              if (liveData && liveData.length > 0) lastDataTimeRef.current = Date.now();
                               const liveTick = liveData[liveData.length - 1];
                               if (liveTick && liveTick.time >= data[data.length - 1].time) {
                                   currentPrice.current = liveTick.close;
@@ -1387,23 +1443,24 @@
                               lastCancelledTime = data[triggerCandleIdx].time; 
                               zoneStateRef.current = 'OUT';
                               setZoneState('OUT');
+                              signalPhaseRef.current = 'NONE';
                               setSignalPhase('NONE');
                               playSound('cancel');
                               updateStatus('ОТМЕНА: ИСТИННЫЙ ПРОБОЙ', 'text-rose-600 font-bold');
                               await speakAsync("Внимание. Отмена. Паттерн сломан. Возвращаюсь к радару.", `signal-cancel-${triggerCandleIdx}`);
-                              setViewMode('SCREENER');
+                              syncModeView();
                               break; 
                           }
 
                           playSound('start');
                           updateStatus('СИГНАЛ АКТИВЕН', 'text-blue-700 font-bold');
+                          signalPhaseRef.current = 'ACTIVE';
                           setSignalPhase('ACTIVE');
                           
                           const entryPrice = currentPrice.current;
                           const expMins = 25; 
-                          // strictly pin the live entry timestamp to the latest candle to prevent glass-box coordinate gaps
                           const liveChartData = candleSeries.current.data();
-                          const actualEntryTime = liveChartData ? liveChartData.time : data[data.length-1].time; 
+                          const actualEntryTime = liveChartData && liveChartData.length > 0 ? liveChartData[liveChartData.length - 1].time : data[data.length-1].time; 
                           
                           setSignal({ type: isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice });
 
@@ -1440,6 +1497,7 @@
                               try {
                                 const liveTickArray = await ScannerAPI.getCandles(cur.symbol, 2, '1m');
                                 if (liveTickArray && liveTickArray.length > 0 && candleSeries.current) {
+                                  lastDataTimeRef.current = Date.now();
                                   liveTickArray.forEach(tick => {
                                     if (tick.time >= localLastTime && !isNaN(tick.close)) {
                                       try {
@@ -1477,9 +1535,10 @@
                           setCountdown(null);
                           updateStatus('АНАЛИЗ РЕЗУЛЬТАТА', 'text-slate-500');
 
-                          const resultData = await ScannerAPI.getCandles(cur.symbol, 1, '1m');
+                          const resultData = await ScannerAPI.getCandles(cur.symbol, 2, '1m');
                           let finalPrice = entryPrice;
                           if (resultData && resultData.length > 0) {
+                              lastDataTimeRef.current = Date.now();
                               finalPrice = resultData[resultData.length - 1].close;
                               finalExitTime = resultData[resultData.length - 1].time;
                           }
@@ -1530,11 +1589,13 @@
                           }
 
                           setSignal(null);
+                          signalPhaseRef.current = 'NONE';
                           setSignalPhase('NONE');
                           setMetrics(prev => ({ ...prev, smartMoney: 0 }));
                           zoneStateRef.current = 'OUT';
                           setZoneState('OUT');
                           
+                          syncModeView();
                           await new Promise(r => setTimeout(r, 1000));
                           break; 
                       }
@@ -1605,24 +1666,43 @@
               <div className="bg-orb-2 pointer-events-none opacity-80"></div>
               <div className="absolute inset-0 bg-grid-pattern pointer-events-none z-0 opacity-60"></div>
 
-              <div className="h-7 md:h-9 glass-panel z-50 overflow-hidden flex items-center shrink-0 w-full relative">
-                <div className="absolute left-0 h-full bg-slate-900 text-white px-3 md:px-5 flex items-center gap-2 z-20 text-[10px] md:text-xs tracking-widest shadow-[5px_0_15px_rgba(0,0,0,0.1)] font-bold oswald-font rounded-r-xl border-r border-cyan-500/50">
+              <div className="h-7 md:h-9 glass-panel z-50 overflow-hidden flex items-center justify-between shrink-0 w-full relative pr-3">
+                <div className="h-full bg-slate-900 text-white px-3 md:px-5 flex items-center gap-2 z-20 text-[10px] md:text-xs tracking-widest shadow-[5px_0_15px_rgba(0,0,0,0.1)] font-bold oswald-font rounded-r-xl border-r border-cyan-500/50 shrink-0 relative">
                   <Globe size={14} className="text-cyan-400" /> РАДАР СЕТИ
                 </div>
-                <div className="flex-1 overflow-hidden relative h-full flex items-center ml-[120px] sm:ml-[160px]">
+                
+                <div className="flex-1 overflow-hidden relative h-full flex items-center mx-3">
                   <div className="ticker-wrapper text-[10px] md:text-xs text-slate-700 tracking-widest pt-0.5 font-bold oswald-font">
                     {[...Array(2)].map((_, idx) => (
-                      <div key={idx} className="flex gap-10 md:gap-16 whitespace-nowrap pr-10 md:pr-16">
-                        {newsHeadlines.map((headline, i) => (
-                          <span key={i} className="flex items-center">
-                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 mr-2 shadow-[0_0_8px_rgba(6,182,212,0.8)]"></span>
-                            {headline.toUpperCase()}
+                      <div key={idx} className="flex gap-10 md:gap-16 whitespace-nowrap pr-10 md:pr-16 items-center">
+                        {cryptoQuotes.length > 0 ? cryptoQuotes.map((q, i) => (
+                          <span key={i} className="flex items-center gap-1.5">
+                            <span className="text-slate-400 font-medium">{q.name}</span>
+                            <span className="text-slate-800 font-bold">{q.symbol}</span>
+                            <span className={`flex items-center font-bold ${q.change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                {q.change >= 0 ? '↑' : '↓'} {Math.abs(q.change).toFixed(1)}%
+                            </span>
+                            <span className="text-slate-900 font-mono font-black">${q.price < 1 ? q.price.toFixed(4) : q.price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                            <span className="w-1 h-1 rounded-full bg-cyan-500/30 mx-4"></span>
                           </span>
-                        ))}
+                        )) : (
+                            <span className="text-slate-400 animate-pulse">ОБНОВЛЕНИЕ КОТИРОВОК...</span>
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
+
+                <div className="flex flex-col justify-center items-end bg-slate-100 border border-slate-200/50 px-2 py-0.5 rounded-md shadow-inner shrink-0 relative z-20">
+                    <div className="flex items-center gap-2 text-[8px] md:text-[9px] mono-font tracking-widest font-bold">
+                        <span className="text-slate-500">SOURCE: BINANCE</span>
+                        <div className="w-[1px] h-3 bg-slate-300"></div>
+                        <span className="flex items-center gap-1">
+                            STATUS: <span className={dataHealth.status === 'LIVE' ? 'text-emerald-600' : 'text-rose-600 animate-pulse'}>{dataHealth.status}</span>
+                        </span>
+                    </div>
+                </div>
+
               </div>
 
               <header className="h-auto md:h-16 py-2 md:py-0 flex flex-col md:flex-row items-start md:items-center justify-between px-3 md:px-6 shrink-0 z-40 gap-1 md:gap-0 mt-2">
@@ -1646,8 +1726,8 @@
                   </div>
                   <div className="flex gap-4 items-center tracking-wider w-full md:w-auto justify-between md:justify-end">
                     <span className="text-[9px] md:text-[10px] text-slate-600 flex items-center gap-1.5 font-bold uppercase border border-slate-300 px-2 py-0.5 rounded-full bg-white/50">
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
-                      ПОДКЛЮЧЕНО К БИРЖЕ
+                      <div className={`w-2 h-2 rounded-full ${dataHealth.status === 'LIVE' ? 'bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(225,29,72,0.8)]'}`} />
+                      {dataHealth.status === 'LIVE' ? 'ПОДКЛЮЧЕНО К БИРЖЕ' : 'ОБНОВЛЕНИЕ ДАННЫХ'}
                     </span>
                     <LiveClock />
                   </div>
@@ -1771,7 +1851,11 @@
                           <VolumetricArrow type={signal.type} />
                         ) : (
                           <div className="flex flex-col items-center opacity-70 px-1 text-center">
-                              <Radar size={28} className={`text-slate-600 mb-2 ${signalPhase !== 'NONE' ? 'animate-spin text-cyan-500' : ''}`} />
+                              {signalPhase === 'COUNTDOWN' ? (
+                                  <div className="text-4xl font-black text-cyan-600 drop-shadow-sm mb-1">{countdown}</div>
+                              ) : (
+                                  <Radar size={28} className={`text-slate-600 mb-2 ${signalPhase !== 'NONE' ? 'animate-spin text-cyan-500' : ''}`} />
+                              )}
                               <span className="text-[9px] md:text-[10px] tracking-widest font-bold text-slate-700 oswald-font leading-tight">
                                   {signalPhase === 'EXPLAINING' ? 'ОБЪЯСНЕНИЕ' : signalPhase === 'COUNTDOWN' ? 'ПОДГОТОВКА' : 'ОЖИДАНИЕ'}
                               </span>
@@ -1852,7 +1936,7 @@
                             <Clock size={12} className="text-cyan-600"/> ЭКСПИРАЦИЯ
                           </span>
                           <span className="text-3xl md:text-4xl text-cyan-700 mt-1 font-black mono-font tracking-wider leading-none drop-shadow-sm">
-                            {countdown !== null ? `${Math.floor(countdown/60)}:${(countdown%60).toString().padStart(2,'0')}` : (signalPhase === 'ACTIVE' && signal && signal.exp ? `0${signal.exp}:00` : '--:--')}
+                            {signalPhase === 'ACTIVE' && countdown !== null ? `${Math.floor(countdown/60)}:${(countdown%60).toString().padStart(2,'0')}` : (signalPhase === 'ACTIVE' && signal && signal.exp ? `0${signal.exp}:00` : '--:--')}
                           </span>
                        </div>
                     </div>
