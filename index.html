@@ -662,6 +662,7 @@
           const [countdown, setCountdown] = useState(null);
           const [logs, setLogs] = useState([]);
           const [currentTF, setCurrentTF] = useState('1M');
+          const [zoneState, setZoneState] = useState('OUT');
           
           const [metrics, setMetrics] = useState({ structure: 50, liquidity: 50, filterLevel: 1.0, smartMoney: 0, buyPressure: 50 });
           const [newsHeadlines, setNewsHeadlines] = useState(["ОБНОВЛЕНИЕ ДАННЫХ BTC..."]);
@@ -691,8 +692,12 @@
           const speechQueueRef = useRef([]);
           const isSpeakingRef = useRef(false);
 
-          const enqueueSpeech = (text) => {
-              speechQueueRef.current.push(text);
+          const enqueueSpeech = (text, key = null) => {
+              // Prevent duplicate keys currently in queue to solve spam
+              if (key && speechQueueRef.current.some(item => item.key === key)) {
+                  return;
+              }
+              speechQueueRef.current.push({ text, key });
               processSpeechQueue();
           };
 
@@ -700,8 +705,8 @@
               if (isSpeakingRef.current || speechQueueRef.current.length === 0) return;
               isSpeakingRef.current = true;
               
-              const text = speechQueueRef.current.shift();
-              const utterance = new SpeechSynthesisUtterance(text);
+              const item = speechQueueRef.current.shift();
+              const utterance = new SpeechSynthesisUtterance(item.text);
               utterance.lang = 'ru-RU';
               utterance.rate = 1.05;
               utterance.pitch = 0.95;
@@ -725,14 +730,10 @@
                   fallbackTimeout = setTimeout(() => {
                       window.speechSynthesis.cancel();
                       completeSpeech();
-                  }, Math.max(10000, text.length * 150));
+                  }, Math.max(10000, item.text.length * 150));
               } catch (e) {
                   completeSpeech();
               }
-          };
-
-          const speakLive = (text) => {
-              enqueueSpeech(text);
           };
 
           const awaitSpeechCompletion = () => new Promise(resolve => {
@@ -796,7 +797,7 @@
                       ];
                       const prefix = variations[Math.floor(Math.random() * variations.length)];
                       
-                      enqueueSpeech(`${prefix} ${newsItem}`);
+                      enqueueSpeech(`${prefix} ${newsItem}`, 'news_update');
                       addLog(`СВОДКА: ${newsItem.substring(0, 40)}...`, true);
                   }
               }, 10 * 60 * 1000); 
@@ -967,7 +968,7 @@
 
             let lastCancelledTime = 0;
 
-            enqueueSpeech("Терминал Pro Max запущен.");
+            enqueueSpeech("Терминал Pro Max запущен.", 'startup-1');
 
             markersRef.current = [];
             updateStatus('БЭКТЕСТ: АНАЛИЗ СТРУКТУРЫ (12H)...', 'text-cyan-600');
@@ -1097,17 +1098,17 @@
                     else filterStrictness.current = 1.5;
 
                     const quality = wr >= 60 ? 'отличное' : (wr >= 50 ? 'удовлетворительное' : 'низкое');
-                    enqueueSpeech(`За последние 12 часов найдено ${total} ${plural(total, ['сделка', 'сделки', 'сделок'])}.`);
-                    enqueueSpeech(`Из них ${historicalWins} ${plural(historicalWins, ['плюсовая', 'плюсовые', 'плюсовых'])} и ${historicalLosses} ${plural(historicalLosses, ['минусовая', 'минусовые', 'минусовых'])}.`);
-                    enqueueSpeech(`Винрейт ${wr} процентов. Качество результатов ${quality}.`);
+                    enqueueSpeech(`За последние 12 часов найдено ${total} ${plural(total, ['сделка', 'сделки', 'сделок'])}.`, 'startup-2');
+                    enqueueSpeech(`Из них ${historicalWins} ${plural(historicalWins, ['плюсовая', 'плюсовые', 'плюсовых'])} и ${historicalLosses} ${plural(historicalLosses, ['минусовая', 'минусовые', 'минусовых'])}.`, 'startup-3');
+                    enqueueSpeech(`Винрейт ${wr} процентов. Качество результатов ${quality}.`, 'startup-4');
                     
                     const safePnlStr = Math.round(Math.abs(histPnl)).toString();
                     const profitLossStr = histPnl >= 0 ? "ваша прибыль составила бы" : "ваш убыток составил бы";
-                    enqueueSpeech(`При стартовой ставке пятьсот рублей, с учётом мартингейла, за последние 12 часов ${profitLossStr} ${safePnlStr} ${plural(Math.round(Math.abs(histPnl)), ['рубль', 'рубля', 'рублей'])}.`);
+                    enqueueSpeech(`При стартовой ставке пятьсот рублей, с учётом мартингейла, за последние 12 часов ${profitLossStr} ${safePnlStr} ${plural(Math.round(Math.abs(histPnl)), ['рубль', 'рубля', 'рублей'])}.`, 'startup-5');
 
                 } else {
                     addLog(`ЗА 12 ЧАСОВ СИГНАЛОВ ПО СТРАТЕГИИ НЕ НАЙДЕНО.`, true);
-                    enqueueSpeech("За последние 12 часов по текущей стратегии сигналов не найдено.");
+                    enqueueSpeech("За последние 12 часов по текущей стратегии сигналов не найдено.", 'startup-no-signals');
                 }
 
                 setAsset(curAsset);
@@ -1133,16 +1134,21 @@
             } else {
                 addLog("ОШИБКА: НЕТ СВЯЗИ С БИРЖЕЙ BINANCE", true);
                 updateStatus('ОШИБКА API BINANCE', 'text-rose-600');
-                enqueueSpeech('Ошибка связи с криптобиржей Бинанс. Попробуйте перезапустить утилиту позже.');
+                enqueueSpeech('Ошибка связи с криптобиржей Бинанс. Попробуйте перезапустить утилиту позже.', 'api-error');
             }
             
             while (engineActive.current) {
               try {
-                  updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-700');
-                  setViewMode('SCREENER');
-                  setSignal(null);
-                  setCurrentTF('1M');
+                  // Set mode conditionally based on zone and signal state to avoid flickering
+                  if (zoneStateRef.current === 'OUT' && !signal) {
+                      setViewMode('SCREENER');
+                      updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-700');
+                  } else if (zoneStateRef.current === 'IN' && !signal) {
+                      setViewMode('DETAIL');
+                      updateStatus('ЗОНА ИНТЕРЕСА: АНАЛИЗ...', 'text-amber-600 font-bold animate-pulse');
+                  }
                   
+                  setCurrentTF('1M');
                   setMetrics(prev => ({ ...prev, filterLevel: filterStrictness.current * 10, smartMoney: 15 }));
 
                   let signalFound = false;
@@ -1176,16 +1182,20 @@
                           if (distTop < latestAtr * 0.8 || distBot < latestAtr * 0.8) {
                               if (zoneStateRef.current === 'OUT') {
                                   zoneStateRef.current = 'IN';
+                                  setZoneState('IN');
                                   addLog('ЦЕНА ВОШЛА В ЗОНУ ИНТЕРЕСА');
-                                  enqueueSpeech('Внимание. Цена подошла к зоне интереса. Возможно появление сигнала.');
+                                  enqueueSpeech('Внимание. Цена подошла к зоне интереса. Возможно появление сигнала.', 'interest-zone-enter');
                                   setViewMode('DETAIL');
+                                  updateStatus('ВНИМАНИЕ: ЗОНА ИНТЕРЕСА', 'text-amber-600 font-bold animate-pulse');
                               }
                           } else if (distTop > latestAtr * 2.5 && distBot > latestAtr * 2.5) {
                               if (zoneStateRef.current === 'IN') {
                                   zoneStateRef.current = 'OUT';
+                                  setZoneState('OUT');
                                   addLog('ЦЕНА ПОКИНУЛА ЗОНУ ИНТЕРЕСА');
-                                  enqueueSpeech('Цена отошла от зоны интереса. Возвращаюсь к штатному сканированию.');
-                                  setTimeout(() => setViewMode('SCREENER'), 3000);
+                                  enqueueSpeech('Цена отошла от зоны интереса. Возвращаюсь к штатному сканированию.', 'interest-zone-exit');
+                                  setViewMode('SCREENER');
+                                  updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-700');
                               }
                           }
                       }
@@ -1269,7 +1279,7 @@
                           addLog(`ЗАФИКСИРОВАНО СНЯТИЕ ЛИКВИДНОСТИ`, true);
 
                           const directionText = isCall ? "повышение" : "понижение";
-                          enqueueSpeech(`Зафиксировано снятие ликвидности. Подготовьте Биткоин. Время 25 минут. Направление на ${directionText}.`);
+                          enqueueSpeech(`Зафиксировано снятие ликвидности. Подготовьте Биткоин. Время 25 минут. Направление на ${directionText}.`, 'signal-detected');
                           
                           await awaitSpeechCompletion(); 
 
@@ -1302,9 +1312,11 @@
 
                           if (tradeCancelled) {
                               lastCancelledTime = data[triggerCandleIdx].time; 
+                              zoneStateRef.current = 'OUT';
+                              setZoneState('OUT');
                               playSound('cancel');
                               updateStatus('ОТМЕНА: ИСТИННЫЙ ПРОБОЙ', 'text-rose-600 font-bold');
-                              enqueueSpeech("Внимание. Отмена. Паттерн сломан. Возвращаюсь к радару.");
+                              enqueueSpeech("Внимание. Отмена. Паттерн сломан. Возвращаюсь к радару.", 'signal-cancelled');
                               await awaitSpeechCompletion();
                               setViewMode('SCREENER');
                               break; 
@@ -1321,7 +1333,7 @@
                           drawEntryLine(entryPrice);
 
                           addLog(`ВХОД ${isCall ? 'ВВЕРХ' : 'ВНИЗ'} НА 25 МИНУТ.`, true);
-                          enqueueSpeech(`Вход на ${directionText}! Время 25 минут. Жмите кнопку!`);
+                          enqueueSpeech(`Вход на ${directionText}! Время 25 минут. Жмите кнопку!`, 'trade-entry');
 
                           let expirySeconds = expMins * 60;
                           let isLive = true;
@@ -1356,9 +1368,9 @@
                             if (expirySeconds === 750) { 
                                 const isWinningNow = (isCall && currentPrice.current > entryPrice) || (!isCall && currentPrice.current < entryPrice);
                                 if (isWinningNow) {
-                                    enqueueSpeech('Сделка уверенно идет в плюс. Все в порядке.');
+                                    enqueueSpeech('Сделка уверенно идет в плюс. Все в порядке.', 'trade-mid-status-win');
                                 } else {
-                                    enqueueSpeech('Сделка временно идет в минус. Ничего страшного, при необходимости следующая сделка увеличивается в два с половиной раза.');
+                                    enqueueSpeech('Сделка временно идет в минус. Ничего страшного, при необходимости следующая сделка увеличивается в два с половиной раза.', 'trade-mid-status-loss');
                                 }
                             }
 
@@ -1420,17 +1432,19 @@
                             playSound('win');
                             filterStrictness.current = Math.max(1.0, filterStrictness.current - 0.2);
                             addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
-                            enqueueSpeech(`Плюс. Сделка успешно завершена.`);
+                            enqueueSpeech(`Плюс. Сделка успешно завершена.`, 'trade-result-win');
                           } else {
                             playSound('loss');
                             filterStrictness.current = Math.min(2.5, filterStrictness.current + 0.5);
                             addLog(`ФИЛЬТРЫ УСИЛЕНЫ ДО ${filterStrictness.current.toFixed(1)}`, true);
                             addLog(`РЕЗУЛЬТАТ: МИНУС (-).`);
-                            enqueueSpeech(`Минус. Усиливаю фильтры ликвидности.`);
+                            enqueueSpeech(`Минус. Усиливаю фильтры ликвидности.`, 'trade-result-loss');
                           }
 
                           setSignal(null);
                           setMetrics(prev => ({ ...prev, smartMoney: 0 }));
+                          zoneStateRef.current = 'OUT';
+                          setZoneState('OUT');
                           
                           await awaitSpeechCompletion();
                           await new Promise(r => setTimeout(r, 1000));
@@ -1580,7 +1594,6 @@
                               </div>
                           </div>
 
-                          {/* Central Scanner Graphic Area (Wider and features specific scanner animation) */}
                           <div className="flex-1 overflow-hidden rounded-3xl bg-white/90 border-2 border-white relative shadow-[inset_0_4px_20px_rgba(0,0,0,0.05)] z-10">
                               <MiniChart data={sparklines['BTCUSDT']} />
                               <div className="absolute inset-0 scanline-anim pointer-events-none opacity-40 mix-blend-overlay" />
@@ -1614,6 +1627,13 @@
                         </div>
                       </div>
                     </div>
+
+                    {zoneState === 'IN' && !signal && (
+                        <div className="absolute top-8 right-8 z-50 bg-amber-500/10 text-amber-600 px-4 py-2 rounded-xl font-bold tracking-widest uppercase oswald-font shadow-[0_0_20px_rgba(245,158,11,0.2)] border border-amber-400/50 flex items-center gap-3 backdrop-blur-md">
+                            <div className="w-2.5 h-2.5 bg-amber-500 rounded-full animate-ping"></div>
+                            Зона интереса: возможен сигнал
+                        </div>
+                    )}
                     
                     <div className="flex-1 relative w-full mt-32 md:mt-36 flex flex-col gap-2 px-4 pb-4 md:px-5 md:pb-5">
                         <div className="flex-1 relative w-full rounded-3xl overflow-hidden shadow-[inset_0_5px_20px_rgba(0,0,0,0.05)] bg-white/90 border border-white">
