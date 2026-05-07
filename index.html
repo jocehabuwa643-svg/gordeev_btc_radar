@@ -268,26 +268,11 @@
         ];
 
         const TOP_CRYPTO_MAP = {
-            'BTCUSDT': 'Bitcoin',
-            'ETHUSDT': 'Ethereum',
-            'DOGEUSDT': 'Dogecoin',
-            'SOLUSDT': 'Solana',
-            'BNBUSDT': 'BNB',
-            'XRPUSDT': 'XRP',
-            'ADAUSDT': 'Cardano',
-            'TONUSDT': 'Toncoin',
-            'SHIBUSDT': 'Shiba Inu',
-            'AVAXUSDT': 'Avalanche',
-            'DOTUSDT': 'Polkadot',
-            'TRXUSDT': 'TRON',
-            'LINKUSDT': 'Chainlink',
-            'MATICUSDT': 'Polygon',
-            'POLUSDT': 'Polygon',
-            'LTCUSDT': 'Litecoin',
-            'BCHUSDT': 'Bitcoin Cash',
-            'UNIUSDT': 'Uniswap',
-            'APTUSDT': 'Aptos',
-            'ARBUSDT': 'Arbitrum',
+            'BTCUSDT': 'Bitcoin', 'ETHUSDT': 'Ethereum', 'DOGEUSDT': 'Dogecoin', 'SOLUSDT': 'Solana',
+            'BNBUSDT': 'BNB', 'XRPUSDT': 'XRP', 'ADAUSDT': 'Cardano', 'TONUSDT': 'Toncoin',
+            'SHIBUSDT': 'Shiba Inu', 'AVAXUSDT': 'Avalanche', 'DOTUSDT': 'Polkadot', 'TRXUSDT': 'TRON',
+            'LINKUSDT': 'Chainlink', 'MATICUSDT': 'Polygon', 'POLUSDT': 'Polygon', 'LTCUSDT': 'Litecoin',
+            'BCHUSDT': 'Bitcoin Cash', 'UNIUSDT': 'Uniswap', 'APTUSDT': 'Aptos', 'ARBUSDT': 'Arbitrum',
             'OPUSDT': 'Optimism'
         };
 
@@ -630,20 +615,20 @@
                         const trade = trades.find(t => t.id === tradeId);
                         if (!trade) return;
 
-                        const xEntry = timeScale.timeToCoordinate(trade.entryTime);
-                        let xExitRaw = timeScale.timeToCoordinate(trade.exitTime);
-                        let xExit = xExitRaw;
+                        // Use logical coordinates to prevent missing gaps on fractional/current live times
+                        const entryLogical = timeScale.coordinateToLogical(timeScale.timeToCoordinate(trade.entryTime)) || 
+                                             timeScale.coordinateToLogical(timeScale.timeToCoordinate(trade.signalTime));
                         
-                        if (trade.isLive && xExit === null) {
-                            // Perfect 5-candle interpolation on a 5M chart
-                            const logicalEntry = timeScale.coordinateToLogical(xEntry);
-                            if (logicalEntry !== null) {
-                                xExit = timeScale.logicalToCoordinate(logicalEntry + 5);
-                            }
+                        let xEntry = timeScale.timeToCoordinate(trade.entryTime);
+                        if (xEntry === null && entryLogical !== null) {
+                            xEntry = timeScale.logicalToCoordinate(entryLogical);
                         }
+
+                        let xExit = timeScale.timeToCoordinate(trade.exitTime);
                         
-                        if (trade.isLive && xExit === null) {
-                            xExit = overlayRef.current.clientWidth;
+                        // Exact extrapolation of exit on 5m scale (5 candles ahead of logical entry)
+                        if (trade.isLive && xExit === null && entryLogical !== null) {
+                            xExit = timeScale.logicalToCoordinate(entryLogical + 5);
                         }
 
                         const yEntry = series.priceToCoordinate(trade.entryPrice);
@@ -774,9 +759,6 @@
                                     )}
                                 </span>
                             </div>
-                            <div className="mt-3 pt-2 border-t border-slate-200/60 text-center text-[9px] text-slate-400 font-bold uppercase tracking-widest">
-                                {hoveredTrade.trade.reason}
-                            </div>
                         </div>
                     )}
                 </div>
@@ -837,15 +819,23 @@
           const consecutiveLossesRef = useRef(0);
           const lastSignalTimeRef = useRef(0);
           const lastSignalPriceRef = useRef(0);
+          const lastZoneVoiceTimeRef = useRef(0);
 
+          // Deep sequential speech queue
           const speechQueueRef = useRef([]);
           const isSpeakingRef = useRef(false);
+          const lastSpokenKeysRef = useRef({});
 
           const speakAsync = (text, key = null) => {
               return new Promise(resolve => {
-                  if (key && speechQueueRef.current.some(item => item.key === key)) {
-                      resolve();
-                      return;
+                  if (key) {
+                      if (speechQueueRef.current.some(item => item.key === key)) {
+                          resolve(); return;
+                      }
+                      const now = Date.now();
+                      if (lastSpokenKeysRef.current[key] && (now - lastSpokenKeysRef.current[key]) < 30000) {
+                          resolve(); return;
+                      }
                   }
                   speechQueueRef.current.push({ text, key, onDone: resolve });
                   processSpeechQueue();
@@ -853,7 +843,11 @@
           };
 
           const enqueueSpeech = (text, key = null) => {
-              if (key && speechQueueRef.current.some(item => item.key === key)) return;
+              if (key) {
+                  if (speechQueueRef.current.some(item => item.key === key)) return;
+                  const now = Date.now();
+                  if (lastSpokenKeysRef.current[key] && (now - lastSpokenKeysRef.current[key]) < 30000) return;
+              }
               speechQueueRef.current.push({ text, key, onDone: null });
               processSpeechQueue();
           };
@@ -863,31 +857,42 @@
               isSpeakingRef.current = true;
               
               const item = speechQueueRef.current.shift();
+              
+              if (item.key) {
+                  lastSpokenKeysRef.current[item.key] = Date.now();
+              }
+
               const utterance = new SpeechSynthesisUtterance(item.text);
               utterance.lang = 'ru-RU';
               utterance.rate = 1.05;
               utterance.pitch = 0.95;
 
+              let isFinished = false;
               let fallbackTimeout;
 
               const completeSpeech = () => {
+                  if (isFinished) return;
+                  isFinished = true;
                   clearTimeout(fallbackTimeout);
-                  if (isSpeakingRef.current) {
-                      isSpeakingRef.current = false;
-                      if (item.onDone) item.onDone();
-                      setTimeout(processSpeechQueue, 400); 
-                  }
+                  isSpeakingRef.current = false;
+                  if (item.onDone) item.onDone();
+                  setTimeout(processSpeechQueue, 300); 
               };
 
               utterance.onend = completeSpeech;
               utterance.onerror = completeSpeech;
 
               try {
-                  window.speechSynthesis.speak(utterance);
-                  fallbackTimeout = setTimeout(() => {
-                      window.speechSynthesis.cancel();
-                      completeSpeech();
-                  }, Math.max(10000, item.text.length * 150));
+                  window.speechSynthesis.cancel();
+                  setTimeout(() => {
+                      window.speechSynthesis.speak(utterance);
+                      fallbackTimeout = setTimeout(() => {
+                          if (!isFinished) {
+                              window.speechSynthesis.cancel();
+                              completeSpeech();
+                          }
+                      }, Math.max(4000, item.text.length * 150));
+                  }, 50);
               } catch (e) {
                   completeSpeech();
               }
@@ -935,7 +940,7 @@
                       const pStr = plural(Math.round(Math.abs(q.change)), ['процент', 'процента', 'процентов']);
                       
                       const text = `${q.name} сейчас торгуется около ${intPrice} долларов. За последние 24 часа цена ${changeWord} ${changeVal} ${pStr}.`;
-                      enqueueSpeech(text, `quote-update-${Date.now()}`);
+                      enqueueSpeech(text, `quote-update-${q.symbol}`);
                   }
               }, 10 * 60 * 1000); 
               return () => clearInterval(voiceTimer);
@@ -1192,7 +1197,7 @@
                         const strongWickBot = currCandle.low <= cLower && lowerWick > body * 2.0 && returnedInsideBot && isGreenCandle;
 
                         if (isRangeValid) {
-                            let isCall = false, isPut = false, signalType = '', baseScore = 0;
+                            let isCall = false, isPut = false, signalType = '';
 
                             if (sweptTop && returnedInsideTop && structureBreakTop) {
                                 isPut = true; signalType = 'Primary Sweep';
@@ -1470,8 +1475,8 @@
                           signalFound = true;
                           
                           setAsset(cur);
-                          signalPhaseRef.current = 'EXPLAINING';
-                          setSignalPhase('EXPLAINING');
+                          signalPhaseRef.current = 'DETECTED';
+                          setSignalPhase('DETECTED');
                           syncModeView();
                           
                           const structureValue = isCall ? 100 : 0;
@@ -1496,25 +1501,27 @@
                           drawIndicators(upperData, lowerData);
                           currentPrice.current = data[lastIdx].close;
                           
-                          updateStatus(`ОБЪЯСНЕНИЕ СИГНАЛА...`, 'text-cyan-600 font-bold animate-pulse');
+                          updateStatus(`СИГНАЛ НАЙДЕН`, 'text-cyan-600 font-bold animate-pulse');
                           addLog(`ЗАФИКСИРОВАНО: ${signalType}`, true);
 
-                          const directionText = isCall ? "повышение" : "понижение";
+                          const directionText = isCall ? "вверх" : "вниз";
+                          const reasonText = signalType === 'Primary Sweep' ? 'снятие ликвидности и возврат в зону' : 'реакция от зоны ликвидности';
                           
-                          await speakAsync(`Внимание. Появился сигнал на ${directionText}. Причина: ${signalType === 'Primary Sweep' ? 'снятие ликвидности' : 'подтверждение уровня'}.`, `signal-detect-${triggerCandleIdx}`);
+                          signalPhaseRef.current = 'EXPLAINING';
+                          setSignalPhase('EXPLAINING');
+                          await speakAsync(`Внимание. Появился сигнал ${directionText}. Причина: ${reasonText}.`, `signal-detect-${triggerCandleIdx}`);
 
                           signalPhaseRef.current = 'COUNTDOWN';
                           setSignalPhase('COUNTDOWN');
-                          for(let w=5; w>0; w--) {
+                          for(let w=3; w>0; w--) {
                               setCountdown(w);
-                              updateStatus(`ПОДГОТОВКА: ${w}С`, 'text-cyan-600 font-bold');
+                              updateStatus(`ПОДГОТОВКА К ВХОДУ: ${w}С`, 'text-cyan-600 font-bold');
                               playSound('scan');
                               await new Promise(r => setTimeout(r, 1000));
                           }
                           setCountdown(null);
 
                           let tradeCancelled = false;
-                          updateStatus('СНАЙПЕР: ФИНАЛЬНЫЙ ЧЕК СТРУКТУРЫ', 'text-slate-800 font-bold');
                           
                           try {
                               const liveData = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
@@ -1545,19 +1552,18 @@
                           }
 
                           playSound('start');
-                          updateStatus('СИГНАЛ АКТИВЕН', 'text-blue-700 font-bold');
+                          updateStatus('СДЕЛКА АКТИВНА', 'text-blue-700 font-bold');
                           signalPhaseRef.current = 'ACTIVE';
                           setSignalPhase('ACTIVE');
                           
                           const entryPrice = currentPrice.current;
                           const expMins = 25; 
-                          const liveChartData = candleSeries.current.data();
-                          const actualEntryTime = liveChartData && liveChartData.length > 0 ? liveChartData[liveChartData.length - 1].time : data[data.length-1].time; 
+                          
+                          const actualEntryTime = Math.floor(Date.now() / 1000); 
                           
                           setSignal({ type: isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice });
 
                           addLog(`ВХОД ${isCall ? 'ВВЕРХ' : 'ВНИЗ'} НА 25 МИНУТ.`, true);
-                          enqueueSpeech(`Вход на ${directionText}! Время 25 минут. Жмите кнопку!`, `trade-entry-${triggerCandleIdx}`);
 
                           let expirySeconds = expMins * 60;
                           let isLive = true;
@@ -1614,9 +1620,9 @@
                             if (expirySeconds === 750) { 
                                 const isWinningNow = (isCall && currentPrice.current > entryPrice) || (!isCall && currentPrice.current < entryPrice);
                                 if (isWinningNow) {
-                                    enqueueSpeech('Середина сделки. Сейчас позиция идёт в плюс. Продолжаем сопровождение.', 'trade-mid-status-win');
+                                    enqueueSpeech('Середина сделки. Сейчас позиция идёт в плюс. Продолжаем сопровождение.', `trade-mid-win-${actualEntryTime}`);
                                 } else {
-                                    enqueueSpeech('Середина сделки. Сейчас позиция временно идёт в минус. Ничего страшного, ждём закрытия по экспирации.', 'trade-mid-status-loss');
+                                    enqueueSpeech('Середина сделки. Сейчас позиция временно идёт в минус. Ничего страшного, ждём закрытия по экспирации.', `trade-mid-loss-${actualEntryTime}`);
                                 }
                             }
 
@@ -1689,11 +1695,11 @@
                           if (isWin) {
                             playSound('win');
                             addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
-                            await speakAsync(`Плюс. Сделка успешно завершена.`, 'trade-result-win');
+                            await speakAsync(`Плюс. Сделка успешно завершена.`, `trade-result-win-${actualEntryTime}`);
                           } else {
                             playSound('loss');
                             addLog(`РЕЗУЛЬТАТ: МИНУС (-).`);
-                            await speakAsync(`Минус. Возвращаюсь к поиску.`, 'trade-result-loss');
+                            await speakAsync(`Минус. Возвращаюсь к поиску.`, `trade-result-loss-${actualEntryTime}`);
                           }
 
                           setSignal(null);
@@ -1950,10 +1956,12 @@
                               {signalPhase === 'COUNTDOWN' ? (
                                   <div className="text-4xl font-black text-cyan-600 drop-shadow-sm mb-1">{countdown}</div>
                               ) : (
-                                  <Radar size={28} className={`text-slate-600 mb-2 ${(signalPhase === 'EXPLAINING' || signalPhase === 'COUNTDOWN') ? 'animate-spin text-cyan-500' : ''}`} />
+                                  <Radar size={28} className={`text-slate-600 mb-2 ${(signalPhase === 'EXPLAINING' || signalPhase === 'DETECTED') ? 'animate-spin text-cyan-500' : ''}`} />
                               )}
-                              <span className="text-[9px] md:text-[10px] tracking-widest font-bold text-slate-700 oswald-font leading-tight">
-                                  {signalPhase === 'EXPLAINING' ? 'ОБЪЯСНЕНИЕ СИГНАЛА' : signalPhase === 'COUNTDOWN' ? 'ПОДГОТОВКА К ВХОДУ' : 'ОЖИДАНИЕ СИГНАЛА'}
+                              <span className="text-[8px] md:text-[9px] tracking-widest font-bold text-slate-700 oswald-font leading-tight mt-1">
+                                  {signalPhase === 'EXPLAINING' ? 'ОБЪЯСНЕНИЕ СИГНАЛА' : 
+                                   signalPhase === 'COUNTDOWN' ? 'ПОДГОТОВКА К ВХОДУ' : 
+                                   signalPhase === 'DETECTED' ? 'СИГНАЛ НАЙДЕН' : 'ОЖИДАНИЕ'}
                               </span>
                           </div>
                         )}
