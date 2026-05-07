@@ -158,6 +158,90 @@
             100% { transform: translateY(-10px); opacity: 0; }
         }
         .hft-tick { animation: slideUpFade 1.5s ease-out forwards; }
+
+        /* ================= PREMIUM UI ADDITIONS ================= */
+        
+        /* Silver Author Badge */
+        .silver-badge {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 
+                0 4px 10px -2px rgba(15, 23, 42, 0.1),
+                inset 0 2px 4px rgba(255, 255, 255, 1),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        .silver-badge::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -150%; width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.8), transparent);
+            transform: skewX(-20deg);
+            animation: silver-shine 5s infinite;
+        }
+        @keyframes silver-shine {
+            0% { left: -150%; }
+            20% { left: 200%; }
+            100% { left: 200%; }
+        }
+        .silver-text {
+            background: linear-gradient(to right, #475569, #94a3b8, #334155);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0px 1px 1px rgba(255,255,255,0.6);
+        }
+
+        /* Broker Button */
+        .broker-btn {
+            background: linear-gradient(135deg, #0ea5e9 0%, #1d4ed8 100%);
+            box-shadow: 
+                0 8px 20px -5px rgba(14, 165, 233, 0.5),
+                inset 0 1px 2px rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(186, 230, 253, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .broker-btn:hover {
+            box-shadow: 
+                0 12px 25px -5px rgba(14, 165, 233, 0.7),
+                inset 0 1px 2px rgba(255, 255, 255, 0.6);
+            transform: translateY(-2px);
+        }
+        .broker-btn:active {
+            transform: translateY(1px) scale(0.98);
+            box-shadow: 0 4px 10px -5px rgba(14, 165, 233, 0.5);
+        }
+
+        /* Animated Cursor Pointer */
+        .animated-cursor {
+            animation: cursor-click 4s infinite;
+        }
+        @keyframes cursor-click {
+            0% { transform: translate(20px, 20px) scale(1); opacity: 0; }
+            15% { transform: translate(0px, 0px) scale(1); opacity: 1; }
+            25% { transform: translate(0px, 0px) scale(0.9); opacity: 1; } 
+            35% { transform: translate(0px, 0px) scale(1); opacity: 1; }
+            50% { transform: translate(20px, 20px) scale(1); opacity: 0; }
+            100% { transform: translate(20px, 20px) scale(1); opacity: 0; }
+        }
+
+        .click-ripple {
+            position: absolute;
+            top: 2px; left: 2px;
+            width: 15px; height: 15px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 50%;
+            transform: scale(0);
+            opacity: 0;
+            animation: ripple-effect 4s infinite;
+            pointer-events: none;
+        }
+        @keyframes ripple-effect {
+            0%, 20% { transform: scale(0); opacity: 0; }
+            25% { transform: scale(1); opacity: 0.8; }
+            40% { transform: scale(3.5); opacity: 0; }
+            100% { transform: scale(3.5); opacity: 0; }
+        }
     </style>
 </head>
 <body>
@@ -173,6 +257,14 @@
         const TrendingUp = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>;
         const Radar = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 5.49A10 10 0 0 0 5.3 19.38"/><path d="M20 8.74A10 10 0 0 1 17.38 20"/><path d="M16 8a6 6 0 0 0-8.5-1.5"/><path d="M7.5 16.5a6 6 0 0 0 9.2-.5"/><path d="M12 12v.01"/></svg>;
         const Zap = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
+        
+        // Mouse Pointer Icon for the broker button
+        const MousePointer = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="rgba(255,255,255,0.9)" stroke="#0f172a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+                <path d="M13 13l6 6"/>
+            </svg>
+        );
 
         const ASSETS = [
           { pair: 'BTC/USDT', symbol: 'BTCUSDT', name: 'Bitcoin' }
@@ -287,7 +379,7 @@
               let isActive = true;
               let timeoutId;
               
-              const maxIdx = Math.min(150, data.length) - 1; // 150 candles for wider view
+              const maxIdx = Math.min(150, data.length) - 1; 
 
               const scanCycle = () => {
                   if (!isActive) return;
@@ -299,7 +391,6 @@
                   const deep = Math.random() > 0.8;
                   setIsDeepScan(deep);
                   
-                  // Variable scanning speed simulating deep processing
                   const delay = deep ? (Math.random() * 350 + 150) : (Math.random() * 40 + 20);
                   timeoutId = setTimeout(scanCycle, delay);
               };
@@ -320,7 +411,7 @@
           const max = Math.max(...chartData.map(d => d.high));
           const maxVol = Math.max(...chartData.map(d => d.volume || 1));
           const range = (max - min) || 1;
-          const width = 800, height = 120; // Increased resolution
+          const width = 800, height = 120; 
           const candleWidth = width / chartData.length;
 
           return (
@@ -350,7 +441,6 @@
 
                     return (
                       <g key={i}>
-                        {/* Background glow for analyzed candle */}
                         {isTarget && (
                             <rect x={x - candleWidth*0.5} y={0} width={candleWidth * 2} height={height} fill="url(#scanGlow)" />
                         )}
@@ -363,7 +453,6 @@
                   })}
                 </svg>
                 
-                {/* Visual Glass Scanner Laser Overlay */}
                 {chartData.length > 0 && scanIndex >= 0 && scanIndex < chartData.length && (
                     <div 
                         className="absolute top-0 bottom-0 pointer-events-none transition-all duration-75 flex flex-col justify-center items-center mix-blend-multiply"
@@ -693,7 +782,6 @@
           const isSpeakingRef = useRef(false);
 
           const enqueueSpeech = (text, key = null) => {
-              // Prevent duplicate keys currently in queue to solve spam
               if (key && speechQueueRef.current.some(item => item.key === key)) {
                   return;
               }
@@ -726,7 +814,6 @@
 
               try {
                   window.speechSynthesis.speak(utterance);
-                  // Strict fallback to ensure queue is never stuck
                   fallbackTimeout = setTimeout(() => {
                       window.speechSynthesis.cancel();
                       completeSpeech();
@@ -1139,7 +1226,6 @@
             
             while (engineActive.current) {
               try {
-                  // Set mode conditionally based on zone and signal state to avoid flickering
                   if (zoneStateRef.current === 'OUT' && !signal) {
                       setViewMode('SCREENER');
                       updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-700');
@@ -1767,6 +1853,22 @@
                        </div>
                     </div>
 
+                    {/* NEW BROKER BUTTON */}
+                    <div className="relative shrink-0 mb-1 mt-1 z-20">
+                        <a href="https://intrade32.bar/311164" target="_blank" rel="noopener noreferrer" className="broker-btn group relative w-full py-3 md:py-3.5 rounded-2xl flex items-center justify-center overflow-hidden cursor-pointer no-underline block">
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-700 ease-in-out skew-x-12"></div>
+                            <span className="relative z-10 text-white font-black tracking-widest text-[11px] md:text-sm oswald-font uppercase drop-shadow-md flex items-center gap-2">
+                                <Zap size={16} className="animate-pulse text-cyan-200" />
+                                ТОРГОВАТЬ ЗДЕСЬ, ЧТОБЫ ЗАРАБОТАТЬ
+                            </span>
+                        </a>
+                        
+                        <div className="absolute -bottom-1.5 right-2 md:-right-1 z-50 pointer-events-none animated-cursor">
+                            <MousePointer size={24} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
+                            <div className="click-ripple"></div>
+                        </div>
+                    </div>
+
                     <div ref={logsContainerRef} className="flex-1 glass-card rounded-2xl p-4 overflow-hidden flex flex-col justify-start gap-2 border-white bg-white shadow-[inset_0_2px_15px_rgba(0,0,0,0.02)]">
                       {logs.map((l, i) => (
                         <div key={i} className={`text-[10px] md:text-xs leading-snug tracking-widest font-semibold mono-font ${i === 0 ? 'text-slate-900 font-bold border-l-4 border-cyan-500 pl-2 bg-cyan-50/50 py-1 rounded-r shadow-sm' : 'text-slate-500 pl-2'}`}>
@@ -1786,7 +1888,16 @@
                   <span className="inline sm:hidden">ЗАЩИТА АКТИВНА</span>
                 </div>
                 
-                <div className="flex items-center gap-3 oswald-font">
+                <div className="flex items-center gap-3 md:gap-4 oswald-font">
+                  
+                  {/* NEW AUTHOR BADGE */}
+                  <div className="silver-badge flex flex-col items-center justify-center px-2.5 py-1 rounded-lg">
+                      <span className="text-[6px] md:text-[7px] text-slate-500 font-black tracking-[0.2em] uppercase leading-none mb-0.5">PRO MAX CREATOR</span>
+                      <span className="text-[10px] md:text-[11px] font-black tracking-widest silver-text leading-none">SLAVA GORDEEV</span>
+                  </div>
+                  
+                  <span className="text-slate-300 text-[10px] hidden md:block">|</span>
+                  
                   <span className="text-slate-500 text-[10px] md:text-xs tracking-widest font-bold hidden sm:block uppercase">ЛИЦЕНЗИЯ:</span>
                   <span className="text-white text-[10px] md:text-xs px-3 py-1.5 rounded-lg bg-slate-900 tracking-widest font-bold text-center shadow-[0_4px_10px_rgba(15,23,42,0.2)] border border-slate-700">
                     КРИПТО ИНВЕСТ PRO MAX
