@@ -88,9 +88,9 @@
         }
 
         @keyframes float-3d {
-            0% { transform: translateY(0px) rotateX(2deg) rotateY(-2deg); }
-            50% { transform: translateY(-10px) rotateX(-1deg) rotateY(3deg); }
-            100% { transform: translateY(0px) rotateX(2deg) rotateY(-2deg); }
+            0% { transform: translateY(0px) rotateX(1deg) rotateY(-1deg); }
+            50% { transform: translateY(-8px) rotateX(-1deg) rotateY(2deg); }
+            100% { transform: translateY(0px) rotateX(1deg) rotateY(-1deg); }
         }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -99,15 +99,15 @@
         @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         .ticker-wrapper { display: flex; width: max-content; animation: ticker 40s linear infinite; }
         
+        .scanline-anim { 
+            background: linear-gradient(to bottom, transparent, rgba(14, 165, 233, 0.2), rgba(59, 130, 246, 0.3), transparent); 
+            animation: scanline 3s cubic-bezier(0.4, 0, 0.2, 1) infinite; 
+        }
         @keyframes scanline { 
             0% { transform: translateY(-100%); opacity: 0; } 
             15% { opacity: 1; }
             85% { opacity: 1; }
             100% { transform: translateY(500%); opacity: 0; } 
-        }
-        .scanline-anim { 
-            animation: scanline 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; 
-            background: linear-gradient(to bottom, transparent, rgba(14, 165, 233, 0.4), rgba(59, 130, 246, 0.6), transparent); 
         }
         
         .glass-panel {
@@ -185,7 +185,6 @@
           "Маркетмейкер собирает стопы розничных трейдеров перед разворотом."
         ];
 
-        // Pluralization helper
         const plural = (number, titles) => {
             const cases = [2, 0, 1, 1, 1, 2];
             return titles[ (number%100>4 && number%100<20)? 2 : cases[(number%10<5)?number%10:5] ];
@@ -278,41 +277,110 @@
           return <span className="text-slate-800 text-sm md:text-base mono-font font-bold">{t.toLocaleTimeString('ru-RU')}</span>;
         };
 
+        /* Premium Scanner MiniChart */
         const MiniChart = ({ data }) => {
+          const [scanIndex, setScanIndex] = useState(0);
+          const [isDeepScan, setIsDeepScan] = useState(false);
+
+          useEffect(() => {
+              if (!data || !Array.isArray(data) || data.length < 2) return;
+              let isActive = true;
+              let timeoutId;
+              
+              const maxIdx = Math.min(150, data.length) - 1; // 150 candles for wider view
+
+              const scanCycle = () => {
+                  if (!isActive) return;
+                  setScanIndex(prev => {
+                      if (prev >= maxIdx) return 0;
+                      return prev + 1;
+                  });
+                  
+                  const deep = Math.random() > 0.8;
+                  setIsDeepScan(deep);
+                  
+                  // Variable scanning speed simulating deep processing
+                  const delay = deep ? (Math.random() * 350 + 150) : (Math.random() * 40 + 20);
+                  timeoutId = setTimeout(scanCycle, delay);
+              };
+
+              timeoutId = setTimeout(scanCycle, 500);
+              return () => {
+                  isActive = false;
+                  clearTimeout(timeoutId);
+              };
+          }, [data]);
+
           if (!data || !Array.isArray(data) || data.length < 2) {
             return <div className="w-full h-full flex items-center justify-center opacity-60 text-lg tracking-widest text-slate-500 font-bold animate-pulse oswald-font">ЗАГРУЗКА КЛАСТЕРОВ...</div>;
           }
-          const chartData = data.slice(-40); 
+          
+          const chartData = data.slice(-150); 
           const min = Math.min(...chartData.map(d => d.low));
           const max = Math.max(...chartData.map(d => d.high));
           const maxVol = Math.max(...chartData.map(d => d.volume || 1));
           const range = (max - min) || 1;
-          const width = 200, height = 80;
+          const width = 800, height = 120; // Increased resolution
           const candleWidth = width / chartData.length;
 
           return (
-            <svg className="w-full h-full opacity-90" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-              {chartData.map((c, i) => {
-                const isUp = c.close >= c.open;
-                const x = i * candleWidth;
-                const w = candleWidth * 0.7;
-                const oY = height - ((c.open - min) / range) * height;
-                const cY = height - ((c.close - min) / range) * height;
-                const hY = height - ((c.high - min) / range) * height;
-                const lY = height - ((c.low - min) / range) * height;
-                
-                const volH = ((c.volume || 0) / maxVol) * 15;
-                const volY = height - volH;
+            <div className="relative w-full h-full bg-[#f8fafc]">
+                <svg className="w-full h-full opacity-90" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+                  <defs>
+                      <linearGradient id="scanGlow" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="rgba(34, 211, 238, 0)" />
+                          <stop offset="50%" stopColor="rgba(34, 211, 238, 0.4)" />
+                          <stop offset="100%" stopColor="rgba(34, 211, 238, 0)" />
+                      </linearGradient>
+                  </defs>
+                  
+                  {chartData.map((c, i) => {
+                    const isUp = c.close >= c.open;
+                    const x = i * candleWidth;
+                    const w = candleWidth * 0.6;
+                    const oY = height - ((c.open - min) / range) * height;
+                    const cY = height - ((c.close - min) / range) * height;
+                    const hY = height - ((c.high - min) / range) * height;
+                    const lY = height - ((c.low - min) / range) * height;
+                    
+                    const volH = ((c.volume || 0) / maxVol) * 20;
+                    const volY = height - volH;
+                    
+                    const isTarget = i === scanIndex;
 
-                return (
-                  <g key={i}>
-                    <line x1={x + w / 2} y1={hY} x2={x + w / 2} y2={lY} stroke={isUp ? "#0ea5e9" : "#94a3b8"} strokeWidth="1" />
-                    <rect x={x} y={isUp ? cY : oY} width={w} height={Math.max(Math.abs(cY - oY), 1.2)} fill={isUp ? "#0ea5e9" : "transparent"} stroke={isUp ? "none" : "#94a3b8"} strokeWidth="1" rx="0.5" />
-                    <rect x={x} y={volY} width={w} height={volH} fill={isUp ? "rgba(14, 165, 233, 0.2)" : "rgba(148, 163, 184, 0.2)"} />
-                  </g>
-                );
-              })}
-            </svg>
+                    return (
+                      <g key={i}>
+                        {/* Background glow for analyzed candle */}
+                        {isTarget && (
+                            <rect x={x - candleWidth*0.5} y={0} width={candleWidth * 2} height={height} fill="url(#scanGlow)" />
+                        )}
+                        
+                        <line x1={x + w / 2} y1={hY} x2={x + w / 2} y2={lY} stroke={isUp ? (isTarget ? "#06b6d4" : "#0ea5e9") : (isTarget ? "#e11d48" : "#94a3b8")} strokeWidth={isTarget ? "2" : "1"} className="transition-colors duration-150" />
+                        <rect x={x} y={isUp ? cY : oY} width={w} height={Math.max(Math.abs(cY - oY), 1.2)} fill={isUp ? (isTarget ? "#06b6d4" : "#0ea5e9") : "transparent"} stroke={isUp ? "none" : (isTarget ? "#e11d48" : "#94a3b8")} strokeWidth={isTarget ? "1.5" : "1"} rx="0.5" className="transition-colors duration-150" />
+                        <rect x={x} y={volY} width={w} height={volH} fill={isUp ? "rgba(14, 165, 233, 0.2)" : "rgba(148, 163, 184, 0.2)"} />
+                      </g>
+                    );
+                  })}
+                </svg>
+                
+                {/* Visual Glass Scanner Laser Overlay */}
+                {chartData.length > 0 && scanIndex >= 0 && scanIndex < chartData.length && (
+                    <div 
+                        className="absolute top-0 bottom-0 pointer-events-none transition-all duration-75 flex flex-col justify-center items-center mix-blend-multiply"
+                        style={{ left: `${(scanIndex / chartData.length) * 100}%`, width: `${(1 / chartData.length) * 100}%` }}
+                    >
+                        <div className={`w-[1px] h-full bg-cyan-400 ${isDeepScan ? 'opacity-100 shadow-[0_0_15px_rgba(34,211,238,1)]' : 'opacity-60 shadow-[0_0_8px_rgba(34,211,238,0.5)]'} transition-all duration-100`}></div>
+                        {isDeepScan && (
+                            <div className="absolute top-1/2 -translate-y-1/2 w-8 h-8 border border-cyan-400/60 rounded-full animate-ping shadow-[0_0_10px_rgba(34,211,238,0.3)]"></div>
+                        )}
+                        {isDeepScan && (
+                            <div className="absolute top-4 bg-slate-900/90 text-cyan-300 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-sm border border-cyan-500/40 uppercase whitespace-nowrap oswald-font tracking-widest z-10">
+                                <Radar size={10} className="inline mr-1 animate-spin" /> CHECK
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
           );
         };
 
@@ -444,10 +512,9 @@
           )
         };
 
-        const ChartOverlays = ({ chart, series, trades, data, viewMode }) => {
+        /* Handles historical Glass Box rendering only */
+        const ChartOverlays = ({ chart, series, trades }) => {
             const overlayRef = useRef(null);
-            const scannerRef = useRef(null);
-            const focusBlockRef = useRef(null);
             const [hoveredTrade, setHoveredTrade] = useState(null);
 
             useEffect(() => {
@@ -471,23 +538,20 @@
                         if (xEntry !== null && xExit !== null && yEntry !== null && yExit !== null) {
                             box.style.display = 'block';
                             
-                            // 1) Accurate horizontal placement
                             const left = Math.min(xEntry, xExit);
-                            const width = Math.max(Math.abs(xExit - xEntry), 10); // slightly pad zero-width
+                            const width = Math.max(Math.abs(xExit - xEntry), 10); 
                             
-                            // 2) Compact vertical placement (no full screen height)
-                            const maxPriceY = Math.min(yEntry, yExit); // Note: Y goes down
+                            const maxPriceY = Math.min(yEntry, yExit); 
                             const minPriceY = Math.max(yEntry, yExit);
                             
-                            const top = maxPriceY - 25; // padding above
-                            const height = Math.max(50, (minPriceY - maxPriceY) + 50); // padding below + min height
+                            const top = maxPriceY - 25; 
+                            const height = Math.max(50, (minPriceY - maxPriceY) + 50);
                             
                             box.style.left = `${left}px`;
                             box.style.width = `${width}px`;
                             box.style.top = `${top}px`;
                             box.style.height = `${height}px`;
                             
-                            // Sync dot positions relative to the box itself
                             const entryDot = box.querySelector('.entry-dot-wrapper');
                             if (entryDot) {
                                 entryDot.style.top = `${yEntry - top}px`;
@@ -504,98 +568,15 @@
                         }
                     });
 
-                    // Live Scanner Animation
-                    if (scannerRef.current && scannerRef.current.dataset.active === 'true' && viewMode === 'SCREENER') {
-                        const logicalX = parseFloat(scannerRef.current.dataset.logicalIndex);
-                        const x = timeScale.logicalToCoordinate(logicalX);
-                        if (x !== null) {
-                            scannerRef.current.style.display = 'flex';
-                            scannerRef.current.style.left = `${x}px`; // use left instead of arbitrary translate
-
-                            if (focusBlockRef.current) {
-                                focusBlockRef.current.style.left = `${x - 12}px`; // approximate candle width highlight
-                                focusBlockRef.current.style.display = 'block';
-                            }
-                        } else {
-                            scannerRef.current.style.display = 'none';
-                            if (focusBlockRef.current) focusBlockRef.current.style.display = 'none';
-                        }
-                    } else {
-                        if (scannerRef.current) scannerRef.current.style.display = 'none';
-                        if (focusBlockRef.current) focusBlockRef.current.style.display = 'none';
-                    }
-
                     animationFrameId = requestAnimationFrame(syncPositions);
                 };
 
                 animationFrameId = requestAnimationFrame(syncPositions);
                 return () => cancelAnimationFrame(animationFrameId);
-            }, [chart, series, trades, viewMode]);
-
-            // Scanner Cycle Logic
-            useEffect(() => {
-                if (!chart || !data || data.length === 0 || viewMode !== 'SCREENER') return;
-                let timeoutId;
-                let isActive = true;
-
-                const scanCycle = () => {
-                    if (!isActive || !scannerRef.current) return;
-
-                    const timeScale = chart.timeScale();
-                    const visibleRange = timeScale.getVisibleLogicalRange();
-                    
-                    if (visibleRange) {
-                        const min = Math.max(0, Math.floor(visibleRange.from));
-                        const max = Math.min(data.length - 1, Math.ceil(visibleRange.to));
-                        if (max <= min) {
-                            timeoutId = setTimeout(scanCycle, 1000);
-                            return;
-                        }
-
-                        // Pick a random candle in the visible range to "scan"
-                        const targetIndex = min + Math.floor(Math.random() * (max - min));
-                        const texts = ["LIQ CHECK", "ZONE MAP", "SMC ZONE", "VOL PROFILE"];
-                        const text = texts[Math.floor(Math.random() * texts.length)];
-                        
-                        scannerRef.current.dataset.active = 'true';
-                        scannerRef.current.dataset.logicalIndex = targetIndex;
-                        
-                        const label = scannerRef.current.querySelector('.scanner-label');
-                        if (label) label.innerText = text;
-
-                        scannerRef.current.classList.remove('opacity-0', 'scale-y-0');
-                        scannerRef.current.classList.add('opacity-100', 'scale-y-100');
-                        if (focusBlockRef.current) focusBlockRef.current.classList.remove('opacity-0');
-                        
-                        const laser = scannerRef.current.querySelector('.scanner-laser');
-                        if (laser) {
-                            laser.style.height = `${Math.random() * 40 + 40}%`;
-                            laser.style.top = `${Math.random() * 20 + 10}%`;
-                        }
-
-                        setTimeout(() => {
-                            if (!isActive) return;
-                            scannerRef.current.classList.remove('opacity-100', 'scale-y-100');
-                            scannerRef.current.classList.add('opacity-0', 'scale-y-0');
-                            if (focusBlockRef.current) focusBlockRef.current.classList.add('opacity-0');
-                            scannerRef.current.dataset.active = 'false';
-                            timeoutId = setTimeout(scanCycle, Math.random() * 1500 + 800); 
-                        }, 2000); 
-                    } else {
-                        timeoutId = setTimeout(scanCycle, 1000);
-                    }
-                };
-
-                timeoutId = setTimeout(scanCycle, 1000);
-                return () => {
-                    isActive = false;
-                    clearTimeout(timeoutId);
-                };
-            }, [chart, data, viewMode]);
+            }, [chart, series, trades]);
 
             return (
                 <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden" ref={overlayRef}>
-                    {/* Glass Box Trades Overlays */}
                     {trades.map(trade => (
                         <div 
                             key={trade.id}
@@ -608,13 +589,11 @@
                             }}
                             onMouseLeave={() => setHoveredTrade(null)}
                         >
-                            {/* Entry Indicator */}
                             <div className="entry-dot-wrapper absolute w-0 h-0 z-10 transition-transform group-hover:scale-125 flex items-center justify-center">
                                 <div className={`absolute w-3 h-3 -ml-[6px] -mt-[6px] rounded-full shadow-[0_0_12px_currentColor] border-2 border-white ${trade.type === 'CALL' ? 'bg-cyan-500 text-cyan-400' : 'bg-orange-500 text-orange-400'}`}></div>
                                 <span className={`absolute -ml-3 -top-6 text-[8px] px-1.5 py-0.5 rounded shadow-sm font-bold uppercase tracking-wider bg-slate-900 border ${trade.type === 'CALL' ? 'text-cyan-400 border-cyan-500/50' : 'text-orange-400 border-orange-500/50'} opacity-0 group-hover:opacity-100 transition-opacity`}>ENTRY</span>
                             </div>
 
-                            {/* Exit Indicator */}
                             <div className="exit-dot-wrapper absolute w-0 h-0 z-10 transition-transform group-hover:scale-125 flex items-center justify-center">
                                 <div className={`absolute w-3 h-3 -ml-[6px] -mt-[6px] rounded-full shadow-[0_0_12px_currentColor] border-2 border-white ${trade.isWin ? 'bg-emerald-500 text-emerald-400' : 'bg-rose-500 text-rose-400'}`}></div>
                                 <span className={`absolute -ml-3 -top-6 text-[8px] px-1.5 py-0.5 rounded shadow-sm font-bold uppercase tracking-wider bg-slate-900 border ${trade.isWin ? 'text-emerald-400 border-emerald-500/50' : 'text-rose-400 border-rose-500/50'} opacity-0 group-hover:opacity-100 transition-opacity`}>EXIT</span>
@@ -626,27 +605,6 @@
                         </div>
                     ))}
 
-                    {/* Premium Scanner Highlights */}
-                    <div ref={focusBlockRef} className="absolute top-0 bottom-0 w-[24px] bg-cyan-400/5 border-x border-cyan-400/20 pointer-events-none transition-opacity duration-500 opacity-0 mix-blend-screen" style={{display: 'none'}}></div>
-
-                    <div 
-                        ref={scannerRef}
-                        className="absolute top-0 bottom-0 w-[2px] flex flex-col items-center justify-center pointer-events-none opacity-0 scale-y-0 transition-all duration-700 ease-in-out"
-                        data-active="false"
-                    >
-                        <div className="absolute inset-0 w-24 -ml-12 bg-gradient-to-b from-transparent via-cyan-400/10 to-transparent blur-xl mix-blend-screen"></div>
-                        <div className="w-[1px] h-full bg-gradient-to-b from-transparent via-cyan-400/80 to-transparent relative">
-                            <div className="scanner-laser absolute w-1.5 left-1/2 -translate-x-1/2 bg-cyan-300 rounded-full shadow-[0_0_20px_rgba(34,211,238,1)] transition-all duration-1000 ease-in-out mix-blend-screen"></div>
-                        </div>
-                        
-                        <div className="absolute top-1/3 left-4 bg-slate-900/80 backdrop-blur-md border border-cyan-500/50 text-cyan-300 text-[9px] font-bold uppercase tracking-[0.2em] px-2 py-1 rounded shadow-[0_0_15px_rgba(6,182,212,0.3)] flex items-center gap-1.5 overflow-hidden w-max">
-                            <Radar size={12} className="animate-spin text-cyan-400" />
-                            <span className="scanner-label">SCAN</span>
-                        </div>
-                        <div className="absolute w-16 h-16 border border-cyan-400/30 rounded-full animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
-                    </div>
-
-                    {/* Hover Info Card */}
                     {hoveredTrade && (
                         <div 
                             className="fixed z-50 glass-panel-heavy rounded-2xl p-4 shadow-[0_20px_40px_rgba(15,23,42,0.2)] pointer-events-none transform -translate-x-1/2 -translate-y-full border border-white min-w-[220px]"
@@ -725,9 +683,7 @@
           const filterStrictness = useRef(1.0); 
           const markersRef = useRef([]); 
           
-          // Zone logic state
-          const zoneStateRef = useRef('OUT'); // OUT, IN
-
+          const zoneStateRef = useRef('OUT'); 
           const logsContainerRef = useRef(null); 
           const fullNewsPool = useRef([...FALLBACK_BTC_NEWS]);
 
@@ -750,21 +706,28 @@
               utterance.rate = 1.05;
               utterance.pitch = 0.95;
 
-              utterance.onend = () => {
-                  isSpeakingRef.current = false;
-                  setTimeout(processSpeechQueue, 300); 
+              let fallbackTimeout;
+
+              const completeSpeech = () => {
+                  clearTimeout(fallbackTimeout);
+                  if (isSpeakingRef.current) {
+                      isSpeakingRef.current = false;
+                      setTimeout(processSpeechQueue, 400); 
+                  }
               };
 
-              utterance.onerror = () => {
-                  isSpeakingRef.current = false;
-                  setTimeout(processSpeechQueue, 300);
-              };
+              utterance.onend = completeSpeech;
+              utterance.onerror = completeSpeech;
 
               try {
                   window.speechSynthesis.speak(utterance);
+                  // Strict fallback to ensure queue is never stuck
+                  fallbackTimeout = setTimeout(() => {
+                      window.speechSynthesis.cancel();
+                      completeSpeech();
+                  }, Math.max(10000, text.length * 150));
               } catch (e) {
-                  isSpeakingRef.current = false;
-                  processSpeechQueue();
+                  completeSpeech();
               }
           };
 
@@ -781,6 +744,7 @@
               }, 400);
           });
 
+          // Fetch News System
           const fetchNews = async () => {
               try {
                   const urls = [
@@ -815,6 +779,30 @@
                   setNewsHeadlines(FALLBACK_BTC_NEWS); 
               }
           };
+
+          // News Reader Timer (Every 10 mins)
+          useEffect(() => {
+              if (!isStarted) return;
+              const newsTimer = setInterval(() => {
+                  if (fullNewsPool.current && fullNewsPool.current.length > 0) {
+                      const idx = Math.floor(Math.random() * fullNewsPool.current.length);
+                      const newsItem = fullNewsPool.current[idx];
+                      
+                      const variations = [
+                          "Обновление рынка. Биткоин.",
+                          "Информационная сводка. Биткоин.",
+                          "Новость по активу Биткоин.",
+                          "Текущий информационный фон. Биткоин."
+                      ];
+                      const prefix = variations[Math.floor(Math.random() * variations.length)];
+                      
+                      enqueueSpeech(`${prefix} ${newsItem}`);
+                      addLog(`СВОДКА: ${newsItem.substring(0, 40)}...`, true);
+                  }
+              }, 10 * 60 * 1000); 
+
+              return () => clearInterval(newsTimer);
+          }, [isStarted]);
 
           useEffect(() => {
             if(!isStarted) return;
@@ -986,7 +974,6 @@
             addLog(`ЗАПУСК ПОИСКА ЛИКВИДНОСТИ 12 ЧАСОВ...`, true);
 
             const curAsset = ASSETS[0];
-            // 12 hours = 720 mins. Expiration = 25 mins. Fetch ~800.
             const initialData = await ScannerAPI.getCandles(curAsset.symbol, 800, '1m');
             
             if (initialData && initialData.length > 200) {
@@ -1005,7 +992,7 @@
                 let historicalWins = 0;
                 let historicalLosses = 0;
                 let histPnl = 0;
-                let currentBet = 500; // Martingale base
+                let currentBet = 500; 
                 
                 const newTradesHistory = [];
 
@@ -1048,8 +1035,8 @@
                         }
 
                         if (isCall || isPut) {
-                            const entryIdx = idx + 1; // 1 min simulated delay for accurate entry
-                            const exitIdx = idx + 26; // 25 mins after entry
+                            const entryIdx = idx + 1; 
+                            const exitIdx = idx + 26; 
                             
                             if(exitIdx >= initialData.length) break;
 
@@ -1090,7 +1077,7 @@
                             } else {
                                 historicalLosses++;
                                 histPnl -= currentBet;
-                                currentBet *= 2.5; // Adjusted to standard martingale 2.5x per instructions
+                                currentBet *= 2.5; 
                             }
 
                             idx += 26;
@@ -1137,7 +1124,6 @@
 
                 if (total > 0) playSound('win');
                 
-                // IMPORTANT: Wait for full speech completion before hiding overview and starting scanner
                 await awaitSpeechCompletion();
 
                 updateStatus('АКТИВАЦИЯ ПРЕМИУМ СКАНЕРА...', 'text-cyan-600');
@@ -1150,7 +1136,6 @@
                 enqueueSpeech('Ошибка связи с криптобиржей Бинанс. Попробуйте перезапустить утилиту позже.');
             }
             
-            // MAIN LIVE LOOP
             while (engineActive.current) {
               try {
                   updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-700');
@@ -1164,7 +1149,6 @@
 
                   for(let cur of ASSETS) {
                     if (!engineActive.current) break;
-                    playSound('scan');
                     
                     const data = await ScannerAPI.getCandles(cur.symbol, 400, '1m'); 
                     
@@ -1183,14 +1167,12 @@
                       const upperData = liqZones.map(i => ({time: i.time, value: i.upper}));
                       const lowerData = liqZones.map(i => ({time: i.time, value: i.lower}));
 
-                      // --- Zone of Interest Logic ---
                       const latestZone = liqZones[liqZones.length - 1];
                       const latestAtr = atrSeries[atrSeries.length - 1].value;
                       if (latestZone && latestAtr) {
                           const distTop = latestZone.upper - currentPrice.current;
                           const distBot = currentPrice.current - latestZone.lower;
                           
-                          // Thresholds: Enter warning if < 0.8 ATR. Leave warning if > 2.5 ATR
                           if (distTop < latestAtr * 0.8 || distBot < latestAtr * 0.8) {
                               if (zoneStateRef.current === 'OUT') {
                                   zoneStateRef.current = 'IN';
@@ -1207,7 +1189,6 @@
                               }
                           }
                       }
-                      // -------------------------------
 
                       let isCall = false;
                       let isPut = false;
@@ -1290,7 +1271,7 @@
                           const directionText = isCall ? "повышение" : "понижение";
                           enqueueSpeech(`Зафиксировано снятие ликвидности. Подготовьте Биткоин. Время 25 минут. Направление на ${directionText}.`);
                           
-                          await awaitSpeechCompletion(); // wait so preparation isn't rushed
+                          await awaitSpeechCompletion(); 
 
                           for(let w=5; w>0; w--) {
                               updateStatus(`ВХОД ЧЕРЕЗ... ${w}С`, 'text-cyan-600 font-bold');
@@ -1372,7 +1353,6 @@
                           while(expirySeconds > 0) {
                             setCountdown(expirySeconds);
                             
-                            // Mid-trade status alert (12.5 mins left)
                             if (expirySeconds === 750) { 
                                 const isWinningNow = (isCall && currentPrice.current > entryPrice) || (!isCall && currentPrice.current < entryPrice);
                                 if (isWinningNow) {
@@ -1401,14 +1381,13 @@
                           if ((isCall && finalPrice > entryPrice) || (isPut && finalPrice < entryPrice)) isWin = true;
                           else if (finalPrice === entryPrice) isWin = true; 
 
-                          // Dynamic bet calculation tracking for live update
                           let nextLiveBet = 500;
                           setTradeStats(prev => {
                               const newWins = prev.wins + (isWin ? 1 : 0);
                               const newLosses = prev.losses + (!isWin ? 1 : 0);
                               
                               if (!isWin && prev.losses > 0) {
-                                  nextLiveBet = 500 * Math.pow(2.5, prev.losses % 4); // simple emulation
+                                  nextLiveBet = 500 * Math.pow(2.5, prev.losses % 4); 
                               } else {
                                   nextLiveBet = 500;
                               }
@@ -1577,10 +1556,11 @@
                 
                 <div className="w-full md:flex-1 h-[50vh] md:h-full glass-panel-heavy rounded-3xl md:rounded-[2.5rem] relative overflow-hidden flex flex-col shrink-0">
                   
-                  <div className={`absolute inset-0 z-30 transition-all duration-700 bg-transparent flex items-center justify-center p-4 md:p-10 ${viewMode === 'SCREENER' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                  {/* SCREENER VIEW (WIDER) */}
+                  <div className={`absolute inset-0 z-30 transition-all duration-700 bg-transparent flex items-center justify-center p-4 md:p-8 ${viewMode === 'SCREENER' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                     
-                    <div className="card-3d-wrapper w-full max-w-4xl h-[45vh] md:h-[65vh] flex">
-                       <div className="card-3d relative w-full h-full flex flex-col p-6 md:p-10 rounded-[2.5rem]">
+                    <div className="card-3d-wrapper w-full max-w-[95%] xl:max-w-[90%] h-[45vh] md:h-[65vh] flex">
+                       <div className="card-3d relative w-full h-full flex flex-col p-5 md:p-8 rounded-[2.5rem]">
                           
                           <div className="flex justify-between items-start mb-6 md:mb-8 relative z-10">
                               <div className="flex items-center gap-5">
@@ -1600,6 +1580,7 @@
                               </div>
                           </div>
 
+                          {/* Central Scanner Graphic Area (Wider and features specific scanner animation) */}
                           <div className="flex-1 overflow-hidden rounded-3xl bg-white/90 border-2 border-white relative shadow-[inset_0_4px_20px_rgba(0,0,0,0.05)] z-10">
                               <MiniChart data={sparklines['BTCUSDT']} />
                               <div className="absolute inset-0 scanline-anim pointer-events-none opacity-40 mix-blend-overlay" />
@@ -1619,6 +1600,7 @@
 
                   </div>
 
+                  {/* DETAILS VIEW (CHARTS) */}
                   <div className={`absolute inset-0 z-20 flex flex-col transition-all duration-700 bg-transparent ${viewMode === 'DETAIL' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                     <div className="absolute top-5 left-5 z-40 flex flex-col gap-2">
                       <div className="glass-card p-4 md:p-5 rounded-3xl min-w-[160px] border-white shadow-[0_15px_40px_rgba(14,165,233,0.15)] relative overflow-hidden bg-white/80">
@@ -1636,8 +1618,7 @@
                     <div className="flex-1 relative w-full mt-32 md:mt-36 flex flex-col gap-2 px-4 pb-4 md:px-5 md:pb-5">
                         <div className="flex-1 relative w-full rounded-3xl overflow-hidden shadow-[inset_0_5px_20px_rgba(0,0,0,0.05)] bg-white/90 border border-white">
                             <div ref={chartContainerRef} className="absolute inset-0" />
-                            {/* Mount precise overlay container on top of the chart */}
-                            <ChartOverlays chart={chartInstance.current} series={candleSeries.current} trades={tradesHistory} data={sparklines['BTCUSDT']} viewMode={viewMode} />
+                            <ChartOverlays chart={chartInstance.current} series={candleSeries.current} trades={tradesHistory} />
                         </div>
                     </div>
                   </div>
