@@ -267,7 +267,6 @@
           { pair: 'BTC/USDT', symbol: 'BTCUSDT', name: 'Bitcoin' }
         ];
 
-        // TOP 20 Crypto map for API validation and naming
         const TOP_CRYPTO_MAP = {
             'BTCUSDT': 'Bitcoin',
             'ETHUSDT': 'Ethereum',
@@ -298,7 +297,7 @@
         }
 
         const ScannerAPI = {
-          async getCandles(symbol, count = 250, interval = '1m') { 
+          async getCandles(symbol, count = 250, interval = '5m') { 
             const urls = [
                 `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
                 `https://api1.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
@@ -715,10 +714,6 @@
                                     {trade.isLive ? 'ACTIVE' : 'EXIT'}
                                 </span>
                             </div>
-
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[9px] font-bold tracking-widest uppercase oswald-font bg-white/90 px-2 py-0.5 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-slate-800 border border-slate-200 pointer-events-none">
-                                {trade.isLive ? 'ACTIVE TRADE' : `25 MIN • ${trade.isWin ? 'WIN' : 'LOSS'}`}
-                            </div>
                         </div>
                     ))}
 
@@ -767,6 +762,9 @@
                                     )}
                                 </span>
                             </div>
+                            <div className="mt-3 pt-2 border-t border-slate-200/60 text-center text-[9px] text-slate-400 font-bold uppercase tracking-widest">
+                                {hoveredTrade.trade.reason} • Q-SCORE: {hoveredTrade.trade.quality || 'N/A'}
+                            </div>
                         </div>
                     )}
                 </div>
@@ -787,7 +785,7 @@
           
           const [countdown, setCountdown] = useState(null);
           const [logs, setLogs] = useState([]);
-          const [currentTF, setCurrentTF] = useState('1M');
+          const [currentTF, setCurrentTF] = useState('5M');
           const [zoneState, setZoneState] = useState('OUT');
           
           const [metrics, setMetrics] = useState({ structure: 50, liquidity: 50, filterLevel: 1.0, smartMoney: 0, buyPressure: 50 });
@@ -796,6 +794,11 @@
           const [tradeStats, setTradeStats] = useState({ count: 0, wins: 0, losses: 0, winRate: 0, pnl: 0 });
           const [tradesHistory, setTradesHistory] = useState([]);
           const [activeLiveTrade, setActiveLiveTrade] = useState(null);
+          
+          const [martingale, setMartingale] = useState({
+              currentStep: 1, maxStep: 1, pnl: 0, rejected: 0,
+              steps: { 1: { w: 0, l: 0 }, 2: { w: 0, l: 0 }, 3: { w: 0, l: 0 }, 4: { w: 0, l: 0 }, 5: { w: 0, l: 0 } }
+          });
           
           const [statusColorClass, setStatusColorClass] = useState('text-slate-800');
           
@@ -819,7 +822,10 @@
           const logsContainerRef = useRef(null); 
           const cryptoQuotesRef = useRef([]);
 
-          // Strict Sequential Speech Queue
+          const consecutiveLossesRef = useRef(0);
+          const lastSignalTimeRef = useRef(0);
+          const lastSignalPriceRef = useRef(0);
+
           const speechQueueRef = useRef([]);
           const isSpeakingRef = useRef(false);
 
@@ -884,7 +890,6 @@
               }, 400);
           });
 
-          // Fetch Crypto Ticker Top 20 API
           const fetchCryptoQuotes = async () => {
               try {
                   const res = await fetch('https://api.binance.com/api/v3/ticker/24hr');
@@ -903,12 +908,9 @@
                           setCryptoQuotes(formatted);
                       }
                   }
-              } catch (e) {
-                  console.error("Failed to fetch crypto quotes");
-              }
+              } catch (e) {}
           };
 
-          // Periodic Crypto Reading (Every 10 mins)
           useEffect(() => {
               if (!isStarted) return;
               const voiceTimer = setInterval(() => {
@@ -944,17 +946,6 @@
             }, 1000);
             return () => { clearInterval(interval); clearInterval(healthTimer); };
           }, [isStarted]);
-
-          useEffect(() => {
-              const loadSparklines = async () => {
-                  const data = await ScannerAPI.getCandles('BTCUSDT', 50, '1m'); 
-                  if (data && data.length > 0) {
-                      setSparklines({'BTCUSDT': data});
-                      currentPrice.current = data[data.length - 1].close;
-                  }
-              };
-              loadSparklines();
-          }, []);
 
           useEffect(() => {
             fetchCryptoQuotes();
@@ -1065,16 +1056,6 @@
               } catch(e) {}
           };
 
-          const drawEntryLine = (price) => {
-            if (!candleSeries.current) return;
-            try {
-                const line = candleSeries.current.createPriceLine({
-                    price: price, color: '#1d4ed8', lineWidth: 2, lineStyle: 3, axisLabelVisible: true, title: `ВХОД`
-                });
-                priceLinesRef.current.push(line);
-            } catch(e) {}
-          };
-
           const updateStatus = (phase, colorClass) => {
               setAppPhase(phase);
               setStatusColorClass(colorClass);
@@ -1088,25 +1069,32 @@
               }
           };
 
+          function getBetAmount(step) {
+              const base = 500;
+              if (step === 1) return base;
+              if (step === 2) return base * 2.5; 
+              if (step === 3) return base * 6.25; 
+              if (step === 4) return base * 15.625; 
+              if (step === 5) return base * 39.0625; 
+              return base;
+          }
+
           const runTerminalEngine = async () => {
             if (engineActive.current) return;
             engineActive.current = true;
 
             if (audioCtx.current && audioCtx.current.state === 'suspended') await audioCtx.current.resume();
 
-            let lastCancelledTime = 0;
-
             markersRef.current = [];
             
-            // Set INITIAL STATE to DETAIL (Historical view) BEFORE speaking
             setViewMode('DETAIL');
             updateStatus('БЭКТЕСТ: АНАЛИЗ СТРУКТУРЫ (12H)...', 'text-cyan-600');
-            addLog(`ЗАПУСК ПОИСКА ЛИКВИДНОСТИ 12 ЧАСОВ...`, true);
+            addLog(`ЗАПУСК ПОИСКА ЛИКВИДНОСТИ 12 ЧАСОВ (5M)...`, true);
 
             const curAsset = ASSETS[0];
-            const initialData = await ScannerAPI.getCandles(curAsset.symbol, 800, '1m');
+            const initialData = await ScannerAPI.getCandles(curAsset.symbol, 250, '5m');
             
-            if (initialData && initialData.length > 200) {
+            if (initialData && initialData.length > 150) {
                 lastDataTimeRef.current = Date.now();
                 setSparklines(prev => ({...prev, [curAsset.symbol]: initialData}));
                 currentPrice.current = initialData[initialData.length - 1].close;
@@ -1122,14 +1110,21 @@
 
                 let historicalWins = 0;
                 let historicalLosses = 0;
-                let histPnl = 0;
-                let currentBet = 500; 
+                
+                let mStep = 1;
+                let mMaxStep = 1;
+                let mPnl = 0;
+                let rejectedCountLocal = 0;
+                let mStepsLocal = { 1: { w: 0, l: 0 }, 2: { w: 0, l: 0 }, 3: { w: 0, l: 0 }, 4: { w: 0, l: 0 }, 5: { w: 0, l: 0 } };
                 
                 const newTradesHistory = [];
 
-                const historyStrictness = 0.8;
-                const startIdx = Math.max(0, initialData.length - 750);
-                const endIdx = initialData.length - 27;
+                let histLastSignalTime = 0;
+                let histLastSignalPrice = 0;
+                let histConsecutiveLosses = 0;
+
+                const startIdx = Math.max(0, initialData.length - 144);
+                const endIdx = initialData.length - 7;
 
                 for (let idx = startIdx; idx <= endIdx; idx++) {
                     const currTime = initialData[idx].time;
@@ -1143,24 +1138,94 @@
                         const cUpper = zones.upper;
                         const cLower = zones.lower;
                         const rangeWidth = cUpper - cLower;
-                        const isRangeValid = rangeWidth > (cAtr * (1.5 * historyStrictness));
+                        const isRangeValid = rangeWidth > (cAtr * 1.5);
 
-                        let isCall = false;
-                        let isPut = false;
+                        const body = Math.abs(currCandle.open - currCandle.close);
+                        const upperWick = currCandle.high - Math.max(currCandle.open, currCandle.close);
+                        const lowerWick = Math.min(currCandle.open, currCandle.close) - currCandle.low;
+
+                        const isRedCandle = currCandle.close < currCandle.open;
+                        const isGreenCandle = currCandle.close > currCandle.open;
 
                         const sweptTop = currCandle.high > cUpper || prevCandle.high > cUpper;
                         const returnedInsideTop = currCandle.close < cUpper;
-                        const structureBreakTop = currCandle.close < prevCandle.low; 
-                        if (sweptTop && returnedInsideTop && structureBreakTop && isRangeValid) isPut = true;
-                        
-                        const sweptBottom = currCandle.low < cLower || prevCandle.low < cLower;
-                        const returnedInsideBottom = currCandle.close > cLower;
-                        const structureBreakBottom = currCandle.close > prevCandle.high; 
-                        if (sweptBottom && returnedInsideBottom && structureBreakBottom && isRangeValid) isCall = true;
+                        const structureBreakTop = currCandle.close < prevCandle.low && isRedCandle;
+
+                        const sweptBot = currCandle.low < cLower || prevCandle.low < cLower;
+                        const returnedInsideBot = currCandle.close > cLower;
+                        const structureBreakBot = currCandle.close > prevCandle.high && isGreenCandle;
+
+                        const isNearTop = (cUpper - currCandle.high) < cAtr * 0.5;
+                        const isNearBot = (currCandle.low - cLower) < cAtr * 0.5;
+
+                        let isCall = false, isPut = false, signalType = '', baseScore = 0;
+
+                        if (isRangeValid) {
+                            if (sweptTop && returnedInsideTop && structureBreakTop) {
+                                isPut = true; signalType = 'Primary Sweep'; baseScore = 85;
+                            } else if (isNearTop && upperWick > body * 1.5 && isRedCandle) {
+                                isPut = true; signalType = 'Wick Rejection'; baseScore = 75;
+                            } else if (currCandle.high >= cUpper && currCandle.close < cUpper && upperWick > cAtr * 0.3) {
+                                isPut = true; signalType = 'Edge Reaction'; baseScore = 75;
+                            } else if (isNearTop && prevCandle.high > cUpper && isRedCandle && currCandle.close < prevCandle.close) {
+                                isPut = true; signalType = 'Liquidity Return'; baseScore = 72;
+                            }
+
+                            if (sweptBot && returnedInsideBot && structureBreakBot) {
+                                isCall = true; signalType = 'Primary Sweep'; baseScore = 85;
+                            } else if (isNearBot && lowerWick > body * 1.5 && isGreenCandle) {
+                                isCall = true; signalType = 'Wick Rejection'; baseScore = 75;
+                            } else if (currCandle.low <= cLower && currCandle.close > cLower && lowerWick > cAtr * 0.3) {
+                                isCall = true; signalType = 'Edge Reaction'; baseScore = 75;
+                            } else if (isNearBot && prevCandle.low < cLower && isGreenCandle && currCandle.close > prevCandle.close) {
+                                isCall = true; signalType = 'Liquidity Return'; baseScore = 72;
+                            }
+                        }
+
+                        if (isCall || isPut) {
+                            let qScore = baseScore;
+                            let rejectReason = '';
+
+                            let threshold = 70;
+                            if (signalType === 'Primary Sweep') threshold = 65;
+                            if (signalType === 'Edge Reaction' || signalType === 'Wick Rejection') threshold = 72;
+
+                            if (histConsecutiveLosses >= 2) threshold += 8;
+
+                            const midPoint = cLower + rangeWidth / 2;
+                            const distToMid = Math.abs(currCandle.close - midPoint);
+                            if (distToMid < rangeWidth * 0.15) { 
+                                qScore -= 30; rejectReason = 'middle range';
+                            }
+
+                            const candlesSinceLast = (currTime - histLastSignalTime) / (5 * 60); 
+                            if (candlesSinceLast < 3) {
+                                qScore -= 50; rejectReason = 'cooldown';
+                            } else if (candlesSinceLast < 6) {
+                                if (Math.abs(currCandle.close - histLastSignalPrice) < cAtr * 0.45) {
+                                    qScore -= 20; rejectReason = 'same zone cooldown';
+                                }
+                            }
+
+                            if (isCall && prevCandle.close < prevCandle.open && (prevCandle.open - prevCandle.close) > cAtr * 1.2) {
+                                qScore -= 15; rejectReason = 'impulse risk';
+                            }
+                            if (isPut && prevCandle.close > prevCandle.open && (prevCandle.close - prevCandle.open) > cAtr * 1.2) {
+                                qScore -= 15; rejectReason = 'impulse risk';
+                            }
+
+                            if (qScore < threshold) {
+                                isCall = false; isPut = false;
+                                rejectedCountLocal++;
+                            } else {
+                                histLastSignalTime = currTime;
+                                histLastSignalPrice = currCandle.close;
+                            }
+                        }
 
                         if (isCall || isPut) {
                             const entryIdx = idx + 1; 
-                            const exitIdx = idx + 26; 
+                            const exitIdx = entryIdx + 5; 
                             if(exitIdx >= initialData.length) break;
 
                             const entryPrice = initialData[entryIdx].open;
@@ -1180,6 +1245,8 @@
                                 size: 1
                             });
 
+                            let betAmount = getBetAmount(mStep);
+
                             newTradesHistory.push({
                                 id: `hist_trade_${currTime}`,
                                 type: isCall ? 'CALL' : 'PUT',
@@ -1189,29 +1256,40 @@
                                 entryPrice: entryPrice,
                                 exitPrice: exitPrice,
                                 isWin: isWin,
-                                betAmount: currentBet,
-                                reason: isCall ? 'BULLISH SMC' : 'BEARISH SMC'
+                                betAmount: betAmount,
+                                reason: signalType
                             });
 
                             if (isWin) {
                                 historicalWins++;
-                                histPnl += currentBet * 0.8;
-                                currentBet = 500;
+                                mPnl += betAmount * 0.7;
+                                mStepsLocal[mStep].w++;
+                                mStep = 1;
+                                histConsecutiveLosses = 0;
                             } else {
                                 historicalLosses++;
-                                histPnl -= currentBet;
-                                currentBet *= 2.5; 
+                                mPnl -= betAmount;
+                                mStepsLocal[mStep].l++;
+                                mStep = Math.min(5, mStep + 1);
+                                if (mStep > mMaxStep) mMaxStep = mStep;
+                                if (mStep > 5) mStep = 1; 
+                                histConsecutiveLosses++;
                             }
-                            idx += 26;
+                            idx += 5; 
                         }
                     }
                 }
 
+                lastSignalTimeRef.current = histLastSignalTime;
+                lastSignalPriceRef.current = histLastSignalPrice;
+                consecutiveLossesRef.current = histConsecutiveLosses;
+
                 const total = historicalWins + historicalLosses;
                 const wr = total > 0 ? Math.round((historicalWins / total) * 100) : 0;
                 
-                setTradeStats({ count: total, wins: historicalWins, losses: historicalLosses, winRate: wr, pnl: histPnl });
+                setTradeStats({ count: total, wins: historicalWins, losses: historicalLosses, winRate: wr, pnl: mPnl });
                 setTradesHistory(newTradesHistory);
+                setMartingale({ currentStep: mStep, maxStep: mMaxStep, pnl: mPnl, steps: mStepsLocal, rejected: rejectedCountLocal });
 
                 setAsset(curAsset);
                 await initChart();
@@ -1222,33 +1300,29 @@
                     try { chartInstance.current.timeScale().fitContent(); } catch(e) {}
                 }
 
-                // NOW speak the history while chart is showing history
                 await speakAsync("Терминал Pro Max запущен.", 'startup-1');
                 if (total > 0) {
                     addLog(`ИСТОРИЯ ЗА 12 ЧАСОВ: НАЙДЕНО СДЕЛОК: ${total}, ВИНРЕЙТ: ${wr}%`, true);
-                    filterStrictness.current = wr >= 60 ? 1.0 : 1.5;
-
                     const quality = wr >= 60 ? 'отличное' : (wr >= 50 ? 'удовлетворительное' : 'низкое');
                     await speakAsync(`За последние 12 часов найдено ${total} ${plural(total, ['сделка', 'сделки', 'сделок'])}.`, 'startup-2');
                     await speakAsync(`Из них ${historicalWins} ${plural(historicalWins, ['плюсовая', 'плюсовые', 'плюсовых'])} и ${historicalLosses} ${plural(historicalLosses, ['минусовая', 'минусовые', 'минусовых'])}.`, 'startup-3');
                     await speakAsync(`Винрейт ${wr} процентов. Качество результатов ${quality}.`, 'startup-4');
                     
-                    const safePnlStr = Math.round(Math.abs(histPnl)).toString();
-                    const profitLossStr = histPnl >= 0 ? "ваша прибыль составила бы" : "ваш убыток составил бы";
-                    await speakAsync(`При стартовой ставке пятьсот рублей, с учётом мартингейла, за последние 12 часов ${profitLossStr} ${safePnlStr} ${plural(Math.round(Math.abs(histPnl)), ['рубль', 'рубля', 'рублей'])}.`, 'startup-5');
+                    const safePnlStr = Math.round(Math.abs(mPnl)).toString();
+                    const profitLossStr = mPnl >= 0 ? "ваша прибыль составила бы" : "ваш убыток составил бы";
+                    await speakAsync(`За последние 12 часов с учётом мартингейла ${profitLossStr} ${safePnlStr} ${plural(Math.round(Math.abs(mPnl)), ['рубль', 'рубля', 'рублей'])}.`, 'startup-5');
                     playSound('win');
                 } else {
                     addLog(`ЗА 12 ЧАСОВ СИГНАЛОВ ПО СТРАТЕГИИ НЕ НАЙДЕНО.`, true);
                     await speakAsync("За последние 12 часов по текущей стратегии сигналов не найдено.", 'startup-no-signals');
                 }
 
-                // Wait for all startup speech to finish completely BEFORE going to scanner mode
                 await awaitSpeechCompletion();
 
                 updateStatus('АКТИВАЦИЯ ПРЕМИУМ СКАНЕРА...', 'text-cyan-600');
                 await new Promise(r => setTimeout(r, 1000));
                 
-                syncModeView(); // Transition to scanner if no zones active
+                syncModeView(); 
             } else {
                 addLog("ОШИБКА: НЕТ СВЯЗИ С БИРЖЕЙ BINANCE", true);
                 updateStatus('ОШИБКА API BINANCE', 'text-rose-600');
@@ -1262,8 +1336,8 @@
                   if (currentAge > 90) {
                       updateStatus('ДАННЫЕ ОБНОВЛЯЮТСЯ. СИГНАЛЫ ПРИОСТАНОВЛЕНЫ.', 'text-rose-600 font-bold animate-pulse');
                       await new Promise(r => setTimeout(r, 2000));
-                      const data = await ScannerAPI.getCandles(curAsset.symbol, 400, '1m'); 
-                      if (data && data.length > 200) lastDataTimeRef.current = Date.now();
+                      const data = await ScannerAPI.getCandles(curAsset.symbol, 200, '5m'); 
+                      if (data && data.length > 100) lastDataTimeRef.current = Date.now();
                       continue;
                   }
 
@@ -1274,7 +1348,7 @@
                       updateStatus('ЗОНА ИНТЕРЕСА: ВОЗМОЖЕН СИГНАЛ', 'text-amber-600 font-bold animate-pulse');
                   }
                   
-                  setCurrentTF('1M');
+                  setCurrentTF('5M');
                   setMetrics(prev => ({ ...prev, filterLevel: filterStrictness.current * 10, smartMoney: 15 }));
 
                   let signalFound = false;
@@ -1282,9 +1356,9 @@
                   for(let cur of ASSETS) {
                     if (!engineActive.current) break;
                     
-                    const data = await ScannerAPI.getCandles(cur.symbol, 400, '1m'); 
+                    const data = await ScannerAPI.getCandles(cur.symbol, 200, '5m'); 
                     
-                    if (data && data.length > 200) {
+                    if (data && data.length > 100) {
                       lastDataTimeRef.current = Date.now();
                       setSparklines(prev => ({...prev, [cur.symbol]: data}));
 
@@ -1331,17 +1405,16 @@
                           }
                       }
 
-                      let isCall = false;
-                      let isPut = false;
+                      let isCall = false, isPut = false, signalType = '';
                       let triggerCandleIdx = lastIdx;
 
-                      for (let j = 0; j < 3; j++) {
-                          const idx = lastIdx - j;
-                          if (idx < 200) continue; 
-
-                          const currTime = data[idx].time;
-                          const currCandle = data[idx];
-                          const prevCandle = data[idx - 1];
+                      // Evaluate ONLY the most recently closed candle for a new signal
+                      // i.e., lastIdx - 1
+                      const evaluateIdx = lastIdx - 1;
+                      if (evaluateIdx >= 100) {
+                          const currTime = data[evaluateIdx].time;
+                          const currCandle = data[evaluateIdx];
+                          const prevCandle = data[evaluateIdx - 1];
                           
                           const zones = liqMap.get(currTime);
                           const cAtr = atrMap.get(currTime);
@@ -1349,27 +1422,92 @@
                           if (zones !== undefined && cAtr !== undefined) {
                               const cUpper = zones.upper;
                               const cLower = zones.lower;
-
                               const rangeWidth = cUpper - cLower;
-                              const isRangeValid = rangeWidth > (cAtr * (1.5 * filterStrictness.current));
+                              const isRangeValid = rangeWidth > (cAtr * 1.5);
+
+                              const body = Math.abs(currCandle.open - currCandle.close);
+                              const upperWick = currCandle.high - Math.max(currCandle.open, currCandle.close);
+                              const lowerWick = Math.min(currCandle.open, currCandle.close) - currCandle.low;
+
+                              const isRedCandle = currCandle.close < currCandle.open;
+                              const isGreenCandle = currCandle.close > currCandle.open;
 
                               const sweptTop = currCandle.high > cUpper || prevCandle.high > cUpper;
                               const returnedInsideTop = currCandle.close < cUpper;
-                              const structureBreakTop = currCandle.close < prevCandle.low;
+                              const structureBreakTop = currCandle.close < prevCandle.low && isRedCandle;
 
-                              if (sweptTop && returnedInsideTop && structureBreakTop && isRangeValid) {
-                                  if (currTime !== lastCancelledTime) {
-                                      isPut = true; triggerCandleIdx = idx; break;
+                              const sweptBot = currCandle.low < cLower || prevCandle.low < cLower;
+                              const returnedInsideBot = currCandle.close > cLower;
+                              const structureBreakBot = currCandle.close > prevCandle.high && isGreenCandle;
+
+                              const isNearTop = (cUpper - currCandle.high) < cAtr * 0.5;
+                              const isNearBot = (currCandle.low - cLower) < cAtr * 0.5;
+
+                              let rawSignal = false, baseScore = 0;
+
+                              if (isRangeValid) {
+                                  if (sweptTop && returnedInsideTop && structureBreakTop) {
+                                      isPut = true; signalType = 'Primary Sweep'; baseScore = 85; rawSignal = true;
+                                  } else if (isNearTop && upperWick > body * 1.5 && isRedCandle) {
+                                      isPut = true; signalType = 'Wick Rejection'; baseScore = 75; rawSignal = true;
+                                  } else if (currCandle.high >= cUpper && currCandle.close < cUpper && upperWick > cAtr * 0.3) {
+                                      isPut = true; signalType = 'Edge Reaction'; baseScore = 75; rawSignal = true;
+                                  } else if (isNearTop && prevCandle.high > cUpper && isRedCandle && currCandle.close < prevCandle.close) {
+                                      isPut = true; signalType = 'Liquidity Return'; baseScore = 72; rawSignal = true;
+                                  }
+
+                                  if (sweptBot && returnedInsideBot && structureBreakBot) {
+                                      isCall = true; signalType = 'Primary Sweep'; baseScore = 85; rawSignal = true;
+                                  } else if (isNearBot && lowerWick > body * 1.5 && isGreenCandle) {
+                                      isCall = true; signalType = 'Wick Rejection'; baseScore = 75; rawSignal = true;
+                                  } else if (currCandle.low <= cLower && currCandle.close > cLower && lowerWick > cAtr * 0.3) {
+                                      isCall = true; signalType = 'Edge Reaction'; baseScore = 75; rawSignal = true;
+                                  } else if (isNearBot && prevCandle.low < cLower && isGreenCandle && currCandle.close > prevCandle.close) {
+                                      isCall = true; signalType = 'Liquidity Return'; baseScore = 72; rawSignal = true;
                                   }
                               }
-                              
-                              const sweptBottom = currCandle.low < cLower || prevCandle.low < cLower;
-                              const returnedInsideBottom = currCandle.close > cLower;
-                              const structureBreakBottom = currCandle.close > prevCandle.high;
 
-                              if (sweptBottom && returnedInsideBottom && structureBreakBottom && isRangeValid) {
-                                  if (currTime !== lastCancelledTime) {
-                                      isCall = true; triggerCandleIdx = idx; break;
+                              if (rawSignal) {
+                                  let qScore = baseScore;
+                                  let rejectReason = '';
+
+                                  let threshold = 70;
+                                  if (signalType === 'Primary Sweep') threshold = 65;
+                                  if (signalType === 'Edge Reaction' || signalType === 'Wick Rejection') threshold = 72;
+
+                                  if (consecutiveLossesRef.current >= 2) threshold += 8;
+
+                                  const midPoint = cLower + rangeWidth / 2;
+                                  const distToMid = Math.abs(currCandle.close - midPoint);
+                                  if (distToMid < rangeWidth * 0.15) { 
+                                      qScore -= 30; rejectReason = 'middle range';
+                                  }
+
+                                  const candlesSinceLast = (currTime - lastSignalTimeRef.current) / (5 * 60); 
+                                  if (candlesSinceLast < 3) {
+                                      qScore -= 50; rejectReason = 'cooldown (too fast)';
+                                  } else if (candlesSinceLast < 6) {
+                                      if (Math.abs(currCandle.close - lastSignalPriceRef.current) < cAtr * 0.45) {
+                                          qScore -= 20; rejectReason = 'same zone cooldown';
+                                      }
+                                  }
+
+                                  if (isCall && prevCandle.close < prevCandle.open && (prevCandle.open - prevCandle.close) > cAtr * 1.2) {
+                                      qScore -= 15; rejectReason = 'impulse risk';
+                                  }
+                                  if (isPut && prevCandle.close > prevCandle.open && (prevCandle.close - prevCandle.open) > cAtr * 1.2) {
+                                      qScore -= 15; rejectReason = 'impulse risk';
+                                  }
+
+                                  if (qScore < threshold) {
+                                      if (!rejectReason) rejectReason = 'low quality score';
+                                      addLog(`Rejected: ${rejectReason} (${qScore})`, true);
+                                      isCall = false; isPut = false;
+                                      setMartingale(prev => ({...prev, rejected: prev.rejected + 1}));
+                                  } else {
+                                      lastSignalTimeRef.current = currTime;
+                                      lastSignalPriceRef.current = currCandle.close;
+                                      triggerCandleIdx = evaluateIdx;
                                   }
                               }
                           }
@@ -1396,7 +1534,7 @@
                                       color: isCall ? '#0ea5e9' : '#f43f5e',
                                       shape: isCall ? 'arrowUp' : 'arrowDown',
                                       text: 'SIGNAL',
-                                      size: 2
+                                      size: 1
                                   });
                                   candleSeries.current.setMarkers(markersRef.current);
                               } catch (e) {}
@@ -1406,11 +1544,11 @@
                           currentPrice.current = data[lastIdx].close;
                           
                           updateStatus(`ОБЪЯСНЕНИЕ СИГНАЛА...`, 'text-cyan-600 font-bold animate-pulse');
-                          addLog(`ЗАФИКСИРОВАНО СНЯТИЕ ЛИКВИДНОСТИ`, true);
+                          addLog(`Accepted: ${signalType}`, true);
 
                           const directionText = isCall ? "повышение" : "понижение";
                           
-                          await speakAsync(`Внимание. Появился сигнал на ${directionText}. Причина: снятие ликвидности.`, `signal-detect-${triggerCandleIdx}`);
+                          await speakAsync(`Внимание. Появился сигнал на ${directionText}. Причина: ${signalType === 'Primary Sweep' ? 'снятие ликвидности' : 'подтверждение уровня'}.`, `signal-detect-${triggerCandleIdx}`);
 
                           signalPhaseRef.current = 'COUNTDOWN';
                           setSignalPhase('COUNTDOWN');
@@ -1424,7 +1562,7 @@
                           updateStatus('СНАЙПЕР: ФИНАЛЬНЫЙ ЧЕК СТРУКТУРЫ', 'text-slate-800 font-bold');
                           
                           try {
-                              const liveData = await ScannerAPI.getCandles(cur.symbol, 2, '1m');
+                              const liveData = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
                               if (liveData && liveData.length > 0) lastDataTimeRef.current = Date.now();
                               const liveTick = liveData[liveData.length - 1];
                               if (liveTick && liveTick.time >= data[data.length - 1].time) {
@@ -1440,7 +1578,6 @@
                           } catch(e) {}
 
                           if (tradeCancelled) {
-                              lastCancelledTime = data[triggerCandleIdx].time; 
                               zoneStateRef.current = 'OUT';
                               setZoneState('OUT');
                               signalPhaseRef.current = 'NONE';
@@ -1463,6 +1600,7 @@
                           const actualEntryTime = liveChartData && liveChartData.length > 0 ? liveChartData[liveChartData.length - 1].time : data[data.length-1].time; 
                           
                           setSignal({ type: isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice });
+                          drawEntryLine(entryPrice);
 
                           addLog(`ВХОД ${isCall ? 'ВВЕРХ' : 'ВНИЗ'} НА 25 МИНУТ.`, true);
                           enqueueSpeech(`Вход на ${directionText}! Время 25 минут. Жмите кнопку!`, `trade-entry-${triggerCandleIdx}`);
@@ -1471,10 +1609,11 @@
                           let isLive = true;
                           let finalExitTime = actualEntryTime + (expMins * 60);
                           
-                          let nextLiveBet = 500;
-                          if (tradeStats.losses > 0) {
-                              nextLiveBet = 500 * Math.pow(2.5, tradeStats.losses % 4); 
-                          }
+                          let currentBetStr = 0;
+                          setMartingale(prev => {
+                              currentBetStr = getBetAmount(prev.currentStep);
+                              return prev;
+                          });
                           
                           setActiveLiveTrade({
                               id: `live_trade_${Date.now()}`,
@@ -1485,8 +1624,8 @@
                               entryPrice: entryPrice,
                               exitPrice: entryPrice,
                               isLive: true,
-                              betAmount: nextLiveBet,
-                              reason: 'LIVE SMC SIGNAL'
+                              betAmount: currentBetStr,
+                              reason: signalType
                           });
 
                           const liveChartTask = (async () => {
@@ -1495,7 +1634,7 @@
                               await new Promise(r => setTimeout(r, 2000));
                               if (!isLive) break;
                               try {
-                                const liveTickArray = await ScannerAPI.getCandles(cur.symbol, 2, '1m');
+                                const liveTickArray = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
                                 if (liveTickArray && liveTickArray.length > 0 && candleSeries.current) {
                                   lastDataTimeRef.current = Date.now();
                                   liveTickArray.forEach(tick => {
@@ -1535,7 +1674,7 @@
                           setCountdown(null);
                           updateStatus('АНАЛИЗ РЕЗУЛЬТАТА', 'text-slate-500');
 
-                          const resultData = await ScannerAPI.getCandles(cur.symbol, 2, '1m');
+                          const resultData = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
                           let finalPrice = entryPrice;
                           if (resultData && resultData.length > 0) {
                               lastDataTimeRef.current = Date.now();
@@ -1547,18 +1686,36 @@
                           if ((isCall && finalPrice > entryPrice) || (isPut && finalPrice < entryPrice)) isWin = true;
                           else if (finalPrice === entryPrice) isWin = true; 
 
-                          setTradeStats(prev => {
-                              const newWins = prev.wins + (isWin ? 1 : 0);
-                              const newLosses = prev.losses + (!isWin ? 1 : 0);
-                              const pnlDelta = isWin ? nextLiveBet * 0.8 : -nextLiveBet;
-
-                              return {
-                                  count: newWins + newLosses,
-                                  wins: newWins,
-                                  losses: newLosses,
-                                  winRate: Math.round((newWins / (newWins + newLosses)) * 100),
-                                  pnl: prev.pnl + pnlDelta
-                              };
+                          setMartingale(prev => {
+                              const newPrev = { ...prev };
+                              const stepObj = { ...newPrev.steps[prev.currentStep] };
+                              
+                              if (isWin) {
+                                  newPrev.pnl += currentBetStr * 0.7;
+                                  stepObj.w++;
+                                  newPrev.currentStep = 1;
+                                  consecutiveLossesRef.current = 0;
+                              } else {
+                                  newPrev.pnl -= currentBetStr;
+                                  stepObj.l++;
+                                  newPrev.currentStep = Math.min(5, prev.currentStep + 1);
+                                  if (newPrev.currentStep > newPrev.maxStep) newPrev.maxStep = newPrev.currentStep;
+                                  if (newPrev.currentStep > 5) newPrev.currentStep = 1; 
+                                  consecutiveLossesRef.current++;
+                              }
+                              newPrev.steps = { ...newPrev.steps, [prev.currentStep]: stepObj };
+                              
+                              setTradeStats(ts => {
+                                  return {
+                                      count: ts.count + 1,
+                                      wins: ts.wins + (isWin ? 1 : 0),
+                                      losses: ts.losses + (!isWin ? 1 : 0),
+                                      winRate: Math.round(((ts.wins + (isWin ? 1 : 0)) / (ts.count + 1)) * 100),
+                                      pnl: newPrev.pnl
+                                  };
+                              });
+                              
+                              return newPrev;
                           });
 
                           setActiveLiveTrade(null);
@@ -1571,21 +1728,18 @@
                               entryPrice: entryPrice,
                               exitPrice: finalPrice,
                               isWin: isWin,
-                              betAmount: nextLiveBet,
-                              reason: 'LIVE SMC SIGNAL'
+                              betAmount: currentBetStr,
+                              reason: signalType
                           }]);
 
                           if (isWin) {
                             playSound('win');
-                            filterStrictness.current = Math.max(1.0, filterStrictness.current - 0.2);
                             addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
                             await speakAsync(`Плюс. Сделка успешно завершена.`, 'trade-result-win');
                           } else {
                             playSound('loss');
-                            filterStrictness.current = Math.min(2.5, filterStrictness.current + 0.5);
-                            addLog(`ФИЛЬТРЫ УСИЛЕНЫ ДО ${filterStrictness.current.toFixed(1)}`, true);
                             addLog(`РЕЗУЛЬТАТ: МИНУС (-).`);
-                            await speakAsync(`Минус. Усиливаю фильтры ликвидности.`, 'trade-result-loss');
+                            await speakAsync(`Минус. Возвращаюсь к поиску.`, 'trade-result-loss');
                           }
 
                           setSignal(null);
@@ -1751,12 +1905,12 @@
                                   </div>
                                   <div>
                                       <h2 className="text-3xl md:text-5xl font-black text-slate-900 oswald-font tracking-wider leading-none drop-shadow-sm">BITCOIN</h2>
-                                      <span className="text-base md:text-xl font-bold text-cyan-700 tracking-[0.2em] uppercase mt-2 inline-block bg-cyan-100/50 px-3 py-1 rounded-lg border border-cyan-200">BTC/USDT • 1M</span>
+                                      <span className="text-base md:text-xl font-bold text-cyan-700 tracking-[0.2em] uppercase mt-2 inline-block bg-cyan-100/50 px-3 py-1 rounded-lg border border-cyan-200">BTC/USDT • {currentTF}</span>
                                   </div>
                               </div>
                               <div className="flex flex-col items-end">
                                   <div className="flex items-center gap-2 text-slate-900 bg-white/80 px-4 py-2 rounded-xl shadow-[0_10px_20px_rgba(15,23,42,0.05)] border border-slate-200">
-                                      <span className="text-xs md:text-sm font-bold tracking-widest uppercase">Smart Money Concept</span>
+                                      <span className="text-xs md:text-sm font-bold tracking-widest uppercase">Balanced 5M+ Mode</span>
                                       <Radar size={18} className="animate-spin text-cyan-500" />
                                   </div>
                               </div>
@@ -1833,18 +1987,6 @@
                        <Speedometer value={metrics.smartMoney} label="SMART MONEY" colorHex="#06b6d4" />
                     </div>
 
-                    <div className="glass-card border border-white rounded-2xl p-3 flex flex-col gap-1 shrink-0 bg-white/80 shadow-sm">
-                        <div className="flex justify-between text-[9px] md:text-[10px] font-bold text-slate-500 tracking-widest uppercase">
-                            <span className="text-emerald-600">Покупатели</span>
-                            <span>Order Flow Pressure</span>
-                            <span className="text-rose-600">Продавцы</span>
-                        </div>
-                        <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden flex relative shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]">
-                            <div className="h-full bg-emerald-500 transition-all duration-500" style={{width: `${metrics.buyPressure}%`}}></div>
-                            <div className="h-full bg-rose-500 transition-all duration-500" style={{width: `${100 - metrics.buyPressure}%`}}></div>
-                        </div>
-                    </div>
-
                     <div className="flex gap-3 h-28 md:h-32 shrink-0">
                       <div className={`w-[35%] border rounded-2xl flex flex-col items-center justify-center relative transition-all duration-500 glass-card bg-white/90 ${signalPhase === 'ACTIVE' ? 'border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.4)]' : 'border-white'}`}>
                         {signalPhase === 'ACTIVE' && signal ? (
@@ -1869,60 +2011,39 @@
                       </div>
                     </div>
 
-                    <div className={`glass-card border rounded-3xl p-4 flex flex-col gap-3 shrink-0 relative overflow-hidden transition-all duration-700 bg-white/90 ${
-                        tradeStats.count > 0 
-                            ? (tradeStats.pnl >= 0 ? 'border-cyan-400 shadow-[0_10px_30px_rgba(14,165,233,0.2)]' : 'border-rose-400 shadow-[0_10px_30px_rgba(225,29,72,0.15)]') 
-                            : 'border-white'
-                    }`}>
-                       <div className="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full blur-2xl pointer-events-none"></div>
-                       
-                       <div className="flex justify-between items-center z-10 relative">
-                           <div className="flex flex-col">
-                              <span className="text-[10px] text-slate-500 tracking-widest font-bold uppercase oswald-font">СТАТИСТИКА SMC (12H)</span>
-                              <span className="text-xs md:text-sm text-slate-800 tracking-widest font-bold flex items-center gap-2 leading-none oswald-font mt-1">
-                                 <TrendingUp size={14} className={tradeStats.count > 0 ? (tradeStats.winRate >= 50 ? "text-cyan-600" : "text-rose-600") : "text-slate-400"} /> 
-                                 ВИНРЕЙТ: {tradeStats.winRate}%
-                              </span>
-                           </div>
-                           <div className="flex flex-col items-end">
-                              <span className="text-[10px] text-slate-500 tracking-widest font-bold uppercase oswald-font">PNL SMC АНАЛИЗ</span>
-                              <span className={`text-lg md:text-xl font-black ios-text leading-none oswald-font mt-1 ${tradeStats.count > 0 ? (tradeStats.pnl >= 0 ? "text-cyan-700" : "text-rose-600") : "text-slate-400"}`}>
-                                {tradeStats.count > 0 ? (tradeStats.pnl > 0 ? '+' : '') + Math.round(tradeStats.pnl) + ' ₽' : '0 ₽'}
-                              </span>
-                           </div>
-                       </div>
-                       
-                       <div className="w-full h-3 bg-slate-200 rounded-full flex overflow-hidden relative shadow-[inset_0_2px_5px_rgba(0,0,0,0.06)] mt-1 border border-white">
-                           <div 
-                             className="h-full bg-gradient-to-r from-blue-600 to-cyan-400 transition-all duration-1000 ease-out relative"
-                             style={{ 
-                                 width: `${tradeStats.count > 0 ? (tradeStats.wins / tradeStats.count) * 100 : 50}%`,
-                                 boxShadow: tradeStats.winRate >= 50 ? '0 0 15px rgba(14,165,233,0.6)' : 'none'
-                             }}
-                           >
-                              {tradeStats.winRate >= 50 && tradeStats.count > 0 && <div className="absolute inset-0 bg-white/40 w-full animate-pulse"></div>}
-                           </div>
-                           <div 
-                             className="h-full bg-gradient-to-r from-rose-600 to-rose-400 transition-all duration-1000 ease-out relative"
-                             style={{ 
-                                 width: `${tradeStats.count > 0 ? (tradeStats.losses / tradeStats.count) * 100 : 50}%`,
-                                 boxShadow: tradeStats.winRate < 50 && tradeStats.count > 0 ? '0 0 15px rgba(225,29,72,0.6)' : 'none'
-                             }}
-                           >
-                              {tradeStats.winRate < 50 && tradeStats.count > 0 && <div className="absolute inset-0 bg-white/40 w-full animate-pulse"></div>}
-                           </div>
-                       </div>
-
-                       <div className="flex justify-between items-center z-10 relative mt-1 oswald-font">
-                           <div className="flex flex-col bg-slate-100/80 px-3 py-1.5 rounded-lg border border-slate-200">
-                               <span className="text-[9px] md:text-[10px] text-slate-500 tracking-widest font-bold uppercase">ПРОФИТ ({tradeStats.wins})</span>
-                           </div>
-                           <div className="flex flex-col items-end bg-slate-100/80 px-3 py-1.5 rounded-lg border border-slate-200">
-                               <span className="text-[9px] md:text-[10px] text-slate-500 tracking-widest font-bold uppercase">УБЫТОК ({tradeStats.losses})</span>
-                           </div>
-                       </div>
+                    {/* MARTINGALE STATS PANEL */}
+                    <div className="glass-card border rounded-3xl p-4 flex flex-col gap-2 shrink-0 relative overflow-hidden transition-all duration-700 bg-white/90 border-white">
+                        <div className="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full blur-2xl pointer-events-none"></div>
+                        
+                        <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase oswald-font tracking-widest relative z-10">
+                            <span className="flex items-center gap-1.5"><Activity size={12} className="text-cyan-600"/> МАРТИНГЕЙЛ (12H)</span>
+                            <span>MAX КОЛЕНО: {martingale.maxStep}/5</span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center mb-1 relative z-10">
+                            <span className="text-sm font-black oswald-font text-slate-800 tracking-wider">ТЕК. КОЛЕНО: {martingale.currentStep}</span>
+                            <span className={`text-xl font-black ios-text leading-none oswald-font ${martingale.pnl >= 0 ? 'text-cyan-700' : 'text-rose-600'}`}>
+                                {martingale.pnl > 0 ? '+' : ''}{Math.round(martingale.pnl)} ₽
+                            </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-5 gap-1.5 relative z-10">
+                            {[1, 2, 3, 4, 5].map(step => (
+                                <div key={step} className={`flex flex-col items-center justify-center py-1.5 rounded-lg border transition-colors ${martingale.currentStep === step ? 'bg-gradient-to-b from-cyan-50 to-blue-50 border-cyan-300 shadow-[0_2px_8px_rgba(6,182,212,0.2)]' : 'bg-slate-50/50 border-slate-200'}`}>
+                                   <span className={`text-[9px] font-black oswald-font mb-0.5 ${martingale.currentStep === step ? 'text-cyan-700' : 'text-slate-500'}`}>{step}K</span>
+                                   <span className="text-[9px] font-black text-emerald-600 leading-none">{martingale.steps[step].w}W</span>
+                                   <span className="text-[9px] font-black text-rose-600 leading-none mt-0.5">{martingale.steps[step].l}L</span>
+                                </div>
+                            ))}
+                        </div>
+                        
+                        <div className="flex justify-between items-center text-[9px] text-slate-400 font-bold uppercase mt-1 relative z-10 tracking-widest">
+                            <span>ОТКЛОНЕНО СИГНАЛОВ: {martingale.rejected}</span>
+                            <span className="text-slate-600">ВИНРЕЙТ: {tradeStats.winRate}%</span>
+                        </div>
                     </div>
 
+                    {/* ENTRY AND EXPIRATION */}
                     <div className="glass-card rounded-2xl p-4 flex justify-between items-center shrink-0 relative overflow-hidden shadow-md border-white bg-gradient-to-r from-white to-cyan-50/80">
                        <div className="absolute right-0 top-0 bottom-0 w-2/3 bg-[radial-gradient(ellipse_at_right,_rgba(14,165,233,0.1),_transparent)] pointer-events-none"></div>
                        <div className="flex flex-col relative z-10">
