@@ -598,6 +598,7 @@
           )
         };
 
+        // Handles rendering of dynamic markers and glass box natively without breaking LWC logic
         const ChartOverlays = ({ chart, series, trades }) => {
             const overlayRef = useRef(null);
             const [hoveredTrade, setHoveredTrade] = useState(null);
@@ -615,20 +616,31 @@
                         const trade = trades.find(t => t.id === tradeId);
                         if (!trade) return;
 
-                        // Use logical coordinates to prevent missing gaps on fractional/current live times
-                        const entryLogical = timeScale.coordinateToLogical(timeScale.timeToCoordinate(trade.entryTime)) || 
-                                             timeScale.coordinateToLogical(timeScale.timeToCoordinate(trade.signalTime));
+                        // Precise logic to separate SIGNAL and ENTRY visually
+                        let xSignal = timeScale.timeToCoordinate(trade.signalTime);
+                        let logicalSignal = timeScale.coordinateToLogical(xSignal);
                         
                         let xEntry = timeScale.timeToCoordinate(trade.entryTime);
-                        if (xEntry === null && entryLogical !== null) {
-                            xEntry = timeScale.logicalToCoordinate(entryLogical);
+                        let xExit = timeScale.timeToCoordinate(trade.exitTime);
+
+                        // If the trade is live and exact entry candle isn't fully drawn yet, calculate fractional offset
+                        if (xEntry === null && logicalSignal !== null) {
+                            const elapsedSinceSignal = trade.entryTime - trade.signalTime;
+                            const fraction = Math.min(1, Math.max(0, elapsedSinceSignal / 300)); // 5m = 300s
+                            xEntry = timeScale.logicalToCoordinate(logicalSignal + fraction);
                         }
 
-                        let xExit = timeScale.timeToCoordinate(trade.exitTime);
+                        // Calculate exit coordinate precisely for glass box width
+                        if (trade.isLive && xExit === null && xEntry !== null) {
+                            const logicalEntry = timeScale.coordinateToLogical(xEntry);
+                            if (logicalEntry !== null) {
+                                xExit = timeScale.logicalToCoordinate(logicalEntry + 5); // 25 mins = 5 logical candles
+                            }
+                        }
                         
-                        // Exact extrapolation of exit on 5m scale (5 candles ahead of logical entry)
-                        if (trade.isLive && xExit === null && entryLogical !== null) {
-                            xExit = timeScale.logicalToCoordinate(entryLogical + 5);
+                        // Safety fallback if extending out of view
+                        if (trade.isLive && xExit === null) {
+                            xExit = overlayRef.current.clientWidth;
                         }
 
                         const yEntry = series.priceToCoordinate(trade.entryPrice);
@@ -759,6 +771,9 @@
                                     )}
                                 </span>
                             </div>
+                            <div className="mt-3 pt-2 border-t border-slate-200/60 text-center text-[9px] text-slate-400 font-bold uppercase tracking-widest">
+                                {hoveredTrade.trade.reason}
+                            </div>
                         </div>
                     )}
                 </div>
@@ -774,10 +789,10 @@
           const [asset, setAsset] = useState(ASSETS[0]);
           const [sparklines, setSparklines] = useState({});
           
-          const [signalPhase, setSignalPhase] = useState('NONE'); 
-          const [signal, setSignal] = useState(null);
+          // Strict Lifecycle States
+          const [signalPhase, setSignalPhase] = useState('NONE'); // 'NONE' | 'DETECTED' | 'EXPLAINING' | 'COUNTDOWN' | 'ACTIVE'
           
-          const [countdown, setCountdown] = useState(null);
+          const [countdown, setCountdown] = useState(null); // Used for 3s prepare AND 25m expiry visual
           const [logs, setLogs] = useState([]);
           const [currentTF, setCurrentTF] = useState('5M');
           const [zoneState, setZoneState] = useState('OUT');
@@ -787,7 +802,7 @@
           
           const [tradeStats, setTradeStats] = useState({ count: 0, wins: 0, losses: 0, winRate: 0, pnl: 0 });
           const [tradesHistory, setTradesHistory] = useState([]);
-          const [activeLiveTrade, setActiveLiveTrade] = useState(null);
+          const [activeLiveTrade, setActiveLiveTrade] = useState(null); // NOT created until ENTRY_CONFIRMED
           
           const [martingale, setMartingale] = useState({
               currentStep: 1, maxStep: 1, pnl: 0, rejected: 0,
@@ -812,6 +827,8 @@
           const markersRef = useRef([]); 
           
           const zoneStateRef = useRef('OUT'); 
+          const zoneCooldownUntilRef = useRef(0);
+          
           const signalPhaseRef = useRef('NONE');
           const logsContainerRef = useRef(null); 
           const cryptoQuotesRef = useRef([]);
@@ -819,37 +836,27 @@
           const consecutiveLossesRef = useRef(0);
           const lastSignalTimeRef = useRef(0);
           const lastSignalPriceRef = useRef(0);
-          const lastZoneVoiceTimeRef = useRef(0);
 
-          // Deep sequential speech queue
+          // Deep sequential priority speech queue
           const speechQueueRef = useRef([]);
           const isSpeakingRef = useRef(false);
-          const lastSpokenKeysRef = useRef({});
 
-          const speakAsync = (text, key = null) => {
-              return new Promise(resolve => {
-                  if (key) {
-                      if (speechQueueRef.current.some(item => item.key === key)) {
-                          resolve(); return;
-                      }
-                      const now = Date.now();
-                      if (lastSpokenKeysRef.current[key] && (now - lastSpokenKeysRef.current[key]) < 30000) {
-                          resolve(); return;
-                      }
-                  }
-                  speechQueueRef.current.push({ text, key, onDone: resolve });
-                  processSpeechQueue();
-              });
+          // Priorities: 1=HIGH (Signals/Entries/Results), 2=MED (Zone), 3=LOW (Crypto)
+          const enqueueSpeech = (text, key = null, priority = 1, onDone = null) => {
+              if (key && speechQueueRef.current.some(item => item.key === key)) {
+                  if (onDone) onDone(); // duplicate prevent logic
+                  return;
+              }
+              
+              speechQueueRef.current.push({ text, key, priority, onDone });
+              speechQueueRef.current.sort((a, b) => a.priority - b.priority); // Ensure high priority speaks first
+              processSpeechQueue();
           };
 
-          const enqueueSpeech = (text, key = null) => {
-              if (key) {
-                  if (speechQueueRef.current.some(item => item.key === key)) return;
-                  const now = Date.now();
-                  if (lastSpokenKeysRef.current[key] && (now - lastSpokenKeysRef.current[key]) < 30000) return;
-              }
-              speechQueueRef.current.push({ text, key, onDone: null });
-              processSpeechQueue();
+          const speakAsync = (text, key = null, priority = 1) => {
+              return new Promise(resolve => {
+                  enqueueSpeech(text, key, priority, resolve);
+              });
           };
 
           const processSpeechQueue = () => {
@@ -857,18 +864,14 @@
               isSpeakingRef.current = true;
               
               const item = speechQueueRef.current.shift();
-              
-              if (item.key) {
-                  lastSpokenKeysRef.current[item.key] = Date.now();
-              }
 
               const utterance = new SpeechSynthesisUtterance(item.text);
               utterance.lang = 'ru-RU';
               utterance.rate = 1.05;
               utterance.pitch = 0.95;
 
-              let isFinished = false;
               let fallbackTimeout;
+              let isFinished = false;
 
               const completeSpeech = () => {
                   if (isFinished) return;
@@ -883,7 +886,7 @@
               utterance.onerror = completeSpeech;
 
               try {
-                  window.speechSynthesis.cancel();
+                  window.speechSynthesis.cancel(); // kill existing hangs
                   setTimeout(() => {
                       window.speechSynthesis.speak(utterance);
                       fallbackTimeout = setTimeout(() => {
@@ -891,7 +894,7 @@
                               window.speechSynthesis.cancel();
                               completeSpeech();
                           }
-                      }, Math.max(4000, item.text.length * 150));
+                      }, Math.max(5000, item.text.length * 150));
                   }, 50);
               } catch (e) {
                   completeSpeech();
@@ -931,7 +934,7 @@
           useEffect(() => {
               if (!isStarted) return;
               const voiceTimer = setInterval(() => {
-                  if (cryptoQuotesRef.current && cryptoQuotesRef.current.length > 0) {
+                  if (cryptoQuotesRef.current && cryptoQuotesRef.current.length > 0 && signalPhaseRef.current === 'NONE') {
                       const idx = Math.floor(Math.random() * cryptoQuotesRef.current.length);
                       const q = cryptoQuotesRef.current[idx];
                       const changeWord = q.change >= 0 ? 'выросла на' : 'снизилась на';
@@ -940,7 +943,7 @@
                       const pStr = plural(Math.round(Math.abs(q.change)), ['процент', 'процента', 'процентов']);
                       
                       const text = `${q.name} сейчас торгуется около ${intPrice} долларов. За последние 24 часа цена ${changeWord} ${changeVal} ${pStr}.`;
-                      enqueueSpeech(text, `quote-update-${q.symbol}`);
+                      enqueueSpeech(text, `quote-update-${q.symbol}`, 3);
                   }
               }, 10 * 60 * 1000); 
               return () => clearInterval(voiceTimer);
@@ -1084,16 +1087,6 @@
               } catch(e) {}
           };
 
-          const drawEntryLine = (price) => {
-            if (!candleSeries.current) return;
-            try {
-                const line = candleSeries.current.createPriceLine({
-                    price: price, color: '#1d4ed8', lineWidth: 2, lineStyle: 3, axisLabelVisible: true, title: `ВХОД`
-                });
-                priceLinesRef.current.push(line);
-            } catch(e) {}
-          };
-
           const updateStatus = (phase, colorClass) => {
               setAppPhase(phase);
               setStatusColorClass(colorClass);
@@ -1130,7 +1123,7 @@
             addLog(`ЗАПУСК ПОИСКА ЛИКВИДНОСТИ 12 ЧАСОВ (5M)...`, true);
 
             const curAsset = ASSETS[0];
-            const initialData = await ScannerAPI.getCandles(curAsset.symbol, 250, '5m');
+            const initialData = await ScannerAPI.getCandles(curAsset.symbol, 800, '5m');
             
             if (initialData && initialData.length > 150) {
                 lastDataTimeRef.current = Date.now();
@@ -1287,21 +1280,21 @@
                     try { chartInstance.current.timeScale().fitContent(); } catch(e) {}
                 }
 
-                await speakAsync("Терминал Pro Max запущен.", 'startup-1');
+                await speakAsync("Терминал Pro Max запущен.", 'startup-1', 1);
                 if (total > 0) {
                     addLog(`ИСТОРИЯ ЗА 12 ЧАСОВ: НАЙДЕНО СДЕЛОК: ${total}, ВИНРЕЙТ: ${wr}%`, true);
                     const quality = wr >= 60 ? 'отличное' : (wr >= 50 ? 'удовлетворительное' : 'низкое');
-                    await speakAsync(`За последние 12 часов найдено ${total} ${plural(total, ['сделка', 'сделки', 'сделок'])}.`, 'startup-2');
-                    await speakAsync(`Из них ${historicalWins} ${plural(historicalWins, ['плюсовая', 'плюсовые', 'плюх'])} и ${historicalLosses} ${plural(historicalLosses, ['минусовая', 'минусовые', 'минусовых'])}.`, 'startup-3');
-                    await speakAsync(`Винрейт ${wr} процентов. Качество результатов ${quality}.`, 'startup-4');
+                    await speakAsync(`За последние 12 часов найдено ${total} ${plural(total, ['сделка', 'сделки', 'сделок'])}.`, 'startup-2', 1);
+                    await speakAsync(`Из них ${historicalWins} ${plural(historicalWins, ['плюсовая', 'плюсовые', 'плюх'])} и ${historicalLosses} ${plural(historicalLosses, ['минусовая', 'минусовые', 'минусовых'])}.`, 'startup-3', 1);
+                    await speakAsync(`Винрейт ${wr} процентов. Качество результатов ${quality}.`, 'startup-4', 1);
                     
                     const safePnlStr = Math.round(Math.abs(mPnl)).toString();
                     const profitLossStr = mPnl >= 0 ? "ваша прибыль составила бы" : "ваш убыток составил бы";
-                    await speakAsync(`За последние 12 часов с учётом мартингейла ${profitLossStr} ${safePnlStr} ${plural(Math.round(Math.abs(mPnl)), ['рубль', 'рубля', 'рублей'])}.`, 'startup-5');
+                    await speakAsync(`За последние 12 часов с учётом мартингейла ${profitLossStr} ${safePnlStr} ${plural(Math.round(Math.abs(mPnl)), ['рубль', 'рубля', 'рублей'])}.`, 'startup-5', 1);
                     playSound('win');
                 } else {
                     addLog(`ЗА 12 ЧАСОВ СИГНАЛОВ ПО СТРАТЕГИИ НЕ НАЙДЕНО.`, true);
-                    await speakAsync("За последние 12 часов по текущей стратегии сигналов не найдено.", 'startup-no-signals');
+                    await speakAsync("За последние 12 часов по текущей стратегии сигналов не найдено.", 'startup-no-signals', 1);
                 }
 
                 await awaitSpeechCompletion();
@@ -1313,7 +1306,7 @@
             } else {
                 addLog("ОШИБКА: НЕТ СВЯЗИ С БИРЖЕЙ BINANCE", true);
                 updateStatus('ОШИБКА API BINANCE', 'text-rose-600');
-                await speakAsync('Ошибка связи с криптобиржей Бинанс. Попробуйте перезапустить утилиту позже.', 'api-error');
+                await speakAsync('Ошибка связи с криптобиржей Бинанс. Попробуйте перезапустить утилиту позже.', 'api-error', 1);
             }
             
             while (engineActive.current) {
@@ -1367,16 +1360,17 @@
 
                       const latestZone = liqZones[liqZones.length - 1];
                       const latestAtr = atrSeries[atrSeries.length - 1].value;
+                      
                       if (latestZone && latestAtr && signalPhaseRef.current === 'NONE') {
                           const distTop = latestZone.upper - currentPrice.current;
                           const distBot = currentPrice.current - latestZone.lower;
                           
                           if (distTop < latestAtr * 0.8 || distBot < latestAtr * 0.8) {
-                              if (zoneStateRef.current === 'OUT') {
+                              if (zoneStateRef.current === 'OUT' && Date.now() > zoneCooldownUntilRef.current) {
                                   zoneStateRef.current = 'IN';
                                   setZoneState('IN');
                                   addLog('ЦЕНА ВОШЛА В ЗОНУ ИНТЕРЕСА');
-                                  enqueueSpeech('Цена подошла к зоне интереса. Возможен сигнал. Будьте готовы.', 'interest-zone-enter');
+                                  enqueueSpeech('Цена подошла к зоне интереса. Возможен сигнал. Будьте готовы.', 'interest-zone-enter', 2);
                                   syncModeView();
                                   updateStatus('ЗОНА ИНТЕРЕСА: ВОЗМОЖЕН СИГНАЛ', 'text-amber-600 font-bold animate-pulse');
                               }
@@ -1384,8 +1378,9 @@
                               if (zoneStateRef.current === 'IN') {
                                   zoneStateRef.current = 'OUT';
                                   setZoneState('OUT');
+                                  zoneCooldownUntilRef.current = Date.now() + 60000; // 1 minute zone cooldown
                                   addLog('ЦЕНА ПОКИНУЛА ЗОНУ ИНТЕРЕСА');
-                                  enqueueSpeech('Цена отошла от зоны интереса. Возвращаюсь к сканированию.', 'interest-zone-exit');
+                                  enqueueSpeech('Цена отошла от зоны интереса. Возвращаюсь к сканированию.', 'interest-zone-exit', 2);
                                   syncModeView();
                                   updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-700');
                               }
@@ -1396,7 +1391,7 @@
                       let triggerCandleIdx = lastIdx;
 
                       const evaluateIdx = lastIdx - 1;
-                      if (evaluateIdx >= 100) {
+                      if (evaluateIdx >= 100 && signalPhaseRef.current === 'NONE') {
                           const currTime = data[evaluateIdx].time;
                           const currCandle = data[evaluateIdx];
                           const prevCandle = data[evaluateIdx - 1];
@@ -1507,10 +1502,13 @@
                           const directionText = isCall ? "вверх" : "вниз";
                           const reasonText = signalType === 'Primary Sweep' ? 'снятие ликвидности и возврат в зону' : 'реакция от зоны ликвидности';
                           
+                          // 1. SIGNAL DETECTED => EXPLAINING
                           signalPhaseRef.current = 'EXPLAINING';
                           setSignalPhase('EXPLAINING');
-                          await speakAsync(`Внимание. Появился сигнал ${directionText}. Причина: ${reasonText}.`, `signal-detect-${triggerCandleIdx}`);
+                          // Voice explaining MUST finish before countdown
+                          await speakAsync(`Внимание. Появился сигнал ${directionText}. Причина: ${reasonText}.`, `signal-detect-${triggerCandleIdx}`, 1);
 
+                          // 2. PREPARE COUNTDOWN 3s
                           signalPhaseRef.current = 'COUNTDOWN';
                           setSignalPhase('COUNTDOWN');
                           for(let w=3; w>0; w--) {
@@ -1521,8 +1519,8 @@
                           }
                           setCountdown(null);
 
+                          // Final check
                           let tradeCancelled = false;
-                          
                           try {
                               const liveData = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
                               if (liveData && liveData.length > 0) lastDataTimeRef.current = Date.now();
@@ -1546,11 +1544,12 @@
                               setSignalPhase('NONE');
                               playSound('cancel');
                               updateStatus('ОТМЕНА: ИСТИННЫЙ ПРОБОЙ', 'text-rose-600 font-bold');
-                              await speakAsync("Внимание. Отмена. Паттерн сломан. Возвращаюсь к радару.", `signal-cancel-${triggerCandleIdx}`);
+                              await speakAsync("Внимание. Отмена. Паттерн сломан. Возвращаюсь к радару.", `signal-cancel-${triggerCandleIdx}`, 1);
                               syncModeView();
                               break; 
                           }
 
+                          // 3. ENTRY CONFIRMED
                           playSound('start');
                           updateStatus('СДЕЛКА АКТИВНА', 'text-blue-700 font-bold');
                           signalPhaseRef.current = 'ACTIVE';
@@ -1562,7 +1561,6 @@
                           const actualEntryTime = Math.floor(Date.now() / 1000); 
                           
                           setSignal({ type: isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice });
-
                           addLog(`ВХОД ${isCall ? 'ВВЕРХ' : 'ВНИЗ'} НА 25 МИНУТ.`, true);
 
                           let expirySeconds = expMins * 60;
@@ -1575,6 +1573,7 @@
                               return prev;
                           });
                           
+                          // Creating active trade spawns the ENTRY marker and Glass Box
                           setActiveLiveTrade({
                               id: `live_trade_${Date.now()}`,
                               type: isCall ? 'CALL' : 'PUT',
@@ -1614,15 +1613,18 @@
                             }
                           })();
 
+                          // 4. TRADE ACTIVE AND MID STATUS
                           while(expirySeconds > 0) {
                             setCountdown(expirySeconds);
                             
                             if (expirySeconds === 750) { 
                                 const isWinningNow = (isCall && currentPrice.current > entryPrice) || (!isCall && currentPrice.current < entryPrice);
                                 if (isWinningNow) {
-                                    enqueueSpeech('Середина сделки. Сейчас позиция идёт в плюс. Продолжаем сопровождение.', `trade-mid-win-${actualEntryTime}`);
+                                    enqueueSpeech('Мы на середине сделки. Сейчас позиция идёт в плюс. Продолжаем спокойно наблюдать.', `trade-mid-win-${actualEntryTime}`, 1);
+                                } else if (currentPrice.current === entryPrice) {
+                                    enqueueSpeech('Мы на середине сделки. Цена рядом с точкой входа. Ждём завершения экспирации.', `trade-mid-tie-${actualEntryTime}`, 1);
                                 } else {
-                                    enqueueSpeech('Середина сделки. Сейчас позиция временно идёт в минус. Ничего страшного, ждём закрытия по экспирации.', `trade-mid-loss-${actualEntryTime}`);
+                                    enqueueSpeech('Мы на середине сделки. Сейчас позиция временно идёт в минус. Без паники, сделка ещё не завершена.', `trade-mid-loss-${actualEntryTime}`, 1);
                                 }
                             }
 
@@ -1634,6 +1636,7 @@
                           setCountdown(null);
                           updateStatus('АНАЛИЗ РЕЗУЛЬТАТА', 'text-slate-500');
 
+                          // 5. EXIT
                           const resultData = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
                           let finalPrice = entryPrice;
                           if (resultData && resultData.length > 0) {
@@ -1678,8 +1681,8 @@
                               return newPrev;
                           });
 
-                          setActiveLiveTrade(null);
-                          setTradesHistory(prev => [...prev, {
+                          setActiveLiveTrade(null); // clears live box
+                          setTradesHistory(prev => [...prev, { // locks history box
                               id: `live_trade_${Date.now()}`,
                               type: isCall ? 'CALL' : 'PUT',
                               signalTime: data[triggerCandleIdx].time,
@@ -1695,11 +1698,11 @@
                           if (isWin) {
                             playSound('win');
                             addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
-                            await speakAsync(`Плюс. Сделка успешно завершена.`, `trade-result-win-${actualEntryTime}`);
+                            await speakAsync(`Сделка успешно закрыта в плюс. Фиксируем прибыль.`, `trade-result-win-${actualEntryTime}`, 1);
                           } else {
                             playSound('loss');
                             addLog(`РЕЗУЛЬТАТ: МИНУС (-).`);
-                            await speakAsync(`Минус. Возвращаюсь к поиску.`, `trade-result-loss-${actualEntryTime}`);
+                            await speakAsync(`Сделка закрылась в минус. Ничего страшного. Работаем по системе, следующий качественный сигнал может перекрыть просадку.`, `trade-result-loss-${actualEntryTime}`, 1);
                           }
 
                           setSignal(null);
@@ -1708,6 +1711,7 @@
                           setMetrics(prev => ({ ...prev, smartMoney: 0 }));
                           zoneStateRef.current = 'OUT';
                           setZoneState('OUT');
+                          zoneCooldownUntilRef.current = Date.now() + 60000;
                           
                           syncModeView();
                           await new Promise(r => setTimeout(r, 1000));
