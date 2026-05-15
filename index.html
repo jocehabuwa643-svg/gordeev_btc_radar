@@ -145,14 +145,14 @@
                 0 12px 35px -5px rgba(15, 23, 42, 0.05), 
                 inset 0 2px 4px rgba(255, 255, 255, 1),
                 inset 0 -1px 2px rgba(0, 0, 0, 0.02);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .premium-glass-card:hover {
-            border-color: rgba(186, 230, 253, 0.9);
-            background: linear-gradient(145deg, rgba(255, 255, 255, 1) 0%, rgba(248, 250, 252, 0.85) 100%);
-            box-shadow: 
-                0 15px 40px -5px rgba(14, 165, 233, 0.12), 
-                inset 0 2px 5px rgba(255, 255, 255, 1);
+        
+        .glass-card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.7) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(25px);
+            border-radius: 1.5rem;
+            box-shadow: 0 8px 25px -5px rgba(15, 23, 42, 0.04), inset 0 1px 3px rgba(255, 255, 255, 1);
         }
 
         .text-gradient {
@@ -169,61 +169,8 @@
         }
         .hft-tick { animation: slideUpFade 1.5s ease-out forwards; }
 
-        /* ================= PREMIUM UI ADDITIONS & MOTION ================= */
+        /* ================= PREMIUM UI ADDITIONS ================= */
         
-        @keyframes pulse-soft {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.05); }
-        }
-        .animate-pulse-soft {
-            animation: pulse-soft 2.5s ease-in-out infinite;
-        }
-
-        @keyframes shimmer-slow {
-            0% { background-position: -200% center; }
-            100% { background-position: 200% center; }
-        }
-        .text-shimmer {
-            background: linear-gradient(90deg, #475569 0%, #94a3b8 50%, #475569 100%);
-            background-size: 200% auto;
-            color: transparent;
-            -webkit-background-clip: text;
-            animation: shimmer-slow 4s linear infinite;
-        }
-
-        /* Glass Trade Boxes */
-        .glass-box-trade {
-            background: linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.05));
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 10px 40px 0 rgba(15, 23, 42, 0.1), inset 0 1px 2px rgba(255, 255, 255, 0.6);
-            /* Убрана задержка позиционирования, анимация только для визуальных свойств */
-            transition: background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease, opacity 0.5s ease;
-        }
-        .trade-active-call { 
-            border-color: rgba(52, 211, 153, 0.6); 
-            box-shadow: 0 0 25px rgba(16,185,129,0.2), inset 0 0 20px rgba(16,185,129,0.15), inset 0 1px 2px rgba(255,255,255,0.8); 
-            animation: pulse-soft 3s infinite; 
-        }
-        .trade-active-put { 
-            border-color: rgba(251, 113, 133, 0.6); 
-            box-shadow: 0 0 25px rgba(244,63,94,0.2), inset 0 0 20px rgba(244,63,94,0.15), inset 0 1px 2px rgba(255,255,255,0.8); 
-            animation: pulse-soft 3s infinite; 
-        }
-        .trade-win { background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05)); border-color: rgba(16,185,129,0.3); }
-        .trade-loss { background: linear-gradient(135deg, rgba(244,63,94,0.15), rgba(244,63,94,0.05)); border-color: rgba(244,63,94,0.3); }
-
-        /* POI Breathing Animations */
-        @keyframes poi-breathe-sell {
-            0%, 100% { background: linear-gradient(to bottom, rgba(244,63,94,0.1), transparent); border-bottom-color: rgba(244,63,94,0.3); box-shadow: 0 0 0 rgba(244,63,94,0); }
-            50% { background: linear-gradient(to bottom, rgba(244,63,94,0.25), transparent); border-bottom-color: rgba(244,63,94,0.8); box-shadow: inset 0 15px 40px -10px rgba(244,63,94,0.35); }
-        }
-        @keyframes poi-breathe-buy {
-            0%, 100% { background: linear-gradient(to top, rgba(16,185,129,0.1), transparent); border-top-color: rgba(16,185,129,0.3); box-shadow: 0 0 0 rgba(16,185,129,0); }
-            50% { background: linear-gradient(to top, rgba(16,185,129,0.25), transparent); border-top-color: rgba(16,185,129,0.8); box-shadow: inset 0 -15px 40px -10px rgba(16,185,129,0.35); }
-        }
-
         .silver-badge {
             background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
             border: 1px solid rgba(255, 255, 255, 0.9);
@@ -280,6 +227,28 @@
             40% { transform: scale(3.5); opacity: 0; }
             100% { transform: scale(3.5); opacity: 0; }
         }
+
+        /* Glass Trade Boxes - COORDINATE SYNCHRONIZED */
+        /* REMOVED transition on layout properties (left, width, top, height) for instant sync */
+        .glass-box-trade {
+            background: linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.05));
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 10px 40px 0 rgba(15, 23, 42, 0.1), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+            transition: background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease, opacity 0.5s ease;
+        }
+        .trade-active-call { 
+            border-color: rgba(52, 211, 153, 0.6); 
+            box-shadow: 0 0 25px rgba(16,185,129,0.2), inset 0 0 20px rgba(16,185,129,0.15), inset 0 1px 2px rgba(255,255,255,0.8); 
+        }
+        .trade-active-put { 
+            border-color: rgba(251, 113, 133, 0.6); 
+            box-shadow: 0 0 25px rgba(244,63,94,0.2), inset 0 0 20px rgba(244,63,94,0.15), inset 0 1px 2px rgba(255,255,255,0.8); 
+        }
+        .trade-win { background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05)); border-color: rgba(16,185,129,0.3); }
+        .trade-loss { background: linear-gradient(135deg, rgba(244,63,94,0.15), rgba(244,63,94,0.05)); border-color: rgba(244,63,94,0.3); }
+
     </style>
 </head>
 <body>
@@ -304,6 +273,71 @@
                 <path d="M13 13l6 6"/>
             </svg>
         );
+
+        /* ================= FINANCIAL UNIFICATION ================= */
+        const TRADE_MONEY_CONFIG = {
+            startBalance: 100000,
+            stake: 1000,
+            payout: 0.70
+        };
+
+        function calculateTradingStats(trades, moneyConfig) {
+            const closedTrades = trades.filter(t => 
+                t.status === "CLOSED" && 
+                (t.result === "WIN" || t.result === "LOSS") && 
+                Number.isFinite(t.entryTime) && 
+                Number.isFinite(t.exitTime)
+            );
+
+            const wins = closedTrades.filter(t => t.result === "WIN").length;
+            const losses = closedTrades.filter(t => t.result === "LOSS").length;
+            const total = wins + losses;
+
+            const winPnl = moneyConfig.stake * moneyConfig.payout;
+            const lossPnl = -moneyConfig.stake;
+
+            const pnl = (wins * winPnl) + (losses * lossPnl);
+            const balance = moneyConfig.startBalance + pnl;
+            const winrate = total > 0 ? Math.round((wins / total) * 100) : 0;
+
+            return {
+                trades: total,
+                wins,
+                losses,
+                winrate,
+                pnl,
+                balance,
+                stake: moneyConfig.stake,
+                payout: moneyConfig.payout,
+                winPnl,
+                lossPnl
+            };
+        }
+
+        /* ================= SCAN LEDGER MANAGER (PARITY PROTECTION) ================= */
+        const ScanLedger = {
+            get: (time) => {
+                try {
+                    const data = JSON.parse(localStorage.getItem('crypto_pro_max_scan_ledger') || '{}');
+                    return data[time];
+                } catch(e) { return null; }
+            },
+            set: (time, status) => {
+                try {
+                    const data = JSON.parse(localStorage.getItem('crypto_pro_max_scan_ledger') || '{}');
+                    data[time] = status;
+                    // Keep last ~150 scans (approx 12 hours on 5m) to avoid storage bloat
+                    const keys = Object.keys(data).sort((a,b) => b - a);
+                    if(keys.length > 200) {
+                        const newData = {};
+                        keys.slice(0, 200).forEach(k => newData[k] = data[k]);
+                        localStorage.setItem('crypto_pro_max_scan_ledger', JSON.stringify(newData));
+                    } else {
+                        localStorage.setItem('crypto_pro_max_scan_ledger', JSON.stringify(data));
+                    }
+                } catch(e) {}
+            }
+        };
 
         const ASSETS = [{ pair: 'BTC/USDT', symbol: 'BTCUSDT', name: 'Bitcoin' }];
 
@@ -433,7 +467,8 @@
             return 'NEUTRAL';
         }
 
-        /* Единый детерминированный движок поиска сигналов */
+        /* ================= DETERMINISTIC SIGNAL ENGINE ================= */
+        // Guaranteed strictly no-lookahead. It only evaluates index and index-1.
         function evaluateSignalEngine(data, evalIdx, liqMap, atrMap, mtfContext, engineState) {
             if (evalIdx < 100) return { valid: false, reason: 'Not enough data' };
 
@@ -709,7 +744,7 @@
           const isUp = type === 'CALL';
           return (
             <div className="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center animate-arrow-premium">
-               <svg viewBox="0 0 24 24" className={`w-full h-full fill-current ${isUp ? 'text-[#10b981]' : 'text-[#f43f5e] drop-shadow-[0_0_10px_rgba(244,63,94,0.4)]'}`}>
+               <svg viewBox="0 0 24 24" className={`w-full h-full fill-current ${isUp ? 'text-[#0ea5e9]' : 'text-[#f43f5e]'}`}>
                   <path d={isUp ? "M12 2l-10 11h7v9h6v-9h7z" : "M12 22l10-11h-7v-9h-6v9h-7z"} />
                </svg>
             </div>
@@ -751,8 +786,8 @@
                     <span className="relative z-10 opacity-80">{vol}</span>
                   </div>
                 )})}
-                <div className="flex justify-between text-blue-900 bg-blue-50 border border-blue-300 my-1.5 px-2 py-0.5 text-xs md:text-sm font-black shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),_0_0_10px_rgba(14,165,233,0.15)] rounded-md relative overflow-hidden">
-                  <div className="absolute left-0 top-0 bottom-0 bg-blue-300/30" style={{width: `${Math.random()*60 + 20}%`}}></div>
+                <div className="flex justify-between text-blue-900 bg-blue-100 border border-blue-400 my-1.5 px-2 py-0.5 text-xs md:text-sm font-black shadow-[0_0_15px_rgba(14,165,233,0.3)] rounded-md relative overflow-hidden">
+                  <div className="absolute left-0 top-0 bottom-0 bg-blue-300/40" style={{width: `${Math.random()*60 + 20}%`}}></div>
                   <span className="relative z-10 drop-shadow-sm">{formattedP}</span>
                   <span className="relative z-10 text-blue-700">{Math.floor(Math.random() * 200 + 50)}</span>
                 </div>
@@ -797,7 +832,7 @@
           )
         };
 
-        const ChartOverlays = ({ chart, series, trades, poiZones, currentPrice, zoneState }) => {
+        const ChartOverlays = ({ chart, series, trades }) => {
             const overlayRef = useRef(null);
             const [hoveredTrade, setHoveredTrade] = useState(null);
 
@@ -808,55 +843,8 @@
                 const syncPositions = () => {
                     if (!chart || !series || !overlayRef.current) return;
                     const timeScale = chart.timeScale();
-                    const topPoiEl = overlayRef.current.querySelector('.poi-top');
-                    const botPoiEl = overlayRef.current.querySelector('.poi-bot');
-
-                    // Advanced POI Zones rendering with breathing logic
-                    if (poiZones) {
-                        const xStart = timeScale.timeToCoordinate(poiZones.time - (300 * 30)); // Stretch ~30 candles back
-                        const xEnd = overlayRef.current.clientWidth + 100; // Extend beyond right edge
-                        const leftPx = xStart !== null ? xStart : 0;
-                        const widthPx = Math.max(0, xEnd - leftPx);
-
-                        // Determine which zone is closer for the localized breathing animation
-                        const distTop = currentPrice ? Math.abs(poiZones.top - currentPrice) : Infinity;
-                        const distBot = currentPrice ? Math.abs(currentPrice - poiZones.bot) : Infinity;
-                        const isNearTop = zoneState === 'IN' && distTop <= distBot;
-                        const isNearBot = zoneState === 'IN' && distTop > distBot;
-
-                        const ySellBase = series.priceToCoordinate(poiZones.top);
-                        const ySellTop = series.priceToCoordinate(poiZones.top + poiZones.atr * 2);
-
-                        if (ySellBase !== null && ySellTop !== null && topPoiEl) {
-                            const topY = Math.min(ySellBase, ySellTop);
-                            const botY = Math.max(ySellBase, ySellTop);
-                            topPoiEl.style.display = 'block';
-                            topPoiEl.style.top = `${topY}px`;
-                            topPoiEl.style.height = `${Math.abs(botY - topY)}px`;
-                            topPoiEl.style.left = `${leftPx}px`;
-                            topPoiEl.style.width = `${widthPx}px`;
-                            
-                            topPoiEl.className = `poi-top absolute z-0 pointer-events-none border-b transition-[background,border-color,box-shadow,opacity] duration-700 ${isNearTop ? 'border-rose-500/80 animate-[poi-breathe-sell_3s_ease-in-out_infinite]' : 'border-rose-500/30 bg-gradient-to-b from-rose-500/10 to-transparent'}`;
-                        } else if (topPoiEl) { topPoiEl.style.display = 'none'; }
-
-                        const yBuyBase = series.priceToCoordinate(poiZones.bot);
-                        const yBuyBot = series.priceToCoordinate(poiZones.bot - poiZones.atr * 2);
-
-                        if (yBuyBase !== null && yBuyBot !== null && botPoiEl) {
-                            const topY = Math.min(yBuyBase, yBuyBot);
-                            const botY = Math.max(yBuyBase, yBuyBot);
-                            botPoiEl.style.display = 'block';
-                            botPoiEl.style.top = `${topY}px`;
-                            botPoiEl.style.height = `${Math.abs(botY - topY)}px`;
-                            botPoiEl.style.left = `${leftPx}px`;
-                            botPoiEl.style.width = `${widthPx}px`;
-
-                            botPoiEl.className = `poi-bot absolute z-0 pointer-events-none border-t transition-[background,border-color,box-shadow,opacity] duration-700 ${isNearBot ? 'border-emerald-500/80 animate-[poi-breathe-buy_3s_ease-in-out_infinite]' : 'border-emerald-500/30 bg-gradient-to-t from-emerald-500/10 to-transparent'}`;
-                        } else if (botPoiEl) { botPoiEl.style.display = 'none'; }
-                    }
-
-                    // Glass Trades Boxes rendering
                     const tradeBoxes = overlayRef.current.querySelectorAll('.trade-glass-box');
+                    
                     tradeBoxes.forEach(box => {
                         const tradeId = box.dataset.id;
                         const trade = trades.find(t => t.id === tradeId);
@@ -887,8 +875,8 @@
                             xExit = overlayRef.current.clientWidth;
                         }
 
-                        let yEntry = series.priceToCoordinate(trade.entryPrice);
-                        let yExit = series.priceToCoordinate(trade.exitPrice);
+                        const yEntry = series.priceToCoordinate(trade.entryPrice);
+                        const yExit = series.priceToCoordinate(trade.exitPrice);
                         
                         if (xEntry !== null && xExit !== null && yEntry !== null && yExit !== null) {
                             box.style.display = 'block';
@@ -896,12 +884,11 @@
                             const left = Math.min(xEntry, xExit);
                             const width = Math.max(Math.abs(xExit - xEntry), 10); 
                             
-                            let maxPriceY = Math.min(yEntry, yExit); 
-                            let minPriceY = Math.max(yEntry, yExit);
+                            const maxPriceY = Math.min(yEntry, yExit); 
+                            const minPriceY = Math.max(yEntry, yExit);
                             
-                            // Volumetric vertical space
-                            let top = maxPriceY - 40; 
-                            let height = Math.max(80, (minPriceY - maxPriceY) + 80);
+                            const top = maxPriceY - 40; 
+                            const height = Math.max(80, (minPriceY - maxPriceY) + 80);
                             
                             box.style.left = `${left}px`;
                             box.style.width = `${width}px`;
@@ -933,10 +920,8 @@
                     });
                 };
 
-                // Immediate initial sync
                 scheduleOverlaySync();
 
-                // Subscriptions for perfectly synchronized frame updates during user interaction
                 chart.timeScale().subscribeVisibleLogicalRangeChange(scheduleOverlaySync);
                 try { chart.timeScale().subscribeVisibleTimeRangeChange(scheduleOverlaySync); } catch(e){}
                 chart.subscribeCrosshairMove(scheduleOverlaySync);
@@ -954,25 +939,18 @@
                     chart.unsubscribeCrosshairMove(scheduleOverlaySync);
                     if (ro) ro.disconnect();
                 };
-            }, [chart, series, trades, poiZones, currentPrice, zoneState]);
+            }, [chart, series, trades]);
 
             return (
                 <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden" ref={overlayRef}>
-                    <div className="poi-top" style={{ display: 'none' }}>
-                        <span className="absolute bottom-0 right-2 text-[9px] font-bold text-rose-700 bg-white/80 px-2 py-0.5 rounded-t-md oswald-font tracking-widest backdrop-blur-md border border-rose-200/50 shadow-[0_-2px_10px_rgba(244,63,94,0.1)]">SELL ZONE (POI)</span>
-                    </div>
-                    <div className="poi-bot" style={{ display: 'none' }}>
-                        <span className="absolute top-0 right-2 text-[9px] font-bold text-emerald-700 bg-white/80 px-2 py-0.5 rounded-b-md oswald-font tracking-widest backdrop-blur-md border border-emerald-200/50 shadow-[0_2px_10px_rgba(16,185,129,0.1)]">BUY ZONE (POI)</span>
-                    </div>
-
                     {trades.map(trade => (
                         <div 
                             key={trade.id}
                             data-id={trade.id}
-                            className={`trade-glass-box glass-box-trade absolute pointer-events-auto cursor-help group transition-[background,border-color,box-shadow,opacity] duration-500 rounded-xl z-10 ${
+                            className={`trade-glass-box glass-box-trade absolute pointer-events-auto cursor-help group rounded-xl z-10 ${
                                 trade.isLive 
                                     ? (trade.type === 'CALL' ? 'trade-active-call' : 'trade-active-put')
-                                    : (trade.isWin ? 'trade-win hover:bg-emerald-500/20' : 'trade-loss hover:bg-rose-500/20')
+                                    : (trade.result === "WIN" ? 'trade-win hover:bg-emerald-500/20' : 'trade-loss hover:bg-rose-500/20')
                             }`}
                             style={{ display: 'none' }}
                             onMouseEnter={(e) => {
@@ -981,46 +959,42 @@
                             }}
                             onMouseLeave={() => setHoveredTrade(null)}
                         >
-                            {/* Premium Glowing Entry Dot */}
                             <div className="entry-dot-wrapper absolute w-0 h-0 z-20 transition-transform duration-300 group-hover:scale-125 flex items-center justify-center">
-                                <div className={`absolute w-3 h-3 -ml-[6px] -mt-[6px] rounded-full shadow-[0_0_15px_currentColor] border-[2px] border-white ${trade.type === 'CALL' ? 'bg-emerald-500 text-emerald-400' : 'bg-rose-500 text-rose-400'}`}></div>
-                                <div className={`absolute w-6 h-6 -ml-[12px] -mt-[12px] rounded-full opacity-40 animate-ping ${trade.type === 'CALL' ? 'bg-emerald-400' : 'bg-rose-400'}`}></div>
-                                <span className={`absolute -ml-4 -top-7 text-[8px] px-2 py-0.5 rounded-md shadow-lg font-bold uppercase tracking-wider bg-slate-900 border ${trade.type === 'CALL' ? 'text-emerald-400 border-emerald-500/50' : 'text-rose-400 border-rose-500/50'} opacity-0 group-hover:opacity-100 transition-opacity`}>ENTRY</span>
+                                <div className={`absolute w-3 h-3 -ml-[6px] -mt-[6px] rounded-full shadow-[0_0_15px_currentColor] border-[2px] border-white ${trade.type === 'CALL' ? 'bg-cyan-500 text-cyan-400' : 'bg-orange-500 text-orange-400'}`}></div>
+                                <span className={`absolute -ml-4 -top-7 text-[8px] px-2 py-0.5 rounded-md shadow-lg font-bold uppercase tracking-wider bg-slate-900 border ${trade.type === 'CALL' ? 'text-cyan-400 border-cyan-500/50' : 'text-orange-400 border-orange-500/50'} opacity-0 group-hover:opacity-100 transition-opacity`}>ENTRY</span>
                             </div>
 
-                            {/* Premium Glowing Exit Dot */}
                             <div className="exit-dot-wrapper absolute w-0 h-0 z-20 transition-transform duration-300 group-hover:scale-125 flex items-center justify-center">
                                 <div className={`absolute w-3 h-3 -ml-[6px] -mt-[6px] rounded-full shadow-[0_0_15px_currentColor] border-[2px] border-white ${
-                                    trade.isLive ? 'bg-blue-500 text-blue-400' : (trade.isWin ? 'bg-emerald-500 text-emerald-400' : 'bg-rose-500 text-rose-400')
+                                    trade.isLive ? 'bg-blue-500 text-blue-400' : (trade.result === "WIN" ? 'bg-emerald-500 text-emerald-400' : 'bg-rose-500 text-rose-400')
                                 }`}></div>
-                                {trade.isLive && <div className="absolute w-6 h-6 -ml-[12px] -mt-[12px] rounded-full bg-blue-400/40 animate-[pulse-soft_2s_infinite]"></div>}
+                                {trade.isLive && <div className="absolute w-6 h-6 -ml-[12px] -mt-[12px] rounded-full bg-blue-400/40 animate-ping opacity-60"></div>}
                                 <span className={`absolute -ml-4 -top-7 text-[8px] px-2 py-0.5 rounded-md shadow-lg font-bold uppercase tracking-wider bg-slate-900 border ${
-                                    trade.isLive ? 'text-blue-400 border-blue-500/50' : (trade.isWin ? 'text-emerald-400 border-emerald-500/50' : 'text-rose-400 border-rose-500/50')
+                                    trade.isLive ? 'text-blue-400 border-blue-500/50' : (trade.result === "WIN" ? 'text-emerald-400 border-emerald-500/50' : 'text-rose-400 border-rose-500/50')
                                 } opacity-0 group-hover:opacity-100 transition-opacity`}>
                                     {trade.isLive ? 'ACTIVE' : 'EXIT'}
                                 </span>
                             </div>
 
                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[9px] font-bold tracking-widest uppercase oswald-font bg-white/95 px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-slate-800 border border-slate-200 pointer-events-none backdrop-blur-md">
-                                {trade.isLive ? 'ACTIVE TRADE' : `25 MIN • ${trade.isWin ? 'WIN' : 'LOSS'}`}
+                                {trade.isLive ? 'ACTIVE TRADE' : `25 MIN • ${trade.result === "WIN" ? 'WIN' : 'LOSS'}`}
                             </div>
                         </div>
                     ))}
 
-                    {/* Premium Hover Card */}
                     {hoveredTrade && (
                         <div 
                             className="fixed z-50 premium-glass-card rounded-2xl p-4 pointer-events-none transform -translate-x-1/2 -translate-y-full min-w-[220px]"
                             style={{ left: hoveredTrade.x, top: hoveredTrade.y }}
                         >
                             <div className="flex justify-between items-center mb-3 border-b border-slate-200/60 pb-2">
-                                <span className={`text-xs font-black tracking-widest oswald-font px-2.5 py-1 rounded-md ${hoveredTrade.trade.type === 'CALL' ? 'bg-emerald-100 text-emerald-700 shadow-[inset_0_1px_3px_rgba(255,255,255,0.8)]' : 'bg-rose-100 text-rose-700 shadow-[inset_0_1px_3px_rgba(255,255,255,0.8)]'}`}>
+                                <span className={`text-xs font-black tracking-widest oswald-font px-2.5 py-1 rounded-md ${hoveredTrade.trade.type === 'CALL' ? 'bg-cyan-100 text-cyan-700 shadow-[inset_0_1px_3px_rgba(255,255,255,0.8)]' : 'bg-orange-100 text-orange-700 shadow-[inset_0_1px_3px_rgba(255,255,255,0.8)]'}`}>
                                     {hoveredTrade.trade.type}
                                 </span>
                                 <span className={`text-xs font-black tracking-widest oswald-font px-2.5 py-1 rounded-md ${
-                                    hoveredTrade.trade.isLive ? 'bg-blue-100 text-blue-700 shadow-[inset_0_1px_3px_rgba(255,255,255,0.8)]' : (hoveredTrade.trade.isWin ? 'bg-emerald-100 text-emerald-700 shadow-[inset_0_1px_3px_rgba(255,255,255,0.8)]' : 'bg-rose-100 text-rose-700 shadow-[inset_0_1px_3px_rgba(255,255,255,0.8)]')
+                                    hoveredTrade.trade.isLive ? 'bg-blue-100 text-blue-700 shadow-[inset_0_1px_3px_rgba(255,255,255,0.8)]' : (hoveredTrade.trade.result === "WIN" ? 'bg-emerald-100 text-emerald-700 shadow-[inset_0_1px_3px_rgba(255,255,255,0.8)]' : 'bg-rose-100 text-rose-700 shadow-[inset_0_1px_3px_rgba(255,255,255,0.8)]')
                                 }`}>
-                                    {hoveredTrade.trade.isLive ? 'ACTIVE' : (hoveredTrade.trade.isWin ? 'WIN' : 'LOSS')}
+                                    {hoveredTrade.trade.isLive ? 'ACTIVE' : (hoveredTrade.trade.result === "WIN" ? 'WIN' : 'LOSS')}
                                 </span>
                             </div>
                             <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[10px] md:text-xs mono-font font-semibold">
@@ -1042,14 +1016,14 @@
                                 <span className="text-right text-slate-800">{hoveredTrade.trade.exitPrice.toFixed(2)}</span>
 
                                 <span className="text-slate-500 mt-1 pt-1 border-t border-slate-200">Ставка:</span>
-                                <span className="text-right text-slate-800 mt-1 pt-1 border-t border-slate-200">{hoveredTrade.trade.betAmount || 500} ₽</span>
+                                <span className="text-right text-slate-800 mt-1 pt-1 border-t border-slate-200">{hoveredTrade.trade.betAmount || 1000} ₽</span>
 
                                 <span className="text-slate-500 mt-1 uppercase font-bold">Итог:</span>
                                 <span className={`text-right font-black mt-1 text-sm ${
-                                    hoveredTrade.trade.isLive ? 'text-blue-600' : (hoveredTrade.trade.isWin ? 'text-emerald-600' : 'text-rose-600')
+                                    hoveredTrade.trade.isLive ? 'text-blue-600' : (hoveredTrade.trade.result === "WIN" ? 'text-emerald-600' : 'text-rose-600')
                                 }`}>
                                     {hoveredTrade.trade.isLive ? 'В ПРОЦЕССЕ' : (
-                                        (hoveredTrade.trade.isWin ? '+' : '') + (hoveredTrade.trade.isWin ? Math.round((hoveredTrade.trade.betAmount || 500)*0.7) : -(hoveredTrade.trade.betAmount || 500)) + ' ₽'
+                                        (hoveredTrade.trade.result === "WIN" ? '+' : '') + (hoveredTrade.trade.result === "WIN" ? Math.round((hoveredTrade.trade.betAmount || 1000)*0.7) : -(hoveredTrade.trade.betAmount || 1000)) + ' ₽'
                                     )}
                                 </span>
                             </div>
@@ -1070,7 +1044,6 @@
           const [viewMode, setViewMode] = useState('SCREENER'); 
           const [asset, setAsset] = useState(ASSETS[0]);
           const [sparklines, setSparklines] = useState({});
-          const [poiZones, setPoiZones] = useState(null);
           
           const [signalPhase, setSignalPhase] = useState('NONE'); 
           const [signal, setSignal] = useState(null);
@@ -1084,19 +1057,9 @@
           const [mtfContext, setMtfContext] = useState({ h4: 'WAIT', h1: 'WAIT', m15: 'WAIT', score: '--', status: 'LOADING' });
           const [cryptoQuotes, setCryptoQuotes] = useState([]);
           
-          const [tradeStats, setTradeStats] = useState({ count: 0, wins: 0, losses: 0, winRate: 0, pnl: 0 });
+          // Unified trades ledger replacing old stats
           const [tradesHistory, setTradesHistory] = useState([]);
           const [activeLiveTrade, setActiveLiveTrade] = useState(null);
-          
-          const [finances, setFinances] = useState({
-              balance: 100000,
-              sessionPnl: 0,
-              recoveryDrawdown: 0,
-              currentStep: 1,
-              maxStep: 1,
-              rejected: 0,
-              steps: { 1: { w: 0, l: 0 }, 2: { w: 0, l: 0 }, 3: { w: 0, l: 0 }, 4: { w: 0, l: 0 }, 5: { w: 0, l: 0 }, 6: { w: 0, l: 0 }, 7: { w: 0, l: 0 } }
-          });
 
           const [pureDiag, setPureDiag] = useState({
               candles: 0, sweepHigh: 0, sweepLow: 0, reclaimBuy: 0, reclaimSell: 0, candidates: 0, confirmed: 0, rejected: 0, rendered: 0, boxes: 0, lastReason: 'None'
@@ -1115,7 +1078,7 @@
           const audioCtx = useRef(null);
           const engineActive = useRef(false);
           const currentPrice = useRef(null);
-          const filterStrictness = useRef(1.0); 
+          
           const historicalMarkersRef = useRef([]); 
           const liveMarkersRef = useRef([]);
           
@@ -1129,8 +1092,7 @@
           const consecutiveLossesRef = useRef(0);
           const lastSignalTimeRef = useRef(0);
           const lastSignalPriceRef = useRef(0);
-          
-          // Решение проблемы двойной оценки одних и тех же свечей (Live Scanner Parity)
+
           const lastEvaluatedCandleTimeRef = useRef(0);
           const lastClosedCandleTimeUiRef = useRef(0);
 
@@ -1392,11 +1354,11 @@
           const drawIndicators = (upperData, lowerData) => {
               clearChartExtras();
               try {
-                  const upperSeries = chartInstance.current.addLineSeries({ color: 'rgba(244, 63, 94, 0.3)', lineWidth: 2, lineStyle: 2, title: 'BUY LIQUIDITY' });
+                  const upperSeries = chartInstance.current.addLineSeries({ color: 'rgba(244, 63, 94, 0.5)', lineWidth: 2, lineStyle: 2, title: 'BUY LIQUIDITY' });
                   upperSeries.setData(upperData);
                   extraSeriesRef.current.push(upperSeries);
 
-                  const lowerSeries = chartInstance.current.addLineSeries({ color: 'rgba(16, 185, 129, 0.3)', lineWidth: 2, lineStyle: 2, title: 'SELL LIQUIDITY' });
+                  const lowerSeries = chartInstance.current.addLineSeries({ color: 'rgba(16, 185, 129, 0.5)', lineWidth: 2, lineStyle: 2, title: 'SELL LIQUIDITY' });
                   lowerSeries.setData(lowerData);
                   extraSeriesRef.current.push(lowerSeries);
               } catch(e) {}
@@ -1414,14 +1376,6 @@
                   setViewMode('DETAIL');
               }
           };
-
-          function getBetAmount(step) {
-              const base = 500;
-              const mult = 2.2;
-              let amount = base;
-              for(let i = 1; i < step; i++) amount *= mult;
-              return Math.floor(amount);
-          }
 
           const fetchMtfContext = async (symbol, currentPriceVal) => {
               try {
@@ -1482,32 +1436,56 @@
                 const upperData = liqZones.map(i => ({time: i.time, value: i.upper}));
                 const lowerData = liqZones.map(i => ({time: i.time, value: i.lower}));
 
-                let historicalWins = 0;
-                let historicalLosses = 0;
-                
-                let mStep = 1;
-                let mMaxStep = 1;
-                let recDrawdown = 0;
-                let sesPnl = 0;
-                
                 let d_candles = 0, d_sweepH = 0, d_sweepL = 0, d_recB = 0, d_recS = 0, d_cand = 0, d_conf = 0, d_rej = 0;
                 let d_lastRej = 'None';
-                
-                let mStepsLocal = { 1: { w: 0, l: 0 }, 2: { w: 0, l: 0 }, 3: { w: 0, l: 0 }, 4: { w: 0, l: 0 }, 5: { w: 0, l: 0 }, 6: { w: 0, l: 0 }, 7: { w: 0, l: 0 } };
                 
                 const newTradesHistory = [];
 
                 let engineState = { lastSignalTime: 0, lastSignalPrice: 0, consecutiveLosses: 0 };
 
                 const startIdx = Math.max(0, initialData.length - 144);
-                const endIdx = initialData.length - 7; // Оставляем буфер для просмотра исхода сделки
+                const endIdx = initialData.length - 7;
 
                 for (let idx = startIdx; idx <= endIdx; idx++) {
+                    const currTime = initialData[idx].time;
                     const currCandle = initialData[idx];
+                    const prevCandle = initialData[idx - 1];
                     d_candles++;
                     
-                    // Unified Engine Validation (No Lookahead)
+                    const zones = liqMap.get(currTime);
+                    const cAtr = atrMap.get(currTime);
+
+                    if (zones && cAtr !== undefined) {
+                        const isSweepHigh = currCandle.high >= zones.upper || prevCandle.high >= zones.upper;
+                        const isSweepLow = currCandle.low <= zones.lower || prevCandle.low <= zones.lower;
+                        if (isSweepHigh) d_sweepH++;
+                        if (isSweepLow) d_sweepL++;
+                        const isReclaimSell = isSweepHigh && currCandle.close < zones.upper;
+                        const isReclaimBuy = isSweepLow && currCandle.close > zones.lower;
+                        if (isReclaimSell) d_recS++;
+                        if (isReclaimBuy) d_recB++;
+                        if (isReclaimBuy || isReclaimSell) d_cand++;
+                    }
+
+                    // 1. Core deterministic engine evaluation
                     const sig = evaluateSignalEngine(initialData, idx, liqMap, atrMap, { status: 'LOCAL 5M MODE' }, engineState);
+                    let evaluatedStatus = sig.valid ? 'CONFIRMED' : (sig.reason ? 'REJECTED' : 'NO_SIGNAL');
+
+                    // 2. BACKTEST/LIVE PARITY PROTECTION
+                    // If live scanner already saw this candle and rejected it, backtest MUST reject it too.
+                    const pastLedgerStatus = ScanLedger.get(currTime);
+                    if (pastLedgerStatus) {
+                        if (pastLedgerStatus !== evaluatedStatus) {
+                            if (pastLedgerStatus === 'REJECTED' || pastLedgerStatus === 'NO_SIGNAL' || pastLedgerStatus === 'ZONE_ONLY') {
+                                sig.valid = false;
+                                sig.reason = "PARITY_MISMATCH";
+                                evaluatedStatus = pastLedgerStatus;
+                            }
+                        }
+                    } else {
+                        // Store backtest discovery so future reloads are perfectly aligned
+                        ScanLedger.set(currTime, evaluatedStatus);
+                    }
 
                     if (!sig.valid) {
                         if (sig.reason && !sig.reason.includes('No raw signal') && !sig.reason.includes('Missing indicators') && !sig.reason.includes('Not enough data')) {
@@ -1527,61 +1505,41 @@
 
                         const entryPrice = entryCandle.open;
                         const exitPrice = exitCandle.close;
-                        let isWin = false;
-
+                        
+                        let result = "LOSS";
                         if ((sig.isCall && exitPrice > entryPrice) || (sig.isPut && exitPrice < entryPrice) || exitPrice === entryPrice) {
-                            isWin = true;
+                            result = "WIN";
                         }
 
-                        // Explicitly push markers correctly on respective candles
+                        // Strictly ONLY drawing verified confirmed signals from the past
                         historicalMarkersRef.current.push({
-                            time: currCandle.time, position: sig.isCall ? 'belowBar' : 'aboveBar', color: sig.isCall ? '#0ea5e9' : '#f43f5e', shape: sig.isCall ? 'arrowUp' : 'arrowDown', text: 'SIGNAL', size: 1
+                            time: currTime, position: sig.isCall ? 'belowBar' : 'aboveBar', color: sig.isCall ? '#0ea5e9' : '#f43f5e', shape: sig.isCall ? 'arrowUp' : 'arrowDown', text: 'SIGNAL', size: 1
                         });
-
                         historicalMarkersRef.current.push({
                             time: entryCandle.time, position: sig.isCall ? 'belowBar' : 'aboveBar', color: '#8b5cf6', shape: 'square', text: 'ENTRY', size: 0.5
                         });
-
                         historicalMarkersRef.current.push({
-                            time: exitCandle.time, position: sig.isCall ? 'belowBar' : 'aboveBar', color: isWin ? '#10b981' : '#f43f5e', shape: 'square', text: 'EXIT', size: 0.5
+                            time: exitCandle.time, position: sig.isCall ? 'belowBar' : 'aboveBar', color: result==="WIN" ? '#10b981' : '#f43f5e', shape: 'square', text: 'EXIT', size: 0.5
                         });
 
-                        let betAmount = getBetAmount(mStep);
-
                         newTradesHistory.push({
-                            id: `hist_trade_${currCandle.time}`,
+                            id: `hist_trade_${currTime}`,
                             type: sig.isCall ? 'CALL' : 'PUT',
-                            signalTime: currCandle.time,
+                            signalTime: currTime,
                             entryTime: entryCandle.time,
                             exitTime: exitCandle.time,
                             entryPrice: entryPrice,
                             exitPrice: exitPrice,
-                            isWin: isWin,
-                            betAmount: betAmount,
+                            status: "CLOSED",
+                            result: result,
+                            betAmount: TRADE_MONEY_CONFIG.stake,
                             reason: sig.signalType,
                             quality: sig.score
                         });
 
-                        if (isWin) {
-                            historicalWins++;
-                            sesPnl += (betAmount * 0.7) + recDrawdown;
-                            recDrawdown = 0;
-                            mStepsLocal[mStep].w++;
-                            mStep = 1;
-                            engineState.consecutiveLosses = 0;
-                        } else {
-                            historicalLosses++;
-                            recDrawdown -= betAmount;
-                            mStepsLocal[mStep].l++;
-                            mStep = Math.min(7, mStep + 1);
-                            if (mStep > mMaxStep) mMaxStep = mStep;
-                            if (mStep > 7) {
-                                sesPnl += recDrawdown; 
-                                recDrawdown = 0;
-                                mStep = 1; 
-                            }
-                            engineState.consecutiveLosses++;
-                        }
+                        if (result === "WIN") engineState.consecutiveLosses = 0;
+                        else engineState.consecutiveLosses++;
+                        
                         idx += 5; // Skip ahead inside the trade
                     }
                 }
@@ -1595,13 +1553,7 @@
                 lastEvaluatedCandleTimeRef.current = initialData[initialData.length - 2]?.time || 0;
                 lastClosedCandleTimeUiRef.current = lastEvaluatedCandleTimeRef.current;
 
-                const total = historicalWins + historicalLosses;
-                const wr = total > 0 ? Math.round((historicalWins / total) * 100) : 0;
-                
-                setTradeStats({ count: total, wins: historicalWins, losses: historicalLosses, winRate: wr, pnl: sesPnl });
                 setTradesHistory(newTradesHistory);
-                setFinances(prev => ({ ...prev, currentStep: mStep, maxStep: mMaxStep, sessionPnl: sesPnl, recoveryDrawdown: recDrawdown, steps: mStepsLocal, rejected: d_rej }));
-                
                 setPureDiag({ candles: d_candles, sweepHigh: d_sweepH, sweepLow: d_sweepL, reclaimBuy: d_recB, reclaimSell: d_recS, candidates: d_cand, confirmed: d_conf, rejected: d_rej, rendered: newTradesHistory.length, boxes: newTradesHistory.length, lastReason: d_lastRej });
 
                 setAsset(curAsset);
@@ -1613,18 +1565,18 @@
                     try { chartInstance.current.timeScale().fitContent(); } catch(e) {}
                 }
 
-                // Startup Voice Summary based on strict mathematical model
-                const simulatedPNL = (historicalWins * 700) - (historicalLosses * 1000);
+                // 3. Unified Financial Truth Voice Prompt
+                const finalStats = calculateTradingStats(newTradesHistory, TRADE_MONEY_CONFIG);
                 let speechText = "";
-                if (total > 0) {
-                    addLog(`ИСТОРИЯ ЗА 12 ЧАСОВ: НАЙДЕНО СДЕЛОК: ${total}, ВИНРЕЙТ: ${wr}%, PNL (Sim): ${simulatedPNL} ₽`, true);
-                    speechText = `Терминал запущен. За последние двенадцать часов по текущей стратегии найдено ${total} подтверждённых сделок. Успешных сделок ${historicalWins}. Минусовых сделок ${historicalLosses}. Винрейт составляет ${wr} процентов. При входе в каждую сделку по тысяче рублей и выплате семьдесят процентов результат составил бы ${simulatedPNL} рублей. Приступаю к сканированию рынка.`;
+                if (finalStats.trades > 0) {
+                    addLog(`ИСТОРИЯ ЗА 12 ЧАСОВ: НАЙДЕНО СДЕЛОК: ${finalStats.trades}, ВИНРЕЙТ: ${finalStats.winrate}%`, true);
+                    speechText = `Терминал запущен. За последние двенадцать часов по текущей стратегии найдено ${finalStats.trades} подтверждённых сделок. Успешных сделок ${finalStats.wins}. Минусовых сделок ${finalStats.losses}. Винрейт составляет ${finalStats.winrate} процентов. При входе в каждую сделку по тысяче рублей и выплате семьдесят процентов результат составил бы ${finalStats.pnl} рублей. Демо-баланс составил бы ${finalStats.balance} рублей. Приступаю к сканированию рынка.`;
                 } else {
                     addLog(`ЗА 12 ЧАСОВ СИГНАЛОВ ПО СТРАТЕГИИ НЕ НАЙДЕНО.`, true);
                     speechText = "Терминал запущен. За последние двенадцать часов подтверждённых сделок не найдено. Выборка слабая. Приступаю к сканированию рынка.";
                 }
                 
-                await speakAsync(speechText, 'startup-summary', 1);
+                await speakAsync(speechText, 'startup-summary-current-session', 1);
                 await awaitSpeechCompletion();
 
                 updateStatus('АКТИВАЦИЯ ПРЕМИУМ СКАНЕРА...', 'text-cyan-600');
@@ -1651,9 +1603,9 @@
 
                   syncModeView();
                   if (zoneStateRef.current === 'OUT' && signalPhaseRef.current === 'NONE') {
-                      updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-700 text-shimmer');
+                      updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-700');
                   } else if (zoneStateRef.current === 'IN' && signalPhaseRef.current === 'NONE') {
-                      updateStatus('ЗОНА ИНТЕРЕСА: ОЖИДАНИЕ', 'text-amber-600 font-bold drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]');
+                      updateStatus('ЗОНА ИНТЕРЕСА: ВОЗМОЖЕН СИГНАЛ', 'text-amber-600 font-bold animate-pulse');
                   }
                   
                   setCurrentTF('5M');
@@ -1691,49 +1643,44 @@
                       const latestZone = liqZones[liqZones.length - 1];
                       const latestAtr = atrSeries[atrSeries.length - 1].value;
                       
-                      if (latestZone && latestAtr) {
-                          // Ensure POI Zones are updated for rendering
-                          setPoiZones({ top: latestZone.upper, bot: latestZone.lower, atr: latestAtr, time: data[lastIdx].time });
-
-                          if (signalPhaseRef.current === 'NONE') {
-                              const distTop = latestZone.upper - currentPrice.current;
-                              const distBot = currentPrice.current - latestZone.lower;
-                              
-                              if (distTop < latestAtr * 0.8 || distBot < latestAtr * 0.8) {
-                                  if (zoneStateRef.current === 'OUT' && Date.now() > zoneCooldownUntilRef.current) {
-                                      zoneStateRef.current = 'IN';
-                                      setZoneState('IN');
-                                      addLog('ЦЕНА ВОШЛА В ЗОНУ ИНТЕРЕСА');
-                                      
-                                      const mtf = cachedMtfRef.current;
-                                      let warnTxt = 'Цена подошла к зоне интереса. Возможен сигнал после подтверждения на 5M.';
-                                      if (mtf.h4 !== 'NEUTRAL' || mtf.h1 !== 'NEUTRAL') {
-                                          warnTxt = 'Цена подходит к старшей зоне ликвидности. Возможен сигнал после подтверждения на 5M.';
-                                      }
-                                      // Anti-spam key bound to zone time
-                                      enqueueSpeech(warnTxt, `zone-approach-${latestZone.time}`, 3);
-                                      syncModeView();
-                                      updateStatus('ЗОНА ИНТЕРЕСА: ОЖИДАНИЕ', 'text-amber-600 font-bold');
+                      // ZONE APPROACH LOGIC - Does NOT create signals or affect ledgers
+                      if (latestZone && latestAtr && signalPhaseRef.current === 'NONE') {
+                          const distTop = latestZone.upper - currentPrice.current;
+                          const distBot = currentPrice.current - latestZone.lower;
+                          
+                          if (distTop < latestAtr * 0.8 || distBot < latestAtr * 0.8) {
+                              if (zoneStateRef.current === 'OUT' && Date.now() > zoneCooldownUntilRef.current) {
+                                  zoneStateRef.current = 'IN';
+                                  setZoneState('IN');
+                                  addLog('ЦЕНА ВОШЛА В ЗОНУ ИНТЕРЕСА');
+                                  
+                                  const mtf = cachedMtfRef.current;
+                                  let warnTxt = 'Цена подошла к зоне интереса. Возможен сигнал после подтверждения на 5M.';
+                                  if (mtf.h4 !== 'NEUTRAL' || mtf.h1 !== 'NEUTRAL') {
+                                      warnTxt = 'Цена подходит к старшей зоне ликвидности. Возможен сигнал после подтверждения на 5M.';
                                   }
-                              } else if (distTop > latestAtr * 2.5 && distBot > latestAtr * 2.5) {
-                                  if (zoneStateRef.current === 'IN') {
-                                      zoneStateRef.current = 'OUT';
-                                      setZoneState('OUT');
-                                      zoneCooldownUntilRef.current = Date.now() + 60000; 
-                                      addLog('ЦЕНА ПОКИНУЛА ЗОНУ ИНТЕРЕСА');
-                                      enqueueSpeech('Цена отошла от зоны. Сигнал не подтверждён.', `zone-left-${latestZone.time}`, 3);
-                                      syncModeView();
-                                      updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-700 text-shimmer');
-                                  }
+                                  enqueueSpeech(warnTxt, `zone-approach-${latestZone.time}`, 3);
+                                  syncModeView();
+                                  updateStatus('ЗОНА ИНТЕРЕСА: ВОЗМОЖЕН СИГНАЛ', 'text-amber-600 font-bold animate-pulse');
+                              }
+                          } else if (distTop > latestAtr * 2.5 && distBot > latestAtr * 2.5) {
+                              if (zoneStateRef.current === 'IN') {
+                                  zoneStateRef.current = 'OUT';
+                                  setZoneState('OUT');
+                                  zoneCooldownUntilRef.current = Date.now() + 60000; 
+                                  addLog('ЦЕНА ПОКИНУЛА ЗОНУ ИНТЕРЕСА');
+                                  enqueueSpeech('Цена отошла от зоны. Сигнал не подтверждён.', `zone-left-${latestZone.time}`, 3);
+                                  syncModeView();
+                                  updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-700');
                               }
                           }
                       }
 
                       // LIVE SCANNER EVALUATION
-                      const evaluateIdx = lastIdx - 1; // Strictly closed candle
-                      const evalCandleTime = data[evaluateIdx].time;
-                      
-                      // Parity Control: Only evaluate a closed candle ONCE
+                      const evaluateIdx = lastIdx - 1;
+                      const evalCandleTime = data[evaluateIdx]?.time;
+
+                      // Only evaluate closed candles once to prevent repaint mismatch
                       if (evalCandleTime > lastEvaluatedCandleTimeRef.current && signalPhaseRef.current === 'NONE') {
                           lastClosedCandleTimeUiRef.current = evalCandleTime;
 
@@ -1744,6 +1691,10 @@
                           };
 
                           const sig = evaluateSignalEngine(data, evaluateIdx, liqMap, atrMap, cachedMtfRef.current, liveEngineState);
+                          const evaluatedStatus = sig.valid ? 'CONFIRMED' : (sig.reason ? 'REJECTED' : 'NO_SIGNAL');
+
+                          // PARITY: Save truth to ledger so reload doesn't invent signals
+                          ScanLedger.set(evalCandleTime, evaluatedStatus);
 
                           if (sig.valid) {
                               // SIGNAL CONFIRMED
@@ -1751,7 +1702,6 @@
                               lastSignalPriceRef.current = sig.signalPrice;
                               
                               setMtfContext(prev => ({ ...prev, score: sig.score }));
-                              
                               setAsset(cur);
                               signalPhaseRef.current = 'EXPLAINING';
                               setSignalPhase('EXPLAINING');
@@ -1785,7 +1735,6 @@
                               else if (sig.mtfConfStr === 'CONFIRM') voiceReason = "на 15M есть подтверждение реакции, на 5M сформирован паттерн";
                               else if (sig.signalType === 'Primary Sweep') voiceReason = "снятие ликвидности и возврат в зону";
                               
-                              // Anti-spam strictly bound to this unique signal time
                               await speakAsync(`Внимание. Появился сигнал ${directionText}. ${voiceReason}. Идёт подготовка ко входу.`, `signal-detect-${sig.signalTime}`, 1);
 
                               signalPhaseRef.current = 'COUNTDOWN';
@@ -1825,19 +1774,30 @@
                                   updateStatus('ОТМЕНА: ИСТИННЫЙ ПРОБОЙ', 'text-rose-600 font-bold');
                                   await speakAsync("Внимание. Отмена. Паттерн сломан. Возвращаюсь к радару.", `signal-cancel-${sig.signalTime}`, 1);
                                   syncModeView();
-                                  // Record evaluation even if cancelled so we don't scan it again
                                   lastEvaluatedCandleTimeRef.current = evalCandleTime;
                                   break; 
                               }
 
                               playSound('start');
-
-                              // ACTUAL ENTRY EXECUTED
+                              updateStatus('СДЕЛКА АКТИВНА', 'text-blue-700 font-bold');
+                              signalPhaseRef.current = 'ACTIVE';
+                              setSignalPhase('ACTIVE');
+                              
+                              const entryPrice = currentPrice.current;
+                              const expMins = 25; 
                               const actualEntryTime = Math.floor(Date.now() / 1000); 
+                              
+                              setSignal({ type: sig.isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice });
+                              addLog(`ВХОД ${sig.isCall ? 'ВВЕРХ' : 'ВНИЗ'} НА 25 МИНУТ.`, true);
+                              enqueueSpeech(`Вход выполнен. Сделка активна.`, `trade-entry-${sig.signalTime}`, 1);
 
+                              let expirySeconds = expMins * 60;
+                              let isLive = true;
+                              let finalExitTime = actualEntryTime + (expMins * 60);
+                              
                               try {
                                   liveMarkersRef.current.push({
-                                      time: data[data.length - 1].time, // Entry is placed on the *current* open candle
+                                      time: data[data.length - 1].time,
                                       position: sig.isCall ? 'belowBar' : 'aboveBar',
                                       color: '#8b5cf6',
                                       shape: 'square',
@@ -1847,26 +1807,6 @@
                                   updateChartMarkers();
                               } catch (e) {}
 
-                              updateStatus('СДЕЛКА АКТИВНА', 'text-blue-600 font-bold drop-shadow-[0_0_8px_rgba(37,99,235,0.4)] animate-pulse-soft');
-                              signalPhaseRef.current = 'ACTIVE';
-                              setSignalPhase('ACTIVE');
-                              
-                              const entryPrice = currentPrice.current;
-                              const expMins = 25; 
-                              
-                              setSignal({ type: sig.isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice });
-                              addLog(`ВХОД ${sig.isCall ? 'ВВЕРХ' : 'ВНИЗ'} НА 25 МИНУТ.`, true);
-                              enqueueSpeech(`Вход выполнен. Сделка активна.`, `trade-entry-${sig.signalTime}`, 1);
-
-                              let expirySeconds = expMins * 60;
-                              let finalExitTime = actualEntryTime + (expMins * 60);
-                              
-                              let currentBetStr = 0;
-                              setFinances(prev => {
-                                  currentBetStr = getBetAmount(prev.currentStep);
-                                  return prev;
-                              });
-                              
                               setActiveLiveTrade({
                                   id: `live_trade_${sig.signalTime}`,
                                   type: sig.isCall ? 'CALL' : 'PUT',
@@ -1876,7 +1816,7 @@
                                   entryPrice: entryPrice,
                                   exitPrice: entryPrice,
                                   isLive: true,
-                                  betAmount: currentBetStr,
+                                  betAmount: TRADE_MONEY_CONFIG.stake,
                                   reason: sig.signalType,
                                   quality: sig.score,
                                   mtfStr: sig.mtfConfStr
@@ -1889,7 +1829,7 @@
                                 
                                 if (expirySeconds === 750 && !midTradeSpoken) { 
                                     midTradeSpoken = true;
-                                    const isWinningNow = (sig.isCall && currentPrice.current > entryPrice) || (!sig.isCall && currentPrice.current < entryPrice);
+                                    const isWinningNow = (sig.isCall && currentPrice.current > entryPrice) || (!sig.isPut && currentPrice.current < entryPrice);
                                     if (isWinningNow) {
                                         enqueueSpeech('Мы на середине сделки. Сейчас сигнал идёт в плюс. Продолжаем спокойно наблюдать.', `trade-mid-win-${actualEntryTime}`, 2);
                                     } else if (currentPrice.current === entryPrice) {
@@ -1918,6 +1858,7 @@
                               
                               if (!engineActive.current) break;
 
+                              isLive = false;
                               setCountdown(null);
                               updateStatus('АНАЛИЗ РЕЗУЛЬТАТА', 'text-slate-500');
 
@@ -1928,77 +1869,49 @@
                                   finalPrice = resultData[resultData.length - 1].close;
                                   finalExitTime = resultData[resultData.length - 1].time;
                               }
-                              let isWin = false;
-
-                              if ((sig.isCall && finalPrice > entryPrice) || (sig.isPut && finalPrice < entryPrice)) isWin = true;
-                              else if (finalPrice === entryPrice) isWin = true; 
-
-                              setFinances(prev => {
-                                  const newPrev = { ...prev };
-                                  const stepObj = { ...newPrev.steps[prev.currentStep] };
-                                  
-                                  if (isWin) {
-                                      newPrev.sessionPnl += (currentBetStr * 0.7) + prev.recoveryDrawdown;
-                                      newPrev.recoveryDrawdown = 0;
-                                      stepObj.w++;
-                                      newPrev.currentStep = 1;
-                                      consecutiveLossesRef.current = 0;
-                                  } else {
-                                      newPrev.recoveryDrawdown -= currentBetStr;
-                                      stepObj.l++;
-                                      newPrev.currentStep = Math.min(7, prev.currentStep + 1);
-                                      if (newPrev.currentStep > newPrev.maxStep) newPrev.maxStep = newPrev.currentStep;
-                                      if (newPrev.currentStep > 7) {
-                                          newPrev.sessionPnl += newPrev.recoveryDrawdown;
-                                          newPrev.recoveryDrawdown = 0;
-                                          newPrev.currentStep = 1; 
-                                      }
-                                      consecutiveLossesRef.current++;
-                                  }
-                                  newPrev.steps = { ...newPrev.steps, [prev.currentStep]: stepObj };
-                                  
-                                  setTradeStats(ts => ({
-                                      count: ts.count + 1,
-                                      wins: ts.wins + (isWin ? 1 : 0),
-                                      losses: ts.losses + (!isWin ? 1 : 0),
-                                      winRate: Math.round(((ts.wins + (isWin ? 1 : 0)) / (ts.count + 1)) * 100),
-                                      pnl: newPrev.sessionPnl
-                                  }));
-                                  
-                                  return newPrev;
-                              });
+                              
+                              let result = "LOSS";
+                              if ((sig.isCall && finalPrice > entryPrice) || (sig.isPut && finalPrice < entryPrice) || finalPrice === entryPrice) {
+                                  result = "WIN";
+                              }
 
                               setActiveLiveTrade(null); 
-                              setTradesHistory(prev => [...prev, { 
-                                  id: `live_trade_${sig.signalTime}`,
-                                  type: sig.isCall ? 'CALL' : 'PUT',
-                                  signalTime: sig.signalTime,
-                                  entryTime: actualEntryTime, 
-                                  exitTime: finalExitTime,
-                                  entryPrice: entryPrice,
-                                  exitPrice: finalPrice,
-                                  isWin: isWin,
-                                  betAmount: currentBetStr,
-                                  reason: sig.signalType,
-                                  quality: sig.score,
-                                  mtfStr: sig.mtfConfStr
-                              }]);
+                              setTradesHistory(prev => {
+                                  const updated = [...prev, { 
+                                      id: `live_trade_${sig.signalTime}`,
+                                      type: sig.isCall ? 'CALL' : 'PUT',
+                                      signalTime: sig.signalTime,
+                                      entryTime: actualEntryTime, 
+                                      exitTime: finalExitTime,
+                                      entryPrice: entryPrice,
+                                      exitPrice: finalPrice,
+                                      status: "CLOSED",
+                                      result: result,
+                                      betAmount: TRADE_MONEY_CONFIG.stake,
+                                      reason: sig.signalType,
+                                      quality: sig.score,
+                                      mtfStr: sig.mtfConfStr
+                                  }];
+                                  return updated;
+                              });
 
                               try {
                                   liveMarkersRef.current.push({
-                                      time: finalExitTime, position: sig.isCall ? 'belowBar' : 'aboveBar', color: isWin ? '#10b981' : '#f43f5e', shape: 'square', text: 'EXIT', size: 0.5
+                                      time: finalExitTime, position: sig.isCall ? 'belowBar' : 'aboveBar', color: result==="WIN" ? '#10b981' : '#f43f5e', shape: 'square', text: 'EXIT', size: 0.5
                                   });
                                   updateChartMarkers();
                               } catch (e) {}
 
-                              if (isWin) {
+                              if (result === "WIN") {
+                                consecutiveLossesRef.current = 0;
                                 playSound('win');
                                 addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
                                 await speakAsync(`Сделка закрылась в плюс. Отличный результат.`, `trade-result-win-${actualEntryTime}`, 1);
                               } else {
+                                consecutiveLossesRef.current++;
                                 playSound('loss');
                                 addLog(`РЕЗУЛЬТАТ: МИНУС (-).`);
-                                await speakAsync(`Сделка закрылась в минус. Ничего страшного. Работаем по системе, следующий качественный сигнал может перекрыть просадку.`, `trade-result-loss-${actualEntryTime}`, 1);
+                                await speakAsync(`Сделка закрылась в минус. Ничего страшного. Работаем по системе.`, `trade-result-loss-${actualEntryTime}`, 1);
                               }
 
                               setSignal(null);
@@ -2010,16 +1923,12 @@
                               zoneCooldownUntilRef.current = Date.now() + 60000;
                               
                               syncModeView();
-                              
-                              // Signal lifecycle completely finished, mark evaluation as done
                               lastEvaluatedCandleTimeRef.current = evalCandleTime;
                               await new Promise(r => setTimeout(r, 1500));
                               break; 
                           } else {
-                              // Record that we evaluated this candle and found no signal, avoiding loop spam
-                              if (sig.reason && !sig.reason.includes('No raw signal') && !sig.reason.includes('Missing indicators')) {
+                              if (sig.reason && !sig.reason.includes('No raw signal') && !sig.reason.includes('Missing indicators') && !sig.reason.includes('PARITY_MISMATCH')) {
                                   addLog(`Live Rejected: ${sig.reason} (${sig.score||0})`, true);
-                                  setFinances(prev => ({...prev, rejected: prev.rejected + 1}));
                               }
                               lastEvaluatedCandleTimeRef.current = evalCandleTime;
                           }
@@ -2083,6 +1992,8 @@
             );
           }
 
+          const stats = calculateTradingStats(tradesHistory, TRADE_MONEY_CONFIG);
+
           return (
             <div className="h-[100dvh] w-screen flex flex-col text-slate-900 relative overflow-hidden selection:bg-cyan-500/20">
               <div className="bg-orb-1 pointer-events-none opacity-80"></div>
@@ -2109,7 +2020,7 @@
                             <span className="w-1 h-1 rounded-full bg-cyan-500/30 mx-4"></span>
                           </span>
                         )) : (
-                            <span className="text-slate-400 text-shimmer">ОБНОВЛЕНИЕ КОТИРОВОК...</span>
+                            <span className="text-slate-400 animate-pulse">ОБНОВЛЕНИЕ КОТИРОВОК...</span>
                         )}
                       </div>
                     ))}
@@ -2121,10 +2032,11 @@
                         <span className="text-slate-500">SOURCE: BINANCE</span>
                         <div className="w-[1px] h-3 bg-slate-300"></div>
                         <span className="flex items-center gap-1">
-                            STATUS: <span className={dataHealth.status === 'LIVE' ? 'text-emerald-600 animate-pulse-soft' : 'text-rose-600 animate-pulse'}>{dataHealth.status}</span>
+                            STATUS: <span className={dataHealth.status === 'LIVE' ? 'text-emerald-600' : 'text-rose-600 animate-pulse'}>{dataHealth.status}</span>
                         </span>
                     </div>
                 </div>
+
               </div>
 
               <header className="h-auto md:h-16 py-2 md:py-0 flex flex-col md:flex-row items-start md:items-center justify-between px-3 md:px-6 shrink-0 z-40 gap-1 md:gap-0 mt-2">
@@ -2147,8 +2059,8 @@
                     {appPhase}
                   </div>
                   <div className="flex gap-4 items-center tracking-wider w-full md:w-auto justify-between md:justify-end">
-                    <span className="text-[9px] md:text-[10px] text-slate-600 flex items-center gap-1.5 font-bold uppercase border border-slate-300 px-2 py-0.5 rounded-full bg-white/50 shadow-sm">
-                      <div className={`w-2 h-2 rounded-full ${dataHealth.status === 'LIVE' ? 'bg-emerald-500 animate-pulse-soft shadow-[0_0_10px_rgba(16,185,129,0.8)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(225,29,72,0.8)]'}`} />
+                    <span className="text-[9px] md:text-[10px] text-slate-600 flex items-center gap-1.5 font-bold uppercase border border-slate-300 px-2 py-0.5 rounded-full bg-white/50">
+                      <div className={`w-2 h-2 rounded-full ${dataHealth.status === 'LIVE' ? 'bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(225,29,72,0.8)]'}`} />
                       {dataHealth.status === 'LIVE' ? 'ПОДКЛЮЧЕНО К БИРЖЕ' : 'ОБНОВЛЕНИЕ ДАННЫХ'}
                     </span>
                     <LiveClock />
@@ -2158,11 +2070,11 @@
 
               <main className="flex-1 flex flex-col md:flex-row p-2 md:p-4 gap-3 md:gap-4 overflow-hidden z-10">
                 
-                {/* CHART & SCREENER AREA */}
-                <div className="w-full md:flex-1 h-[50vh] md:h-full glass-panel-heavy rounded-3xl md:rounded-[2.5rem] relative overflow-hidden flex flex-col shrink-0 border border-white/60">
+                <div className="w-full md:flex-1 h-[50vh] md:h-full glass-panel-heavy rounded-3xl md:rounded-[2.5rem] relative overflow-hidden flex flex-col shrink-0">
                   
-                  {/* SCREENER VIEW */}
+                  {/* SCREENER VIEW (WIDER) */}
                   <div className={`absolute inset-0 z-30 transition-all duration-700 bg-transparent flex items-center justify-center p-4 md:p-8 ${viewMode === 'SCREENER' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                    
                     <div className="card-3d-wrapper w-full max-w-[95%] xl:max-w-[90%] h-[45vh] md:h-[65vh] flex">
                        <div className="card-3d relative w-full h-full flex flex-col p-5 md:p-8 rounded-[2.5rem]">
                           
@@ -2197,17 +2109,19 @@
                                   <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-bounce shadow-[0_0_8px_rgba(96,165,250,0.6)]" style={{animationDelay: '300ms'}}></div>
                               </div>
                           </div>
+                          
                        </div>
                     </div>
+
                   </div>
 
                   {/* DETAILS VIEW (CHARTS) */}
                   <div className={`absolute inset-0 z-20 flex flex-col transition-all duration-700 bg-transparent ${viewMode === 'DETAIL' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                     <div className="absolute top-5 left-5 z-40 flex flex-col gap-2">
-                      <div className="premium-glass-card p-4 md:p-5 rounded-3xl min-w-[160px] shadow-[0_15px_40px_rgba(14,165,233,0.15)] relative overflow-hidden">
+                      <div className="glass-card p-4 md:p-5 rounded-3xl min-w-[160px] border-white shadow-[0_15px_40px_rgba(14,165,233,0.15)] relative overflow-hidden bg-white/80">
                         <div className="absolute -right-10 -top-10 w-24 h-24 bg-cyan-400/20 rounded-full blur-xl pointer-events-none"></div>
                         <div className="text-[10px] md:text-xs text-slate-500 tracking-widest mb-1.5 flex items-center gap-2 font-bold uppercase">
-                          <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse-soft shadow-[0_0_8px_rgba(6,182,212,0.8)]"/> РЕАЛЬНОЕ ВРЕМЯ
+                          <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.8)]"/> РЕАЛЬНОЕ ВРЕМЯ
                         </div>
                         <div className="text-4xl md:text-5xl tracking-wider text-slate-900 leading-none pt-0.5 font-black oswald-font drop-shadow-sm">{asset.name}</div>
                         <div className="mt-3 text-xs md:text-sm text-slate-700 tracking-widest font-bold flex items-center gap-2">
@@ -2216,35 +2130,23 @@
                       </div>
                     </div>
 
-                    {/* UPGRADED SIGNAL WARNING BADGE */}
                     {zoneState === 'IN' && signalPhase === 'NONE' && (
-                        <div className="absolute top-8 right-8 z-50 bg-gradient-to-r from-amber-500/10 to-amber-600/5 px-5 py-2.5 rounded-2xl shadow-[0_15px_35px_rgba(245,158,11,0.2)] border border-amber-300/40 flex items-center gap-3 backdrop-blur-xl transition-all duration-500">
-                            <div className="relative flex items-center justify-center">
-                                <div className="w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse-soft"></div>
-                                <div className="absolute w-full h-full bg-amber-400 rounded-full animate-ping opacity-70"></div>
-                            </div>
-                            <span className="text-amber-600 font-black tracking-widest uppercase oswald-font text-sm drop-shadow-sm">Зона интереса: ожидание</span>
+                        <div className="absolute top-8 right-8 z-50 bg-amber-500/10 text-amber-600 px-4 py-2 rounded-xl font-bold tracking-widest uppercase oswald-font shadow-[0_0_20px_rgba(245,158,11,0.2)] border border-amber-400/50 flex items-center gap-3 backdrop-blur-md">
+                            <div className="w-2.5 h-2.5 bg-amber-500 rounded-full animate-ping"></div>
+                            Зона интереса: возможен сигнал
                         </div>
                     )}
                     
                     <div className="flex-1 relative w-full mt-32 md:mt-36 flex flex-col gap-2 px-4 pb-4 md:px-5 md:pb-5">
-                        <div className="flex-1 relative w-full rounded-3xl overflow-hidden premium-glass-card">
+                        <div className="flex-1 relative w-full rounded-3xl overflow-hidden shadow-[inset_0_5px_20px_rgba(0,0,0,0.05)] bg-white/90 border border-white">
                             <div ref={chartContainerRef} className="absolute inset-0" />
-                            <ChartOverlays 
-                                chart={chartInstance.current} 
-                                series={candleSeries.current} 
-                                trades={activeLiveTrade ? [...tradesHistory, activeLiveTrade] : tradesHistory} 
-                                poiZones={poiZones} 
-                                currentPrice={currentPrice.current} 
-                                zoneState={zoneState} 
-                            />
+                            <ChartOverlays chart={chartInstance.current} series={candleSeries.current} trades={activeLiveTrade ? [...tradesHistory, activeLiveTrade] : tradesHistory} />
                         </div>
                     </div>
                   </div>
                 </div>
 
-                {/* RIGHT PANEL - PREMIUM CARDS */}
-                <div className="w-full md:w-[340px] lg:w-[380px] flex flex-col glass-panel-heavy rounded-3xl md:rounded-[2.5rem] overflow-hidden shrink-0 relative min-h-[50vh] md:h-full border border-white/60">
+                <div className="w-full md:w-[340px] lg:w-[380px] flex flex-col glass-panel-heavy rounded-3xl md:rounded-[2.5rem] overflow-hidden shrink-0 relative min-h-[50vh] md:h-full">
                   
                   <div className="border-b border-white/80 p-3 bg-gradient-to-r from-blue-100/60 to-transparent flex justify-center items-center shrink-0 min-h-[48px] shadow-sm relative z-10">
                     <div className={`text-base md:text-lg oswald-font tracking-widest flex items-center gap-2 text-center leading-none transition-all duration-300 w-full justify-center font-bold ${statusColorClass}`}>
@@ -2259,20 +2161,20 @@
                   <div className="flex-1 flex flex-col p-3 md:p-4 gap-3 md:gap-4 overflow-y-hidden relative z-10">
                     
                     {/* MTF CONTEXT UI BLOCK */}
-                    <div className="premium-glass-card rounded-2xl p-2 shrink-0 flex flex-col justify-center shadow-[0_5px_15px_rgba(15,23,42,0.03)]">
+                    <div className="glass-card rounded-2xl p-2 shrink-0 border-white bg-white/80 shadow-inner flex flex-col justify-center">
                         <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest text-center border-b border-slate-200/50 pb-1.5 mb-1.5 oswald-font">MTF CONTEXT FILTER</div>
                         <div className="flex justify-between items-center px-1">
                             <div className="flex flex-col items-center flex-1 border-r border-slate-200/60">
                                 <span className="text-[8px] md:text-[9px] font-bold text-slate-400 mb-0.5">4H</span>
-                                <span className={`text-[10px] md:text-xs font-black oswald-font leading-none ${mtfContext.h4 === 'BULLISH' ? 'text-emerald-500 drop-shadow-[0_0_4px_rgba(16,185,129,0.3)]' : mtfContext.h4 === 'BEARISH' ? 'text-rose-500 drop-shadow-[0_0_4px_rgba(244,63,94,0.3)]' : 'text-slate-600'}`}>{mtfContext.h4}</span>
+                                <span className={`text-[10px] md:text-xs font-black oswald-font leading-none ${mtfContext.h4 === 'BULLISH' ? 'text-emerald-500' : mtfContext.h4 === 'BEARISH' ? 'text-rose-500' : 'text-slate-600'}`}>{mtfContext.h4}</span>
                             </div>
                             <div className="flex flex-col items-center flex-1 border-r border-slate-200/60">
                                 <span className="text-[8px] md:text-[9px] font-bold text-slate-400 mb-0.5">1H</span>
-                                <span className={`text-[10px] md:text-xs font-black oswald-font leading-none ${mtfContext.h1 === 'BULLISH' ? 'text-emerald-500 drop-shadow-[0_0_4px_rgba(16,185,129,0.3)]' : mtfContext.h1 === 'BEARISH' ? 'text-rose-500 drop-shadow-[0_0_4px_rgba(244,63,94,0.3)]' : 'text-slate-600'}`}>{mtfContext.h1}</span>
+                                <span className={`text-[10px] md:text-xs font-black oswald-font leading-none ${mtfContext.h1 === 'BULLISH' ? 'text-emerald-500' : mtfContext.h1 === 'BEARISH' ? 'text-rose-500' : 'text-slate-600'}`}>{mtfContext.h1}</span>
                             </div>
                             <div className="flex flex-col items-center flex-1 border-r border-slate-200/60">
                                 <span className="text-[8px] md:text-[9px] font-bold text-slate-400 mb-0.5">15M</span>
-                                <span className={`text-[10px] md:text-xs font-black oswald-font leading-none ${mtfContext.m15 === 'BULLISH' ? 'text-emerald-500 drop-shadow-[0_0_4px_rgba(16,185,129,0.3)]' : mtfContext.m15 === 'BEARISH' ? 'text-rose-500 drop-shadow-[0_0_4px_rgba(244,63,94,0.3)]' : 'text-slate-600'}`}>{mtfContext.m15}</span>
+                                <span className={`text-[10px] md:text-xs font-black oswald-font leading-none ${mtfContext.m15 === 'BULLISH' ? 'text-emerald-500' : mtfContext.m15 === 'BEARISH' ? 'text-rose-500' : 'text-slate-600'}`}>{mtfContext.m15}</span>
                             </div>
                             <div className="flex flex-col items-center flex-1">
                                 <span className="text-[8px] md:text-[9px] font-bold text-slate-400 mb-0.5">SCORE</span>
@@ -2281,7 +2183,7 @@
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-2 premium-glass-card rounded-2xl p-2 shrink-0">
+                    <div className="grid grid-cols-4 gap-2 glass-card rounded-2xl p-2 shrink-0 border-white bg-white/80 shadow-[inset_0_2px_10px_rgba(255,255,255,0.8)]">
                        <Speedometer value={metrics.structure} label="СТРУКТУРА" colorHex="#d97706" />
                        <Speedometer value={metrics.liquidity} label="ЛИКВИДНОСТЬ" colorHex="#2563eb" glow={true} />
                        <Speedometer value={metrics.filterLevel} label="АТР ФИЛЬТР" colorHex="#6366f1" />
@@ -2289,7 +2191,7 @@
                     </div>
 
                     <div className="flex gap-3 h-28 md:h-32 shrink-0">
-                      <div className={`w-[35%] border rounded-2xl flex flex-col items-center justify-center relative transition-all duration-500 premium-glass-card ${signalPhase === 'ACTIVE' ? 'border-cyan-400 shadow-[0_0_25px_rgba(34,211,238,0.4)]' : 'border-white'}`}>
+                      <div className={`w-[35%] border rounded-2xl flex flex-col items-center justify-center relative transition-all duration-500 glass-card bg-white/90 ${signalPhase === 'ACTIVE' ? 'border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.4)]' : 'border-white'}`}>
                         {signalPhase === 'ACTIVE' && signal ? (
                           <VolumetricArrow type={signal.type} />
                         ) : (
@@ -2297,7 +2199,7 @@
                               {signalPhase === 'COUNTDOWN' ? (
                                   <div className="text-4xl font-black text-cyan-600 drop-shadow-sm mb-1">{countdown}</div>
                               ) : (
-                                  <Radar size={28} className={`text-slate-600 mb-2 ${(signalPhase === 'EXPLAINING' || signalPhase === 'DETECTED') ? 'animate-spin text-cyan-500 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]' : ''}`} />
+                                  <Radar size={28} className={`text-slate-600 mb-2 ${(signalPhase === 'EXPLAINING' || signalPhase === 'DETECTED') ? 'animate-spin text-cyan-500' : ''}`} />
                               )}
                               <span className="text-[8px] md:text-[9px] tracking-widest font-bold text-slate-700 oswald-font leading-tight mt-1">
                                   {signalPhase === 'EXPLAINING' ? 'ОБЪЯСНЕНИЕ СИГНАЛА' : 
@@ -2308,80 +2210,51 @@
                         )}
                       </div>
                       
-                      <div className="w-[65%] rounded-2xl overflow-hidden premium-glass-card p-1.5 flex">
+                      <div className="w-[65%] rounded-2xl overflow-hidden glass-card p-1.5 bg-white border-white shadow-inner flex">
                         <OrderBookDepth price={currentPrice.current} />
                         <HftTape price={currentPrice.current} />
                       </div>
                     </div>
 
-                    {/* BROKER BUTTON MOVED UP */}
-                    <div className="relative shrink-0 mb-1 mt-1 z-20">
-                        <a href="https://intrade32.bar/311164" target="_blank" rel="noopener noreferrer" className="broker-btn group relative w-full py-3 md:py-3.5 rounded-2xl flex items-center justify-center overflow-hidden cursor-pointer no-underline block">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-700 ease-in-out skew-x-12"></div>
-                            <span className="relative z-10 text-white font-black tracking-widest text-[11px] md:text-sm oswald-font uppercase drop-shadow-md flex items-center gap-2">
-                                <Zap size={16} className="animate-pulse text-cyan-200" />
-                                ТОРГОВАТЬ ЗДЕСЬ, ЧТОБЫ ЗАРАБОТАТЬ
-                            </span>
-                        </a>
-                        
-                        <div className="absolute -bottom-1.5 right-2 md:-right-1 z-50 pointer-events-none animated-cursor">
-                            <MousePointer size={24} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
-                            <div className="click-ripple"></div>
-                        </div>
-                    </div>
-
-                    {/* FINANCES & MARTINGALE STATS PANEL */}
-                    <div className="premium-glass-card rounded-3xl p-4 flex flex-col gap-2 shrink-0 relative overflow-hidden transition-all duration-700">
+                    {/* FINANCES & STATS PANEL (FIXED FLAT STAKE) */}
+                    <div className="glass-card border rounded-3xl p-4 flex flex-col gap-2 shrink-0 relative overflow-hidden transition-all duration-700 bg-white/90 border-white">
                         <div className="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full blur-2xl pointer-events-none"></div>
                         
                         <div className="flex justify-between items-center mb-1 relative z-10">
-                            <span className="text-slate-500 text-[10px] font-bold tracking-widest uppercase oswald-font">БАЛАНС</span>
-                            <span className="text-lg font-black text-slate-900 oswald-font leading-none">{Math.round(finances.balance + finances.sessionPnl).toLocaleString('ru-RU')} ₽</span>
+                            <span className="text-slate-500 text-[10px] font-bold tracking-widest uppercase oswald-font">ДЕМО-БАЛАНС</span>
+                            <span className="text-lg font-black text-slate-900 oswald-font leading-none">{stats.balance.toLocaleString('ru-RU')} ₽</span>
                         </div>
 
                         <div className="flex justify-between items-center mb-1 relative z-10 pb-2 border-b border-slate-200/60">
                             <span className="text-slate-500 text-[10px] font-bold tracking-widest uppercase oswald-font">СЕССИОННЫЙ PNL</span>
-                            <span className={`text-base font-black ios-text leading-none oswald-font ${finances.sessionPnl >= 0 ? 'text-cyan-700 drop-shadow-[0_1px_1px_rgba(6,182,212,0.2)]' : 'text-rose-600 drop-shadow-[0_1px_1px_rgba(244,63,94,0.2)]'}`}>
-                                {finances.sessionPnl > 0 ? '+' : ''}{Math.round(finances.sessionPnl).toLocaleString('ru-RU')} ₽
+                            <span className={`text-base font-black ios-text leading-none oswald-font ${stats.pnl >= 0 ? 'text-cyan-700' : 'text-rose-600'}`}>
+                                {stats.pnl > 0 ? '+' : ''}{stats.pnl.toLocaleString('ru-RU')} ₽
                             </span>
                         </div>
                         
-                        <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase oswald-font tracking-widest relative z-10 pt-1">
-                            <span className="flex items-center gap-1.5">
-                                <Activity size={12} className={finances.currentStep > 1 ? "text-amber-500 animate-pulse-soft" : "text-cyan-600"}/> 
-                                {finances.currentStep > 1 ? "RECOVERY MODE ACTIVE" : "СТАНДАРТНЫЙ РЕЖИМ"}
-                            </span>
-                            <span>ШАГ: {finances.currentStep}/7</span>
+                        <div className="grid grid-cols-2 gap-1.5 relative z-10 mt-1 text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                            <div className="flex justify-between bg-slate-50/50 p-1.5 rounded border border-slate-200/50">
+                                <span>СДЕЛОК:</span> <span className="text-slate-800">{stats.trades}</span>
+                            </div>
+                            <div className="flex justify-between bg-slate-50/50 p-1.5 rounded border border-slate-200/50">
+                                <span>WINRATE:</span> <span className="text-slate-800">{stats.winrate}%</span>
+                            </div>
+                            <div className="flex justify-between bg-emerald-50/50 p-1.5 rounded border border-emerald-200/50 text-emerald-700">
+                                <span>WIN:</span> <span>{stats.wins} (+{stats.winPnl}₽)</span>
+                            </div>
+                            <div className="flex justify-between bg-rose-50/50 p-1.5 rounded border border-rose-200/50 text-rose-700">
+                                <span>LOSS:</span> <span>{stats.losses} ({stats.lossPnl}₽)</span>
+                            </div>
                         </div>
 
-                        {finances.currentStep > 1 && (
-                            <div className="flex justify-between items-center mb-1 relative z-10 mt-1">
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">ПРОСАДКА СЕРИИ:</span>
-                                <span className="text-xs font-black text-rose-600 bg-rose-100/50 px-2 py-0.5 rounded border border-rose-200 shadow-[inset_0_1px_2px_rgba(255,255,255,1)]">
-                                    {Math.round(finances.recoveryDrawdown).toLocaleString('ru-RU')} ₽
-                                </span>
-                            </div>
-                        )}
-                        
-                        <div className="grid grid-cols-7 gap-1 relative z-10 mt-1">
-                            {[1, 2, 3, 4, 5, 6, 7].map(step => (
-                                <div key={step} className={`flex flex-col items-center justify-center py-1 rounded border transition-colors ${finances.currentStep === step ? 'bg-gradient-to-b from-cyan-50 to-blue-50 border-cyan-400 shadow-[0_2px_4px_rgba(6,182,212,0.3)]' : (step < finances.currentStep ? 'bg-rose-50 border-rose-200 opacity-60' : 'bg-slate-50/50 border-slate-200')}`}>
-                                   <span className={`text-[7px] font-black oswald-font ${finances.currentStep === step ? 'text-cyan-700' : 'text-slate-500'}`}>{step}K</span>
-                                </div>
-                            ))}
-                        </div>
-                        
                         <div className="flex justify-between items-center text-[9px] text-slate-400 font-bold uppercase mt-2 relative z-10 tracking-widest border-t border-slate-200/50 pt-2">
-                            <span>СЛЕД. ЦЕЛЬ: {Math.round(getBetAmount(finances.currentStep)).toLocaleString('ru-RU')} ₽</span>
-                            <span className="text-slate-600">ВИНРЕЙТ: {tradeStats.winRate}%</span>
-                        </div>
-                        <div className="text-[8px] text-slate-400 leading-tight oswald-font relative z-10 text-center mt-1 uppercase">
-                            ИНФО: РИСК СЕРИИ СОХРАНЯЕТСЯ. СЛЕДУЮЩЕЕ КОЛЕНО РАССЧИТАНО НА ПЕРЕКРЫТИЕ ПРОСАДКИ.
+                            <span>ФИКС. СТАВКА: {stats.stake.toLocaleString('ru-RU')} ₽</span>
+                            <span className="text-slate-600">PAYOUT: {stats.payout * 100}%</span>
                         </div>
                     </div>
 
                     {/* ENTRY AND EXPIRATION */}
-                    <div className="premium-glass-card rounded-2xl p-4 flex justify-between items-center shrink-0 relative overflow-hidden bg-gradient-to-r from-white to-cyan-50/80">
+                    <div className="glass-card rounded-2xl p-4 flex justify-between items-center shrink-0 relative overflow-hidden shadow-md border-white bg-gradient-to-r from-white to-cyan-50/80">
                        <div className="absolute right-0 top-0 bottom-0 w-2/3 bg-[radial-gradient(ellipse_at_right,_rgba(14,165,233,0.1),_transparent)] pointer-events-none"></div>
                        <div className="flex flex-col relative z-10">
                           <span className="text-[9px] md:text-[10px] text-slate-500 tracking-widest font-bold leading-none uppercase">ЦЕНА ВХОДА</span>
@@ -2401,21 +2274,38 @@
                        </div>
                     </div>
 
+                    {/* BROKER BUTTON */}
+                    <div className="relative shrink-0 mb-1 mt-1 z-20">
+                        <a href="https://intrade32.bar/311164" target="_blank" rel="noopener noreferrer" className="broker-btn group relative w-full py-3 md:py-3.5 rounded-2xl flex items-center justify-center overflow-hidden cursor-pointer no-underline block">
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-700 ease-in-out skew-x-12"></div>
+                            <span className="relative z-10 text-white font-black tracking-widest text-[11px] md:text-sm oswald-font uppercase drop-shadow-md flex items-center gap-2">
+                                <Zap size={16} className="animate-pulse text-cyan-200" />
+                                ТОРГОВАТЬ ЗДЕСЬ, ЧТОБЫ ЗАРАБОТАТЬ
+                            </span>
+                        </a>
+                        
+                        <div className="absolute -bottom-1.5 right-2 md:-right-1 z-50 pointer-events-none animated-cursor">
+                            <MousePointer size={24} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
+                            <div className="click-ripple"></div>
+                        </div>
+                    </div>
+
                     {/* PURE 5M DEBUG PANEL */}
-                    <div className="flex-1 premium-glass-card rounded-2xl overflow-hidden flex flex-col justify-start">
+                    <div className="flex-1 glass-card rounded-2xl overflow-hidden flex flex-col justify-start border-white bg-white shadow-[inset_0_2px_15px_rgba(0,0,0,0.02)]">
                       <div className="bg-slate-100/80 px-3 py-1.5 flex justify-between items-center border-b border-slate-200/60 mb-1 shrink-0">
-                          <span className="text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1"><BugIcon size={10}/> PURE 5M ENGINE LOG</span>
+                          <span className="text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1"><BugIcon size={10}/> PURE 5M DEBUG</span>
                           <span className="text-[8px] font-bold text-emerald-600">PARITY: SYNCED</span>
                       </div>
-                      
-                      <div className="px-3 pb-1 pt-1 shrink-0 text-[8px] mono-font text-slate-500 font-bold border-b border-slate-200/40 grid grid-cols-2 gap-1">
+                      <div className="px-3 pb-1 shrink-0 grid grid-cols-2 gap-1 text-[8px] md:text-[9px] mono-font font-semibold text-slate-500 border-b border-slate-200/40 mb-1">
                           <span className="text-cyan-700">L.C: {new Date(lastClosedCandleTimeUiRef.current * 1000).toLocaleTimeString('ru-RU')}</span>
                           <span className="text-rose-600">REJECTS: {pureDiag.rejected}</span>
                       </div>
-
+                      <div className="px-3 pb-2 pt-1 shrink-0 text-[8px] mono-font text-rose-500 font-bold border-b border-slate-200/40">
+                          LAST REJECT: {pureDiag.lastReason}
+                      </div>
                       <div ref={logsContainerRef} className="px-4 pb-4 flex flex-col gap-2 overflow-y-auto mt-2">
                           {logs.map((l, i) => (
-                            <div key={i} className={`text-[9px] md:text-[11px] leading-tight tracking-widest font-semibold mono-font transition-all ${i === 0 ? 'text-slate-900 font-bold border-l-[3px] border-cyan-500 pl-2 bg-gradient-to-r from-cyan-50 to-transparent py-1 rounded-r shadow-sm' : 'text-slate-400 pl-2'}`}>
+                            <div key={i} className={`text-[9px] md:text-[11px] leading-tight tracking-widest font-semibold mono-font ${i === 0 ? 'text-slate-900 font-bold border-l-4 border-cyan-500 pl-2 bg-cyan-50/50 py-1 rounded-r shadow-sm' : 'text-slate-400 pl-2'}`}>
                               {l}
                             </div>
                           ))}
@@ -2435,7 +2325,6 @@
                 
                 <div className="flex items-center gap-3 md:gap-4 oswald-font">
                   
-                  {/* AUTHOR BADGE */}
                   <div className="silver-badge flex flex-col items-center justify-center px-2.5 py-1 rounded-lg">
                       <span className="text-[6px] md:text-[7px] text-slate-500 font-black tracking-[0.2em] uppercase leading-none mb-0.5">PRO MAX CREATOR</span>
                       <span className="text-[10px] md:text-[11px] font-black tracking-widest silver-text leading-none">SLAVA GORDEEV</span>
