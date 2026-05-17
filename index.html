@@ -153,6 +153,26 @@
             box-shadow: 0 8px 25px -5px rgba(15, 23, 42, 0.04), inset 0 1px 3px rgba(255, 255, 255, 1);
         }
 
+        /* ПУЛЬСАЦИЯ КОНТЕЙНЕРА ГРАФИКА */
+        .zone-active-support {
+            box-shadow: inset 0 0 35px rgba(16, 185, 129, 0.25) !important;
+            border-color: rgba(16, 185, 129, 0.4) !important;
+            animation: pulse-border-support 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .zone-active-resistance {
+            box-shadow: inset 0 0 35px rgba(244, 63, 94, 0.25) !important;
+            border-color: rgba(244, 63, 94, 0.4) !important;
+            animation: pulse-border-resistance 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-border-support {
+            0%, 100% { box-shadow: inset 0 0 35px rgba(16, 185, 129, 0.25); }
+            50% { box-shadow: inset 0 0 55px rgba(16, 185, 129, 0.45); }
+        }
+        @keyframes pulse-border-resistance {
+            0%, 100% { box-shadow: inset 0 0 35px rgba(244, 63, 94, 0.25); }
+            50% { box-shadow: inset 0 0 55px rgba(244, 63, 94, 0.45); }
+        }
+
         .text-gradient {
             background: linear-gradient(135deg, #2563eb, #06b6d4);
             -webkit-background-clip: text;
@@ -458,18 +478,15 @@
             const isRedCandle = currCandle.close < currCandle.open;
             const isGreenCandle = currCandle.close > currCandle.open;
 
-            // Классический пробой
             const sweptTop = currCandle.high >= cUpper;
             const sweptBot = currCandle.low <= cLower;
 
-            // Почти касания (Near Touch) - 0.2 ATR
             const isNearTouchTop = (cUpper - currCandle.high) < cAtr * 0.2;
             const isNearTouchBot = (currCandle.low - cLower) < cAtr * 0.2;
             
             const touchedTop = sweptTop || (isNearTouchTop && upperWick > body);
             const touchedBot = sweptBot || (isNearTouchBot && lowerWick > body);
 
-            // Расширенные зоны подхода
             const isNearTop = (cUpper - currCandle.high) < cAtr * 1.1;
             const isNearBot = (currCandle.low - cLower) < cAtr * 1.1;
 
@@ -480,7 +497,6 @@
 
             let isCall = false; let isPut = false; let signalType = ''; let baseScore = 0; let rawSignal = false;
 
-            // --- КЛАССИЧЕСКИЕ ПАТТЕРНЫ ---
             if (touchedTop && returnedInsideTop && structureBreakTop) { isPut = true; signalType = 'Primary Sweep'; baseScore = 45; rawSignal = true; } 
             else if (isNearTop && upperWick > body * 1.1 && isRedCandle) { isPut = true; signalType = 'Wick Rejection'; baseScore = 38; rawSignal = true; } 
             else if (currCandle.high >= cUpper && currCandle.close < cUpper && upperWick > cAtr * 0.2) { isPut = true; signalType = 'Edge Reaction'; baseScore = 35; rawSignal = true; } 
@@ -491,7 +507,6 @@
             else if (currCandle.low <= cLower && currCandle.close > cLower && lowerWick > cAtr * 0.2) { isCall = true; signalType = 'Edge Reaction'; baseScore = 35; rawSignal = true; } 
             else if (isNearBot && prevCandle.low < cLower && isGreenCandle && currCandle.close > prevCandle.close) { isCall = true; signalType = 'Liquidity Return'; baseScore = 40; rawSignal = true; }
 
-            // --- НОВЫЙ ПАТТЕРН: Momentum Rejection ---
             const strongBodyPut = isRedCandle && body >= cAtr * 0.8 && (currCandle.open - currCandle.close) > (currCandle.high - currCandle.low) * 0.6;
             const strongBodyCall = isGreenCandle && body >= cAtr * 0.8 && (currCandle.close - currCandle.open) > (currCandle.high - currCandle.low) * 0.6;
 
@@ -505,7 +520,6 @@
 
             let qScore = baseScore; let mtfConfStr = 'WAIT'; let rejectReason = '';
 
-            // MTF Context Evaluation
             if (isCall) {
                 if (mtfContext.h4 === 'BULLISH') qScore += 15;
                 if (mtfContext.h1 === 'BULLISH') qScore += 15;
@@ -522,19 +536,16 @@
                 mtfConfStr = 'LOCAL 5M'; qScore += 20; 
             }
 
-            // БОНУС: Чистый 5M паттерн при отсутствии давления старших ТФ
             if (mtfContext.h4 === 'NEUTRAL' && mtfContext.h1 === 'NEUTRAL') {
                 qScore += 5;
             }
 
-            // МЯГКИЕ ПОРОГИ ОТСЕЧЕНИЯ
             let threshold = (signalType === 'Primary Sweep') ? 48 : 52;
             if (engineState.consecutiveLosses >= 2) threshold += 8;
 
             const midPoint = cLower + rangeWidth / 2;
             const distToMid = Math.abs(currCandle.close - midPoint);
             
-            // Ослабленный штраф за середину диапазона
             if (distToMid > rangeWidth * 0.25) qScore += 5;
             else { qScore -= 10; rejectReason = 'middle range (soft)'; }
 
@@ -545,7 +556,6 @@
             else { qScore += 5; }
 
             const candlesSinceLast = (currTime - engineState.lastSignalTime) / (5 * 60); 
-            // Ослабленный штраф за кулдаун (повторные сигналы)
             if (candlesSinceLast < 3) {
                 qScore -= 15; rejectReason = 'cooldown (too fast)';
             } else if (candlesSinceLast < 8) {
@@ -564,7 +574,13 @@
                 return { valid: false, reason: rejectReason, score: qScore };
             }
 
-            return { valid: true, isCall, isPut, signalType, score: Math.min(100, qScore), mtfConfStr, signalTime: currTime, signalPrice: currCandle.close };
+            return { 
+                valid: true, isCall, isPut, signalType, score: Math.min(100, qScore), mtfConfStr, 
+                signalTime: currTime, signalPrice: currCandle.close,
+                cUpper, cLower, 
+                sweepHigh: Math.max(currCandle.high, prevCandle.high), 
+                sweepLow: Math.min(currCandle.low, prevCandle.low)
+            };
         }
 
         const LiveClock = () => {
@@ -1281,7 +1297,7 @@
                 const newTradesHistory = []; let engineState = { lastSignalTime: 0, lastSignalPrice: 0, consecutiveLosses: 0 };
 
                 const startIdx = Math.max(0, initialData.length - 144); 
-                const endIdx = initialData.length - 7;
+                const endIdx = initialData.length - 3;
 
                 for (let idx = startIdx; idx <= endIdx; idx++) {
                     const currTime = initialData[idx].time; const currCandle = initialData[idx]; const prevCandle = initialData[idx - 1]; d_candles++;
@@ -1439,8 +1455,11 @@
                           lastClosedCandleTimeUiRef.current = evalCandleTime;
                           const liveEngineState = { lastSignalTime: lastSignalTimeRef.current, lastSignalPrice: lastSignalPriceRef.current, consecutiveLosses: consecutiveLossesRef.current };
                           const sig = evaluateSignalEngine(data, evaluateIdx, liqMap, atrMap, cachedMtfRef.current, liveEngineState);
-                          const evaluatedStatus = sig.valid ? 'CONFIRMED' : (sig.reason ? 'REJECTED' : 'NO_SIGNAL');
+                          
+                          // DEBUG LOG FOR DIAGNOSTICS
+                          console.log("EVALUATING CANDLE:", new Date(evalCandleTime * 1000).toLocaleTimeString(), "SCORE:", sig.score, "REASON:", sig.reason, "VALID:", sig.valid);
 
+                          const evaluatedStatus = sig.valid ? 'CONFIRMED' : (sig.reason ? 'REJECTED' : 'NO_SIGNAL');
                           ScanLedger.set(evalCandleTime, evaluatedStatus);
 
                           if (sig.valid) {
@@ -1454,6 +1473,26 @@
                                       liveMarkersRef.current.push({ time: sig.signalTime, position: sig.isCall ? 'belowBar' : 'aboveBar', color: sig.isCall ? '#0ea5e9' : '#f43f5e', shape: sig.isCall ? 'arrowUp' : 'arrowDown', text: 'SIGNAL', size: 1 });
                                       updateChartMarkers();
                                   } catch (e) {}
+                              }
+
+                              // ДОБАВЛЕНИЕ ЛИНИЙ СВИПА И ПУЛА (SWEEP / POOL BOUNDARY)
+                              let activeSweepLine = null;
+                              let activePoolLine = null;
+                              if (candleSeries.current) {
+                                  activeSweepLine = candleSeries.current.createPriceLine({
+                                      price: sig.isCall ? sig.sweepLow : sig.sweepHigh,
+                                      color: sig.isCall ? '#10b981' : '#f97316',
+                                      lineWidth: 2,
+                                      lineStyle: 2, // Dashed
+                                      title: 'SWEEP ZONE',
+                                  });
+                                  activePoolLine = candleSeries.current.createPriceLine({
+                                      price: sig.isCall ? sig.cLower : sig.cUpper,
+                                      color: sig.isCall ? '#10b981' : '#f97316',
+                                      lineWidth: 1,
+                                      lineStyle: 1, // Dotted
+                                      title: 'POOL BOUNDARY',
+                                  });
                               }
 
                               drawIndicators(upperData, lowerData); currentPrice.current = data[lastIdx].close;
@@ -1492,6 +1531,10 @@
 
                               if (tradeCancelled) {
                                   zoneStateRef.current = 'OUT'; setZoneState('OUT'); signalPhaseRef.current = 'NONE'; setSignalPhase('NONE');
+                                  if (candleSeries.current) {
+                                      if (activeSweepLine) candleSeries.current.removePriceLine(activeSweepLine);
+                                      if (activePoolLine) candleSeries.current.removePriceLine(activePoolLine);
+                                  }
                                   playSound('cancel'); updateStatus('ОТМЕНА: ИСТИННЫЙ ПРОБОЙ', 'text-rose-600 font-bold');
                                   await speakAsync("Внимание. Отмена. Паттерн сломан. Возвращаюсь к радару.", `signal-cancel-${sig.signalTime}`, 1);
                                   syncModeView(); lastEvaluatedCandleTimeRef.current = evalCandleTime; break; 
@@ -1547,6 +1590,12 @@
                               if (!engineActive.current) break;
 
                               isLive = false; setCountdown(null); updateStatus('АНАЛИЗ РЕЗУЛЬТАТА', 'text-slate-500');
+
+                              // ОЧИСТКА ЛИНИЙ СВИПА И ПУЛА ПОСЛЕ ЭКСПИРАЦИИ
+                              if (candleSeries.current) {
+                                  if (activeSweepLine) candleSeries.current.removePriceLine(activeSweepLine);
+                                  if (activePoolLine) candleSeries.current.removePriceLine(activePoolLine);
+                              }
 
                               const resultData = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
                               let finalPrice = entryPrice;
@@ -1780,8 +1829,12 @@
                     )}
                     
                     <div className="flex-1 relative w-full mt-32 md:mt-36 flex flex-col gap-2 px-4 pb-4 md:px-5 md:pb-5">
-                        <div className="flex-1 relative w-full rounded-3xl overflow-hidden shadow-[inset_0_5px_20px_rgba(0,0,0,0.05)] bg-white/90 border border-white">
-                            <div ref={chartContainerRef} className="absolute inset-0" />
+                        <div 
+                            ref={chartContainerRef}
+                            className={`flex-1 relative w-full rounded-3xl overflow-hidden bg-white/90 border border-white transition-all duration-500 ${
+                                zoneState === 'IN' && zoneInfo ? (zoneInfo.type === 'RESISTANCE' ? 'zone-active-resistance' : 'zone-active-support') : 'shadow-[inset_0_5px_20px_rgba(0,0,0,0.05)]'
+                            }`}
+                        >
                             <ChartOverlays chart={chartInstance.current} series={candleSeries.current} trades={activeLiveTrade ? [...tradesHistory, activeLiveTrade] : tradesHistory} zoneInfo={zoneInfo} />
                         </div>
                     </div>
