@@ -261,7 +261,7 @@
             </svg>
         );
 
-        /* ================= BROKER BUTTON EXTRACTED ================= */
+        /* ================= BROKER BUTTON ================= */
         const BrokerButton = () => (
             <a href="https://intrade32.bar/311164" target="_blank" rel="noopener noreferrer" className="broker-btn group relative w-full md:w-auto py-2.5 px-4 md:py-2 md:px-5 rounded-xl flex items-center justify-center overflow-hidden cursor-pointer no-underline block shadow-md border border-cyan-400/50">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-700 ease-in-out skew-x-12"></div>
@@ -292,16 +292,39 @@
             return { trades: total, wins, losses, winrate, pnl, balance, stake: moneyConfig.stake, payout: moneyConfig.payout, winPnl, lossPnl };
         }
 
-        /* ================= SCAN LEDGER MANAGER ================= */
+        /* ================= SCAN LEDGER MANAGER (PERSISTENT PARITY) ================= */
         const _inMemoryLedger = {};
         const ScanLedger = {
-            get: (time) => _inMemoryLedger[time] || null,
+            get: (time) => {
+                try {
+                    const stored = localStorage.getItem('crypto_pro_max_scan_ledger');
+                    if (stored) {
+                        const parsed = JSON.parse(stored);
+                        if (parsed[time]) return parsed[time];
+                    }
+                } catch(e) {}
+                return _inMemoryLedger[time] || null;
+            },
             set: (time, status) => {
                 _inMemoryLedger[time] = status;
-                const keys = Object.keys(_inMemoryLedger).sort((a,b) => b - a);
-                if(keys.length > 200) {
-                    const keysToRemove = keys.slice(0, keys.length - 200);
-                    keysToRemove.forEach(k => delete _inMemoryLedger[k]);
+                try {
+                    const stored = localStorage.getItem('crypto_pro_max_scan_ledger');
+                    const parsed = stored ? JSON.parse(stored) : {};
+                    parsed[time] = status;
+                    const keys = Object.keys(parsed).sort((a,b) => b - a);
+                    if(keys.length > 200) {
+                        const newData = {};
+                        keys.slice(0, 200).forEach(k => newData[k] = parsed[k]);
+                        localStorage.setItem('crypto_pro_max_scan_ledger', JSON.stringify(newData));
+                    } else {
+                        localStorage.setItem('crypto_pro_max_scan_ledger', JSON.stringify(parsed));
+                    }
+                } catch(e) {
+                    const keys = Object.keys(_inMemoryLedger).sort((a,b) => b - a);
+                    if(keys.length > 200) {
+                        const keysToRemove = keys.slice(0, keys.length - 200);
+                        keysToRemove.forEach(k => delete _inMemoryLedger[k]);
+                    }
                 }
             }
         };
@@ -444,7 +467,6 @@
             const returnedInsideBot = currCandle.close > cLower;
             const structureBreakBot = currCandle.close > prevCandle.high && isGreenCandle;
 
-            // OPTIMIZATION: Relaxed near-zone requirement (0.8 -> 1.1)
             const isNearTop = (cUpper - currCandle.high) < cAtr * 1.1;
             const isNearBot = (currCandle.low - cLower) < cAtr * 1.1;
 
@@ -480,26 +502,21 @@
                 mtfConfStr = 'LOCAL 5M'; qScore += 20; 
             }
 
-            // OPTIMIZATION: Lowered score thresholds for more setups
             let threshold = (signalType === 'Primary Sweep') ? 48 : 51;
-
             if (engineState.consecutiveLosses >= 2) threshold += 8;
 
             const midPoint = cLower + rangeWidth / 2;
             const distToMid = Math.abs(currCandle.close - midPoint);
-            // OPTIMIZATION: Reduced middle range penalty
             if (distToMid > rangeWidth * 0.15) qScore += 10;
             else { qScore -= 10; rejectReason = 'middle range'; }
 
             const distTopLate = cUpper - currCandle.close;
             const distBotLate = currCandle.close - cLower;
-            // OPTIMIZATION: Reduced late entry penalty
             if (isCall && distBotLate > cAtr * 0.45) { qScore -= 15; rejectReason = 'late entry'; }
             else if (isPut && distTopLate > cAtr * 0.45) { qScore -= 15; rejectReason = 'late entry'; }
             else { qScore += 5; }
 
             const candlesSinceLast = (currTime - engineState.lastSignalTime) / (5 * 60); 
-            // OPTIMIZATION: Reduced cooldown penalty
             if (candlesSinceLast < 4) {
                 qScore -= 25; rejectReason = 'cooldown (too fast)';
             } else if (candlesSinceLast < 8) {
@@ -696,7 +713,6 @@
                     const pulseBox = overlayRef.current.querySelector('.zone-pulse-indicator');
                     if (pulseBox && zoneInfo) {
                         const xStart = timeScale.timeToCoordinate(zoneInfo.time);
-                        // Forward pulse logic (25 mins ahead)
                         const xEnd = timeScale.timeToCoordinate(zoneInfo.time + 25 * 60);
                         let yPrice = zoneInfo.type === 'RESISTANCE' ? zoneInfo.top : zoneInfo.bottom;
                         const y = series.priceToCoordinate(yPrice);
@@ -784,7 +800,6 @@
                                 exitDot.style.left = xExit === left ? '0px' : `${width}px`;
                             }
 
-                            // --- NEW: Glass Box Expiry & Profit Visualization ---
                             const profitZone = box.querySelector('.profit-zone');
                             const expiryLine = box.querySelector('.expiry-line');
                             const profitLabel = box.querySelector('.profit-label');
@@ -962,7 +977,7 @@
           const [logs, setLogs] = useState([]);
           const [currentTF, setCurrentTF] = useState('5M');
           const [zoneState, setZoneState] = useState('OUT');
-          const [zoneInfo, setZoneInfo] = useState(null); // Tracks pulse zone coordinates
+          const [zoneInfo, setZoneInfo] = useState(null); 
           
           const [metrics, setMetrics] = useState({ structure: 50, liquidity: 50, filterLevel: 1.0, smartMoney: 0, buyPressure: 50 });
           const [mtfContext, setMtfContext] = useState({ h4: 'WAIT', h1: 'WAIT', m15: 'WAIT', score: '--', status: 'LOADING' });
@@ -1218,7 +1233,10 @@
             if (engineActive.current) return; engineActive.current = true;
             if (audioCtx.current && audioCtx.current.state === 'suspended') await audioCtx.current.resume();
 
+            // 🧹 ПРИНУДИТЕЛЬНАЯ ОЧИСТКА СТАРЫХ МАРКЕРОВ ПРИ ЗАПУСКЕ
             historicalMarkersRef.current = []; liveMarkersRef.current = [];
+            if(candleSeries.current) { candleSeries.current.setMarkers([]); }
+
             setViewMode('DETAIL'); updateStatus('БЭКТЕСТ: PURE 5M (12H)...', 'text-cyan-600'); addLog(`ЗАПУСК ПОИСКА ЛИКВИДНОСТИ 12 ЧАСОВ (PURE 5M)...`, true);
 
             const curAsset = ASSETS[0]; const initialData = await ScannerAPI.getCandles(curAsset.symbol, 800, '5m');
@@ -1236,10 +1254,17 @@
                 let d_candles = 0, d_sweepH = 0, d_sweepL = 0, d_recB = 0, d_recS = 0, d_cand = 0, d_conf = 0, d_rej = 0; let d_lastRej = 'None';
                 const newTradesHistory = []; let engineState = { lastSignalTime: 0, lastSignalPrice: 0, consecutiveLosses: 0 };
 
-                const startIdx = Math.max(0, initialData.length - 144); const endIdx = initialData.length - 7;
+                const startIdx = Math.max(0, initialData.length - 144); 
+                
+                // 🛡 ЗАЩИТА: Бэктест не имеет права подходить к текущей несформированной свече
+                const endIdx = initialData.length - 7;
 
                 for (let idx = startIdx; idx <= endIdx; idx++) {
                     const currTime = initialData[idx].time; const currCandle = initialData[idx]; const prevCandle = initialData[idx - 1]; d_candles++;
+                    
+                    // 🛡 ЖЕСТКАЯ БЛОКИРОВКА ПРАВОГО КРАЯ (Последние 2 свечи, которые сейчас в движении, полностью игнорируются)
+                    if (currTime >= initialData[initialData.length - 2].time) continue;
+
                     const zones = liqMap.get(currTime); const cAtr = atrMap.get(currTime);
 
                     if (zones && cAtr !== undefined) {
@@ -1255,6 +1280,7 @@
                     const sig = evaluateSignalEngine(initialData, idx, liqMap, atrMap, { status: 'LOCAL 5M MODE' }, engineState);
                     let evaluatedStatus = sig.valid ? 'CONFIRMED' : (sig.reason ? 'REJECTED' : 'NO_SIGNAL');
 
+                    // Чтение защищенного реестра паритета
                     const pastLedgerStatus = ScanLedger.get(currTime);
                     if (pastLedgerStatus) {
                         if (pastLedgerStatus !== evaluatedStatus) {
@@ -1277,9 +1303,10 @@
                         let result = "LOSS";
                         if ((sig.isCall && exitPrice > entryPrice) || (sig.isPut && exitPrice < entryPrice) || exitPrice === entryPrice) result = "WIN";
 
-                        historicalMarkersRef.current.push({ time: currTime, position: sig.isCall ? 'belowBar' : 'aboveBar', color: sig.isCall ? '#0ea5e9' : '#f43f5e', shape: sig.isCall ? 'arrowUp' : 'arrowDown', text: 'SIGNAL', size: 1 });
-                        historicalMarkersRef.current.push({ time: entryCandle.time, position: sig.isCall ? 'belowBar' : 'aboveBar', color: '#8b5cf6', shape: 'square', text: 'ENTRY', size: 0.5 });
-                        historicalMarkersRef.current.push({ time: exitCandle.time, position: sig.isCall ? 'belowBar' : 'aboveBar', color: result==="WIN" ? '#10b981' : '#f43f5e', shape: 'square', text: 'EXIT', size: 0.5 });
+                        // ВИЗУАЛЬНОЕ РАЗДЕЛЕНИЕ (тусклые цвета для истории)
+                        historicalMarkersRef.current.push({ time: currTime, position: sig.isCall ? 'belowBar' : 'aboveBar', color: sig.isCall ? '#0284c7' : '#be123c', shape: sig.isCall ? 'arrowUp' : 'arrowDown', text: 'HIST SIGNAL', size: 0.8 });
+                        historicalMarkersRef.current.push({ time: entryCandle.time, position: sig.isCall ? 'belowBar' : 'aboveBar', color: '#6d28d9', shape: 'square', text: 'ENTRY', size: 0.5 });
+                        historicalMarkersRef.current.push({ time: exitCandle.time, position: sig.isCall ? 'belowBar' : 'aboveBar', color: result==="WIN" ? '#059669' : '#be123c', shape: 'square', text: 'EXIT', size: 0.5 });
 
                         newTradesHistory.push({
                             id: `hist_trade_${currTime}`, type: sig.isCall ? 'CALL' : 'PUT', signalTime: currTime, entryTime: entryCandle.time, exitTime: exitCandle.time,
@@ -1622,7 +1649,6 @@
                 </div>
               </div>
 
-              {/* УЛУЧШЕННЫЙ HEADER С ИНТЕГРИРОВАННОЙ КНОПКОЙ ТОРГОВЛИ */}
               <header className="h-auto md:h-16 py-2 md:py-0 flex flex-col md:flex-row items-start md:items-center justify-between px-3 md:px-6 shrink-0 z-40 gap-2 md:gap-0 mt-2">
                 <div className="flex flex-col justify-center w-full md:w-auto">
                   <div className="flex justify-between items-center md:block">
@@ -1639,14 +1665,12 @@
                   </div>
                 </div>
                 
-                {/* МОБИЛЬНАЯ ВЕРСИЯ КНОПКИ */}
                 <div className="w-full flex md:hidden mb-1 mt-1">
                     <BrokerButton />
                 </div>
 
                 <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-2 md:gap-1.5">
                   <div className="flex items-center gap-3">
-                      {/* ДЕСКТОПНАЯ ВЕРСИЯ КНОПКИ */}
                       <div className="hidden md:block">
                           <BrokerButton />
                       </div>
@@ -1668,7 +1692,6 @@
                 
                 <div className="w-full md:flex-1 h-[50vh] md:h-full glass-panel-heavy rounded-3xl md:rounded-[2.5rem] relative overflow-hidden flex flex-col shrink-0">
                   
-                  {/* SCREENER VIEW */}
                   <div className={`absolute inset-0 z-30 transition-all duration-700 bg-transparent flex items-center justify-center p-4 md:p-8 ${viewMode === 'SCREENER' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                     <div className="card-3d-wrapper w-full max-w-[95%] xl:max-w-[90%] h-[45vh] md:h-[65vh] flex">
                        <div className="card-3d relative w-full h-full flex flex-col p-5 md:p-8 rounded-[2.5rem]">
@@ -1705,7 +1728,6 @@
                     </div>
                   </div>
 
-                  {/* DETAILS VIEW (CHARTS) */}
                   <div className={`absolute inset-0 z-20 flex flex-col transition-all duration-700 bg-transparent ${viewMode === 'DETAIL' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                     <div className="absolute top-5 left-5 z-40 flex flex-col gap-2">
                       <div className="glass-card p-4 md:p-5 rounded-3xl min-w-[160px] border-white shadow-[0_15px_40px_rgba(14,165,233,0.15)] relative overflow-hidden bg-white/80">
@@ -1864,7 +1886,7 @@
                     <div className="flex-1 glass-card rounded-2xl overflow-hidden flex flex-col justify-start border-white bg-white shadow-[inset_0_2px_15px_rgba(0,0,0,0.02)]">
                       <div className="bg-slate-100/80 px-3 py-1.5 flex justify-between items-center border-b border-slate-200/60 mb-1 shrink-0">
                           <span className="text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1"><BugIcon size={10}/> PURE 5M DEBUG</span>
-                          <span className="text-[8px] font-bold text-emerald-600">PARITY: SYNCED</span>
+                          <span className="text-[8px] font-bold text-emerald-600">PARITY: PROTECTED</span>
                       </div>
                       <div className="px-3 pb-1 shrink-0 grid grid-cols-2 gap-1 text-[8px] md:text-[9px] mono-font font-semibold text-slate-500 border-b border-slate-200/40 mb-1">
                           <span className="text-cyan-700">L.C: {new Date(lastClosedCandleTimeUiRef.current * 1000).toLocaleTimeString('ru-RU')}</span>
