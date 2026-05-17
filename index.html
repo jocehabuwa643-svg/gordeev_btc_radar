@@ -451,7 +451,6 @@
             return 'NEUTRAL';
         }
 
-        /* ================= RELAXED SENSITIVE SIGNAL ENGINE ================= */
         function evaluateSignalEngine(data, evalIdx, liqMap, atrMap, mtfContext, engineState) {
             if (evalIdx < 100) return { valid: false, reason: 'Not enough data', score: 0 };
 
@@ -754,33 +753,38 @@
                     if (!chart || !series || !overlayRef.current) return;
                     const timeScale = chart.timeScale();
                     
+                    // --- SYNC PULSE ZONE ---
                     const pulseBox = overlayRef.current.querySelector('.zone-pulse-indicator');
                     if (pulseBox && zoneInfo) {
-                        const xStart = timeScale.timeToCoordinate(zoneInfo.time);
-                        const xEnd = timeScale.timeToCoordinate(zoneInfo.time + 25 * 60);
-                        let yPrice = zoneInfo.type === 'RESISTANCE' ? zoneInfo.top : zoneInfo.bottom;
-                        const y = series.priceToCoordinate(yPrice);
+                        const currentLog = timeScale.coordinateToLogical(timeScale.timeToCoordinate(zoneInfo.time));
+                        if (currentLog !== null) {
+                            const xStart = timeScale.logicalToCoordinate(currentLog);
+                            const xEnd = timeScale.logicalToCoordinate(currentLog + 5); // 25 минут (5 свечей вперед)
+                            let yPrice = zoneInfo.type === 'RESISTANCE' ? zoneInfo.top : zoneInfo.bottom;
+                            const y = series.priceToCoordinate(yPrice);
 
-                        if (xStart !== null && xEnd !== null && y !== null) {
-                            pulseBox.style.display = 'block';
-                            pulseBox.style.left = `${xStart}px`;
-                            pulseBox.style.width = `${Math.max(xEnd - xStart, 30)}px`;
-                            pulseBox.style.top = `${y - 15}px`; 
-                            pulseBox.style.height = `30px`;
+                            if (xStart !== null && xEnd !== null && y !== null) {
+                                pulseBox.style.display = 'block';
+                                pulseBox.style.left = `${xStart}px`;
+                                pulseBox.style.width = `${Math.max(xEnd - xStart, 30)}px`;
+                                pulseBox.style.top = `${y - 15}px`; 
+                                pulseBox.style.height = `30px`;
 
-                            const inner = pulseBox.querySelector('div');
-                            if (zoneInfo.type === 'RESISTANCE') {
-                                inner.className = 'absolute inset-0 animate-pulse rounded-full bg-rose-500/20 border-y border-rose-500/60 shadow-[0_0_15px_rgba(244,63,94,0.4)]';
+                                const inner = pulseBox.querySelector('div');
+                                if (zoneInfo.type === 'RESISTANCE') {
+                                    inner.className = 'absolute inset-0 animate-pulse rounded-full bg-rose-500/20 border-y border-rose-500/60 shadow-[0_0_15px_rgba(244,63,94,0.4)]';
+                                } else {
+                                    inner.className = 'absolute inset-0 animate-pulse rounded-full bg-emerald-500/20 border-y border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.4)]';
+                                }
                             } else {
-                                inner.className = 'absolute inset-0 animate-pulse rounded-full bg-emerald-500/20 border-y border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.4)]';
+                                pulseBox.style.display = 'none';
                             }
-                        } else {
-                            pulseBox.style.display = 'none';
                         }
                     } else if (pulseBox) {
                         pulseBox.style.display = 'none';
                     }
 
+                    // --- SYNC TRADE BOXES ---
                     const tradeBoxes = overlayRef.current.querySelectorAll('.trade-glass-box');
                     tradeBoxes.forEach(box => {
                         const tradeId = box.dataset.id;
@@ -788,23 +792,23 @@
                         if (!trade) return;
 
                         let xEntry = timeScale.timeToCoordinate(trade.entryTime);
-                        if (xEntry === null) {
-                            const xSig = timeScale.timeToCoordinate(trade.signalTime);
-                            if (xSig !== null) {
-                                const sigLog = timeScale.coordinateToLogical(xSig);
-                                if (sigLog !== null) xEntry = timeScale.logicalToCoordinate(sigLog + ((trade.entryTime - trade.signalTime)/300));
+                        let xExit = timeScale.timeToCoordinate(trade.exitTime);
+
+                        // Fallback для будущего времени (если xExit еще не отрисован на графике)
+                        if (xEntry !== null && xExit === null) {
+                            const entryLog = timeScale.coordinateToLogical(xEntry);
+                            if (entryLog !== null) {
+                                xExit = timeScale.logicalToCoordinate(entryLog + 5);
                             }
                         }
 
-                        let xExit = timeScale.timeToCoordinate(trade.exitTime);
-                        if (xExit === null) {
-                            const xSig = timeScale.timeToCoordinate(trade.signalTime);
-                            if (xSig !== null) {
-                                const sigLog = timeScale.coordinateToLogical(xSig);
-                                if (sigLog !== null) xExit = timeScale.logicalToCoordinate(sigLog + ((trade.exitTime - trade.signalTime)/300));
-                            } else if (trade.isLive && xEntry !== null) {
-                                const entLog = timeScale.coordinateToLogical(xEntry);
-                                if (entLog !== null) xExit = timeScale.logicalToCoordinate(entLog + 5);
+                        // Fallback, если xEntry не найден, но есть signalTime (смещение)
+                        if (xEntry === null && trade.signalTime) {
+                            const sigCoord = timeScale.timeToCoordinate(trade.signalTime);
+                            if (sigCoord !== null) {
+                                const sigLog = timeScale.coordinateToLogical(sigCoord);
+                                xEntry = timeScale.logicalToCoordinate(sigLog + ((trade.entryTime - trade.signalTime)/300));
+                                xExit = timeScale.logicalToCoordinate(sigLog + ((trade.exitTime - trade.signalTime)/300));
                             }
                         }
                         
@@ -849,7 +853,10 @@
                             const yEntryRel = yEntry - top;
 
                             if (trade.isLive) {
-                                const xExpiryCoord = timeScale.timeToCoordinate(trade.entryTime + 25 * 60);
+                                let xExpiryCoord = null;
+                                const entryLog = timeScale.coordinateToLogical(xEntry);
+                                if (entryLog !== null) xExpiryCoord = timeScale.logicalToCoordinate(entryLog + 5);
+
                                 if (expiryLine && xExpiryCoord !== null) {
                                     expiryLine.style.display = 'block';
                                     expiryLine.style.left = `${xExpiryCoord - left}px`;
@@ -970,7 +977,7 @@
                     {hoveredTrade && (
                         <div 
                             className="fixed z-50 premium-glass-card rounded-2xl p-4 pointer-events-none transform -translate-x-1/2 -translate-y-full min-w-[220px]"
-                            style={{ left: hoveredTrade.x, top: hoveredTrade.y }}
+                            style={{ left: hoveredTrade.x, top: hoveredTrade.y, zIndex: 999 }}
                         >
                             <div className="flex justify-between items-center mb-3 border-b border-slate-200/60 pb-2">
                                 <span className={`text-xs font-black tracking-widest oswald-font px-2.5 py-1 rounded-md ${hoveredTrade.trade.type === 'CALL' ? 'bg-cyan-100 text-cyan-700 shadow-[inset_0_1px_3px_rgba(255,255,255,0.8)]' : 'bg-orange-100 text-orange-700 shadow-[inset_0_1px_3px_rgba(255,255,255,0.8)]'}`}>
@@ -1456,7 +1463,6 @@
                           const liveEngineState = { lastSignalTime: lastSignalTimeRef.current, lastSignalPrice: lastSignalPriceRef.current, consecutiveLosses: consecutiveLossesRef.current };
                           const sig = evaluateSignalEngine(data, evaluateIdx, liqMap, atrMap, cachedMtfRef.current, liveEngineState);
                           
-                          // DEBUG LOG FOR DIAGNOSTICS
                           console.log("EVALUATING CANDLE:", new Date(evalCandleTime * 1000).toLocaleTimeString(), "SCORE:", sig.score, "REASON:", sig.reason, "VALID:", sig.valid);
 
                           const evaluatedStatus = sig.valid ? 'CONFIRMED' : (sig.reason ? 'REJECTED' : 'NO_SIGNAL');
@@ -1467,15 +1473,7 @@
                               setMtfContext(prev => ({ ...prev, score: sig.score })); setAsset(cur);
                               signalPhaseRef.current = 'EXPLAINING'; setSignalPhase('EXPLAINING'); setZoneInfo(null);
                               syncModeView(); playSound('found');
-                              
-                              if(candleSeries.current) {
-                                  try { 
-                                      liveMarkersRef.current.push({ time: sig.signalTime, position: sig.isCall ? 'belowBar' : 'aboveBar', color: sig.isCall ? '#0ea5e9' : '#f43f5e', shape: sig.isCall ? 'arrowUp' : 'arrowDown', text: 'SIGNAL', size: 1 });
-                                      updateChartMarkers();
-                                  } catch (e) {}
-                              }
 
-                              // ДОБАВЛЕНИЕ ЛИНИЙ СВИПА И ПУЛА (SWEEP / POOL BOUNDARY)
                               let activeSweepLine = null;
                               let activePoolLine = null;
                               if (candleSeries.current) {
@@ -1483,14 +1481,14 @@
                                       price: sig.isCall ? sig.sweepLow : sig.sweepHigh,
                                       color: sig.isCall ? '#10b981' : '#f97316',
                                       lineWidth: 2,
-                                      lineStyle: 2, // Dashed
+                                      lineStyle: 2, 
                                       title: 'SWEEP ZONE',
                                   });
                                   activePoolLine = candleSeries.current.createPriceLine({
                                       price: sig.isCall ? sig.cLower : sig.cUpper,
                                       color: sig.isCall ? '#10b981' : '#f97316',
                                       lineWidth: 1,
-                                      lineStyle: 1, // Dotted
+                                      lineStyle: 1, 
                                       title: 'POOL BOUNDARY',
                                   });
                               }
@@ -1540,6 +1538,7 @@
                                   syncModeView(); lastEvaluatedCandleTimeRef.current = evalCandleTime; break; 
                               }
 
+                              // ФАЗА ACTIVE (Стрелка + Маркер на графике + Glass Box)
                               playSound('start'); updateStatus('СДЕЛКА АКТИВНА', 'text-blue-700 font-bold');
                               signalPhaseRef.current = 'ACTIVE'; setSignalPhase('ACTIVE');
                               
@@ -1550,10 +1549,13 @@
 
                               let expirySeconds = expMins * 60; let isLive = true; let finalExitTime = actualEntryTime + (expMins * 60);
                               
-                              try {
-                                  liveMarkersRef.current.push({ time: data[data.length - 1].time, position: sig.isCall ? 'belowBar' : 'aboveBar', color: '#8b5cf6', shape: 'square', text: 'ENTRY', size: 0.5 });
-                                  updateChartMarkers();
-                              } catch (e) {}
+                              if(candleSeries.current) {
+                                  try { 
+                                      liveMarkersRef.current.push({ time: sig.signalTime, position: sig.isCall ? 'belowBar' : 'aboveBar', color: sig.isCall ? '#0ea5e9' : '#f43f5e', shape: sig.isCall ? 'arrowUp' : 'arrowDown', text: 'SIGNAL', size: 1 });
+                                      liveMarkersRef.current.push({ time: data[data.length - 1].time, position: sig.isCall ? 'belowBar' : 'aboveBar', color: '#8b5cf6', shape: 'square', text: 'ENTRY', size: 0.5 });
+                                      updateChartMarkers();
+                                  } catch (e) {}
+                              }
 
                               setActiveLiveTrade({
                                   id: `live_trade_${sig.signalTime}`, type: sig.isCall ? 'CALL' : 'PUT', signalTime: sig.signalTime, entryTime: actualEntryTime, 
@@ -1591,7 +1593,6 @@
 
                               isLive = false; setCountdown(null); updateStatus('АНАЛИЗ РЕЗУЛЬТАТА', 'text-slate-500');
 
-                              // ОЧИСТКА ЛИНИЙ СВИПА И ПУЛА ПОСЛЕ ЭКСПИРАЦИИ
                               if (candleSeries.current) {
                                   if (activeSweepLine) candleSeries.current.removePriceLine(activeSweepLine);
                                   if (activePoolLine) candleSeries.current.removePriceLine(activePoolLine);
