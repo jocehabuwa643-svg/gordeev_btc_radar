@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Крипто Терминал Гордеева - PRO MAX (SMC)</title>
+    <title>Крипто Терминал Гордеева - PRO MAX (SMC 1M)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -153,7 +153,6 @@
             box-shadow: 0 8px 25px -5px rgba(15, 23, 42, 0.04), inset 0 1px 3px rgba(255, 255, 255, 1);
         }
 
-        /* ПУЛЬСАЦИЯ КОНТЕЙНЕРА ГРАФИКА */
         .zone-active-support {
             box-shadow: inset 0 0 35px rgba(16, 185, 129, 0.25) !important;
             border-color: rgba(16, 185, 129, 0.4) !important;
@@ -306,12 +305,13 @@
             return { trades: total, wins, losses, winrate, pnl, balance, stake: moneyConfig.stake, payout: moneyConfig.payout, winPnl, lossPnl };
         }
 
-        /* ================= SCAN LEDGER MANAGER ================= */
+        /* ================= SCAN LEDGER MANAGER (1M SPECIFIC) ================= */
+        const LEDGER_KEY = 'crypto_pro_max_scan_ledger_1m';
         const _inMemoryLedger = {};
         const ScanLedger = {
             get: (time) => {
                 try {
-                    const stored = localStorage.getItem('crypto_pro_max_scan_ledger');
+                    const stored = localStorage.getItem(LEDGER_KEY);
                     if (stored) {
                         const parsed = JSON.parse(stored);
                         if (parsed[time]) return parsed[time];
@@ -322,16 +322,16 @@
             set: (time, status) => {
                 _inMemoryLedger[time] = status;
                 try {
-                    const stored = localStorage.getItem('crypto_pro_max_scan_ledger');
+                    const stored = localStorage.getItem(LEDGER_KEY);
                     const parsed = stored ? JSON.parse(stored) : {};
                     parsed[time] = status;
                     const keys = Object.keys(parsed).sort((a,b) => b - a);
                     if(keys.length > 200) {
                         const newData = {};
                         keys.slice(0, 200).forEach(k => newData[k] = parsed[k]);
-                        localStorage.setItem('crypto_pro_max_scan_ledger', JSON.stringify(newData));
+                        localStorage.setItem(LEDGER_KEY, JSON.stringify(newData));
                     } else {
-                        localStorage.setItem('crypto_pro_max_scan_ledger', JSON.stringify(parsed));
+                        localStorage.setItem(LEDGER_KEY, JSON.stringify(parsed));
                     }
                 } catch(e) {
                     const keys = Object.keys(_inMemoryLedger).sort((a,b) => b - a);
@@ -343,7 +343,7 @@
             },
             clear: () => {
                 for (let k in _inMemoryLedger) delete _inMemoryLedger[k];
-                try { localStorage.removeItem('crypto_pro_max_scan_ledger'); } catch(e){}
+                try { localStorage.removeItem(LEDGER_KEY); } catch(e){}
             }
         };
 
@@ -375,7 +375,7 @@
         };
 
         const ScannerAPI = {
-          async getCandles(symbol, count = 250, interval = '5m') { 
+          async getCandles(symbol, count = 250, interval = '1m') { 
             const urls = [
                 `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
                 `https://api1.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
@@ -450,6 +450,7 @@
             return 'NEUTRAL';
         }
 
+        /* ================= 1M SCALPING SIGNAL ENGINE ================= */
         function evaluateSignalEngine(data, evalIdx, liqMap, atrMap, mtfContext, engineState) {
             if (evalIdx < 100) return { valid: false, reason: 'Not enough data', score: 0 };
 
@@ -530,8 +531,8 @@
                 if (mtfContext.h4 === 'BULLISH' || mtfContext.h1 === 'BULLISH') { qScore -= 10; mtfConfStr = 'CONFLICT'; }
             }
 
-            if (mtfConfStr === 'WAIT' || mtfContext.h4 === 'LOCAL' || mtfContext.status === 'LOCAL 5M MODE') {
-                mtfConfStr = 'LOCAL 5M'; qScore += 20; 
+            if (mtfConfStr === 'WAIT' || mtfContext.h4 === 'LOCAL' || mtfContext.status.includes('LOCAL')) {
+                mtfConfStr = 'LOCAL 1M'; qScore += 20; 
             }
 
             if (mtfContext.h4 === 'NEUTRAL' && mtfContext.h1 === 'NEUTRAL') {
@@ -552,10 +553,11 @@
             if (isCall && distBotLate > cAtr * 0.45) { qScore -= 5; rejectReason = 'late entry'; }
             else if (isPut && distTopLate > cAtr * 0.45) { qScore -= 5; rejectReason = 'late entry'; }
 
-            const candlesSinceLast = (currTime - engineState.lastSignalTime) / (5 * 60); 
-            if (candlesSinceLast < 3) {
+            // 1M COOLDOWN RULES (Divider is 60 instead of 300)
+            const candlesSinceLast = (currTime - engineState.lastSignalTime) / 60; 
+            if (candlesSinceLast < 8) { // 8 minutes
                 qScore -= 15; rejectReason = 'cooldown (too fast)';
-            } else if (candlesSinceLast < 8) {
+            } else if (candlesSinceLast < 15) { // 15 minutes
                 if (Math.abs(currCandle.close - engineState.lastSignalPrice) < cAtr * 0.38) {
                     qScore -= 10; rejectReason = 'same zone cooldown';
                 }
@@ -756,7 +758,7 @@
                         const currentLog = timeScale.coordinateToLogical(timeScale.timeToCoordinate(zoneInfo.time));
                         if (currentLog !== null) {
                             const xStart = timeScale.logicalToCoordinate(currentLog);
-                            const xEnd = timeScale.logicalToCoordinate(currentLog + 5);
+                            const xEnd = timeScale.logicalToCoordinate(currentLog + 25); // 25 СВЕЧЕЙ НА 1M
                             let yPrice = zoneInfo.type === 'RESISTANCE' ? zoneInfo.top : zoneInfo.bottom;
                             const y = series.priceToCoordinate(yPrice);
 
@@ -793,13 +795,13 @@
                         if (xEntry !== null && xExit === null) {
                             const entryLog = timeScale.coordinateToLogical(xEntry);
                             if (entryLog !== null) {
-                                xExit = timeScale.logicalToCoordinate(entryLog + 5);
+                                xExit = timeScale.logicalToCoordinate(entryLog + 25);
                             }
                             if (xExit === null) {
                                 const p1 = timeScale.logicalToCoordinate(1);
                                 const p2 = timeScale.logicalToCoordinate(2);
                                 const candlePx = (p2 !== null && p1 !== null) ? Math.abs(p2 - p1) : 10;
-                                xExit = xEntry + (5 * candlePx);
+                                xExit = xEntry + (25 * candlePx);
                             }
                         }
 
@@ -807,8 +809,8 @@
                             const sigCoord = timeScale.timeToCoordinate(trade.signalTime);
                             if (sigCoord !== null) {
                                 const sigLog = timeScale.coordinateToLogical(sigCoord);
-                                xEntry = timeScale.logicalToCoordinate(sigLog + ((trade.entryTime - trade.signalTime)/300));
-                                xExit = timeScale.logicalToCoordinate(sigLog + ((trade.exitTime - trade.signalTime)/300));
+                                xEntry = timeScale.logicalToCoordinate(sigLog + ((trade.entryTime - trade.signalTime)/60));
+                                xExit = timeScale.logicalToCoordinate(sigLog + ((trade.exitTime - trade.signalTime)/60));
                             }
                         }
                         
@@ -930,7 +932,7 @@
                                 </span>
                             </div>
                             <div className="mt-3 pt-2 border-t border-slate-200/60 text-center text-[9px] text-slate-400 font-bold uppercase tracking-widest">
-                                PURE 5M MODE • Q-SCORE: {hoveredTrade.trade.quality || 'N/A'}
+                                PURE 1M MODE • Q-SCORE: {hoveredTrade.trade.quality || 'N/A'}
                             </div>
                         </div>
                     )}
@@ -952,7 +954,7 @@
           
           const [countdown, setCountdown] = useState(null); 
           const [logs, setLogs] = useState([]);
-          const [currentTF, setCurrentTF] = useState('5M');
+          const [currentTF, setCurrentTF] = useState('1M');
           const [zoneState, setZoneState] = useState('OUT');
           const [zoneInfo, setZoneInfo] = useState(null); 
           
@@ -1103,7 +1105,7 @@
 
           useEffect(() => {
               const loadSparklines = async () => {
-                  const data = await ScannerAPI.getCandles('BTCUSDT', 50, '5m'); 
+                  const data = await ScannerAPI.getCandles('BTCUSDT', 50, '1m'); 
                   if (data && data.length > 0) { setSparklines({'BTCUSDT': data}); currentPrice.current = data[data.length - 1].close; }
               };
               loadSparklines();
@@ -1144,7 +1146,12 @@
           };
 
           const initChart = async () => {
-            if (!chartContainerRef.current) return;
+            if (!chartContainerRef.current) {
+                console.log("Chart container not ready, retrying in 1s...");
+                setTimeout(initChart, 1000);
+                return;
+            }
+            console.log("Chart container:", chartContainerRef.current);
             if (!window.LightweightCharts) {
               await new Promise(resolve => {
                 const script = document.createElement('script'); script.src = 'https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js';
@@ -1196,8 +1203,8 @@
                   const m15 = data15m.length > 0 ? getHTFBias(data15m, currentPriceVal) : 'LOCAL';
                   cachedMtfRef.current = { h4, h1, m15, status: 'LOADED' }; setMtfContext(prev => ({ ...prev, h4, h1, m15, status: 'LOADED' }));
               } catch (e) {
-                  cachedMtfRef.current = { h4: 'LOCAL', h1: 'LOCAL', m15: 'LOCAL', status: 'LOCAL 5M MODE' };
-                  setMtfContext(prev => ({ ...prev, h4: 'LOCAL', h1: 'LOCAL', m15: 'LOCAL', status: 'LOCAL 5M MODE' }));
+                  cachedMtfRef.current = { h4: 'LOCAL', h1: 'LOCAL', m15: 'LOCAL', status: 'LOCAL 1M MODE' };
+                  setMtfContext(prev => ({ ...prev, h4: 'LOCAL', h1: 'LOCAL', m15: 'LOCAL', status: 'LOCAL 1M MODE' }));
               }
           };
 
@@ -1210,15 +1217,14 @@
             if (engineActive.current) return; engineActive.current = true;
             if (audioCtx.current && audioCtx.current.state === 'suspended') await audioCtx.current.resume();
 
-            // ПОЛНАЯ ОЧИСТКА ПАРИТЕТА ПЕРЕД БЭКТЕСТОМ
             ScanLedger.clear();
-
             historicalMarkersRef.current = []; liveMarkersRef.current = [];
             if(candleSeries.current) { candleSeries.current.setMarkers([]); }
 
-            setViewMode('DETAIL'); updateStatus('БЭКТЕСТ: PURE 5M (12H)...', 'text-cyan-600'); addLog(`ЗАПУСК ПОИСКА ЛИКВИДНОСТИ 12 ЧАСОВ (PURE 5M)...`, true);
+            setViewMode('DETAIL'); updateStatus('БЭКТЕСТ: PURE 1M (12H)...', 'text-cyan-600'); addLog(`ЗАПУСК ПОИСКА ЛИКВИДНОСТИ 12 ЧАСОВ (PURE 1M)...`, true);
 
-            const curAsset = ASSETS[0]; const initialData = await ScannerAPI.getCandles(curAsset.symbol, 800, '5m');
+            const curAsset = ASSETS[0]; 
+            const initialData = await ScannerAPI.getCandles(curAsset.symbol, 1440, '1m'); // 24 HOURS IN 1M
             
             if (initialData && initialData.length > 150) {
                 lastDataTimeRef.current = Date.now(); setSparklines(prev => ({...prev, [curAsset.symbol]: initialData})); currentPrice.current = initialData[initialData.length - 1].close;
@@ -1233,8 +1239,7 @@
                 let d_candles = 0, d_sweepH = 0, d_sweepL = 0, d_recB = 0, d_recS = 0, d_cand = 0, d_conf = 0, d_rej = 0; let d_lastRej = 'None';
                 const newTradesHistory = []; let engineState = { lastSignalTime: 0, lastSignalPrice: 0, consecutiveLosses: 0 };
 
-                const startIdx = Math.max(0, initialData.length - 144); 
-                // NO REPAINT ZONE: Игнорируем 3 последние свечи в бэктесте
+                const startIdx = Math.max(0, initialData.length - 720); // Last 12 hours
                 const endIdx = initialData.length - 3;
 
                 for (let idx = startIdx; idx <= endIdx; idx++) {
@@ -1252,7 +1257,7 @@
                         if (isReclaimBuy || isReclaimSell) d_cand++;
                     }
 
-                    const sig = evaluateSignalEngine(initialData, idx, liqMap, atrMap, { status: 'LOCAL 5M MODE' }, engineState);
+                    const sig = evaluateSignalEngine(initialData, idx, liqMap, atrMap, { status: 'LOCAL 1M MODE' }, engineState);
                     let evaluatedStatus = sig.valid ? 'CONFIRMED' : (sig.reason ? 'REJECTED' : 'NO_SIGNAL');
 
                     const pastLedgerStatus = ScanLedger.get(currTime);
@@ -1273,7 +1278,7 @@
                         }
                     } else {
                         d_conf++; engineState.lastSignalTime = sig.signalTime; engineState.lastSignalPrice = sig.signalPrice;
-                        const entryIdx = idx + 1; const exitIdx = entryIdx + 5; 
+                        const entryIdx = idx + 1; const exitIdx = Math.min(entryIdx + 25, initialData.length - 1); 
                         const entryCandle = initialData[entryIdx]; const exitCandle = initialData[exitIdx];
                         const entryPrice = entryCandle.open; const exitPrice = exitCandle.close;
                         
@@ -1290,7 +1295,7 @@
                         });
 
                         if (result === "WIN") engineState.consecutiveLosses = 0; else engineState.consecutiveLosses++;
-                        idx += 5;
+                        idx += 25; // Пропускаем 25 свечей
                     }
                 }
 
@@ -1300,7 +1305,9 @@
                 setTradesHistory(newTradesHistory);
                 setPureDiag({ candles: d_candles, sweepHigh: d_sweepH, sweepLow: d_sweepL, reclaimBuy: d_recB, reclaimSell: d_recS, candidates: d_cand, confirmed: d_conf, rejected: d_rej, rendered: newTradesHistory.length, boxes: newTradesHistory.length, lastReason: d_lastRej });
 
-                setAsset(curAsset); await initChart();
+                setAsset(curAsset);
+                await new Promise(r => setTimeout(r, 200)); 
+                await initChart();
                 if (candleSeries.current) {
                     candleSeries.current.setData(initialData); updateChartMarkers(); drawIndicators(upperData, lowerData);
                     try { chartInstance.current.timeScale().fitContent(); } catch(e) {}
@@ -1330,7 +1337,7 @@
                   if (currentAge > 90) {
                       updateStatus('ДАННЫЕ ОБНОВЛЯЮТСЯ. СИГНАЛЫ ПРИОСТАНОВЛЕНЫ.', 'text-rose-600 font-bold animate-pulse');
                       await new Promise(r => setTimeout(r, 2000));
-                      const data = await ScannerAPI.getCandles(curAsset.symbol, 200, '5m'); 
+                      const data = await ScannerAPI.getCandles(curAsset.symbol, 200, '1m'); 
                       if (data && data.length > 100) lastDataTimeRef.current = Date.now(); continue;
                   }
 
@@ -1338,11 +1345,11 @@
                   if (zoneStateRef.current === 'OUT' && signalPhaseRef.current === 'NONE') updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-700');
                   else if (zoneStateRef.current === 'IN' && signalPhaseRef.current === 'NONE') updateStatus('ЗОНА ИНТЕРЕСА: ВОЗМОЖЕН СИГНАЛ', 'text-amber-600 font-bold animate-pulse');
                   
-                  setCurrentTF('5M');
+                  setCurrentTF('1M');
 
                   for(let cur of ASSETS) {
                     if (!engineActive.current) break;
-                    const data = await ScannerAPI.getCandles(cur.symbol, 200, '5m'); 
+                    const data = await ScannerAPI.getCandles(cur.symbol, 200, '1m'); 
                     
                     if (data && data.length > 100) {
                       lastDataTimeRef.current = Date.now(); setSparklines(prev => ({...prev, [cur.symbol]: data}));
@@ -1370,8 +1377,8 @@
                                   });
                                   addLog('ЦЕНА ВОШЛА В ЗОНУ ИНТЕРЕСА');
                                   const mtf = cachedMtfRef.current;
-                                  let warnTxt = 'Цена подошла к зоне интереса. Возможен сигнал после подтверждения на 5M.';
-                                  if (mtf.h4 !== 'NEUTRAL' || mtf.h1 !== 'NEUTRAL') warnTxt = 'Цена подходит к старшей зоне ликвидности. Возможен сигнал после подтверждения на 5M.';
+                                  let warnTxt = 'Цена подошла к зоне интереса. Возможен сигнал после подтверждения на 1M.';
+                                  if (mtf.h4 !== 'NEUTRAL' || mtf.h1 !== 'NEUTRAL') warnTxt = 'Цена подходит к старшей зоне ликвидности. Возможен сигнал после подтверждения на 1M.';
                                   enqueueSpeech(warnTxt, `zone-approach-${latestZone.time}`, 3);
                                   syncModeView(); updateStatus('ЗОНА ИНТЕРЕСА: ВОЗМОЖЕН СИГНАЛ', 'text-amber-600 font-bold animate-pulse');
                               }
@@ -1389,7 +1396,6 @@
                       const evaluateIdx = lastIdx - 1; const evalCandleTime = data[evaluateIdx]?.time;
 
                       if (evalCandleTime > lastEvaluatedCandleTimeRef.current && signalPhaseRef.current === 'NONE') {
-                          // СТРОГАЯ СИНХРОНИЗАЦИЯ: НЕ ПУСКАЕМ ФАНТОМЫ, ЕСЛИ ОНИ БЫЛИ ОТКЛОНЕНЫ В РЕАЛЬНОМ ВРЕМЕНИ
                           const pastStatus = ScanLedger.get(evalCandleTime);
                           if (pastStatus === 'REJECTED' || pastStatus === 'NO_SIGNAL' || pastStatus === 'PARITY_MISMATCH') {
                               lastEvaluatedCandleTimeRef.current = evalCandleTime;
@@ -1409,7 +1415,6 @@
                               lastSignalTimeRef.current = sig.signalTime; lastSignalPriceRef.current = sig.signalPrice;
                               setMtfContext(prev => ({ ...prev, score: sig.score })); setAsset(cur);
                               
-                              // ФАЗА 1: EXPLAINING (МАРКЕРОВ НЕТ)
                               signalPhaseRef.current = 'EXPLAINING'; setSignalPhase('EXPLAINING'); setZoneInfo(null);
                               syncModeView(); playSound('found');
 
@@ -1417,15 +1422,14 @@
                               updateStatus(`ОБЪЯСНЕНИЕ СИГНАЛА...`, 'text-cyan-600 font-bold animate-pulse'); addLog(`Accepted: ${sig.signalType} | Q:${sig.score}`, true);
 
                               const directionText = sig.isCall ? "вверх" : "вниз";
-                              let voiceReason = "локальный сигнал на 5 минут. Старший контекст нейтральный";
+                              let voiceReason = "локальный сигнал на 1 минуту. Старший контекст нейтральный";
                               if (sig.score >= 80) voiceReason = "Цена находится возле зоны ликвидности старшего таймфрейма, структура подтверждена";
-                              else if (sig.mtfConfStr === 'CONFIRM') voiceReason = "на 15M есть подтверждение реакции, на 5M сформирован паттерн";
+                              else if (sig.mtfConfStr === 'CONFIRM') voiceReason = "на 15M есть подтверждение реакции, на 1M сформирован паттерн";
                               else if (sig.signalType === 'Primary Sweep') voiceReason = "снятие ликвидности и возврат в зону";
                               else if (sig.signalType.includes('Momentum')) voiceReason = "мощное импульсное отторжение от уровня ликвидности";
                               
                               await speakAsync(`Внимание. Появился сигнал ${directionText}. ${voiceReason}. Идёт подготовка ко входу.`, `signal-detect-${sig.signalTime}`, 1);
 
-                              // ФАЗА 2: COUNTDOWN (МАРКЕРОВ НЕТ)
                               signalPhaseRef.current = 'COUNTDOWN'; setSignalPhase('COUNTDOWN');
                               for(let w=3; w>0; w--) {
                                   setCountdown(w); updateStatus(`ПОДГОТОВКА К ВХОДУ: ${w}С`, 'text-cyan-600 font-bold'); playSound('scan');
@@ -1435,7 +1439,7 @@
 
                               let tradeCancelled = false;
                               try {
-                                  const liveData = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
+                                  const liveData = await ScannerAPI.getCandles(cur.symbol, 2, '1m');
                                   if (liveData && liveData.length > 0) lastDataTimeRef.current = Date.now();
                                   const liveTick = liveData[liveData.length - 1];
                                   if (liveTick && liveTick.time >= data[data.length - 1].time) {
@@ -1455,7 +1459,6 @@
                                   syncModeView(); lastEvaluatedCandleTimeRef.current = evalCandleTime; break; 
                               }
 
-                              // ФАЗА 3: СДЕЛКА АКТИВНА (ПОЯВЛЕНИЕ МАРКЕРОВ, ЛИНИЙ И БОКСОВ СИНХРОННО)
                               playSound('start'); updateStatus('СДЕЛКА АКТИВНА', 'text-blue-700 font-bold');
                               signalPhaseRef.current = 'ACTIVE'; setSignalPhase('ACTIVE');
 
@@ -1510,7 +1513,7 @@
                                 
                                 if (expirySeconds % 2 === 0) {
                                     try {
-                                        const liveData = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
+                                        const liveData = await ScannerAPI.getCandles(cur.symbol, 2, '1m');
                                         if (liveData && liveData.length > 0) {
                                             lastDataTimeRef.current = Date.now(); const tick = liveData[liveData.length - 1];
                                             currentPrice.current = tick.close;
@@ -1530,7 +1533,7 @@
                                   if (activePoolLine) candleSeries.current.removePriceLine(activePoolLine);
                               }
 
-                              const resultData = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
+                              const resultData = await ScannerAPI.getCandles(cur.symbol, 2, '1m');
                               let finalPrice = entryPrice;
                               if (resultData && resultData.length > 0) {
                                   lastDataTimeRef.current = Date.now(); finalPrice = resultData[resultData.length - 1].close; finalExitTime = resultData[resultData.length - 1].time;
@@ -1580,7 +1583,7 @@
                       }
                     }
                   }
-                  await new Promise(r => setTimeout(r, 2000)); 
+                  await new Promise(r => setTimeout(r, 10000)); 
               } catch (e) {
                   addLog("ПЕРЕЗАПУСК РАДАРА...", true); await new Promise(r => setTimeout(r, 3000));
               }
@@ -1717,7 +1720,7 @@
                               </div>
                               <div className="flex flex-col items-end">
                                   <div className="flex items-center gap-2 text-slate-900 bg-white/80 px-4 py-2 rounded-xl shadow-[0_10px_20px_rgba(15,23,42,0.05)] border border-slate-200">
-                                      <span className="text-xs md:text-sm font-bold tracking-widest uppercase">Pure 5M Diagnostics</span>
+                                      <span className="text-xs md:text-sm font-bold tracking-widest uppercase">Pure 1M Diagnostics</span>
                                       <Radar size={18} className="animate-spin text-cyan-500" />
                                   </div>
                               </div>
@@ -1789,6 +1792,10 @@
                   <div className="flex-1 flex flex-col p-3 md:p-4 gap-3 md:gap-4 overflow-y-hidden relative z-10">
                     
                     <div className="glass-card rounded-2xl p-2 shrink-0 border-white bg-white/80 shadow-inner flex flex-col justify-center">
+                        <div className="flex justify-between items-center bg-blue-50/50 p-1.5 rounded border border-blue-200/50 shadow-sm mb-1.5 mx-1">
+                            <span className="text-[9px] text-slate-600 font-bold tracking-widest">TIMEFRAME:</span>
+                            <span className="text-[10px] font-black text-blue-700 tracking-widest">1M (SCALPING)</span>
+                        </div>
                         <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest text-center border-b border-slate-200/50 pb-1.5 mb-1.5 oswald-font">MTF CONTEXT FILTER</div>
                         <div className="flex justify-between items-center px-1">
                             <div className="flex flex-col items-center flex-1 border-r border-slate-200/60">
@@ -1901,7 +1908,7 @@
 
                     <div className="flex-1 glass-card rounded-2xl overflow-hidden flex flex-col justify-start border-white bg-white shadow-[inset_0_2px_15px_rgba(0,0,0,0.02)]">
                       <div className="bg-slate-100/80 px-3 py-1.5 flex justify-between items-center border-b border-slate-200/60 mb-1 shrink-0">
-                          <span className="text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1"><BugIcon size={10}/> PURE 5M DEBUG</span>
+                          <span className="text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1"><BugIcon size={10}/> PURE 1M DEBUG</span>
                           <span className="text-[8px] font-bold text-emerald-600">PARITY: PROTECTED</span>
                       </div>
                       <div className="px-3 pb-1 shrink-0 grid grid-cols-2 gap-1 text-[8px] md:text-[9px] mono-font font-semibold text-slate-500 border-b border-slate-200/40 mb-1">
