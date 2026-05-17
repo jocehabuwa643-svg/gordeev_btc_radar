@@ -153,10 +153,24 @@
             box-shadow: 0 8px 25px -5px rgba(15, 23, 42, 0.04), inset 0 1px 3px rgba(255, 255, 255, 1);
         }
 
-        @keyframes pulse-zone {
-            0% { opacity: 0.15; }
-            50% { opacity: 0.5; }
-            100% { opacity: 0.15; }
+        /* ПУЛЬСАЦИЯ КОНТЕЙНЕРА ГРАФИКА */
+        .zone-active-support {
+            box-shadow: inset 0 0 35px rgba(16, 185, 129, 0.25) !important;
+            border-color: rgba(16, 185, 129, 0.4) !important;
+            animation: pulse-border-support 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .zone-active-resistance {
+            box-shadow: inset 0 0 35px rgba(244, 63, 94, 0.25) !important;
+            border-color: rgba(244, 63, 94, 0.4) !important;
+            animation: pulse-border-resistance 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-border-support {
+            0%, 100% { box-shadow: inset 0 0 35px rgba(16, 185, 129, 0.25); }
+            50% { box-shadow: inset 0 0 55px rgba(16, 185, 129, 0.45); }
+        }
+        @keyframes pulse-border-resistance {
+            0%, 100% { box-shadow: inset 0 0 35px rgba(244, 63, 94, 0.25); }
+            50% { box-shadow: inset 0 0 55px rgba(244, 63, 94, 0.45); }
         }
 
         .text-gradient {
@@ -228,6 +242,12 @@
             25% { transform: scale(1); opacity: 0.8; }
             40% { transform: scale(3.5); opacity: 0; }
             100% { transform: scale(3.5); opacity: 0; }
+        }
+
+        @keyframes pulse-zone {
+            0% { opacity: 0.15; }
+            50% { opacity: 0.5; }
+            100% { opacity: 0.15; }
         }
 
     </style>
@@ -320,6 +340,10 @@
                         keysToRemove.forEach(k => delete _inMemoryLedger[k]);
                     }
                 }
+            },
+            clear: () => {
+                for (let k in _inMemoryLedger) delete _inMemoryLedger[k];
+                try { localStorage.removeItem('crypto_pro_max_scan_ledger'); } catch(e){}
             }
         };
 
@@ -426,7 +450,6 @@
             return 'NEUTRAL';
         }
 
-        /* ================= АГРЕССИВНЫЙ SIGNAL ENGINE ================= */
         function evaluateSignalEngine(data, evalIdx, liqMap, atrMap, mtfContext, engineState) {
             if (evalIdx < 100) return { valid: false, reason: 'Not enough data', score: 0 };
 
@@ -472,7 +495,6 @@
 
             let isCall = false; let isPut = false; let signalType = ''; let baseScore = 0; let rawSignal = false;
 
-            // БАЗОВЫЕ ОЧКИ ПОДНЯТЫ ЧТОБЫ ЛЕГЧЕ ПРОХОДИТЬ ПОРОГ
             if (touchedTop && returnedInsideTop && structureBreakTop) { isPut = true; signalType = 'Primary Sweep'; baseScore = 50; rawSignal = true; } 
             else if (isNearTop && upperWick > body * 1.1 && isRedCandle) { isPut = true; signalType = 'Wick Rejection'; baseScore = 45; rawSignal = true; } 
             else if (currCandle.high >= cUpper && currCandle.close < cUpper && upperWick > cAtr * 0.2) { isPut = true; signalType = 'Edge Reaction'; baseScore = 42; rawSignal = true; } 
@@ -500,7 +522,7 @@
                 if (mtfContext.h4 === 'BULLISH') qScore += 15;
                 if (mtfContext.h1 === 'BULLISH') qScore += 15;
                 if (mtfContext.m15 === 'BULLISH') { qScore += 15; mtfConfStr = 'CONFIRM'; }
-                if (mtfContext.h4 === 'BEARISH' || mtfContext.h1 === 'BEARISH') { qScore -= 10; mtfConfStr = 'CONFLICT'; } // Снижен штраф
+                if (mtfContext.h4 === 'BEARISH' || mtfContext.h1 === 'BEARISH') { qScore -= 10; mtfConfStr = 'CONFLICT'; }
             } else {
                 if (mtfContext.h4 === 'BEARISH') qScore += 15;
                 if (mtfContext.h1 === 'BEARISH') qScore += 15;
@@ -516,7 +538,6 @@
                 qScore += 5;
             }
 
-            // АГРЕССИВНО СНИЖЕННЫЕ ПОРОГИ (ВЫСОКАЯ ЧУВСТВИТЕЛЬНОСТЬ)
             let threshold = (signalType.includes('Primary Sweep') || signalType.includes('Momentum')) ? 45 : 40;
             if (engineState.consecutiveLosses >= 2) threshold += 5;
 
@@ -730,50 +751,36 @@
                     if (!chart || !series || !overlayRef.current) return;
                     const timeScale = chart.timeScale();
                     
-                    // --- 1. ПУЛЬСАЦИЯ ЗОНЫ В БУДУЩЕМ (25 MIN AHEAD) ---
                     const pulseBox = overlayRef.current.querySelector('.zone-pulse-indicator');
                     if (pulseBox && zoneInfo) {
-                        const xStart = timeScale.timeToCoordinate(zoneInfo.time);
-                        let xEnd = null;
-                        
-                        if (xStart !== null) {
-                            const logIdx = timeScale.coordinateToLogical(xStart);
-                            if (logIdx !== null) {
-                                // 5 свечей вперед (25 мин)
-                                xEnd = timeScale.logicalToCoordinate(logIdx + 5);
-                            }
-                        }
-
-                        // Если не смогли посчитать через logical (нет места справа), аппроксимируем пикселями
-                        if (xStart !== null && xEnd === null) {
-                            const p1 = timeScale.logicalToCoordinate(1);
-                            const p2 = timeScale.logicalToCoordinate(2);
-                            const candlePx = (p2 !== null && p1 !== null) ? Math.abs(p2 - p1) : 10;
-                            xEnd = xStart + (5 * candlePx);
-                        }
-
-                        if (xStart !== null && xEnd !== null) {
+                        const currentLog = timeScale.coordinateToLogical(timeScale.timeToCoordinate(zoneInfo.time));
+                        if (currentLog !== null) {
+                            const xStart = timeScale.logicalToCoordinate(currentLog);
+                            const xEnd = timeScale.logicalToCoordinate(currentLog + 5);
                             let yPrice = zoneInfo.type === 'RESISTANCE' ? zoneInfo.top : zoneInfo.bottom;
                             const y = series.priceToCoordinate(yPrice);
 
-                            if (y !== null) {
+                            if (xStart !== null && xEnd !== null && y !== null) {
                                 pulseBox.style.display = 'block';
                                 pulseBox.style.left = `${xStart}px`;
                                 pulseBox.style.width = `${Math.max(xEnd - xStart, 30)}px`;
-                                pulseBox.style.top = `${y - 20}px`; 
-                                pulseBox.style.height = `40px`;
+                                pulseBox.style.top = `${y - 15}px`; 
+                                pulseBox.style.height = `30px`;
 
-                                pulseBox.className = `zone-pulse-indicator absolute pointer-events-none z-10 rounded-full ${zoneInfo.type === 'RESISTANCE' ? 'bg-rose-500/20' : 'bg-cyan-500/20'}`;
-                                pulseBox.style.animation = 'pulse-zone 2s infinite';
+                                const inner = pulseBox.querySelector('div');
+                                if (zoneInfo.type === 'RESISTANCE') {
+                                    inner.className = 'absolute inset-0 animate-pulse rounded-full bg-rose-500/20 border-y border-rose-500/60 shadow-[0_0_15px_rgba(244,63,94,0.4)]';
+                                } else {
+                                    inner.className = 'absolute inset-0 animate-pulse rounded-full bg-emerald-500/20 border-y border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.4)]';
+                                }
+                            } else {
+                                pulseBox.style.display = 'none';
                             }
-                        } else {
-                            pulseBox.style.display = 'none';
                         }
                     } else if (pulseBox) {
                         pulseBox.style.display = 'none';
                     }
 
-                    // --- 2. СТЕКЛЯННЫЕ БОКСЫ СДЕЛОК (GLASS TRADE BOXES) ---
                     const tradeBoxes = overlayRef.current.querySelectorAll('.trade-glass-box');
                     tradeBoxes.forEach(box => {
                         const tradeId = box.dataset.id;
@@ -783,13 +790,11 @@
                         let xEntry = timeScale.timeToCoordinate(trade.entryTime);
                         let xExit = timeScale.timeToCoordinate(trade.exitTime);
 
-                        // Если сделка активна и конец сделки еще не на графике
                         if (xEntry !== null && xExit === null) {
                             const entryLog = timeScale.coordinateToLogical(xEntry);
                             if (entryLog !== null) {
                                 xExit = timeScale.logicalToCoordinate(entryLog + 5);
                             }
-                            // Если всё равно null (нет правого отступа), используем аппроксимацию
                             if (xExit === null) {
                                 const p1 = timeScale.logicalToCoordinate(1);
                                 const p2 = timeScale.logicalToCoordinate(2);
@@ -798,7 +803,6 @@
                             }
                         }
 
-                        // Если не найден вход (напр. смещен), пробуем найти через сигнал
                         if (xEntry === null && trade.signalTime) {
                             const sigCoord = timeScale.timeToCoordinate(trade.signalTime);
                             if (sigCoord !== null) {
@@ -863,10 +867,10 @@
 
             return (
                 <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden" ref={overlayRef}>
-                    {/* ЗОНА ПУЛЬСАЦИИ В БУДУЩЕМ */}
-                    <div className="zone-pulse-indicator absolute pointer-events-none z-10" style={{ display: 'none' }}></div>
+                    <div className="zone-pulse-indicator absolute pointer-events-none z-10" style={{ display: 'none' }}>
+                        <div className="absolute inset-0 animate-pulse rounded-full opacity-50" />
+                    </div>
 
-                    {/* СТЕКЛЯННЫЕ БОКСЫ СДЕЛОК */}
                     {trades.map(trade => {
                         const isWinningLive = trade.isLive ? (trade.type === 'CALL' ? trade.exitPrice > trade.entryPrice : trade.exitPrice < trade.entryPrice) : false;
                         const borderColor = trade.type === 'CALL' ? 'border-cyan-500' : 'border-rose-500';
@@ -1206,6 +1210,9 @@
             if (engineActive.current) return; engineActive.current = true;
             if (audioCtx.current && audioCtx.current.state === 'suspended') await audioCtx.current.resume();
 
+            // ПОЛНАЯ ОЧИСТКА ПАРИТЕТА ПЕРЕД БЭКТЕСТОМ
+            ScanLedger.clear();
+
             historicalMarkersRef.current = []; liveMarkersRef.current = [];
             if(candleSeries.current) { candleSeries.current.setMarkers([]); }
 
@@ -1227,11 +1234,11 @@
                 const newTradesHistory = []; let engineState = { lastSignalTime: 0, lastSignalPrice: 0, consecutiveLosses: 0 };
 
                 const startIdx = Math.max(0, initialData.length - 144); 
+                // NO REPAINT ZONE: Игнорируем 3 последние свечи в бэктесте
                 const endIdx = initialData.length - 3;
 
                 for (let idx = startIdx; idx <= endIdx; idx++) {
                     const currTime = initialData[idx].time; const currCandle = initialData[idx]; const prevCandle = initialData[idx - 1]; d_candles++;
-                    if (currTime >= initialData[initialData.length - 2].time) continue;
 
                     const zones = liqMap.get(currTime); const cAtr = atrMap.get(currTime);
 
@@ -1382,6 +1389,13 @@
                       const evaluateIdx = lastIdx - 1; const evalCandleTime = data[evaluateIdx]?.time;
 
                       if (evalCandleTime > lastEvaluatedCandleTimeRef.current && signalPhaseRef.current === 'NONE') {
+                          // СТРОГАЯ СИНХРОНИЗАЦИЯ: НЕ ПУСКАЕМ ФАНТОМЫ, ЕСЛИ ОНИ БЫЛИ ОТКЛОНЕНЫ В РЕАЛЬНОМ ВРЕМЕНИ
+                          const pastStatus = ScanLedger.get(evalCandleTime);
+                          if (pastStatus === 'REJECTED' || pastStatus === 'NO_SIGNAL' || pastStatus === 'PARITY_MISMATCH') {
+                              lastEvaluatedCandleTimeRef.current = evalCandleTime;
+                              continue;
+                          }
+
                           lastClosedCandleTimeUiRef.current = evalCandleTime;
                           const liveEngineState = { lastSignalTime: lastSignalTimeRef.current, lastSignalPrice: lastSignalPriceRef.current, consecutiveLosses: consecutiveLossesRef.current };
                           const sig = evaluateSignalEngine(data, evaluateIdx, liqMap, atrMap, cachedMtfRef.current, liveEngineState);
@@ -1395,28 +1409,9 @@
                               lastSignalTimeRef.current = sig.signalTime; lastSignalPriceRef.current = sig.signalPrice;
                               setMtfContext(prev => ({ ...prev, score: sig.score })); setAsset(cur);
                               
-                              // ФАЗА 1: ОБЪЯСНЕНИЕ (СТРЕЛОК ЕЩЕ НЕТ)
+                              // ФАЗА 1: EXPLAINING (МАРКЕРОВ НЕТ)
                               signalPhaseRef.current = 'EXPLAINING'; setSignalPhase('EXPLAINING'); setZoneInfo(null);
                               syncModeView(); playSound('found');
-
-                              let activeSweepLine = null;
-                              let activePoolLine = null;
-                              if (candleSeries.current) {
-                                  activeSweepLine = candleSeries.current.createPriceLine({
-                                      price: sig.isCall ? sig.sweepLow : sig.sweepHigh,
-                                      color: sig.isCall ? '#10b981' : '#f97316',
-                                      lineWidth: 2,
-                                      lineStyle: 2, 
-                                      title: 'SWEEP ZONE',
-                                  });
-                                  activePoolLine = candleSeries.current.createPriceLine({
-                                      price: sig.isCall ? sig.cLower : sig.cUpper,
-                                      color: sig.isCall ? '#10b981' : '#f97316',
-                                      lineWidth: 1,
-                                      lineStyle: 1, 
-                                      title: 'POOL BOUNDARY',
-                                  });
-                              }
 
                               drawIndicators(upperData, lowerData); currentPrice.current = data[lastIdx].close;
                               updateStatus(`ОБЪЯСНЕНИЕ СИГНАЛА...`, 'text-cyan-600 font-bold animate-pulse'); addLog(`Accepted: ${sig.signalType} | Q:${sig.score}`, true);
@@ -1430,7 +1425,7 @@
                               
                               await speakAsync(`Внимание. Появился сигнал ${directionText}. ${voiceReason}. Идёт подготовка ко входу.`, `signal-detect-${sig.signalTime}`, 1);
 
-                              // ФАЗА 2: ОТСЧЕТ (СТРЕЛОК ЕЩЕ НЕТ)
+                              // ФАЗА 2: COUNTDOWN (МАРКЕРОВ НЕТ)
                               signalPhaseRef.current = 'COUNTDOWN'; setSignalPhase('COUNTDOWN');
                               for(let w=3; w>0; w--) {
                                   setCountdown(w); updateStatus(`ПОДГОТОВКА К ВХОДУ: ${w}С`, 'text-cyan-600 font-bold'); playSound('scan');
@@ -1455,18 +1450,29 @@
 
                               if (tradeCancelled) {
                                   zoneStateRef.current = 'OUT'; setZoneState('OUT'); signalPhaseRef.current = 'NONE'; setSignalPhase('NONE');
-                                  if (candleSeries.current) {
-                                      if (activeSweepLine) candleSeries.current.removePriceLine(activeSweepLine);
-                                      if (activePoolLine) candleSeries.current.removePriceLine(activePoolLine);
-                                  }
                                   playSound('cancel'); updateStatus('ОТМЕНА: ИСТИННЫЙ ПРОБОЙ', 'text-rose-600 font-bold');
                                   await speakAsync("Внимание. Отмена. Паттерн сломан. Возвращаюсь к радару.", `signal-cancel-${sig.signalTime}`, 1);
                                   syncModeView(); lastEvaluatedCandleTimeRef.current = evalCandleTime; break; 
                               }
 
-                              // ФАЗА 3: СДЕЛКА АКТИВНА (ПОЯВЛЯЮТСЯ МАРКЕРЫ, БОКСЫ И СТРЕЛКА В САЙДБАРЕ)
+                              // ФАЗА 3: СДЕЛКА АКТИВНА (ПОЯВЛЕНИЕ МАРКЕРОВ, ЛИНИЙ И БОКСОВ СИНХРОННО)
                               playSound('start'); updateStatus('СДЕЛКА АКТИВНА', 'text-blue-700 font-bold');
                               signalPhaseRef.current = 'ACTIVE'; setSignalPhase('ACTIVE');
+
+                              let activeSweepLine = null;
+                              let activePoolLine = null;
+                              if (candleSeries.current) {
+                                  activeSweepLine = candleSeries.current.createPriceLine({
+                                      price: sig.isCall ? sig.sweepLow : sig.sweepHigh,
+                                      color: sig.isCall ? '#10b981' : '#f97316',
+                                      lineWidth: 2, lineStyle: 2, title: 'SWEEP ZONE',
+                                  });
+                                  activePoolLine = candleSeries.current.createPriceLine({
+                                      price: sig.isCall ? sig.cLower : sig.cUpper,
+                                      color: sig.isCall ? '#10b981' : '#f97316',
+                                      lineWidth: 1, lineStyle: 1, title: 'POOL BOUNDARY',
+                                  });
+                              }
                               
                               const entryPrice = currentPrice.current; const expMins = 25; const actualEntryTime = Math.floor(Date.now() / 1000); 
                               
@@ -1945,4 +1951,4 @@
         root.render(<App />);
     </script>
 </body>
-    </html>
+</html>
