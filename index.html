@@ -134,7 +134,6 @@
             -webkit-backdrop-filter: blur(40px);
         }
 
-        /* NEW: Upgraded Premium Glass Card */
         .premium-glass-card {
             background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.75) 100%);
             border: 1px solid rgba(255, 255, 255, 1);
@@ -168,8 +167,6 @@
             100% { transform: translateY(-10px); opacity: 0; }
         }
         .hft-tick { animation: slideUpFade 1.5s ease-out forwards; }
-
-        /* ================= PREMIUM UI ADDITIONS ================= */
         
         .silver-badge {
             background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
@@ -228,8 +225,6 @@
             100% { transform: scale(3.5); opacity: 0; }
         }
 
-        /* Glass Trade Boxes - COORDINATE SYNCHRONIZED */
-        /* REMOVED transition on layout properties (left, width, top, height) for instant sync */
         .glass-box-trade {
             background: linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.05));
             backdrop-filter: blur(8px);
@@ -237,14 +232,6 @@
             border: 1px solid rgba(255, 255, 255, 0.4);
             box-shadow: 0 10px 40px 0 rgba(15, 23, 42, 0.1), inset 0 1px 2px rgba(255, 255, 255, 0.6);
             transition: background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease, opacity 0.5s ease;
-        }
-        .trade-active-call { 
-            border-color: rgba(52, 211, 153, 0.6); 
-            box-shadow: 0 0 25px rgba(16,185,129,0.2), inset 0 0 20px rgba(16,185,129,0.15), inset 0 1px 2px rgba(255,255,255,0.8); 
-        }
-        .trade-active-put { 
-            border-color: rgba(251, 113, 133, 0.6); 
-            box-shadow: 0 0 25px rgba(244,63,94,0.2), inset 0 0 20px rgba(244,63,94,0.15), inset 0 1px 2px rgba(255,255,255,0.8); 
         }
         .trade-win { background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05)); border-color: rgba(16,185,129,0.3); }
         .trade-loss { background: linear-gradient(135deg, rgba(244,63,94,0.15), rgba(244,63,94,0.05)); border-color: rgba(244,63,94,0.3); }
@@ -274,68 +261,48 @@
             </svg>
         );
 
+        /* ================= BROKER BUTTON EXTRACTED ================= */
+        const BrokerButton = () => (
+            <a href="https://intrade32.bar/311164" target="_blank" rel="noopener noreferrer" className="broker-btn group relative w-full md:w-auto py-2.5 px-4 md:py-2 md:px-5 rounded-xl flex items-center justify-center overflow-hidden cursor-pointer no-underline block shadow-md border border-cyan-400/50">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-700 ease-in-out skew-x-12"></div>
+                <span className="relative z-10 text-white font-black tracking-widest text-[11px] md:text-xs oswald-font uppercase drop-shadow-md flex items-center gap-1.5 whitespace-nowrap">
+                    <Zap size={14} className="animate-pulse text-cyan-200" />
+                    ТОРГОВАТЬ ЗДЕСЬ
+                </span>
+                <div className="absolute top-1 right-1 pointer-events-none animated-cursor scale-75">
+                    <MousePointer size={18} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
+                    <div className="click-ripple"></div>
+                </div>
+            </a>
+        );
+
         /* ================= FINANCIAL UNIFICATION ================= */
-        const TRADE_MONEY_CONFIG = {
-            startBalance: 100000,
-            stake: 1000,
-            payout: 0.70
-        };
+        const TRADE_MONEY_CONFIG = { startBalance: 100000, stake: 1000, payout: 0.70 };
 
         function calculateTradingStats(trades, moneyConfig) {
-            const closedTrades = trades.filter(t => 
-                t.status === "CLOSED" && 
-                (t.result === "WIN" || t.result === "LOSS") && 
-                Number.isFinite(t.entryTime) && 
-                Number.isFinite(t.exitTime)
-            );
-
+            const closedTrades = trades.filter(t => t.status === "CLOSED" && (t.result === "WIN" || t.result === "LOSS") && Number.isFinite(t.entryTime) && Number.isFinite(t.exitTime));
             const wins = closedTrades.filter(t => t.result === "WIN").length;
             const losses = closedTrades.filter(t => t.result === "LOSS").length;
             const total = wins + losses;
-
             const winPnl = moneyConfig.stake * moneyConfig.payout;
             const lossPnl = -moneyConfig.stake;
-
             const pnl = (wins * winPnl) + (losses * lossPnl);
             const balance = moneyConfig.startBalance + pnl;
             const winrate = total > 0 ? Math.round((wins / total) * 100) : 0;
-
-            return {
-                trades: total,
-                wins,
-                losses,
-                winrate,
-                pnl,
-                balance,
-                stake: moneyConfig.stake,
-                payout: moneyConfig.payout,
-                winPnl,
-                lossPnl
-            };
+            return { trades: total, wins, losses, winrate, pnl, balance, stake: moneyConfig.stake, payout: moneyConfig.payout, winPnl, lossPnl };
         }
 
-        /* ================= SCAN LEDGER MANAGER (PARITY PROTECTION) ================= */
+        /* ================= SCAN LEDGER MANAGER ================= */
+        const _inMemoryLedger = {};
         const ScanLedger = {
-            get: (time) => {
-                try {
-                    const data = JSON.parse(localStorage.getItem('crypto_pro_max_scan_ledger') || '{}');
-                    return data[time];
-                } catch(e) { return null; }
-            },
+            get: (time) => _inMemoryLedger[time] || null,
             set: (time, status) => {
-                try {
-                    const data = JSON.parse(localStorage.getItem('crypto_pro_max_scan_ledger') || '{}');
-                    data[time] = status;
-                    // Keep last ~150 scans (approx 12 hours on 5m) to avoid storage bloat
-                    const keys = Object.keys(data).sort((a,b) => b - a);
-                    if(keys.length > 200) {
-                        const newData = {};
-                        keys.slice(0, 200).forEach(k => newData[k] = data[k]);
-                        localStorage.setItem('crypto_pro_max_scan_ledger', JSON.stringify(newData));
-                    } else {
-                        localStorage.setItem('crypto_pro_max_scan_ledger', JSON.stringify(data));
-                    }
-                } catch(e) {}
+                _inMemoryLedger[time] = status;
+                const keys = Object.keys(_inMemoryLedger).sort((a,b) => b - a);
+                if(keys.length > 200) {
+                    const keysToRemove = keys.slice(0, keys.length - 200);
+                    keysToRemove.forEach(k => delete _inMemoryLedger[k]);
+                }
             }
         };
 
@@ -363,10 +330,7 @@
                 const response = await fetch(url, { ...options, signal: controller.signal });
                 clearTimeout(id);
                 return response;
-            } catch(e) {
-                clearTimeout(id);
-                throw e;
-            }
+            } catch(e) { clearTimeout(id); throw e; }
         };
 
         const ScannerAPI = {
@@ -377,19 +341,14 @@
                 `https://api2.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
                 `https://data-api.binance.vision/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`
             ];
-            
             for (let url of urls) {
                 try {
                     let response = await fetchWithTimeout(url, { timeout: 3500 });
                     if (response.ok) {
                         const data = await response.json();
                         return data.map(d => ({
-                            time: d[0] / 1000,
-                            open: parseFloat(d[1]),
-                            high: parseFloat(d[2]),
-                            low: parseFloat(d[3]),
-                            close: parseFloat(d[4]),
-                            volume: parseFloat(d[5])
+                            time: d[0] / 1000, open: parseFloat(d[1]), high: parseFloat(d[2]),
+                            low: parseFloat(d[3]), close: parseFloat(d[4]), volume: parseFloat(d[5])
                         }));
                     }
                 } catch(e) { continue; }
@@ -409,15 +368,10 @@
         function calcLiquidityZones(data, period = 30) {
             let res = [];
             for (let i = 0; i < data.length; i++) {
-                if (i < period) {
-                    res.push({ time: data[i].time, upper: data[i].high, lower: data[i].low });
-                    continue;
-                }
-                let high = -Infinity;
-                let low = Infinity;
+                if (i < period) { res.push({ time: data[i].time, upper: data[i].high, lower: data[i].low }); continue; }
+                let high = -Infinity; let low = Infinity;
                 for (let j = 1; j <= period; j++) {
-                    high = Math.max(high, data[i - j].high);
-                    low = Math.min(low, data[i - j].low);
+                    high = Math.max(high, data[i - j].high); low = Math.min(low, data[i - j].low);
                 }
                 res.push({ time: data[i].time, upper: high, lower: low });
             }
@@ -427,22 +381,12 @@
         function calcATRSeries(data, period = 14) {
             let res = [];
             for (let i = 0; i < data.length; i++) {
-                if (i === 0) { 
-                    res.push({time: data[i].time, value: data[i].high - data[i].low}); 
-                    continue; 
-                }
-                let sumTR = 0;
-                let count = 0;
+                if (i === 0) { res.push({time: data[i].time, value: data[i].high - data[i].low}); continue; }
+                let sumTR = 0; let count = 0;
                 for(let j = 0; j < period && (i - j) > 0; j++) {
-                    const c = data[i - j];
-                    const prevC = data[i - j - 1];
-                    let tr = Math.max(
-                        c.high - c.low,
-                        Math.abs(c.high - prevC.close),
-                        Math.abs(c.low - prevC.close)
-                    );
-                    sumTR += tr;
-                    count++;
+                    const c = data[i - j]; const prevC = data[i - j - 1];
+                    let tr = Math.max( c.high - c.low, Math.abs(c.high - prevC.close), Math.abs(c.low - prevC.close) );
+                    sumTR += tr; count++;
                 }
                 res.push({time: data[i].time, value: count > 0 ? sumTR / count : 0});
             }
@@ -457,18 +401,15 @@
             const cAtr = atrSeries[atrSeries.length - 1]?.value;
             
             if (!lastZone || !cAtr) return 'NEUTRAL';
-            
             const distTop = lastZone.upper - currentPrice;
             const distBot = currentPrice - lastZone.lower;
             
             if (distTop < cAtr * 1.5) return 'BEARISH';
             if (distBot < cAtr * 1.5) return 'BULLISH';
-            
             return 'NEUTRAL';
         }
 
-        /* ================= DETERMINISTIC SIGNAL ENGINE ================= */
-        // Guaranteed strictly no-lookahead. It only evaluates index and index-1.
+        /* ================= OPTIMIZED DETERMINISTIC SIGNAL ENGINE ================= */
         function evaluateSignalEngine(data, evalIdx, liqMap, atrMap, mtfContext, engineState) {
             if (evalIdx < 100) return { valid: false, reason: 'Not enough data' };
 
@@ -503,42 +444,26 @@
             const returnedInsideBot = currCandle.close > cLower;
             const structureBreakBot = currCandle.close > prevCandle.high && isGreenCandle;
 
-            const isNearTop = (cUpper - currCandle.high) < cAtr * 0.8;
-            const isNearBot = (currCandle.low - cLower) < cAtr * 0.8;
+            // OPTIMIZATION: Relaxed near-zone requirement (0.8 -> 1.1)
+            const isNearTop = (cUpper - currCandle.high) < cAtr * 1.1;
+            const isNearBot = (currCandle.low - cLower) < cAtr * 1.1;
 
-            let isCall = false;
-            let isPut = false;
-            let signalType = '';
-            let baseScore = 0;
-            let rawSignal = false;
+            let isCall = false; let isPut = false; let signalType = ''; let baseScore = 0; let rawSignal = false;
 
-            if (sweptTop && returnedInsideTop && structureBreakTop) {
-                isPut = true; signalType = 'Primary Sweep'; baseScore = 45; rawSignal = true;
-            } else if (isNearTop && upperWick > body * 1.1 && isRedCandle) {
-                isPut = true; signalType = 'Wick Rejection'; baseScore = 38; rawSignal = true;
-            } else if (currCandle.high >= cUpper && currCandle.close < cUpper && upperWick > cAtr * 0.2) {
-                isPut = true; signalType = 'Edge Reaction'; baseScore = 35; rawSignal = true;
-            } else if (isNearTop && prevCandle.high > cUpper && isRedCandle && currCandle.close < prevCandle.close) {
-                isPut = true; signalType = 'Liquidity Return'; baseScore = 40; rawSignal = true;
-            }
+            if (sweptTop && returnedInsideTop && structureBreakTop) { isPut = true; signalType = 'Primary Sweep'; baseScore = 45; rawSignal = true; } 
+            else if (isNearTop && upperWick > body * 1.1 && isRedCandle) { isPut = true; signalType = 'Wick Rejection'; baseScore = 38; rawSignal = true; } 
+            else if (currCandle.high >= cUpper && currCandle.close < cUpper && upperWick > cAtr * 0.2) { isPut = true; signalType = 'Edge Reaction'; baseScore = 35; rawSignal = true; } 
+            else if (isNearTop && prevCandle.high > cUpper && isRedCandle && currCandle.close < prevCandle.close) { isPut = true; signalType = 'Liquidity Return'; baseScore = 40; rawSignal = true; }
 
-            if (sweptBot && returnedInsideBot && structureBreakBot) {
-                isCall = true; signalType = 'Primary Sweep'; baseScore = 45; rawSignal = true;
-            } else if (isNearBot && lowerWick > body * 1.1 && isGreenCandle) {
-                isCall = true; signalType = 'Wick Rejection'; baseScore = 38; rawSignal = true;
-            } else if (currCandle.low <= cLower && currCandle.close > cLower && lowerWick > cAtr * 0.2) {
-                isCall = true; signalType = 'Edge Reaction'; baseScore = 35; rawSignal = true;
-            } else if (isNearBot && prevCandle.low < cLower && isGreenCandle && currCandle.close > prevCandle.close) {
-                isCall = true; signalType = 'Liquidity Return'; baseScore = 40; rawSignal = true;
-            }
+            if (sweptBot && returnedInsideBot && structureBreakBot) { isCall = true; signalType = 'Primary Sweep'; baseScore = 45; rawSignal = true; } 
+            else if (isNearBot && lowerWick > body * 1.1 && isGreenCandle) { isCall = true; signalType = 'Wick Rejection'; baseScore = 38; rawSignal = true; } 
+            else if (currCandle.low <= cLower && currCandle.close > cLower && lowerWick > cAtr * 0.2) { isCall = true; signalType = 'Edge Reaction'; baseScore = 35; rawSignal = true; } 
+            else if (isNearBot && prevCandle.low < cLower && isGreenCandle && currCandle.close > prevCandle.close) { isCall = true; signalType = 'Liquidity Return'; baseScore = 40; rawSignal = true; }
 
             if (!rawSignal) return { valid: false, reason: 'No raw signal pattern' };
 
-            let qScore = baseScore;
-            let mtfConfStr = 'WAIT';
-            let rejectReason = '';
+            let qScore = baseScore; let mtfConfStr = 'WAIT'; let rejectReason = '';
 
-            // Apply MTF Context
             if (isCall) {
                 if (mtfContext.h4 === 'BULLISH') qScore += 15;
                 if (mtfContext.h1 === 'BULLISH') qScore += 15;
@@ -552,59 +477,48 @@
             }
 
             if (mtfConfStr === 'WAIT' || mtfContext.h4 === 'LOCAL' || mtfContext.status === 'LOCAL 5M MODE') {
-                mtfConfStr = 'LOCAL 5M';
-                qScore += 20; 
+                mtfConfStr = 'LOCAL 5M'; qScore += 20; 
             }
 
-            let threshold = (signalType === 'Primary Sweep') ? 58 : 66;
+            // OPTIMIZATION: Lowered score thresholds for more setups
+            let threshold = (signalType === 'Primary Sweep') ? 48 : 51;
 
             if (engineState.consecutiveLosses >= 2) threshold += 8;
 
             const midPoint = cLower + rangeWidth / 2;
             const distToMid = Math.abs(currCandle.close - midPoint);
+            // OPTIMIZATION: Reduced middle range penalty
             if (distToMid > rangeWidth * 0.15) qScore += 10;
-            else { qScore -= 30; rejectReason = 'middle range'; }
+            else { qScore -= 10; rejectReason = 'middle range'; }
 
             const distTopLate = cUpper - currCandle.close;
             const distBotLate = currCandle.close - cLower;
-            if (isCall && distBotLate > cAtr * 0.45) { qScore -= 40; rejectReason = 'late entry'; }
-            else if (isPut && distTopLate > cAtr * 0.45) { qScore -= 40; rejectReason = 'late entry'; }
+            // OPTIMIZATION: Reduced late entry penalty
+            if (isCall && distBotLate > cAtr * 0.45) { qScore -= 15; rejectReason = 'late entry'; }
+            else if (isPut && distTopLate > cAtr * 0.45) { qScore -= 15; rejectReason = 'late entry'; }
             else { qScore += 5; }
 
             const candlesSinceLast = (currTime - engineState.lastSignalTime) / (5 * 60); 
+            // OPTIMIZATION: Reduced cooldown penalty
             if (candlesSinceLast < 4) {
-                qScore -= 50; rejectReason = 'cooldown (too fast)';
+                qScore -= 25; rejectReason = 'cooldown (too fast)';
             } else if (candlesSinceLast < 8) {
                 if (Math.abs(currCandle.close - engineState.lastSignalPrice) < cAtr * 0.38) {
                     qScore -= 20; rejectReason = 'same zone cooldown';
                 }
             }
 
-            if (isCall && prevCandle.close < prevCandle.open && (prevCandle.open - prevCandle.close) > cAtr * 1.5) {
-                qScore -= 15; rejectReason = 'impulse risk';
-            }
-            if (isPut && prevCandle.close > prevCandle.open && (prevCandle.close - prevCandle.open) > cAtr * 1.5) {
-                qScore -= 15; rejectReason = 'impulse risk';
-            }
+            if (isCall && prevCandle.close < prevCandle.open && (prevCandle.open - prevCandle.close) > cAtr * 1.5) { qScore -= 15; rejectReason = 'impulse risk'; }
+            if (isPut && prevCandle.close > prevCandle.open && (prevCandle.close - prevCandle.open) > cAtr * 1.5) { qScore -= 15; rejectReason = 'impulse risk'; }
 
             if (qScore < threshold) {
                 if (!rejectReason) {
-                    if (mtfConfStr === 'CONFLICT') rejectReason = 'HTF conflict';
-                    else rejectReason = 'MTF score too low';
+                    if (mtfConfStr === 'CONFLICT') rejectReason = 'HTF conflict'; else rejectReason = 'MTF score too low';
                 }
                 return { valid: false, reason: rejectReason, score: qScore };
             }
 
-            return {
-                valid: true,
-                isCall,
-                isPut,
-                signalType,
-                score: Math.min(100, qScore),
-                mtfConfStr,
-                signalTime: currTime,
-                signalPrice: currCandle.close
-            };
+            return { valid: true, isCall, isPut, signalType, score: Math.min(100, qScore), mtfConfStr, signalTime: currTime, signalPrice: currCandle.close };
         }
 
         const LiveClock = () => {
@@ -615,41 +529,25 @@
 
         const MiniChart = ({ data }) => {
           const [scanIndex, setScanIndex] = useState(0);
-
           useEffect(() => {
               if (!data || !Array.isArray(data) || data.length < 2) return;
-              let isActive = true;
-              let timeoutId;
+              let isActive = true; let timeoutId;
               const maxIdx = Math.min(150, data.length) - 1; 
-
               const scanCycle = () => {
                   if (!isActive) return;
-                  setScanIndex(prev => {
-                      if (prev >= maxIdx) return 0;
-                      return prev + 1;
-                  });
+                  setScanIndex(prev => { if (prev >= maxIdx) return 0; return prev + 1; });
                   const delay = (Math.random() > 0.8) ? (Math.random() * 300 + 100) : (Math.random() * 50 + 20);
                   timeoutId = setTimeout(scanCycle, delay);
               };
-
               timeoutId = setTimeout(scanCycle, 500);
-              return () => {
-                  isActive = false;
-                  clearTimeout(timeoutId);
-              };
+              return () => { isActive = false; clearTimeout(timeoutId); };
           }, [data]);
 
-          if (!data || !Array.isArray(data) || data.length < 2) {
-            return <div className="w-full h-full flex items-center justify-center opacity-60 text-lg tracking-widest text-slate-500 font-bold animate-pulse oswald-font">ЗАГРУЗКА КЛАСТЕРОВ...</div>;
-          }
-          
+          if (!data || !Array.isArray(data) || data.length < 2) { return <div className="w-full h-full flex items-center justify-center opacity-60 text-lg tracking-widest text-slate-500 font-bold animate-pulse oswald-font">ЗАГРУЗКА КЛАСТЕРОВ...</div>; }
           const chartData = data.slice(-150); 
-          const min = Math.min(...chartData.map(d => d.low));
-          const max = Math.max(...chartData.map(d => d.high));
+          const min = Math.min(...chartData.map(d => d.low)); const max = Math.max(...chartData.map(d => d.high));
           const maxVol = Math.max(...chartData.map(d => d.volume || 1));
-          const range = (max - min) || 1;
-          const width = 800, height = 120; 
-          const candleWidth = width / chartData.length;
+          const range = (max - min) || 1; const width = 800, height = 120; const candleWidth = width / chartData.length;
 
           return (
             <div className="relative w-full h-full bg-slate-50/50">
@@ -661,26 +559,14 @@
                           <stop offset="100%" stopColor="rgba(34, 211, 238, 0)" />
                       </linearGradient>
                   </defs>
-                  
                   {chartData.map((c, i) => {
-                    const isUp = c.close >= c.open;
-                    const x = i * candleWidth;
-                    const w = candleWidth * 0.6;
-                    const oY = height - ((c.open - min) / range) * height;
-                    const cY = height - ((c.close - min) / range) * height;
-                    const hY = height - ((c.high - min) / range) * height;
-                    const lY = height - ((c.low - min) / range) * height;
-                    
-                    const volH = ((c.volume || 0) / maxVol) * 20;
-                    const volY = height - volH;
-                    
-                    const isTarget = i === scanIndex;
-
+                    const isUp = c.close >= c.open; const x = i * candleWidth; const w = candleWidth * 0.6;
+                    const oY = height - ((c.open - min) / range) * height; const cY = height - ((c.close - min) / range) * height;
+                    const hY = height - ((c.high - min) / range) * height; const lY = height - ((c.low - min) / range) * height;
+                    const volH = ((c.volume || 0) / maxVol) * 20; const volY = height - volH; const isTarget = i === scanIndex;
                     return (
                       <g key={i}>
-                        {isTarget && (
-                            <rect x={x - candleWidth*1.5} y={0} width={candleWidth * 4} height={height} fill="url(#scanGlow)" />
-                        )}
+                        {isTarget && <rect x={x - candleWidth*1.5} y={0} width={candleWidth * 4} height={height} fill="url(#scanGlow)" />}
                         <line x1={x + w / 2} y1={hY} x2={x + w / 2} y2={lY} stroke={isUp ? (isTarget ? "#06b6d4" : "#0ea5e9") : (isTarget ? "#e11d48" : "#94a3b8")} strokeWidth={isTarget ? "2" : "1"} className="transition-colors duration-150" />
                         <rect x={x} y={isUp ? cY : oY} width={w} height={Math.max(Math.abs(cY - oY), 1.2)} fill={isUp ? (isTarget ? "#06b6d4" : "#0ea5e9") : "transparent"} stroke={isUp ? "none" : (isTarget ? "#e11d48" : "#94a3b8")} strokeWidth={isTarget ? "1.5" : "1"} rx="0.5" className="transition-colors duration-150" />
                         <rect x={x} y={volY} width={w} height={volH} fill={isUp ? "rgba(56, 189, 248, 0.15)" : "rgba(148, 163, 184, 0.15)"} />
@@ -688,16 +574,10 @@
                     );
                   })}
                 </svg>
-                
                 {chartData.length > 0 && scanIndex >= 0 && scanIndex < chartData.length && (
-                    <div 
-                        className="absolute top-0 bottom-0 pointer-events-none transition-all duration-200 ease-out flex flex-col justify-center items-center mix-blend-screen"
-                        style={{ left: `${(scanIndex / chartData.length) * 100}%`, width: `${(1 / chartData.length) * 100}%` }}
-                    >
+                    <div className="absolute top-0 bottom-0 pointer-events-none transition-all duration-200 ease-out flex flex-col justify-center items-center mix-blend-screen" style={{ left: `${(scanIndex / chartData.length) * 100}%`, width: `${(1 / chartData.length) * 100}%` }}>
                         <div className="absolute w-[40px] h-[100%] bg-cyan-400/20 blur-md rounded-full -ml-[20px]"></div>
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 border border-cyan-400/50 rounded-full bg-cyan-400/10 backdrop-blur-[2px] shadow-[0_0_15px_rgba(34,211,238,0.4)] flex items-center justify-center">
-                            <div className="w-1.5 h-1.5 bg-cyan-300 rounded-full shadow-[0_0_8px_rgba(34,211,238,1)]"></div>
-                        </div>
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 border border-cyan-400/50 rounded-full bg-cyan-400/10 backdrop-blur-[2px] shadow-[0_0_15px_rgba(34,211,238,0.4)] flex items-center justify-center"><div className="w-1.5 h-1.5 bg-cyan-300 rounded-full shadow-[0_0_8px_rgba(34,211,238,1)]"></div></div>
                     </div>
                 )}
             </div>
@@ -707,27 +587,18 @@
         const Speedometer = ({ value, label, colorHex = "#0284c7", glow = false }) => {
           const safeValue = isNaN(value) ? 50 : Math.max(0, Math.min(100, value));
           const angle = -90 + (safeValue / 100) * 180;
-          const radius = 40;
-          const circumference = Math.PI * radius;
-          const strokeDashoffset = circumference - (safeValue / 100) * circumference;
+          const radius = 40; const circumference = Math.PI * radius; const strokeDashoffset = circumference - (safeValue / 100) * circumference;
 
           return (
             <div className="flex flex-col items-center flex-1 relative px-0.5 group pt-1">
               <svg viewBox="0 0 100 55" className="w-10 h-6 md:w-12 md:h-7 overflow-visible mt-1">
-                <defs>
-                    <filter id={`glow-${label.replace(/\s+/g, '')}`}>
-                        <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
-                        <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                    </filter>
-                </defs>
+                <defs><filter id={`glow-${label.replace(/\s+/g, '')}`}><feGaussianBlur stdDeviation="3.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
                 {[0, 25, 50, 75, 100].map(tick => {
                    const a = -Math.PI + (tick/100)*Math.PI;
                    return <line key={tick} x1={50 + 36 * Math.cos(a)} y1={50 + 36 * Math.sin(a)} x2={50 + 44 * Math.cos(a)} y2={50 + 44 * Math.sin(a)} stroke="rgba(148, 163, 184, 0.5)" strokeWidth="2" strokeLinecap="round" />
                 })}
                 <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="rgba(226, 232, 240, 1)" strokeWidth="5" strokeLinecap="round" />
-                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke={colorHex} strokeWidth="5" strokeLinecap="round"
-                      strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
-                      style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)' }} filter={glow ? `url(#glow-${label.replace(/\s+/g, '')})` : "none"} />
+                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke={colorHex} strokeWidth="5" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)' }} filter={glow ? `url(#glow-${label.replace(/\s+/g, '')})` : "none"} />
                 <g style={{ transform: `rotate(${angle}deg)`, transformOrigin: '50px 50px', transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
                   <polygon points="48,50 52,50 50,12" fill={colorHex} />
                   <circle cx="50" cy="50" r="6" fill={colorHex} />
@@ -744,63 +615,44 @@
           const isUp = type === 'CALL';
           return (
             <div className="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center animate-arrow-premium">
-               <svg viewBox="0 0 24 24" className={`w-full h-full fill-current ${isUp ? 'text-[#0ea5e9]' : 'text-[#f43f5e]'}`}>
-                  <path d={isUp ? "M12 2l-10 11h7v9h6v-9h7z" : "M12 22l10-11h-7v-9h-6v9h-7z"} />
-               </svg>
+               <svg viewBox="0 0 24 24" className={`w-full h-full fill-current ${isUp ? 'text-[#0ea5e9]' : 'text-[#f43f5e]'}`}><path d={isUp ? "M12 2l-10 11h7v9h6v-9h7z" : "M12 22l10-11h-7v-9h-6v9h-7z"} /></svg>
             </div>
           );
         };
 
         const OrderBookDepth = ({ price }) => {
           const p = price || 0;
-          
           if (!p) {
               return (
                   <div className="flex flex-col mono-font text-slate-800 border-l border-slate-300/50 px-3 justify-center h-full w-full relative">
-                      <div className="flex justify-between text-slate-500 mb-1 border-b border-slate-300/80 pb-1 text-[10px] md:text-xs tracking-widest font-bold oswald-font">
-                          <span>ЦЕНА</span><span>ОБЪЕМ</span>
-                      </div>
-                      <div className="flex items-center justify-center h-full text-[10px] md:text-xs text-slate-400 font-bold animate-pulse oswald-font tracking-widest">
-                          СИНХРОНИЗАЦИЯ...
-                      </div>
+                      <div className="flex justify-between text-slate-500 mb-1 border-b border-slate-300/80 pb-1 text-[10px] md:text-xs tracking-widest font-bold oswald-font"><span>ЦЕНА</span><span>ОБЪЕМ</span></div>
+                      <div className="flex items-center justify-center h-full text-[10px] md:text-xs text-slate-400 font-bold animate-pulse oswald-font tracking-widest">СИНХРОНИЗАЦИЯ...</div>
                   </div>
               );
           }
-
-          const formattedP = formatPrice(p);
-          const step = p > 1000 ? 0.5 : p > 1 ? 0.005 : 0.00005;
-
+          const formattedP = formatPrice(p); const step = p > 1000 ? 0.5 : p > 1 ? 0.005 : 0.00005;
           return (
             <div className="flex flex-col mono-font text-slate-800 border-l border-slate-300/50 px-3 justify-center h-full w-full relative">
-              <div className="flex justify-between text-slate-500 mb-1 border-b border-slate-300/80 pb-1 text-[10px] md:text-xs tracking-widest font-bold oswald-font">
-                <span>ЦЕНА</span><span>ОБЪЕМ</span>
-              </div>
+              <div className="flex justify-between text-slate-500 mb-1 border-b border-slate-300/80 pb-1 text-[10px] md:text-xs tracking-widest font-bold oswald-font"><span>ЦЕНА</span><span>ОБЪЕМ</span></div>
               <div className="space-y-0.5 mt-1 relative z-10">
                 {[...Array(3)].map((_, i) => {
-                  const vol = Math.floor(Math.random() * 80 + 20);
-                  const width = `${Math.min(100, (vol / 100) * 100)}%`;
+                  const vol = Math.floor(Math.random() * 80 + 20); const width = `${Math.min(100, (vol / 100) * 100)}%`;
                   return (
                   <div key={`ask-${i}`} className="flex justify-between text-[10px] md:text-xs text-rose-500/90 font-bold tracking-wider relative group">
                     <div className="absolute right-0 top-0 bottom-0 bg-rose-100/50 rounded-sm transition-all" style={{width}}></div>
-                    <span className="relative z-10 drop-shadow-sm">{formatPrice(p + (4 - i) * step)}</span>
-                    <span className="relative z-10 opacity-80">{vol}</span>
-                  </div>
-                )})}
+                    <span className="relative z-10 drop-shadow-sm">{formatPrice(p + (4 - i) * step)}</span><span className="relative z-10 opacity-80">{vol}</span>
+                  </div>)})}
                 <div className="flex justify-between text-blue-900 bg-blue-100 border border-blue-400 my-1.5 px-2 py-0.5 text-xs md:text-sm font-black shadow-[0_0_15px_rgba(14,165,233,0.3)] rounded-md relative overflow-hidden">
                   <div className="absolute left-0 top-0 bottom-0 bg-blue-300/40" style={{width: `${Math.random()*60 + 20}%`}}></div>
-                  <span className="relative z-10 drop-shadow-sm">{formattedP}</span>
-                  <span className="relative z-10 text-blue-700">{Math.floor(Math.random() * 200 + 50)}</span>
+                  <span className="relative z-10 drop-shadow-sm">{formattedP}</span><span className="relative z-10 text-blue-700">{Math.floor(Math.random() * 200 + 50)}</span>
                 </div>
                 {[...Array(3)].map((_, i) => {
-                  const vol = Math.floor(Math.random() * 80 + 20);
-                  const width = `${Math.min(100, (vol / 100) * 100)}%`;
+                  const vol = Math.floor(Math.random() * 80 + 20); const width = `${Math.min(100, (vol / 100) * 100)}%`;
                   return (
                   <div key={`bid-${i}`} className="flex justify-between text-[10px] md:text-xs text-emerald-600/90 font-bold tracking-wider relative">
                     <div className="absolute right-0 top-0 bottom-0 bg-emerald-100/50 rounded-sm transition-all" style={{width}}></div>
-                    <span className="relative z-10 drop-shadow-sm">{formatPrice(p - (i + 1) * step)}</span>
-                    <span className="relative z-10 opacity-80">{vol}</span>
-                  </div>
-                )})}
+                    <span className="relative z-10 drop-shadow-sm">{formatPrice(p - (i + 1) * step)}</span><span className="relative z-10 opacity-80">{vol}</span>
+                  </div>)})}
               </div>
             </div>
           );
@@ -811,10 +663,8 @@
           useEffect(() => {
             if (!price) return;
             const int = setInterval(() => {
-                const isBuy = Math.random() > 0.5;
-                const amt = (Math.random() * 2 + 0.1).toFixed(2);
-                const offset = (Math.random() * 2 - 1);
-                const tickPrice = formatPrice(price + offset);
+                const isBuy = Math.random() > 0.5; const amt = (Math.random() * 2 + 0.1).toFixed(2);
+                const offset = (Math.random() * 2 - 1); const tickPrice = formatPrice(price + offset);
                 setTicks(p => [{id: Date.now(), buy: isBuy, amt, price: tickPrice}, ...p].slice(0, 4));
             }, 600);
             return () => clearInterval(int);
@@ -824,15 +674,13 @@
              <div className="flex flex-col gap-1 w-[85px] md:w-[95px] pl-2 border-l border-slate-200/50 overflow-hidden justify-end pb-1 h-full shrink-0">
                 {ticks.map(t => (
                     <div key={t.id} className={`hft-tick text-[9px] md:text-[10px] font-bold mono-font flex justify-between w-full ${t.buy ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        <span className="opacity-80">{t.price.slice(-2)}</span>
-                        <span>{t.buy ? '▲' : '▼'}{t.amt}</span>
-                    </div>
-                ))}
+                        <span className="opacity-80">{t.price.slice(-2)}</span><span>{t.buy ? '▲' : '▼'}{t.amt}</span>
+                    </div>))}
              </div>
           )
         };
 
-        const ChartOverlays = ({ chart, series, trades }) => {
+        const ChartOverlays = ({ chart, series, trades, zoneInfo }) => {
             const overlayRef = useRef(null);
             const [hoveredTrade, setHoveredTrade] = useState(null);
 
@@ -843,8 +691,38 @@
                 const syncPositions = () => {
                     if (!chart || !series || !overlayRef.current) return;
                     const timeScale = chart.timeScale();
-                    const tradeBoxes = overlayRef.current.querySelectorAll('.trade-glass-box');
                     
+                    // --- SYNC PULSE ZONE ---
+                    const pulseBox = overlayRef.current.querySelector('.zone-pulse-indicator');
+                    if (pulseBox && zoneInfo) {
+                        const xStart = timeScale.timeToCoordinate(zoneInfo.time);
+                        // Forward pulse logic (25 mins ahead)
+                        const xEnd = timeScale.timeToCoordinate(zoneInfo.time + 25 * 60);
+                        let yPrice = zoneInfo.type === 'RESISTANCE' ? zoneInfo.top : zoneInfo.bottom;
+                        const y = series.priceToCoordinate(yPrice);
+
+                        if (xStart !== null && xEnd !== null && y !== null) {
+                            pulseBox.style.display = 'block';
+                            pulseBox.style.left = `${xStart}px`;
+                            pulseBox.style.width = `${Math.max(xEnd - xStart, 30)}px`;
+                            pulseBox.style.top = `${y - 15}px`; 
+                            pulseBox.style.height = `30px`;
+
+                            const inner = pulseBox.querySelector('div');
+                            if (zoneInfo.type === 'RESISTANCE') {
+                                inner.className = 'absolute inset-0 animate-pulse rounded-full bg-rose-500/20 border-y border-rose-500/60 shadow-[0_0_15px_rgba(244,63,94,0.4)]';
+                            } else {
+                                inner.className = 'absolute inset-0 animate-pulse rounded-full bg-emerald-500/20 border-y border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.4)]';
+                            }
+                        } else {
+                            pulseBox.style.display = 'none';
+                        }
+                    } else if (pulseBox) {
+                        pulseBox.style.display = 'none';
+                    }
+
+                    // --- SYNC TRADE BOXES ---
+                    const tradeBoxes = overlayRef.current.querySelectorAll('.trade-glass-box');
                     tradeBoxes.forEach(box => {
                         const tradeId = box.dataset.id;
                         const trade = trades.find(t => t.id === tradeId);
@@ -883,7 +761,6 @@
                             
                             const left = Math.min(xEntry, xExit);
                             const width = Math.max(Math.abs(xExit - xEntry), 10); 
-                            
                             const maxPriceY = Math.min(yEntry, yExit); 
                             const minPriceY = Math.max(yEntry, yExit);
                             
@@ -906,6 +783,43 @@
                                 exitDot.style.top = `${yExit - top}px`;
                                 exitDot.style.left = xExit === left ? '0px' : `${width}px`;
                             }
+
+                            // --- NEW: Glass Box Expiry & Profit Visualization ---
+                            const profitZone = box.querySelector('.profit-zone');
+                            const expiryLine = box.querySelector('.expiry-line');
+                            const profitLabel = box.querySelector('.profit-label');
+                            const yEntryRel = yEntry - top;
+
+                            if (trade.isLive) {
+                                const xExpiryCoord = timeScale.timeToCoordinate(trade.entryTime + 25 * 60);
+                                if (expiryLine && xExpiryCoord !== null) {
+                                    expiryLine.style.display = 'block';
+                                    expiryLine.style.left = `${xExpiryCoord - left}px`;
+                                } else if (expiryLine) {
+                                    expiryLine.style.display = 'none';
+                                }
+
+                                if (profitZone && profitLabel) {
+                                    profitZone.style.display = 'block';
+                                    if (trade.type === 'CALL') {
+                                        profitZone.style.top = '0px';
+                                        profitZone.style.height = `${yEntryRel}px`;
+                                        profitZone.style.background = 'linear-gradient(to top, rgba(16,185,129,0.05), rgba(16,185,129,0.25))';
+                                        profitLabel.innerHTML = '▲ ПРОФИТ';
+                                        profitLabel.className = 'profit-label absolute top-1 left-1/2 -translate-x-1/2 text-[9px] font-black tracking-widest px-1 py-0.5 rounded text-emerald-700 bg-emerald-100/80 opacity-100';
+                                    } else {
+                                        profitZone.style.top = `${yEntryRel}px`;
+                                        profitZone.style.height = `${height - yEntryRel}px`;
+                                        profitZone.style.background = 'linear-gradient(to bottom, rgba(244,63,94,0.05), rgba(244,63,94,0.25))';
+                                        profitLabel.innerHTML = '▼ ПРОФИТ';
+                                        profitLabel.className = 'profit-label absolute bottom-1 left-1/2 -translate-x-1/2 text-[9px] font-black tracking-widest px-1 py-0.5 rounded text-rose-700 bg-rose-100/80 opacity-100';
+                                    }
+                                }
+                            } else {
+                                if (expiryLine) expiryLine.style.display = 'none';
+                                if (profitZone) profitZone.style.display = 'none';
+                            }
+
                         } else {
                             box.style.display = 'none';
                         }
@@ -928,8 +842,7 @@
 
                 let ro;
                 if (window.ResizeObserver && overlayRef.current) {
-                    ro = new ResizeObserver(scheduleOverlaySync);
-                    ro.observe(overlayRef.current);
+                    ro = new ResizeObserver(scheduleOverlaySync); ro.observe(overlayRef.current);
                 }
 
                 return () => {
@@ -939,17 +852,24 @@
                     chart.unsubscribeCrosshairMove(scheduleOverlaySync);
                     if (ro) ro.disconnect();
                 };
-            }, [chart, series, trades]);
+            }, [chart, series, trades, zoneInfo]);
 
             return (
                 <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden" ref={overlayRef}>
-                    {trades.map(trade => (
+                    <div className="zone-pulse-indicator absolute pointer-events-none z-0" style={{ display: 'none' }}>
+                        <div className="absolute inset-0 animate-pulse rounded-full opacity-50" />
+                    </div>
+
+                    {trades.map(trade => {
+                        const isWinningLive = trade.isLive ? (trade.type === 'CALL' ? trade.exitPrice > trade.entryPrice : trade.exitPrice < trade.entryPrice) : false;
+                        
+                        return (
                         <div 
                             key={trade.id}
                             data-id={trade.id}
-                            className={`trade-glass-box glass-box-trade absolute pointer-events-auto cursor-help group rounded-xl z-10 ${
+                            className={`trade-glass-box glass-box-trade absolute pointer-events-auto cursor-help group rounded-xl z-10 transition-colors duration-300 ${
                                 trade.isLive 
-                                    ? (trade.type === 'CALL' ? 'trade-active-call' : 'trade-active-put')
+                                    ? (isWinningLive ? 'border-emerald-500/60 shadow-[0_0_25px_rgba(16,185,129,0.25)]' : 'border-rose-500/60 shadow-[0_0_25px_rgba(244,63,94,0.25)]')
                                     : (trade.result === "WIN" ? 'trade-win hover:bg-emerald-500/20' : 'trade-loss hover:bg-rose-500/20')
                             }`}
                             style={{ display: 'none' }}
@@ -959,6 +879,13 @@
                             }}
                             onMouseLeave={() => setHoveredTrade(null)}
                         >
+                            <div className="profit-zone absolute left-0 right-0 z-0 pointer-events-none transition-all duration-300 rounded-xl overflow-hidden">
+                                 <span className="profit-label"></span>
+                            </div>
+                            <div className="expiry-line absolute top-0 bottom-0 border-l border-dashed border-slate-400/80 z-10 pointer-events-none">
+                                 <span className="absolute -left-3 -top-4 text-[7px] font-black tracking-widest text-slate-500 uppercase bg-white/90 px-1 py-0.5 rounded shadow-sm border border-slate-200">EXPIRY</span>
+                            </div>
+
                             <div className="entry-dot-wrapper absolute w-0 h-0 z-20 transition-transform duration-300 group-hover:scale-125 flex items-center justify-center">
                                 <div className={`absolute w-3 h-3 -ml-[6px] -mt-[6px] rounded-full shadow-[0_0_15px_currentColor] border-[2px] border-white ${trade.type === 'CALL' ? 'bg-cyan-500 text-cyan-400' : 'bg-orange-500 text-orange-400'}`}></div>
                                 <span className={`absolute -ml-4 -top-7 text-[8px] px-2 py-0.5 rounded-md shadow-lg font-bold uppercase tracking-wider bg-slate-900 border ${trade.type === 'CALL' ? 'text-cyan-400 border-cyan-500/50' : 'text-orange-400 border-orange-500/50'} opacity-0 group-hover:opacity-100 transition-opacity`}>ENTRY</span>
@@ -980,7 +907,7 @@
                                 {trade.isLive ? 'ACTIVE TRADE' : `25 MIN • ${trade.result === "WIN" ? 'WIN' : 'LOSS'}`}
                             </div>
                         </div>
-                    ))}
+                    )})}
 
                     {hoveredTrade && (
                         <div 
@@ -998,33 +925,16 @@
                                 </span>
                             </div>
                             <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[10px] md:text-xs mono-font font-semibold">
-                                <span className="text-slate-500">Сигнал:</span>
-                                <span className="text-right text-slate-800">{new Date(hoveredTrade.trade.signalTime * 1000).toLocaleTimeString('ru-RU')}</span>
-                                
-                                <span className="text-slate-500">Вход:</span>
-                                <span className="text-right text-slate-800">{new Date(hoveredTrade.trade.entryTime * 1000).toLocaleTimeString('ru-RU')}</span>
-                                
-                                <span className="text-slate-500">Выход (25м):</span>
-                                <span className="text-right text-slate-800">{new Date(hoveredTrade.trade.exitTime * 1000).toLocaleTimeString('ru-RU')}</span>
-                                
+                                <span className="text-slate-500">Сигнал:</span><span className="text-right text-slate-800">{new Date(hoveredTrade.trade.signalTime * 1000).toLocaleTimeString('ru-RU')}</span>
+                                <span className="text-slate-500">Вход:</span><span className="text-right text-slate-800">{new Date(hoveredTrade.trade.entryTime * 1000).toLocaleTimeString('ru-RU')}</span>
+                                <span className="text-slate-500">Выход (25м):</span><span className="text-right text-slate-800">{new Date(hoveredTrade.trade.exitTime * 1000).toLocaleTimeString('ru-RU')}</span>
                                 <span className="col-span-2 text-center text-slate-400 mt-1 mb-1 text-[9px] uppercase tracking-widest">ДАННЫЕ</span>
-                                
-                                <span className="text-slate-500">Цена Входа:</span>
-                                <span className="text-right text-slate-800">{hoveredTrade.trade.entryPrice.toFixed(2)}</span>
-                                
-                                <span className="text-slate-500">Цена Выхода:</span>
-                                <span className="text-right text-slate-800">{hoveredTrade.trade.exitPrice.toFixed(2)}</span>
-
-                                <span className="text-slate-500 mt-1 pt-1 border-t border-slate-200">Ставка:</span>
-                                <span className="text-right text-slate-800 mt-1 pt-1 border-t border-slate-200">{hoveredTrade.trade.betAmount || 1000} ₽</span>
-
+                                <span className="text-slate-500">Цена Входа:</span><span className="text-right text-slate-800">{hoveredTrade.trade.entryPrice.toFixed(2)}</span>
+                                <span className="text-slate-500">Цена Выхода:</span><span className="text-right text-slate-800">{hoveredTrade.trade.exitPrice.toFixed(2)}</span>
+                                <span className="text-slate-500 mt-1 pt-1 border-t border-slate-200">Ставка:</span><span className="text-right text-slate-800 mt-1 pt-1 border-t border-slate-200">{hoveredTrade.trade.betAmount || 1000} ₽</span>
                                 <span className="text-slate-500 mt-1 uppercase font-bold">Итог:</span>
-                                <span className={`text-right font-black mt-1 text-sm ${
-                                    hoveredTrade.trade.isLive ? 'text-blue-600' : (hoveredTrade.trade.result === "WIN" ? 'text-emerald-600' : 'text-rose-600')
-                                }`}>
-                                    {hoveredTrade.trade.isLive ? 'В ПРОЦЕССЕ' : (
-                                        (hoveredTrade.trade.result === "WIN" ? '+' : '') + (hoveredTrade.trade.result === "WIN" ? Math.round((hoveredTrade.trade.betAmount || 1000)*0.7) : -(hoveredTrade.trade.betAmount || 1000)) + ' ₽'
-                                    )}
+                                <span className={`text-right font-black mt-1 text-sm ${hoveredTrade.trade.isLive ? 'text-blue-600' : (hoveredTrade.trade.result === "WIN" ? 'text-emerald-600' : 'text-rose-600')}`}>
+                                    {hoveredTrade.trade.isLive ? 'В ПРОЦЕССЕ' : ((hoveredTrade.trade.result === "WIN" ? '+' : '') + (hoveredTrade.trade.result === "WIN" ? Math.round((hoveredTrade.trade.betAmount || 1000)*0.7) : -(hoveredTrade.trade.betAmount || 1000)) + ' ₽')}
                                 </span>
                             </div>
                             <div className="mt-3 pt-2 border-t border-slate-200/60 text-center text-[9px] text-slate-400 font-bold uppercase tracking-widest">
@@ -1052,12 +962,12 @@
           const [logs, setLogs] = useState([]);
           const [currentTF, setCurrentTF] = useState('5M');
           const [zoneState, setZoneState] = useState('OUT');
+          const [zoneInfo, setZoneInfo] = useState(null); // Tracks pulse zone coordinates
           
           const [metrics, setMetrics] = useState({ structure: 50, liquidity: 50, filterLevel: 1.0, smartMoney: 0, buyPressure: 50 });
           const [mtfContext, setMtfContext] = useState({ h4: 'WAIT', h1: 'WAIT', m15: 'WAIT', score: '--', status: 'LOADING' });
           const [cryptoQuotes, setCryptoQuotes] = useState([]);
           
-          // Unified trades ledger replacing old stats
           const [tradesHistory, setTradesHistory] = useState([]);
           const [activeLiveTrade, setActiveLiveTrade] = useState(null);
 
@@ -1105,80 +1015,49 @@
 
           const enqueueSpeech = (text, key = null, priority = 1, onDone = null) => {
               if (key) {
-                  if (speechQueueRef.current.some(item => item.key === key)) {
-                      if (onDone) onDone(); 
-                      return;
-                  }
+                  if (speechQueueRef.current.some(item => item.key === key)) { if (onDone) onDone(); return; }
                   const now = Date.now();
-                  if (lastSpokenKeysRef.current[key] && (now - lastSpokenKeysRef.current[key]) < 30000) {
-                      if (onDone) onDone(); 
-                      return;
-                  }
+                  if (lastSpokenKeysRef.current[key] && (now - lastSpokenKeysRef.current[key]) < 30000) { if (onDone) onDone(); return; }
               }
-              
               speechQueueRef.current.push({ text, key, priority, onDone });
               speechQueueRef.current.sort((a, b) => a.priority - b.priority); 
               processSpeechQueue();
           };
 
-          const speakAsync = (text, key = null, priority = 1) => {
-              return new Promise(resolve => {
-                  enqueueSpeech(text, key, priority, resolve);
-              });
-          };
+          const speakAsync = (text, key = null, priority = 1) => new Promise(resolve => enqueueSpeech(text, key, priority, resolve));
 
           const processSpeechQueue = () => {
               if (isSpeakingRef.current || speechQueueRef.current.length === 0) return;
               isSpeakingRef.current = true;
-              
               const item = speechQueueRef.current.shift();
-              
-              if (item.key) {
-                  lastSpokenKeysRef.current[item.key] = Date.now();
-              }
+              if (item.key) lastSpokenKeysRef.current[item.key] = Date.now();
 
               const utterance = new SpeechSynthesisUtterance(item.text);
-              utterance.lang = 'ru-RU';
-              utterance.rate = 1.05;
-              utterance.pitch = 0.95;
+              utterance.lang = 'ru-RU'; utterance.rate = 1.05; utterance.pitch = 0.95;
 
-              let isFinished = false;
-              let fallbackTimeout;
-
+              let isFinished = false; let fallbackTimeout;
               const completeSpeech = () => {
                   if (isFinished) return;
-                  isFinished = true;
-                  clearTimeout(fallbackTimeout);
-                  isSpeakingRef.current = false;
-                  if (item.onDone) item.onDone();
-                  setTimeout(processSpeechQueue, 300); 
+                  isFinished = true; clearTimeout(fallbackTimeout); isSpeakingRef.current = false;
+                  if (item.onDone) item.onDone(); setTimeout(processSpeechQueue, 300); 
               };
 
-              utterance.onend = completeSpeech;
-              utterance.onerror = completeSpeech;
+              utterance.onend = completeSpeech; utterance.onerror = completeSpeech;
 
               try {
                   window.speechSynthesis.cancel(); 
                   setTimeout(() => {
                       window.speechSynthesis.speak(utterance);
                       fallbackTimeout = setTimeout(() => {
-                          if (!isFinished) {
-                              window.speechSynthesis.cancel();
-                              completeSpeech();
-                          }
+                          if (!isFinished) { window.speechSynthesis.cancel(); completeSpeech(); }
                       }, Math.max(5000, item.text.length * 150));
                   }, 50);
-              } catch (e) {
-                  completeSpeech();
-              }
+              } catch (e) { completeSpeech(); }
           };
 
           const awaitSpeechCompletion = () => new Promise(resolve => {
               const check = setInterval(() => {
-                  if (!isSpeakingRef.current && speechQueueRef.current.length === 0) {
-                      clearInterval(check);
-                      resolve();
-                  }
+                  if (!isSpeakingRef.current && speechQueueRef.current.length === 0) { clearInterval(check); resolve(); }
               }, 400);
           });
 
@@ -1189,36 +1068,22 @@
                       const data = await res.json();
                       const filtered = data.filter(item => TOP_CRYPTO_MAP[item.symbol]);
                       const formatted = filtered.map(item => ({
-                          symbol: item.symbol.replace('USDT', ''),
-                          name: TOP_CRYPTO_MAP[item.symbol],
-                          price: parseFloat(item.lastPrice),
-                          change: parseFloat(item.priceChangePercent)
+                          symbol: item.symbol.replace('USDT', ''), name: TOP_CRYPTO_MAP[item.symbol],
+                          price: parseFloat(item.lastPrice), change: parseFloat(item.priceChangePercent)
                       })).sort((a, b) => b.price - a.price);
-                      
-                      if (formatted.length > 0) {
-                          cryptoQuotesRef.current = formatted;
-                          setCryptoQuotes(formatted);
-                      }
-                  } else {
-                      if (cryptoQuotesRef.current.length === 0) setCryptoQuotes([]);
-                  }
-              } catch (e) {
-                  if (cryptoQuotesRef.current.length === 0) setCryptoQuotes([]);
-              }
+                      if (formatted.length > 0) { cryptoQuotesRef.current = formatted; setCryptoQuotes(formatted); }
+                  } else { if (cryptoQuotesRef.current.length === 0) setCryptoQuotes([]); }
+              } catch (e) { if (cryptoQuotesRef.current.length === 0) setCryptoQuotes([]); }
           };
 
           useEffect(() => {
               if (!isStarted) return;
               const voiceTimer = setInterval(() => {
                   if (cryptoQuotesRef.current && cryptoQuotesRef.current.length > 0 && signalPhaseRef.current === 'NONE') {
-                      const idx = Math.floor(Math.random() * cryptoQuotesRef.current.length);
-                      const q = cryptoQuotesRef.current[idx];
+                      const idx = Math.floor(Math.random() * cryptoQuotesRef.current.length); const q = cryptoQuotesRef.current[idx];
                       if (q.price === 0) return;
-                      const changeWord = q.change >= 0 ? 'выросла на' : 'снизилась на';
-                      const changeVal = Math.abs(q.change).toFixed(1);
-                      const intPrice = Math.floor(q.price);
-                      const pStr = plural(Math.round(Math.abs(q.change)), ['процент', 'процента', 'процентов']);
-                      
+                      const changeWord = q.change >= 0 ? 'выросла на' : 'снизилась на'; const changeVal = Math.abs(q.change).toFixed(1);
+                      const intPrice = Math.floor(q.price); const pStr = plural(Math.round(Math.abs(q.change)), ['процент', 'процента', 'процентов']);
                       const text = `${q.name} сейчас торгуется около ${intPrice} долларов. За последние 24 часа цена ${changeWord} ${changeVal} ${pStr}.`;
                       enqueueSpeech(text, `quote-update-${q.symbol}`, 4);
                   }
@@ -1247,10 +1112,7 @@
           useEffect(() => {
               const loadSparklines = async () => {
                   const data = await ScannerAPI.getCandles('BTCUSDT', 50, '5m'); 
-                  if (data && data.length > 0) {
-                      setSparklines({'BTCUSDT': data});
-                      currentPrice.current = data[data.length - 1].close;
-                  }
+                  if (data && data.length > 0) { setSparklines({'BTCUSDT': data}); currentPrice.current = data[data.length - 1].close; }
               };
               loadSparklines();
           }, []);
@@ -1262,62 +1124,41 @@
           }, []);
 
           const addLog = (msg, isAi = false) => {
-            const prefix = isAi ? 'SMC АНАЛИЗ:' : 'СИСТЕМА:';
-            setLogs(p => [`${prefix} ${msg}`, ...p].slice(0, 5)); 
+            const prefix = isAi ? 'SMC АНАЛИЗ:' : 'СИСТЕМА:'; setLogs(p => [`${prefix} ${msg}`, ...p].slice(0, 5)); 
           };
 
           const playSound = (type) => {
             if (!audioCtx.current) return;
-            const ctx = audioCtx.current;
-            if (ctx.state === 'suspended') ctx.resume();
+            const ctx = audioCtx.current; if (ctx.state === 'suspended') ctx.resume();
             
             const playTone = (freq, oscType, dur, vol, delay = 0) => {
                 try {
-                    const o = ctx.createOscillator();
-                    const g = ctx.createGain();
-                    o.type = oscType;
+                    const o = ctx.createOscillator(); const g = ctx.createGain(); o.type = oscType;
                     o.frequency.setValueAtTime(freq, ctx.currentTime + delay);
                     g.gain.setValueAtTime(0, ctx.currentTime + delay);
                     g.gain.linearRampToValueAtTime(vol, ctx.currentTime + delay + 0.02);
                     g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
                     o.connect(g); g.connect(ctx.destination);
-                    o.start(ctx.currentTime + delay);
-                    o.stop(ctx.currentTime + delay + dur);
+                    o.start(ctx.currentTime + delay); o.stop(ctx.currentTime + delay + dur);
                 } catch (e) {}
             };
 
             if (type === 'scan') playTone(1200 + Math.random()*300, 'sine', 0.03, 0.005);
             if (type === 'found') { playTone(600, 'triangle', 0.1, 0.03); playTone(800, 'triangle', 0.1, 0.03, 0.1); }
-            if (type === 'start') { 
-                playTone(523.25, 'sine', 0.4, 0.03); 
-                playTone(659.25, 'sine', 0.5, 0.03, 0.1); 
-                playTone(783.99, 'sine', 0.6, 0.04, 0.2); 
-            }
-            if (type === 'win') { 
-                playTone(523.25, 'triangle', 0.4, 0.04); 
-                playTone(659.25, 'triangle', 0.5, 0.04, 0.1); 
-                playTone(783.99, 'triangle', 0.8, 0.05, 0.2); 
-            }
-            if (type === 'loss') { 
-                playTone(300, 'sawtooth', 0.4, 0.03); 
-                playTone(250, 'sawtooth', 0.6, 0.04, 0.2); 
-            }
-            if (type === 'cancel') {
-                playTone(400, 'square', 0.1, 0.04); 
-                playTone(300, 'square', 0.2, 0.04, 0.15); 
-            }
+            if (type === 'start') { playTone(523.25, 'sine', 0.4, 0.03); playTone(659.25, 'sine', 0.5, 0.03, 0.1); playTone(783.99, 'sine', 0.6, 0.04, 0.2); }
+            if (type === 'win') { playTone(523.25, 'triangle', 0.4, 0.04); playTone(659.25, 'triangle', 0.5, 0.04, 0.1); playTone(783.99, 'triangle', 0.8, 0.05, 0.2); }
+            if (type === 'loss') { playTone(300, 'sawtooth', 0.4, 0.03); playTone(250, 'sawtooth', 0.6, 0.04, 0.2); }
+            if (type === 'cancel') { playTone(400, 'square', 0.1, 0.04); playTone(300, 'square', 0.2, 0.04, 0.15); }
           };
 
           const initChart = async () => {
             if (!chartContainerRef.current) return;
             if (!window.LightweightCharts) {
               await new Promise(resolve => {
-                const script = document.createElement('script');
-                script.src = 'https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js';
+                const script = document.createElement('script'); script.src = 'https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js';
                 script.onload = resolve; document.head.appendChild(script);
               });
             }
-
             if (chartInstance.current) return;
 
             try {
@@ -1325,72 +1166,43 @@
                   autoSize: true,
                   layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#475569', fontFamily: 'JetBrains Mono' },
                   grid: { vertLines: { color: 'rgba(148, 163, 184, 0.2)' }, horzLines: { color: 'rgba(148, 163, 184, 0.2)' } },
-                  timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
-                  rightPriceScale: { borderVisible: false }
+                  timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false }, rightPriceScale: { borderVisible: false }
                 });
-
-                candleSeries.current = mainChart.addCandlestickSeries({ 
-                  upColor: '#0ea5e9', 
-                  downColor: '#ef4444', 
-                  borderVisible: true, 
-                  borderUpColor: '#0ea5e9', 
-                  borderDownColor: '#ef4444', 
-                  wickUpColor: '#0ea5e9', 
-                  wickDownColor: '#ef4444'
-                });
-
+                candleSeries.current = mainChart.addCandlestickSeries({ upColor: '#0ea5e9', downColor: '#ef4444', borderVisible: true, borderUpColor: '#0ea5e9', borderDownColor: '#ef4444', wickUpColor: '#0ea5e9', wickDownColor: '#ef4444' });
                 chartInstance.current = mainChart;
             } catch(e) {}
           };
 
           const clearChartExtras = () => {
               if (!chartInstance.current || !candleSeries.current) return;
-              priceLinesRef.current.forEach(l => { try { candleSeries.current.removePriceLine(l); } catch(e){} });
-              priceLinesRef.current = [];
-              extraSeriesRef.current.forEach(s => { try { chartInstance.current.removeSeries(s); } catch(e){} });
-              extraSeriesRef.current = [];
+              priceLinesRef.current.forEach(l => { try { candleSeries.current.removePriceLine(l); } catch(e){} }); priceLinesRef.current = [];
+              extraSeriesRef.current.forEach(s => { try { chartInstance.current.removeSeries(s); } catch(e){} }); extraSeriesRef.current = [];
           };
 
           const drawIndicators = (upperData, lowerData) => {
               clearChartExtras();
               try {
                   const upperSeries = chartInstance.current.addLineSeries({ color: 'rgba(244, 63, 94, 0.5)', lineWidth: 2, lineStyle: 2, title: 'BUY LIQUIDITY' });
-                  upperSeries.setData(upperData);
-                  extraSeriesRef.current.push(upperSeries);
-
+                  upperSeries.setData(upperData); extraSeriesRef.current.push(upperSeries);
                   const lowerSeries = chartInstance.current.addLineSeries({ color: 'rgba(16, 185, 129, 0.5)', lineWidth: 2, lineStyle: 2, title: 'SELL LIQUIDITY' });
-                  lowerSeries.setData(lowerData);
-                  extraSeriesRef.current.push(lowerSeries);
+                  lowerSeries.setData(lowerData); extraSeriesRef.current.push(lowerSeries);
               } catch(e) {}
           };
 
-          const updateStatus = (phase, colorClass) => {
-              setAppPhase(phase);
-              setStatusColorClass(colorClass);
-          };
+          const updateStatus = (phase, colorClass) => { setAppPhase(phase); setStatusColorClass(colorClass); };
 
           const syncModeView = () => {
-              if (zoneStateRef.current === 'OUT' && signalPhaseRef.current === 'NONE') {
-                  setViewMode('SCREENER');
-              } else {
-                  setViewMode('DETAIL');
-              }
+              if (zoneStateRef.current === 'OUT' && signalPhaseRef.current === 'NONE') setViewMode('SCREENER');
+              else setViewMode('DETAIL');
           };
 
           const fetchMtfContext = async (symbol, currentPriceVal) => {
               try {
-                  const [data4h, data1h, data15m] = await Promise.all([
-                      ScannerAPI.getCandles(symbol, 60, '4h'),
-                      ScannerAPI.getCandles(symbol, 60, '1h'),
-                      ScannerAPI.getCandles(symbol, 60, '15m')
-                  ]);
-                  
+                  const [data4h, data1h, data15m] = await Promise.all([ ScannerAPI.getCandles(symbol, 60, '4h'), ScannerAPI.getCandles(symbol, 60, '1h'), ScannerAPI.getCandles(symbol, 60, '15m') ]);
                   const h4 = data4h.length > 0 ? getHTFBias(data4h, currentPriceVal) : 'LOCAL';
                   const h1 = data1h.length > 0 ? getHTFBias(data1h, currentPriceVal) : 'LOCAL';
                   const m15 = data15m.length > 0 ? getHTFBias(data15m, currentPriceVal) : 'LOCAL';
-                  
-                  cachedMtfRef.current = { h4, h1, m15, status: 'LOADED' };
-                  setMtfContext(prev => ({ ...prev, h4, h1, m15, status: 'LOADED' }));
+                  cachedMtfRef.current = { h4, h1, m15, status: 'LOADED' }; setMtfContext(prev => ({ ...prev, h4, h1, m15, status: 'LOADED' }));
               } catch (e) {
                   cachedMtfRef.current = { h4: 'LOCAL', h1: 'LOCAL', m15: 'LOCAL', status: 'LOCAL 5M MODE' };
                   setMtfContext(prev => ({ ...prev, h4: 'LOCAL', h1: 'LOCAL', m15: 'LOCAL', status: 'LOCAL 5M MODE' }));
@@ -1399,36 +1211,21 @@
 
           const updateChartMarkers = () => {
               if (!candleSeries.current) return;
-              try {
-                  const allMarkers = [...historicalMarkersRef.current, ...liveMarkersRef.current];
-                  allMarkers.sort((a, b) => a.time - b.time);
-                  candleSeries.current.setMarkers(allMarkers);
-              } catch (e) {}
+              try { const allMarkers = [...historicalMarkersRef.current, ...liveMarkersRef.current]; allMarkers.sort((a, b) => a.time - b.time); candleSeries.current.setMarkers(allMarkers); } catch (e) {}
           };
 
           const runTerminalEngine = async () => {
-            if (engineActive.current) return;
-            engineActive.current = true;
-
+            if (engineActive.current) return; engineActive.current = true;
             if (audioCtx.current && audioCtx.current.state === 'suspended') await audioCtx.current.resume();
 
-            historicalMarkersRef.current = [];
-            liveMarkersRef.current = [];
-            
-            setViewMode('DETAIL');
-            updateStatus('БЭКТЕСТ: PURE 5M (12H)...', 'text-cyan-600');
-            addLog(`ЗАПУСК ПОИСКА ЛИКВИДНОСТИ 12 ЧАСОВ (PURE 5M)...`, true);
+            historicalMarkersRef.current = []; liveMarkersRef.current = [];
+            setViewMode('DETAIL'); updateStatus('БЭКТЕСТ: PURE 5M (12H)...', 'text-cyan-600'); addLog(`ЗАПУСК ПОИСКА ЛИКВИДНОСТИ 12 ЧАСОВ (PURE 5M)...`, true);
 
-            const curAsset = ASSETS[0];
-            const initialData = await ScannerAPI.getCandles(curAsset.symbol, 800, '5m');
+            const curAsset = ASSETS[0]; const initialData = await ScannerAPI.getCandles(curAsset.symbol, 800, '5m');
             
             if (initialData && initialData.length > 150) {
-                lastDataTimeRef.current = Date.now();
-                setSparklines(prev => ({...prev, [curAsset.symbol]: initialData}));
-                currentPrice.current = initialData[initialData.length - 1].close;
-
-                const liqZones = calcLiquidityZones(initialData, 30); 
-                const atrSeries = calcATRSeries(initialData, 14); 
+                lastDataTimeRef.current = Date.now(); setSparklines(prev => ({...prev, [curAsset.symbol]: initialData})); currentPrice.current = initialData[initialData.length - 1].close;
+                const liqZones = calcLiquidityZones(initialData, 30); const atrSeries = calcATRSeries(initialData, 14); 
 
                 const liqMap = new Map(liqZones.map(i => [i.time, {upper: i.upper, lower: i.lower}]));
                 const atrMap = new Map(atrSeries.map(i => [i.time, i.value]));
@@ -1436,298 +1233,181 @@
                 const upperData = liqZones.map(i => ({time: i.time, value: i.upper}));
                 const lowerData = liqZones.map(i => ({time: i.time, value: i.lower}));
 
-                let d_candles = 0, d_sweepH = 0, d_sweepL = 0, d_recB = 0, d_recS = 0, d_cand = 0, d_conf = 0, d_rej = 0;
-                let d_lastRej = 'None';
-                
-                const newTradesHistory = [];
+                let d_candles = 0, d_sweepH = 0, d_sweepL = 0, d_recB = 0, d_recS = 0, d_cand = 0, d_conf = 0, d_rej = 0; let d_lastRej = 'None';
+                const newTradesHistory = []; let engineState = { lastSignalTime: 0, lastSignalPrice: 0, consecutiveLosses: 0 };
 
-                let engineState = { lastSignalTime: 0, lastSignalPrice: 0, consecutiveLosses: 0 };
-
-                const startIdx = Math.max(0, initialData.length - 144);
-                const endIdx = initialData.length - 7;
+                const startIdx = Math.max(0, initialData.length - 144); const endIdx = initialData.length - 7;
 
                 for (let idx = startIdx; idx <= endIdx; idx++) {
-                    const currTime = initialData[idx].time;
-                    const currCandle = initialData[idx];
-                    const prevCandle = initialData[idx - 1];
-                    d_candles++;
-                    
-                    const zones = liqMap.get(currTime);
-                    const cAtr = atrMap.get(currTime);
+                    const currTime = initialData[idx].time; const currCandle = initialData[idx]; const prevCandle = initialData[idx - 1]; d_candles++;
+                    const zones = liqMap.get(currTime); const cAtr = atrMap.get(currTime);
 
                     if (zones && cAtr !== undefined) {
                         const isSweepHigh = currCandle.high >= zones.upper || prevCandle.high >= zones.upper;
                         const isSweepLow = currCandle.low <= zones.lower || prevCandle.low <= zones.lower;
-                        if (isSweepHigh) d_sweepH++;
-                        if (isSweepLow) d_sweepL++;
+                        if (isSweepHigh) d_sweepH++; if (isSweepLow) d_sweepL++;
                         const isReclaimSell = isSweepHigh && currCandle.close < zones.upper;
                         const isReclaimBuy = isSweepLow && currCandle.close > zones.lower;
-                        if (isReclaimSell) d_recS++;
-                        if (isReclaimBuy) d_recB++;
+                        if (isReclaimSell) d_recS++; if (isReclaimBuy) d_recB++;
                         if (isReclaimBuy || isReclaimSell) d_cand++;
                     }
 
-                    // 1. Core deterministic engine evaluation
                     const sig = evaluateSignalEngine(initialData, idx, liqMap, atrMap, { status: 'LOCAL 5M MODE' }, engineState);
                     let evaluatedStatus = sig.valid ? 'CONFIRMED' : (sig.reason ? 'REJECTED' : 'NO_SIGNAL');
 
-                    // 2. BACKTEST/LIVE PARITY PROTECTION
-                    // If live scanner already saw this candle and rejected it, backtest MUST reject it too.
                     const pastLedgerStatus = ScanLedger.get(currTime);
                     if (pastLedgerStatus) {
                         if (pastLedgerStatus !== evaluatedStatus) {
                             if (pastLedgerStatus === 'REJECTED' || pastLedgerStatus === 'NO_SIGNAL' || pastLedgerStatus === 'ZONE_ONLY') {
-                                sig.valid = false;
-                                sig.reason = "PARITY_MISMATCH";
-                                evaluatedStatus = pastLedgerStatus;
+                                sig.valid = false; sig.reason = "PARITY_MISMATCH"; evaluatedStatus = pastLedgerStatus;
                             }
                         }
-                    } else {
-                        // Store backtest discovery so future reloads are perfectly aligned
-                        ScanLedger.set(currTime, evaluatedStatus);
-                    }
+                    } else { ScanLedger.set(currTime, evaluatedStatus); }
 
                     if (!sig.valid) {
                         if (sig.reason && !sig.reason.includes('No raw signal') && !sig.reason.includes('Missing indicators') && !sig.reason.includes('Not enough data')) {
-                            d_rej++;
-                            d_lastRej = `${sig.reason} (${sig.score||0})`;
+                            d_rej++; d_lastRej = `${sig.reason} (${sig.score||0})`;
                         }
                     } else {
-                        d_conf++;
-                        engineState.lastSignalTime = sig.signalTime;
-                        engineState.lastSignalPrice = sig.signalPrice;
-
-                        const entryIdx = idx + 1; 
-                        const exitIdx = entryIdx + 5; 
-
-                        const entryCandle = initialData[entryIdx];
-                        const exitCandle = initialData[exitIdx];
-
-                        const entryPrice = entryCandle.open;
-                        const exitPrice = exitCandle.close;
+                        d_conf++; engineState.lastSignalTime = sig.signalTime; engineState.lastSignalPrice = sig.signalPrice;
+                        const entryIdx = idx + 1; const exitIdx = entryIdx + 5; 
+                        const entryCandle = initialData[entryIdx]; const exitCandle = initialData[exitIdx];
+                        const entryPrice = entryCandle.open; const exitPrice = exitCandle.close;
                         
                         let result = "LOSS";
-                        if ((sig.isCall && exitPrice > entryPrice) || (sig.isPut && exitPrice < entryPrice) || exitPrice === entryPrice) {
-                            result = "WIN";
-                        }
+                        if ((sig.isCall && exitPrice > entryPrice) || (sig.isPut && exitPrice < entryPrice) || exitPrice === entryPrice) result = "WIN";
 
-                        // Strictly ONLY drawing verified confirmed signals from the past
-                        historicalMarkersRef.current.push({
-                            time: currTime, position: sig.isCall ? 'belowBar' : 'aboveBar', color: sig.isCall ? '#0ea5e9' : '#f43f5e', shape: sig.isCall ? 'arrowUp' : 'arrowDown', text: 'SIGNAL', size: 1
-                        });
-                        historicalMarkersRef.current.push({
-                            time: entryCandle.time, position: sig.isCall ? 'belowBar' : 'aboveBar', color: '#8b5cf6', shape: 'square', text: 'ENTRY', size: 0.5
-                        });
-                        historicalMarkersRef.current.push({
-                            time: exitCandle.time, position: sig.isCall ? 'belowBar' : 'aboveBar', color: result==="WIN" ? '#10b981' : '#f43f5e', shape: 'square', text: 'EXIT', size: 0.5
-                        });
+                        historicalMarkersRef.current.push({ time: currTime, position: sig.isCall ? 'belowBar' : 'aboveBar', color: sig.isCall ? '#0ea5e9' : '#f43f5e', shape: sig.isCall ? 'arrowUp' : 'arrowDown', text: 'SIGNAL', size: 1 });
+                        historicalMarkersRef.current.push({ time: entryCandle.time, position: sig.isCall ? 'belowBar' : 'aboveBar', color: '#8b5cf6', shape: 'square', text: 'ENTRY', size: 0.5 });
+                        historicalMarkersRef.current.push({ time: exitCandle.time, position: sig.isCall ? 'belowBar' : 'aboveBar', color: result==="WIN" ? '#10b981' : '#f43f5e', shape: 'square', text: 'EXIT', size: 0.5 });
 
                         newTradesHistory.push({
-                            id: `hist_trade_${currTime}`,
-                            type: sig.isCall ? 'CALL' : 'PUT',
-                            signalTime: currTime,
-                            entryTime: entryCandle.time,
-                            exitTime: exitCandle.time,
-                            entryPrice: entryPrice,
-                            exitPrice: exitPrice,
-                            status: "CLOSED",
-                            result: result,
-                            betAmount: TRADE_MONEY_CONFIG.stake,
-                            reason: sig.signalType,
-                            quality: sig.score
+                            id: `hist_trade_${currTime}`, type: sig.isCall ? 'CALL' : 'PUT', signalTime: currTime, entryTime: entryCandle.time, exitTime: exitCandle.time,
+                            entryPrice: entryPrice, exitPrice: exitPrice, status: "CLOSED", result: result, betAmount: TRADE_MONEY_CONFIG.stake, reason: sig.signalType, quality: sig.score
                         });
 
-                        if (result === "WIN") engineState.consecutiveLosses = 0;
-                        else engineState.consecutiveLosses++;
-                        
-                        idx += 5; // Skip ahead inside the trade
+                        if (result === "WIN") engineState.consecutiveLosses = 0; else engineState.consecutiveLosses++;
+                        idx += 5;
                     }
                 }
 
-                // Restore state for Live Scanner
-                lastSignalTimeRef.current = engineState.lastSignalTime;
-                lastSignalPriceRef.current = engineState.lastSignalPrice;
-                consecutiveLossesRef.current = engineState.consecutiveLosses;
-
-                // Sync Parity Ref
-                lastEvaluatedCandleTimeRef.current = initialData[initialData.length - 2]?.time || 0;
-                lastClosedCandleTimeUiRef.current = lastEvaluatedCandleTimeRef.current;
+                lastSignalTimeRef.current = engineState.lastSignalTime; lastSignalPriceRef.current = engineState.lastSignalPrice; consecutiveLossesRef.current = engineState.consecutiveLosses;
+                lastEvaluatedCandleTimeRef.current = initialData[initialData.length - 2]?.time || 0; lastClosedCandleTimeUiRef.current = lastEvaluatedCandleTimeRef.current;
 
                 setTradesHistory(newTradesHistory);
                 setPureDiag({ candles: d_candles, sweepHigh: d_sweepH, sweepLow: d_sweepL, reclaimBuy: d_recB, reclaimSell: d_recS, candidates: d_cand, confirmed: d_conf, rejected: d_rej, rendered: newTradesHistory.length, boxes: newTradesHistory.length, lastReason: d_lastRej });
 
-                setAsset(curAsset);
-                await initChart();
+                setAsset(curAsset); await initChart();
                 if (candleSeries.current) {
-                    candleSeries.current.setData(initialData);
-                    updateChartMarkers();
-                    drawIndicators(upperData, lowerData);
+                    candleSeries.current.setData(initialData); updateChartMarkers(); drawIndicators(upperData, lowerData);
                     try { chartInstance.current.timeScale().fitContent(); } catch(e) {}
                 }
 
-                // 3. Unified Financial Truth Voice Prompt
                 const finalStats = calculateTradingStats(newTradesHistory, TRADE_MONEY_CONFIG);
                 let speechText = "";
                 if (finalStats.trades > 0) {
                     addLog(`ИСТОРИЯ ЗА 12 ЧАСОВ: НАЙДЕНО СДЕЛОК: ${finalStats.trades}, ВИНРЕЙТ: ${finalStats.winrate}%`, true);
-                    speechText = `Терминал запущен. За последние двенадцать часов по текущей стратегии найдено ${finalStats.trades} подтверждённых сделок. Успешных сделок ${finalStats.wins}. Минусовых сделок ${finalStats.losses}. Винрейт составляет ${finalStats.winrate} процентов. При входе в каждую сделку по тысяче рублей и выплате семьдесят процентов результат составил бы ${finalStats.pnl} рублей. Демо-баланс составил бы ${finalStats.balance} рублей. Приступаю к сканированию рынка.`;
+                    speechText = `Терминал запущен. За последние двенадцать часов по текущей стратегии найдено ${finalStats.trades} подтверждённых сделок. Успешных сделок ${finalStats.wins}. Минусовых сделок ${finalStats.losses}. Винрейт составляет ${finalStats.winrate} процентов. Приступаю к сканированию рынка.`;
                 } else {
                     addLog(`ЗА 12 ЧАСОВ СИГНАЛОВ ПО СТРАТЕГИИ НЕ НАЙДЕНО.`, true);
                     speechText = "Терминал запущен. За последние двенадцать часов подтверждённых сделок не найдено. Выборка слабая. Приступаю к сканированию рынка.";
                 }
                 
-                await speakAsync(speechText, 'startup-summary-current-session', 1);
-                await awaitSpeechCompletion();
-
-                updateStatus('АКТИВАЦИЯ ПРЕМИУМ СКАНЕРА...', 'text-cyan-600');
-                await new Promise(r => setTimeout(r, 1000));
-                
+                await speakAsync(speechText, 'startup-summary-current-session', 1); await awaitSpeechCompletion();
+                updateStatus('АКТИВАЦИЯ ПРЕМИУМ СКАНЕРА...', 'text-cyan-600'); await new Promise(r => setTimeout(r, 1000));
                 syncModeView(); 
             } else {
-                addLog("ОШИБКА: НЕТ СВЯЗИ С БИРЖЕЙ BINANCE", true);
-                updateStatus('ОШИБКА API BINANCE', 'text-rose-600');
+                addLog("ОШИБКА: НЕТ СВЯЗИ С БИРЖЕЙ BINANCE", true); updateStatus('ОШИБКА API BINANCE', 'text-rose-600');
                 await speakAsync('Ошибка связи с криптобиржей Бинанс. Попробуйте перезапустить утилиту позже.', 'api-error', 1);
             }
             
             while (engineActive.current) {
               try {
                   const currentAge = Math.floor((Date.now() - lastDataTimeRef.current) / 1000);
-                  
                   if (currentAge > 90) {
                       updateStatus('ДАННЫЕ ОБНОВЛЯЮТСЯ. СИГНАЛЫ ПРИОСТАНОВЛЕНЫ.', 'text-rose-600 font-bold animate-pulse');
                       await new Promise(r => setTimeout(r, 2000));
                       const data = await ScannerAPI.getCandles(curAsset.symbol, 200, '5m'); 
-                      if (data && data.length > 100) lastDataTimeRef.current = Date.now();
-                      continue;
+                      if (data && data.length > 100) lastDataTimeRef.current = Date.now(); continue;
                   }
 
                   syncModeView();
-                  if (zoneStateRef.current === 'OUT' && signalPhaseRef.current === 'NONE') {
-                      updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-700');
-                  } else if (zoneStateRef.current === 'IN' && signalPhaseRef.current === 'NONE') {
-                      updateStatus('ЗОНА ИНТЕРЕСА: ВОЗМОЖЕН СИГНАЛ', 'text-amber-600 font-bold animate-pulse');
-                  }
+                  if (zoneStateRef.current === 'OUT' && signalPhaseRef.current === 'NONE') updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-700');
+                  else if (zoneStateRef.current === 'IN' && signalPhaseRef.current === 'NONE') updateStatus('ЗОНА ИНТЕРЕСА: ВОЗМОЖЕН СИГНАЛ', 'text-amber-600 font-bold animate-pulse');
                   
                   setCurrentTF('5M');
 
                   for(let cur of ASSETS) {
                     if (!engineActive.current) break;
-                    
                     const data = await ScannerAPI.getCandles(cur.symbol, 200, '5m'); 
                     
                     if (data && data.length > 100) {
-                      lastDataTimeRef.current = Date.now();
-                      setSparklines(prev => ({...prev, [cur.symbol]: data}));
+                      lastDataTimeRef.current = Date.now(); setSparklines(prev => ({...prev, [cur.symbol]: data}));
+                      const lastIdx = data.length - 1; currentPrice.current = data[lastIdx].close; 
 
-                      const lastIdx = data.length - 1;
-                      currentPrice.current = data[lastIdx].close; 
-
-                      if (Date.now() - lastMtfFetchRef.current > 60000) {
-                          lastMtfFetchRef.current = Date.now();
-                          fetchMtfContext(cur.symbol, currentPrice.current);
-                      }
+                      if (Date.now() - lastMtfFetchRef.current > 60000) { lastMtfFetchRef.current = Date.now(); fetchMtfContext(cur.symbol, currentPrice.current); }
                       
-                      if (candleSeries.current && (zoneStateRef.current === 'IN' || signalPhaseRef.current !== 'NONE')) {
-                          data.slice(-10).forEach(d => { try { candleSeries.current.update(d); } catch(e){} });
-                      }
+                      if (candleSeries.current && (zoneStateRef.current === 'IN' || signalPhaseRef.current !== 'NONE')) { data.slice(-10).forEach(d => { try { candleSeries.current.update(d); } catch(e){} }); }
 
-                      const liqZones = calcLiquidityZones(data, 30); 
-                      const atrSeries = calcATRSeries(data, 14);    
+                      const liqZones = calcLiquidityZones(data, 30); const atrSeries = calcATRSeries(data, 14);    
+                      const liqMap = new Map(liqZones.map(i => [i.time, {upper: i.upper, lower: i.lower}])); const atrMap = new Map(atrSeries.map(i => [i.time, i.value]));
+                      const upperData = liqZones.map(i => ({time: i.time, value: i.upper})); const lowerData = liqZones.map(i => ({time: i.time, value: i.lower}));
 
-                      const liqMap = new Map(liqZones.map(i => [i.time, {upper: i.upper, lower: i.lower}]));
-                      const atrMap = new Map(atrSeries.map(i => [i.time, i.value]));
-
-                      const upperData = liqZones.map(i => ({time: i.time, value: i.upper}));
-                      const lowerData = liqZones.map(i => ({time: i.time, value: i.lower}));
-
-                      const latestZone = liqZones[liqZones.length - 1];
-                      const latestAtr = atrSeries[atrSeries.length - 1].value;
+                      const latestZone = liqZones[liqZones.length - 1]; const latestAtr = atrSeries[atrSeries.length - 1].value;
                       
-                      // ZONE APPROACH LOGIC - Does NOT create signals or affect ledgers
                       if (latestZone && latestAtr && signalPhaseRef.current === 'NONE') {
-                          const distTop = latestZone.upper - currentPrice.current;
-                          const distBot = currentPrice.current - latestZone.lower;
+                          const distTop = latestZone.upper - currentPrice.current; const distBot = currentPrice.current - latestZone.lower;
                           
-                          if (distTop < latestAtr * 0.8 || distBot < latestAtr * 0.8) {
+                          if (distTop < latestAtr * 1.1 || distBot < latestAtr * 1.1) {
                               if (zoneStateRef.current === 'OUT' && Date.now() > zoneCooldownUntilRef.current) {
-                                  zoneStateRef.current = 'IN';
-                                  setZoneState('IN');
+                                  zoneStateRef.current = 'IN'; setZoneState('IN');
+                                  setZoneInfo({
+                                      type: distTop < latestAtr * 1.1 ? 'RESISTANCE' : 'SUPPORT',
+                                      top: latestZone.upper, bottom: latestZone.lower, time: data[lastIdx].time
+                                  });
                                   addLog('ЦЕНА ВОШЛА В ЗОНУ ИНТЕРЕСА');
-                                  
                                   const mtf = cachedMtfRef.current;
                                   let warnTxt = 'Цена подошла к зоне интереса. Возможен сигнал после подтверждения на 5M.';
-                                  if (mtf.h4 !== 'NEUTRAL' || mtf.h1 !== 'NEUTRAL') {
-                                      warnTxt = 'Цена подходит к старшей зоне ликвидности. Возможен сигнал после подтверждения на 5M.';
-                                  }
+                                  if (mtf.h4 !== 'NEUTRAL' || mtf.h1 !== 'NEUTRAL') warnTxt = 'Цена подходит к старшей зоне ликвидности. Возможен сигнал после подтверждения на 5M.';
                                   enqueueSpeech(warnTxt, `zone-approach-${latestZone.time}`, 3);
-                                  syncModeView();
-                                  updateStatus('ЗОНА ИНТЕРЕСА: ВОЗМОЖЕН СИГНАЛ', 'text-amber-600 font-bold animate-pulse');
+                                  syncModeView(); updateStatus('ЗОНА ИНТЕРЕСА: ВОЗМОЖЕН СИГНАЛ', 'text-amber-600 font-bold animate-pulse');
                               }
                           } else if (distTop > latestAtr * 2.5 && distBot > latestAtr * 2.5) {
                               if (zoneStateRef.current === 'IN') {
-                                  zoneStateRef.current = 'OUT';
-                                  setZoneState('OUT');
+                                  zoneStateRef.current = 'OUT'; setZoneState('OUT'); setZoneInfo(null);
                                   zoneCooldownUntilRef.current = Date.now() + 60000; 
                                   addLog('ЦЕНА ПОКИНУЛА ЗОНУ ИНТЕРЕСА');
                                   enqueueSpeech('Цена отошла от зоны. Сигнал не подтверждён.', `zone-left-${latestZone.time}`, 3);
-                                  syncModeView();
-                                  updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-700');
+                                  syncModeView(); updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-700');
                               }
                           }
                       }
 
-                      // LIVE SCANNER EVALUATION
-                      const evaluateIdx = lastIdx - 1;
-                      const evalCandleTime = data[evaluateIdx]?.time;
+                      const evaluateIdx = lastIdx - 1; const evalCandleTime = data[evaluateIdx]?.time;
 
-                      // Only evaluate closed candles once to prevent repaint mismatch
                       if (evalCandleTime > lastEvaluatedCandleTimeRef.current && signalPhaseRef.current === 'NONE') {
                           lastClosedCandleTimeUiRef.current = evalCandleTime;
-
-                          const liveEngineState = { 
-                              lastSignalTime: lastSignalTimeRef.current, 
-                              lastSignalPrice: lastSignalPriceRef.current, 
-                              consecutiveLosses: consecutiveLossesRef.current 
-                          };
-
+                          const liveEngineState = { lastSignalTime: lastSignalTimeRef.current, lastSignalPrice: lastSignalPriceRef.current, consecutiveLosses: consecutiveLossesRef.current };
                           const sig = evaluateSignalEngine(data, evaluateIdx, liqMap, atrMap, cachedMtfRef.current, liveEngineState);
                           const evaluatedStatus = sig.valid ? 'CONFIRMED' : (sig.reason ? 'REJECTED' : 'NO_SIGNAL');
 
-                          // PARITY: Save truth to ledger so reload doesn't invent signals
                           ScanLedger.set(evalCandleTime, evaluatedStatus);
 
                           if (sig.valid) {
-                              // SIGNAL CONFIRMED
-                              lastSignalTimeRef.current = sig.signalTime;
-                              lastSignalPriceRef.current = sig.signalPrice;
-                              
-                              setMtfContext(prev => ({ ...prev, score: sig.score }));
-                              setAsset(cur);
-                              signalPhaseRef.current = 'EXPLAINING';
-                              setSignalPhase('EXPLAINING');
-                              syncModeView();
-                              
-                              playSound('found');
+                              lastSignalTimeRef.current = sig.signalTime; lastSignalPriceRef.current = sig.signalPrice;
+                              setMtfContext(prev => ({ ...prev, score: sig.score })); setAsset(cur);
+                              signalPhaseRef.current = 'EXPLAINING'; setSignalPhase('EXPLAINING'); setZoneInfo(null);
+                              syncModeView(); playSound('found');
                               
                               if(candleSeries.current) {
                                   try { 
-                                      liveMarkersRef.current.push({
-                                          time: sig.signalTime,
-                                          position: sig.isCall ? 'belowBar' : 'aboveBar',
-                                          color: sig.isCall ? '#0ea5e9' : '#f43f5e',
-                                          shape: sig.isCall ? 'arrowUp' : 'arrowDown',
-                                          text: 'SIGNAL',
-                                          size: 1
-                                      });
+                                      liveMarkersRef.current.push({ time: sig.signalTime, position: sig.isCall ? 'belowBar' : 'aboveBar', color: sig.isCall ? '#0ea5e9' : '#f43f5e', shape: sig.isCall ? 'arrowUp' : 'arrowDown', text: 'SIGNAL', size: 1 });
                                       updateChartMarkers();
                                   } catch (e) {}
                               }
 
-                              drawIndicators(upperData, lowerData);
-                              currentPrice.current = data[lastIdx].close;
-                              
-                              updateStatus(`ОБЪЯСНЕНИЕ СИГНАЛА...`, 'text-cyan-600 font-bold animate-pulse');
-                              addLog(`Accepted: ${sig.signalType} | Q:${sig.score}`, true);
+                              drawIndicators(upperData, lowerData); currentPrice.current = data[lastIdx].close;
+                              updateStatus(`ОБЪЯСНЕНИЕ СИГНАЛА...`, 'text-cyan-600 font-bold animate-pulse'); addLog(`Accepted: ${sig.signalType} | Q:${sig.score}`, true);
 
                               const directionText = sig.isCall ? "вверх" : "вниз";
                               let voiceReason = "локальный сигнал на 5 минут. Старший контекст нейтральный";
@@ -1737,18 +1417,14 @@
                               
                               await speakAsync(`Внимание. Появился сигнал ${directionText}. ${voiceReason}. Идёт подготовка ко входу.`, `signal-detect-${sig.signalTime}`, 1);
 
-                              signalPhaseRef.current = 'COUNTDOWN';
-                              setSignalPhase('COUNTDOWN');
+                              signalPhaseRef.current = 'COUNTDOWN'; setSignalPhase('COUNTDOWN');
                               for(let w=3; w>0; w--) {
-                                  setCountdown(w);
-                                  updateStatus(`ПОДГОТОВКА К ВХОДУ: ${w}С`, 'text-cyan-600 font-bold');
-                                  playSound('scan');
+                                  setCountdown(w); updateStatus(`ПОДГОТОВКА К ВХОДУ: ${w}С`, 'text-cyan-600 font-bold'); playSound('scan');
                                   await new Promise(r => setTimeout(r, 1000));
                               }
                               setCountdown(null);
 
                               let tradeCancelled = false;
-                              
                               try {
                                   const liveData = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
                                   if (liveData && liveData.length > 0) lastDataTimeRef.current = Date.now();
@@ -1757,97 +1433,58 @@
                                       currentPrice.current = liveTick.close;
                                       if (candleSeries.current) { try { candleSeries.current.update(liveTick); } catch(e){} }
                                       const currentZones = calcLiquidityZones(data, 30);
-                                      const liveUpper = currentZones[currentZones.length-1].upper;
-                                      const liveLower = currentZones[currentZones.length-1].lower;
-
+                                      const liveUpper = currentZones[currentZones.length-1].upper; const liveLower = currentZones[currentZones.length-1].lower;
                                       if (sig.isPut && liveTick.close > liveUpper) tradeCancelled = true;
                                       if (sig.isCall && liveTick.close < liveLower) tradeCancelled = true;
                                   }
                               } catch(e) {}
 
                               if (tradeCancelled) {
-                                  zoneStateRef.current = 'OUT';
-                                  setZoneState('OUT');
-                                  signalPhaseRef.current = 'NONE';
-                                  setSignalPhase('NONE');
-                                  playSound('cancel');
-                                  updateStatus('ОТМЕНА: ИСТИННЫЙ ПРОБОЙ', 'text-rose-600 font-bold');
+                                  zoneStateRef.current = 'OUT'; setZoneState('OUT'); signalPhaseRef.current = 'NONE'; setSignalPhase('NONE');
+                                  playSound('cancel'); updateStatus('ОТМЕНА: ИСТИННЫЙ ПРОБОЙ', 'text-rose-600 font-bold');
                                   await speakAsync("Внимание. Отмена. Паттерн сломан. Возвращаюсь к радару.", `signal-cancel-${sig.signalTime}`, 1);
-                                  syncModeView();
-                                  lastEvaluatedCandleTimeRef.current = evalCandleTime;
-                                  break; 
+                                  syncModeView(); lastEvaluatedCandleTimeRef.current = evalCandleTime; break; 
                               }
 
-                              playSound('start');
-                              updateStatus('СДЕЛКА АКТИВНА', 'text-blue-700 font-bold');
-                              signalPhaseRef.current = 'ACTIVE';
-                              setSignalPhase('ACTIVE');
+                              playSound('start'); updateStatus('СДЕЛКА АКТИВНА', 'text-blue-700 font-bold');
+                              signalPhaseRef.current = 'ACTIVE'; setSignalPhase('ACTIVE');
                               
-                              const entryPrice = currentPrice.current;
-                              const expMins = 25; 
-                              const actualEntryTime = Math.floor(Date.now() / 1000); 
+                              const entryPrice = currentPrice.current; const expMins = 25; const actualEntryTime = Math.floor(Date.now() / 1000); 
                               
-                              setSignal({ type: sig.isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice });
-                              addLog(`ВХОД ${sig.isCall ? 'ВВЕРХ' : 'ВНИЗ'} НА 25 МИНУТ.`, true);
+                              setSignal({ type: sig.isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice }); addLog(`ВХОД ${sig.isCall ? 'ВВЕРХ' : 'ВНИЗ'} НА 25 МИНУТ.`, true);
                               enqueueSpeech(`Вход выполнен. Сделка активна.`, `trade-entry-${sig.signalTime}`, 1);
 
-                              let expirySeconds = expMins * 60;
-                              let isLive = true;
-                              let finalExitTime = actualEntryTime + (expMins * 60);
+                              let expirySeconds = expMins * 60; let isLive = true; let finalExitTime = actualEntryTime + (expMins * 60);
                               
                               try {
-                                  liveMarkersRef.current.push({
-                                      time: data[data.length - 1].time,
-                                      position: sig.isCall ? 'belowBar' : 'aboveBar',
-                                      color: '#8b5cf6',
-                                      shape: 'square',
-                                      text: 'ENTRY',
-                                      size: 0.5
-                                  });
+                                  liveMarkersRef.current.push({ time: data[data.length - 1].time, position: sig.isCall ? 'belowBar' : 'aboveBar', color: '#8b5cf6', shape: 'square', text: 'ENTRY', size: 0.5 });
                                   updateChartMarkers();
                               } catch (e) {}
 
                               setActiveLiveTrade({
-                                  id: `live_trade_${sig.signalTime}`,
-                                  type: sig.isCall ? 'CALL' : 'PUT',
-                                  signalTime: sig.signalTime,
-                                  entryTime: actualEntryTime, 
-                                  exitTime: finalExitTime,
-                                  entryPrice: entryPrice,
-                                  exitPrice: entryPrice,
-                                  isLive: true,
-                                  betAmount: TRADE_MONEY_CONFIG.stake,
-                                  reason: sig.signalType,
-                                  quality: sig.score,
-                                  mtfStr: sig.mtfConfStr
+                                  id: `live_trade_${sig.signalTime}`, type: sig.isCall ? 'CALL' : 'PUT', signalTime: sig.signalTime, entryTime: actualEntryTime, 
+                                  exitTime: finalExitTime, entryPrice: entryPrice, exitPrice: entryPrice, isLive: true, betAmount: TRADE_MONEY_CONFIG.stake, reason: sig.signalType, quality: sig.score, mtfStr: sig.mtfConfStr
                               });
 
                               let midTradeSpoken = false;
 
                               while(expirySeconds > 0 && engineActive.current) {
                                 setCountdown(expirySeconds);
-                                
                                 if (expirySeconds === 750 && !midTradeSpoken) { 
                                     midTradeSpoken = true;
                                     const isWinningNow = (sig.isCall && currentPrice.current > entryPrice) || (!sig.isPut && currentPrice.current < entryPrice);
-                                    if (isWinningNow) {
-                                        enqueueSpeech('Мы на середине сделки. Сейчас сигнал идёт в плюс. Продолжаем спокойно наблюдать.', `trade-mid-win-${actualEntryTime}`, 2);
-                                    } else if (currentPrice.current === entryPrice) {
-                                        enqueueSpeech('Мы на середине сделки. Цена рядом с точкой входа. Ждём завершения экспирации.', `trade-mid-tie-${actualEntryTime}`, 2);
-                                    } else {
-                                        enqueueSpeech('Мы на середине сделки. Сейчас сигнал временно идёт в минус. Работаем по системе.', `trade-mid-loss-${actualEntryTime}`, 2);
-                                    }
+                                    if (isWinningNow) enqueueSpeech('Мы на середине сделки. Сейчас сигнал идёт в плюс. Продолжаем спокойно наблюдать.', `trade-mid-win-${actualEntryTime}`, 2);
+                                    else if (currentPrice.current === entryPrice) enqueueSpeech('Мы на середине сделки. Цена рядом с точкой входа. Ждём завершения экспирации.', `trade-mid-tie-${actualEntryTime}`, 2);
+                                    else enqueueSpeech('Мы на середине сделки. Сейчас сигнал временно идёт в минус. Работаем по системе.', `trade-mid-loss-${actualEntryTime}`, 2);
                                 }
 
-                                await new Promise(r => setTimeout(r, 1000));
-                                expirySeconds--;
+                                await new Promise(r => setTimeout(r, 1000)); expirySeconds--;
                                 
                                 if (expirySeconds % 2 === 0) {
                                     try {
                                         const liveData = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
                                         if (liveData && liveData.length > 0) {
-                                            lastDataTimeRef.current = Date.now();
-                                            const tick = liveData[liveData.length - 1];
+                                            lastDataTimeRef.current = Date.now(); const tick = liveData[liveData.length - 1];
                                             currentPrice.current = tick.close;
                                             if (candleSeries.current) { try { candleSeries.current.update(tick); } catch(e){} }
                                             setActiveLiveTrade(prev => prev ? { ...prev, exitPrice: tick.close } : null);
@@ -1858,74 +1495,43 @@
                               
                               if (!engineActive.current) break;
 
-                              isLive = false;
-                              setCountdown(null);
-                              updateStatus('АНАЛИЗ РЕЗУЛЬТАТА', 'text-slate-500');
+                              isLive = false; setCountdown(null); updateStatus('АНАЛИЗ РЕЗУЛЬТАТА', 'text-slate-500');
 
                               const resultData = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
                               let finalPrice = entryPrice;
                               if (resultData && resultData.length > 0) {
-                                  lastDataTimeRef.current = Date.now();
-                                  finalPrice = resultData[resultData.length - 1].close;
-                                  finalExitTime = resultData[resultData.length - 1].time;
+                                  lastDataTimeRef.current = Date.now(); finalPrice = resultData[resultData.length - 1].close; finalExitTime = resultData[resultData.length - 1].time;
                               }
                               
                               let result = "LOSS";
-                              if ((sig.isCall && finalPrice > entryPrice) || (sig.isPut && finalPrice < entryPrice) || finalPrice === entryPrice) {
-                                  result = "WIN";
-                              }
+                              if ((sig.isCall && finalPrice > entryPrice) || (sig.isPut && finalPrice < entryPrice) || finalPrice === entryPrice) result = "WIN";
 
                               setActiveLiveTrade(null); 
                               setTradesHistory(prev => {
                                   const updated = [...prev, { 
-                                      id: `live_trade_${sig.signalTime}`,
-                                      type: sig.isCall ? 'CALL' : 'PUT',
-                                      signalTime: sig.signalTime,
-                                      entryTime: actualEntryTime, 
-                                      exitTime: finalExitTime,
-                                      entryPrice: entryPrice,
-                                      exitPrice: finalPrice,
-                                      status: "CLOSED",
-                                      result: result,
-                                      betAmount: TRADE_MONEY_CONFIG.stake,
-                                      reason: sig.signalType,
-                                      quality: sig.score,
-                                      mtfStr: sig.mtfConfStr
+                                      id: `live_trade_${sig.signalTime}`, type: sig.isCall ? 'CALL' : 'PUT', signalTime: sig.signalTime, entryTime: actualEntryTime, 
+                                      exitTime: finalExitTime, entryPrice: entryPrice, exitPrice: finalPrice, status: "CLOSED", result: result, betAmount: TRADE_MONEY_CONFIG.stake, reason: sig.signalType, quality: sig.score, mtfStr: sig.mtfConfStr
                                   }];
                                   return updated;
                               });
 
                               try {
-                                  liveMarkersRef.current.push({
-                                      time: finalExitTime, position: sig.isCall ? 'belowBar' : 'aboveBar', color: result==="WIN" ? '#10b981' : '#f43f5e', shape: 'square', text: 'EXIT', size: 0.5
-                                  });
+                                  liveMarkersRef.current.push({ time: finalExitTime, position: sig.isCall ? 'belowBar' : 'aboveBar', color: result==="WIN" ? '#10b981' : '#f43f5e', shape: 'square', text: 'EXIT', size: 0.5 });
                                   updateChartMarkers();
                               } catch (e) {}
 
                               if (result === "WIN") {
-                                consecutiveLossesRef.current = 0;
-                                playSound('win');
-                                addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
+                                consecutiveLossesRef.current = 0; playSound('win'); addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
                                 await speakAsync(`Сделка закрылась в плюс. Отличный результат.`, `trade-result-win-${actualEntryTime}`, 1);
                               } else {
-                                consecutiveLossesRef.current++;
-                                playSound('loss');
-                                addLog(`РЕЗУЛЬТАТ: МИНУС (-).`);
+                                consecutiveLossesRef.current++; playSound('loss'); addLog(`РЕЗУЛЬТАТ: МИНУС (-).`);
                                 await speakAsync(`Сделка закрылась в минус. Ничего страшного. Работаем по системе.`, `trade-result-loss-${actualEntryTime}`, 1);
                               }
 
-                              setSignal(null);
-                              signalPhaseRef.current = 'NONE';
-                              setSignalPhase('NONE');
-                              setMetrics(prev => ({ ...prev, smartMoney: 0 }));
-                              zoneStateRef.current = 'OUT';
-                              setZoneState('OUT');
-                              zoneCooldownUntilRef.current = Date.now() + 60000;
+                              setSignal(null); signalPhaseRef.current = 'NONE'; setSignalPhase('NONE'); setMetrics(prev => ({ ...prev, smartMoney: 0 }));
+                              zoneStateRef.current = 'OUT'; setZoneState('OUT'); zoneCooldownUntilRef.current = Date.now() + 60000;
                               
-                              syncModeView();
-                              lastEvaluatedCandleTimeRef.current = evalCandleTime;
-                              await new Promise(r => setTimeout(r, 1500));
-                              break; 
+                              syncModeView(); lastEvaluatedCandleTimeRef.current = evalCandleTime; await new Promise(r => setTimeout(r, 1500)); break; 
                           } else {
                               if (sig.reason && !sig.reason.includes('No raw signal') && !sig.reason.includes('Missing indicators') && !sig.reason.includes('PARITY_MISMATCH')) {
                                   addLog(`Live Rejected: ${sig.reason} (${sig.score||0})`, true);
@@ -1935,32 +1541,18 @@
                       }
                     }
                   }
-                  
                   await new Promise(r => setTimeout(r, 2000)); 
               } catch (e) {
-                  addLog("ПЕРЕЗАПУСК РАДАРА...", true);
-                  await new Promise(r => setTimeout(r, 3000));
+                  addLog("ПЕРЕЗАПУСК РАДАРА...", true); await new Promise(r => setTimeout(r, 3000));
               }
             }
           };
 
           const handleLaunch = () => {
-              const AudioContext = window.AudioContext || window.webkitAudioContext;
-              audioCtx.current = new AudioContext();
-              const osc = audioCtx.current.createOscillator();
-              osc.connect(audioCtx.current.destination);
-              osc.start(0); osc.stop(0.01);
-
-              if (window.speechSynthesis) {
-                  const unlockUtterance = new SpeechSynthesisUtterance('');
-                  window.speechSynthesis.speak(unlockUtterance);
-              }
-
-              setIsTransitioning(true);
-              setTimeout(() => {
-                  setIsStarted(true);
-                  runTerminalEngine();
-              }, 1000); 
+              const AudioContext = window.AudioContext || window.webkitAudioContext; audioCtx.current = new AudioContext();
+              const osc = audioCtx.current.createOscillator(); osc.connect(audioCtx.current.destination); osc.start(0); osc.stop(0.01);
+              if (window.speechSynthesis) { const unlockUtterance = new SpeechSynthesisUtterance(''); window.speechSynthesis.speak(unlockUtterance); }
+              setIsTransitioning(true); setTimeout(() => { setIsStarted(true); runTerminalEngine(); }, 1000); 
           };
 
           if (!isStarted) {
@@ -1979,10 +1571,7 @@
                         <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-transparent pointer-events-none"></div>
                         <Cpu size={48} className="text-cyan-400 mb-6 drop-shadow-[0_0_15px_rgba(34,211,238,0.8)] animate-pulse" />
                         <h3 className="text-xl md:text-2xl text-white font-bold tracking-widest oswald-font mb-8">TERMINAL PRO MAX</h3>
-                        <button
-                            onClick={handleLaunch}
-                            className="w-full py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white tracking-[0.3em] font-bold text-sm md:text-base rounded-xl transition-all duration-300 shadow-[0_10px_30px_rgba(34,211,238,0.4)] hover:shadow-[0_10px_40px_rgba(34,211,238,0.6)] border border-cyan-400/50 uppercase oswald-font relative overflow-hidden group"
-                        >
+                        <button onClick={handleLaunch} className="w-full py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white tracking-[0.3em] font-bold text-sm md:text-base rounded-xl transition-all duration-300 shadow-[0_10px_30px_rgba(34,211,238,0.4)] hover:shadow-[0_10px_40px_rgba(34,211,238,0.6)] border border-cyan-400/50 uppercase oswald-font relative overflow-hidden group">
                             <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out skew-x-12"></div>
                             <span className="relative z-10">Запустить систему</span>
                         </button>
@@ -2019,9 +1608,7 @@
                             <span className="text-slate-900 font-mono font-black">${q.price < 1 ? q.price.toFixed(4) : q.price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                             <span className="w-1 h-1 rounded-full bg-cyan-500/30 mx-4"></span>
                           </span>
-                        )) : (
-                            <span className="text-slate-400 animate-pulse">ОБНОВЛЕНИЕ КОТИРОВОК...</span>
-                        )}
+                        )) : (<span className="text-slate-400 animate-pulse">ОБНОВЛЕНИЕ КОТИРОВОК...</span>)}
                       </div>
                     ))}
                   </div>
@@ -2029,17 +1616,14 @@
 
                 <div className="flex flex-col justify-center items-end bg-slate-100 border border-slate-200/50 px-2 py-0.5 rounded-md shadow-inner shrink-0 relative z-20">
                     <div className="flex items-center gap-2 text-[8px] md:text-[9px] mono-font tracking-widest font-bold">
-                        <span className="text-slate-500">SOURCE: BINANCE</span>
-                        <div className="w-[1px] h-3 bg-slate-300"></div>
-                        <span className="flex items-center gap-1">
-                            STATUS: <span className={dataHealth.status === 'LIVE' ? 'text-emerald-600' : 'text-rose-600 animate-pulse'}>{dataHealth.status}</span>
-                        </span>
+                        <span className="text-slate-500">SOURCE: BINANCE</span><div className="w-[1px] h-3 bg-slate-300"></div>
+                        <span className="flex items-center gap-1">STATUS: <span className={dataHealth.status === 'LIVE' ? 'text-emerald-600' : 'text-rose-600 animate-pulse'}>{dataHealth.status}</span></span>
                     </div>
                 </div>
-
               </div>
 
-              <header className="h-auto md:h-16 py-2 md:py-0 flex flex-col md:flex-row items-start md:items-center justify-between px-3 md:px-6 shrink-0 z-40 gap-1 md:gap-0 mt-2">
+              {/* УЛУЧШЕННЫЙ HEADER С ИНТЕГРИРОВАННОЙ КНОПКОЙ ТОРГОВЛИ */}
+              <header className="h-auto md:h-16 py-2 md:py-0 flex flex-col md:flex-row items-start md:items-center justify-between px-3 md:px-6 shrink-0 z-40 gap-2 md:gap-0 mt-2">
                 <div className="flex flex-col justify-center w-full md:w-auto">
                   <div className="flex justify-between items-center md:block">
                       <h1 className="text-2xl md:text-3xl text-slate-900 leading-none font-bold flex items-center gap-2 oswald-font tracking-wider">
@@ -2054,9 +1638,21 @@
                     Алгоритм SMC • Анализ Ликвидности
                   </div>
                 </div>
-                <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-1 md:gap-1.5">
-                  <div className="text-xs md:text-sm text-white px-4 py-1.5 border border-white/50 bg-gradient-to-r from-blue-600 to-cyan-500 shadow-[0_5px_20px_rgba(14,165,233,0.3)] rounded-lg oswald-font tracking-widest hidden md:block font-bold">
-                    {appPhase}
+                
+                {/* МОБИЛЬНАЯ ВЕРСИЯ КНОПКИ */}
+                <div className="w-full flex md:hidden mb-1 mt-1">
+                    <BrokerButton />
+                </div>
+
+                <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-2 md:gap-1.5">
+                  <div className="flex items-center gap-3">
+                      {/* ДЕСКТОПНАЯ ВЕРСИЯ КНОПКИ */}
+                      <div className="hidden md:block">
+                          <BrokerButton />
+                      </div>
+                      <div className="text-xs md:text-sm text-white px-4 py-1.5 border border-white/50 bg-gradient-to-r from-blue-600 to-cyan-500 shadow-[0_5px_20px_rgba(14,165,233,0.3)] rounded-lg oswald-font tracking-widest hidden md:block font-bold">
+                        {appPhase}
+                      </div>
                   </div>
                   <div className="flex gap-4 items-center tracking-wider w-full md:w-auto justify-between md:justify-end">
                     <span className="text-[9px] md:text-[10px] text-slate-600 flex items-center gap-1.5 font-bold uppercase border border-slate-300 px-2 py-0.5 rounded-full bg-white/50">
@@ -2072,17 +1668,13 @@
                 
                 <div className="w-full md:flex-1 h-[50vh] md:h-full glass-panel-heavy rounded-3xl md:rounded-[2.5rem] relative overflow-hidden flex flex-col shrink-0">
                   
-                  {/* SCREENER VIEW (WIDER) */}
+                  {/* SCREENER VIEW */}
                   <div className={`absolute inset-0 z-30 transition-all duration-700 bg-transparent flex items-center justify-center p-4 md:p-8 ${viewMode === 'SCREENER' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                    
                     <div className="card-3d-wrapper w-full max-w-[95%] xl:max-w-[90%] h-[45vh] md:h-[65vh] flex">
                        <div className="card-3d relative w-full h-full flex flex-col p-5 md:p-8 rounded-[2.5rem]">
-                          
                           <div className="flex justify-between items-start mb-6 md:mb-8 relative z-10">
                               <div className="flex items-center gap-5">
-                                  <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-blue-600 to-cyan-400 text-white rounded-3xl flex items-center justify-center font-bold text-3xl md:text-5xl shadow-[0_15px_30px_rgba(14,165,233,0.4)] border border-white/60">
-                                      ₿
-                                  </div>
+                                  <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-blue-600 to-cyan-400 text-white rounded-3xl flex items-center justify-center font-bold text-3xl md:text-5xl shadow-[0_15px_30px_rgba(14,165,233,0.4)] border border-white/60">₿</div>
                                   <div>
                                       <h2 className="text-3xl md:text-5xl font-black text-slate-900 oswald-font tracking-wider leading-none drop-shadow-sm">BITCOIN</h2>
                                       <span className="text-base md:text-xl font-bold text-cyan-700 tracking-[0.2em] uppercase mt-2 inline-block bg-cyan-100/50 px-3 py-1 rounded-lg border border-cyan-200">BTC/USDT • {currentTF}</span>
@@ -2109,10 +1701,8 @@
                                   <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-bounce shadow-[0_0_8px_rgba(96,165,250,0.6)]" style={{animationDelay: '300ms'}}></div>
                               </div>
                           </div>
-                          
                        </div>
                     </div>
-
                   </div>
 
                   {/* DETAILS VIEW (CHARTS) */}
@@ -2140,7 +1730,7 @@
                     <div className="flex-1 relative w-full mt-32 md:mt-36 flex flex-col gap-2 px-4 pb-4 md:px-5 md:pb-5">
                         <div className="flex-1 relative w-full rounded-3xl overflow-hidden shadow-[inset_0_5px_20px_rgba(0,0,0,0.05)] bg-white/90 border border-white">
                             <div ref={chartContainerRef} className="absolute inset-0" />
-                            <ChartOverlays chart={chartInstance.current} series={candleSeries.current} trades={activeLiveTrade ? [...tradesHistory, activeLiveTrade] : tradesHistory} />
+                            <ChartOverlays chart={chartInstance.current} series={candleSeries.current} trades={activeLiveTrade ? [...tradesHistory, activeLiveTrade] : tradesHistory} zoneInfo={zoneInfo} />
                         </div>
                     </div>
                   </div>
@@ -2160,7 +1750,6 @@
 
                   <div className="flex-1 flex flex-col p-3 md:p-4 gap-3 md:gap-4 overflow-y-hidden relative z-10">
                     
-                    {/* MTF CONTEXT UI BLOCK */}
                     <div className="glass-card rounded-2xl p-2 shrink-0 border-white bg-white/80 shadow-inner flex flex-col justify-center">
                         <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest text-center border-b border-slate-200/50 pb-1.5 mb-1.5 oswald-font">MTF CONTEXT FILTER</div>
                         <div className="flex justify-between items-center px-1">
@@ -2216,7 +1805,6 @@
                       </div>
                     </div>
 
-                    {/* FINANCES & STATS PANEL (FIXED FLAT STAKE) */}
                     <div className="glass-card border rounded-3xl p-4 flex flex-col gap-2 shrink-0 relative overflow-hidden transition-all duration-700 bg-white/90 border-white">
                         <div className="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full blur-2xl pointer-events-none"></div>
                         
@@ -2253,7 +1841,6 @@
                         </div>
                     </div>
 
-                    {/* ENTRY AND EXPIRATION */}
                     <div className="glass-card rounded-2xl p-4 flex justify-between items-center shrink-0 relative overflow-hidden shadow-md border-white bg-gradient-to-r from-white to-cyan-50/80">
                        <div className="absolute right-0 top-0 bottom-0 w-2/3 bg-[radial-gradient(ellipse_at_right,_rgba(14,165,233,0.1),_transparent)] pointer-events-none"></div>
                        <div className="flex flex-col relative z-10">
@@ -2274,23 +1861,6 @@
                        </div>
                     </div>
 
-                    {/* BROKER BUTTON */}
-                    <div className="relative shrink-0 mb-1 mt-1 z-20">
-                        <a href="https://intrade32.bar/311164" target="_blank" rel="noopener noreferrer" className="broker-btn group relative w-full py-3 md:py-3.5 rounded-2xl flex items-center justify-center overflow-hidden cursor-pointer no-underline block">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-700 ease-in-out skew-x-12"></div>
-                            <span className="relative z-10 text-white font-black tracking-widest text-[11px] md:text-sm oswald-font uppercase drop-shadow-md flex items-center gap-2">
-                                <Zap size={16} className="animate-pulse text-cyan-200" />
-                                ТОРГОВАТЬ ЗДЕСЬ, ЧТОБЫ ЗАРАБОТАТЬ
-                            </span>
-                        </a>
-                        
-                        <div className="absolute -bottom-1.5 right-2 md:-right-1 z-50 pointer-events-none animated-cursor">
-                            <MousePointer size={24} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
-                            <div className="click-ripple"></div>
-                        </div>
-                    </div>
-
-                    {/* PURE 5M DEBUG PANEL */}
                     <div className="flex-1 glass-card rounded-2xl overflow-hidden flex flex-col justify-start border-white bg-white shadow-[inset_0_2px_15px_rgba(0,0,0,0.02)]">
                       <div className="bg-slate-100/80 px-3 py-1.5 flex justify-between items-center border-b border-slate-200/60 mb-1 shrink-0">
                           <span className="text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1"><BugIcon size={10}/> PURE 5M DEBUG</span>
@@ -2324,14 +1894,11 @@
                 </div>
                 
                 <div className="flex items-center gap-3 md:gap-4 oswald-font">
-                  
                   <div className="silver-badge flex flex-col items-center justify-center px-2.5 py-1 rounded-lg">
                       <span className="text-[6px] md:text-[7px] text-slate-500 font-black tracking-[0.2em] uppercase leading-none mb-0.5">PRO MAX CREATOR</span>
                       <span className="text-[10px] md:text-[11px] font-black tracking-widest silver-text leading-none">SLAVA GORDEEV</span>
                   </div>
-                  
                   <span className="text-slate-300 text-[10px] hidden md:block">|</span>
-                  
                   <span className="text-slate-500 text-[10px] md:text-xs tracking-widest font-bold hidden sm:block uppercase">ЛИЦЕНЗИЯ:</span>
                   <span className="text-white text-[10px] md:text-xs px-3 py-1.5 rounded-lg bg-slate-900 tracking-widest font-bold text-center shadow-[0_4px_10px_rgba(15,23,42,0.2)] border border-slate-700">
                     КРИПТО ИНВЕСТ PRO MAX
