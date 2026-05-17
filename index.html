@@ -153,24 +153,10 @@
             box-shadow: 0 8px 25px -5px rgba(15, 23, 42, 0.04), inset 0 1px 3px rgba(255, 255, 255, 1);
         }
 
-        /* ПУЛЬСАЦИЯ КОНТЕЙНЕРА ГРАФИКА */
-        .zone-active-support {
-            box-shadow: inset 0 0 35px rgba(16, 185, 129, 0.25) !important;
-            border-color: rgba(16, 185, 129, 0.4) !important;
-            animation: pulse-border-support 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        .zone-active-resistance {
-            box-shadow: inset 0 0 35px rgba(244, 63, 94, 0.25) !important;
-            border-color: rgba(244, 63, 94, 0.4) !important;
-            animation: pulse-border-resistance 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        @keyframes pulse-border-support {
-            0%, 100% { box-shadow: inset 0 0 35px rgba(16, 185, 129, 0.25); }
-            50% { box-shadow: inset 0 0 55px rgba(16, 185, 129, 0.45); }
-        }
-        @keyframes pulse-border-resistance {
-            0%, 100% { box-shadow: inset 0 0 35px rgba(244, 63, 94, 0.25); }
-            50% { box-shadow: inset 0 0 55px rgba(244, 63, 94, 0.45); }
+        @keyframes pulse-zone {
+            0% { opacity: 0.15; }
+            50% { opacity: 0.5; }
+            100% { opacity: 0.15; }
         }
 
         .text-gradient {
@@ -243,17 +229,6 @@
             40% { transform: scale(3.5); opacity: 0; }
             100% { transform: scale(3.5); opacity: 0; }
         }
-
-        .glass-box-trade {
-            background: linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.05));
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 10px 40px 0 rgba(15, 23, 42, 0.1), inset 0 1px 2px rgba(255, 255, 255, 0.6);
-            transition: background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease, opacity 0.5s ease;
-        }
-        .trade-win { background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05)); border-color: rgba(16,185,129,0.3); }
-        .trade-loss { background: linear-gradient(135deg, rgba(244,63,94,0.15), rgba(244,63,94,0.05)); border-color: rgba(244,63,94,0.3); }
 
     </style>
 </head>
@@ -451,6 +426,7 @@
             return 'NEUTRAL';
         }
 
+        /* ================= АГРЕССИВНЫЙ SIGNAL ENGINE ================= */
         function evaluateSignalEngine(data, evalIdx, liqMap, atrMap, mtfContext, engineState) {
             if (evalIdx < 100) return { valid: false, reason: 'Not enough data', score: 0 };
 
@@ -496,23 +472,24 @@
 
             let isCall = false; let isPut = false; let signalType = ''; let baseScore = 0; let rawSignal = false;
 
-            if (touchedTop && returnedInsideTop && structureBreakTop) { isPut = true; signalType = 'Primary Sweep'; baseScore = 45; rawSignal = true; } 
-            else if (isNearTop && upperWick > body * 1.1 && isRedCandle) { isPut = true; signalType = 'Wick Rejection'; baseScore = 38; rawSignal = true; } 
-            else if (currCandle.high >= cUpper && currCandle.close < cUpper && upperWick > cAtr * 0.2) { isPut = true; signalType = 'Edge Reaction'; baseScore = 35; rawSignal = true; } 
-            else if (isNearTop && prevCandle.high > cUpper && isRedCandle && currCandle.close < prevCandle.close) { isPut = true; signalType = 'Liquidity Return'; baseScore = 40; rawSignal = true; }
+            // БАЗОВЫЕ ОЧКИ ПОДНЯТЫ ЧТОБЫ ЛЕГЧЕ ПРОХОДИТЬ ПОРОГ
+            if (touchedTop && returnedInsideTop && structureBreakTop) { isPut = true; signalType = 'Primary Sweep'; baseScore = 50; rawSignal = true; } 
+            else if (isNearTop && upperWick > body * 1.1 && isRedCandle) { isPut = true; signalType = 'Wick Rejection'; baseScore = 45; rawSignal = true; } 
+            else if (currCandle.high >= cUpper && currCandle.close < cUpper && upperWick > cAtr * 0.2) { isPut = true; signalType = 'Edge Reaction'; baseScore = 42; rawSignal = true; } 
+            else if (isNearTop && prevCandle.high > cUpper && isRedCandle && currCandle.close < prevCandle.close) { isPut = true; signalType = 'Liquidity Return'; baseScore = 45; rawSignal = true; }
 
-            if (touchedBot && returnedInsideBot && structureBreakBot) { isCall = true; signalType = 'Primary Sweep'; baseScore = 45; rawSignal = true; } 
-            else if (isNearBot && lowerWick > body * 1.1 && isGreenCandle) { isCall = true; signalType = 'Wick Rejection'; baseScore = 38; rawSignal = true; } 
-            else if (currCandle.low <= cLower && currCandle.close > cLower && lowerWick > cAtr * 0.2) { isCall = true; signalType = 'Edge Reaction'; baseScore = 35; rawSignal = true; } 
-            else if (isNearBot && prevCandle.low < cLower && isGreenCandle && currCandle.close > prevCandle.close) { isCall = true; signalType = 'Liquidity Return'; baseScore = 40; rawSignal = true; }
+            if (touchedBot && returnedInsideBot && structureBreakBot) { isCall = true; signalType = 'Primary Sweep'; baseScore = 50; rawSignal = true; } 
+            else if (isNearBot && lowerWick > body * 1.1 && isGreenCandle) { isCall = true; signalType = 'Wick Rejection'; baseScore = 45; rawSignal = true; } 
+            else if (currCandle.low <= cLower && currCandle.close > cLower && lowerWick > cAtr * 0.2) { isCall = true; signalType = 'Edge Reaction'; baseScore = 42; rawSignal = true; } 
+            else if (isNearBot && prevCandle.low < cLower && isGreenCandle && currCandle.close > prevCandle.close) { isCall = true; signalType = 'Liquidity Return'; baseScore = 45; rawSignal = true; }
 
             const strongBodyPut = isRedCandle && body >= cAtr * 0.8 && (currCandle.open - currCandle.close) > (currCandle.high - currCandle.low) * 0.6;
             const strongBodyCall = isGreenCandle && body >= cAtr * 0.8 && (currCandle.close - currCandle.open) > (currCandle.high - currCandle.low) * 0.6;
 
             if (touchedTop && strongBodyPut && !rawSignal) {
-                isPut = true; signalType = 'Momentum Rejection (T2)'; baseScore = 48; rawSignal = true; isCall = false;
+                isPut = true; signalType = 'Momentum Rejection (T2)'; baseScore = 50; rawSignal = true; isCall = false;
             } else if (touchedBot && strongBodyCall && !rawSignal) {
-                isCall = true; signalType = 'Momentum Rejection (T2)'; baseScore = 48; rawSignal = true; isPut = false;
+                isCall = true; signalType = 'Momentum Rejection (T2)'; baseScore = 50; rawSignal = true; isPut = false;
             }
 
             if (!rawSignal) return { valid: false, reason: 'No raw signal pattern', score: 0 };
@@ -523,12 +500,12 @@
                 if (mtfContext.h4 === 'BULLISH') qScore += 15;
                 if (mtfContext.h1 === 'BULLISH') qScore += 15;
                 if (mtfContext.m15 === 'BULLISH') { qScore += 15; mtfConfStr = 'CONFIRM'; }
-                if (mtfContext.h4 === 'BEARISH' || mtfContext.h1 === 'BEARISH') { qScore -= 20; mtfConfStr = 'CONFLICT'; }
+                if (mtfContext.h4 === 'BEARISH' || mtfContext.h1 === 'BEARISH') { qScore -= 10; mtfConfStr = 'CONFLICT'; } // Снижен штраф
             } else {
                 if (mtfContext.h4 === 'BEARISH') qScore += 15;
                 if (mtfContext.h1 === 'BEARISH') qScore += 15;
                 if (mtfContext.m15 === 'BEARISH') { qScore += 15; mtfConfStr = 'CONFIRM'; }
-                if (mtfContext.h4 === 'BULLISH' || mtfContext.h1 === 'BULLISH') { qScore -= 20; mtfConfStr = 'CONFLICT'; }
+                if (mtfContext.h4 === 'BULLISH' || mtfContext.h1 === 'BULLISH') { qScore -= 10; mtfConfStr = 'CONFLICT'; }
             }
 
             if (mtfConfStr === 'WAIT' || mtfContext.h4 === 'LOCAL' || mtfContext.status === 'LOCAL 5M MODE') {
@@ -539,32 +516,32 @@
                 qScore += 5;
             }
 
-            let threshold = (signalType === 'Primary Sweep') ? 48 : 52;
-            if (engineState.consecutiveLosses >= 2) threshold += 8;
+            // АГРЕССИВНО СНИЖЕННЫЕ ПОРОГИ (ВЫСОКАЯ ЧУВСТВИТЕЛЬНОСТЬ)
+            let threshold = (signalType.includes('Primary Sweep') || signalType.includes('Momentum')) ? 45 : 40;
+            if (engineState.consecutiveLosses >= 2) threshold += 5;
 
             const midPoint = cLower + rangeWidth / 2;
             const distToMid = Math.abs(currCandle.close - midPoint);
             
-            if (distToMid > rangeWidth * 0.25) qScore += 5;
-            else { qScore -= 10; rejectReason = 'middle range (soft)'; }
+            if (distToMid > rangeWidth * 0.25) qScore += 10;
+            else { qScore -= 5; rejectReason = 'middle range (soft)'; }
 
             const distTopLate = cUpper - currCandle.close;
             const distBotLate = currCandle.close - cLower;
-            if (isCall && distBotLate > cAtr * 0.45) { qScore -= 15; rejectReason = 'late entry'; }
-            else if (isPut && distTopLate > cAtr * 0.45) { qScore -= 15; rejectReason = 'late entry'; }
-            else { qScore += 5; }
+            if (isCall && distBotLate > cAtr * 0.45) { qScore -= 5; rejectReason = 'late entry'; }
+            else if (isPut && distTopLate > cAtr * 0.45) { qScore -= 5; rejectReason = 'late entry'; }
 
             const candlesSinceLast = (currTime - engineState.lastSignalTime) / (5 * 60); 
             if (candlesSinceLast < 3) {
                 qScore -= 15; rejectReason = 'cooldown (too fast)';
             } else if (candlesSinceLast < 8) {
                 if (Math.abs(currCandle.close - engineState.lastSignalPrice) < cAtr * 0.38) {
-                    qScore -= 20; rejectReason = 'same zone cooldown';
+                    qScore -= 10; rejectReason = 'same zone cooldown';
                 }
             }
 
-            if (isCall && prevCandle.close < prevCandle.open && (prevCandle.open - prevCandle.close) > cAtr * 1.5) { qScore -= 15; rejectReason = 'impulse risk'; }
-            if (isPut && prevCandle.close > prevCandle.open && (prevCandle.close - prevCandle.open) > cAtr * 1.5) { qScore -= 15; rejectReason = 'impulse risk'; }
+            if (isCall && prevCandle.close < prevCandle.open && (prevCandle.open - prevCandle.close) > cAtr * 1.5) { qScore -= 10; rejectReason = 'impulse risk'; }
+            if (isPut && prevCandle.close > prevCandle.open && (prevCandle.close - prevCandle.open) > cAtr * 1.5) { qScore -= 10; rejectReason = 'impulse risk'; }
 
             if (qScore < threshold) {
                 if (!rejectReason) {
@@ -753,38 +730,50 @@
                     if (!chart || !series || !overlayRef.current) return;
                     const timeScale = chart.timeScale();
                     
-                    // --- SYNC PULSE ZONE ---
+                    // --- 1. ПУЛЬСАЦИЯ ЗОНЫ В БУДУЩЕМ (25 MIN AHEAD) ---
                     const pulseBox = overlayRef.current.querySelector('.zone-pulse-indicator');
                     if (pulseBox && zoneInfo) {
-                        const currentLog = timeScale.coordinateToLogical(timeScale.timeToCoordinate(zoneInfo.time));
-                        if (currentLog !== null) {
-                            const xStart = timeScale.logicalToCoordinate(currentLog);
-                            const xEnd = timeScale.logicalToCoordinate(currentLog + 5); // 25 минут (5 свечей вперед)
+                        const xStart = timeScale.timeToCoordinate(zoneInfo.time);
+                        let xEnd = null;
+                        
+                        if (xStart !== null) {
+                            const logIdx = timeScale.coordinateToLogical(xStart);
+                            if (logIdx !== null) {
+                                // 5 свечей вперед (25 мин)
+                                xEnd = timeScale.logicalToCoordinate(logIdx + 5);
+                            }
+                        }
+
+                        // Если не смогли посчитать через logical (нет места справа), аппроксимируем пикселями
+                        if (xStart !== null && xEnd === null) {
+                            const p1 = timeScale.logicalToCoordinate(1);
+                            const p2 = timeScale.logicalToCoordinate(2);
+                            const candlePx = (p2 !== null && p1 !== null) ? Math.abs(p2 - p1) : 10;
+                            xEnd = xStart + (5 * candlePx);
+                        }
+
+                        if (xStart !== null && xEnd !== null) {
                             let yPrice = zoneInfo.type === 'RESISTANCE' ? zoneInfo.top : zoneInfo.bottom;
                             const y = series.priceToCoordinate(yPrice);
 
-                            if (xStart !== null && xEnd !== null && y !== null) {
+                            if (y !== null) {
                                 pulseBox.style.display = 'block';
                                 pulseBox.style.left = `${xStart}px`;
                                 pulseBox.style.width = `${Math.max(xEnd - xStart, 30)}px`;
-                                pulseBox.style.top = `${y - 15}px`; 
-                                pulseBox.style.height = `30px`;
+                                pulseBox.style.top = `${y - 20}px`; 
+                                pulseBox.style.height = `40px`;
 
-                                const inner = pulseBox.querySelector('div');
-                                if (zoneInfo.type === 'RESISTANCE') {
-                                    inner.className = 'absolute inset-0 animate-pulse rounded-full bg-rose-500/20 border-y border-rose-500/60 shadow-[0_0_15px_rgba(244,63,94,0.4)]';
-                                } else {
-                                    inner.className = 'absolute inset-0 animate-pulse rounded-full bg-emerald-500/20 border-y border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.4)]';
-                                }
-                            } else {
-                                pulseBox.style.display = 'none';
+                                pulseBox.className = `zone-pulse-indicator absolute pointer-events-none z-10 rounded-full ${zoneInfo.type === 'RESISTANCE' ? 'bg-rose-500/20' : 'bg-cyan-500/20'}`;
+                                pulseBox.style.animation = 'pulse-zone 2s infinite';
                             }
+                        } else {
+                            pulseBox.style.display = 'none';
                         }
                     } else if (pulseBox) {
                         pulseBox.style.display = 'none';
                     }
 
-                    // --- SYNC TRADE BOXES ---
+                    // --- 2. СТЕКЛЯННЫЕ БОКСЫ СДЕЛОК (GLASS TRADE BOXES) ---
                     const tradeBoxes = overlayRef.current.querySelectorAll('.trade-glass-box');
                     tradeBoxes.forEach(box => {
                         const tradeId = box.dataset.id;
@@ -794,15 +783,22 @@
                         let xEntry = timeScale.timeToCoordinate(trade.entryTime);
                         let xExit = timeScale.timeToCoordinate(trade.exitTime);
 
-                        // Fallback для будущего времени (если xExit еще не отрисован на графике)
+                        // Если сделка активна и конец сделки еще не на графике
                         if (xEntry !== null && xExit === null) {
                             const entryLog = timeScale.coordinateToLogical(xEntry);
                             if (entryLog !== null) {
                                 xExit = timeScale.logicalToCoordinate(entryLog + 5);
                             }
+                            // Если всё равно null (нет правого отступа), используем аппроксимацию
+                            if (xExit === null) {
+                                const p1 = timeScale.logicalToCoordinate(1);
+                                const p2 = timeScale.logicalToCoordinate(2);
+                                const candlePx = (p2 !== null && p1 !== null) ? Math.abs(p2 - p1) : 10;
+                                xExit = xEntry + (5 * candlePx);
+                            }
                         }
 
-                        // Fallback, если xEntry не найден, но есть signalTime (смещение)
+                        // Если не найден вход (напр. смещен), пробуем найти через сигнал
                         if (xEntry === null && trade.signalTime) {
                             const sigCoord = timeScale.timeToCoordinate(trade.signalTime);
                             if (sigCoord !== null) {
@@ -812,20 +808,16 @@
                             }
                         }
                         
-                        if (trade.isLive && xExit === null && xEntry !== null) {
-                            xExit = overlayRef.current.clientWidth;
-                        }
-
                         const yEntry = series.priceToCoordinate(trade.entryPrice);
                         const yExit = series.priceToCoordinate(trade.exitPrice);
                         
-                        if (xEntry !== null && xExit !== null && yEntry !== null && yExit !== null) {
+                        if (xEntry !== null && xExit !== null && yEntry !== null) {
                             box.style.display = 'block';
                             
                             const left = Math.min(xEntry, xExit);
-                            const width = Math.max(Math.abs(xExit - xEntry), 10); 
-                            const maxPriceY = Math.min(yEntry, yExit); 
-                            const minPriceY = Math.max(yEntry, yExit);
+                            const width = Math.max(Math.abs(xExit - xEntry), 15); 
+                            const maxPriceY = Math.min(yEntry, yExit || yEntry); 
+                            const minPriceY = Math.max(yEntry, yExit || yEntry);
                             
                             const top = maxPriceY - 40; 
                             const height = Math.max(80, (minPriceY - maxPriceY) + 80);
@@ -835,56 +827,6 @@
                             box.style.top = `${top}px`;
                             box.style.height = `${height}px`;
                             
-                            const entryDot = box.querySelector('.entry-dot-wrapper');
-                            if (entryDot) {
-                                entryDot.style.top = `${yEntry - top}px`;
-                                entryDot.style.left = xEntry === left ? '0px' : `${width}px`;
-                            }
-                            
-                            const exitDot = box.querySelector('.exit-dot-wrapper');
-                            if (exitDot) {
-                                exitDot.style.top = `${yExit - top}px`;
-                                exitDot.style.left = xExit === left ? '0px' : `${width}px`;
-                            }
-
-                            const profitZone = box.querySelector('.profit-zone');
-                            const expiryLine = box.querySelector('.expiry-line');
-                            const profitLabel = box.querySelector('.profit-label');
-                            const yEntryRel = yEntry - top;
-
-                            if (trade.isLive) {
-                                let xExpiryCoord = null;
-                                const entryLog = timeScale.coordinateToLogical(xEntry);
-                                if (entryLog !== null) xExpiryCoord = timeScale.logicalToCoordinate(entryLog + 5);
-
-                                if (expiryLine && xExpiryCoord !== null) {
-                                    expiryLine.style.display = 'block';
-                                    expiryLine.style.left = `${xExpiryCoord - left}px`;
-                                } else if (expiryLine) {
-                                    expiryLine.style.display = 'none';
-                                }
-
-                                if (profitZone && profitLabel) {
-                                    profitZone.style.display = 'block';
-                                    if (trade.type === 'CALL') {
-                                        profitZone.style.top = '0px';
-                                        profitZone.style.height = `${yEntryRel}px`;
-                                        profitZone.style.background = 'linear-gradient(to top, rgba(16,185,129,0.05), rgba(16,185,129,0.25))';
-                                        profitLabel.innerHTML = '▲ ПРОФИТ';
-                                        profitLabel.className = 'profit-label absolute top-1 left-1/2 -translate-x-1/2 text-[9px] font-black tracking-widest px-1 py-0.5 rounded text-emerald-700 bg-emerald-100/80 opacity-100';
-                                    } else {
-                                        profitZone.style.top = `${yEntryRel}px`;
-                                        profitZone.style.height = `${height - yEntryRel}px`;
-                                        profitZone.style.background = 'linear-gradient(to bottom, rgba(244,63,94,0.05), rgba(244,63,94,0.25))';
-                                        profitLabel.innerHTML = '▼ ПРОФИТ';
-                                        profitLabel.className = 'profit-label absolute bottom-1 left-1/2 -translate-x-1/2 text-[9px] font-black tracking-widest px-1 py-0.5 rounded text-rose-700 bg-rose-100/80 opacity-100';
-                                    }
-                                }
-                            } else {
-                                if (expiryLine) expiryLine.style.display = 'none';
-                                if (profitZone) profitZone.style.display = 'none';
-                            }
-
                         } else {
                             box.style.display = 'none';
                         }
@@ -921,55 +863,36 @@
 
             return (
                 <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden" ref={overlayRef}>
-                    <div className="zone-pulse-indicator absolute pointer-events-none z-0" style={{ display: 'none' }}>
-                        <div className="absolute inset-0 animate-pulse rounded-full opacity-50" />
-                    </div>
+                    {/* ЗОНА ПУЛЬСАЦИИ В БУДУЩЕМ */}
+                    <div className="zone-pulse-indicator absolute pointer-events-none z-10" style={{ display: 'none' }}></div>
 
+                    {/* СТЕКЛЯННЫЕ БОКСЫ СДЕЛОК */}
                     {trades.map(trade => {
                         const isWinningLive = trade.isLive ? (trade.type === 'CALL' ? trade.exitPrice > trade.entryPrice : trade.exitPrice < trade.entryPrice) : false;
+                        const borderColor = trade.type === 'CALL' ? 'border-cyan-500' : 'border-rose-500';
+                        const bgStatus = trade.isLive ? (isWinningLive ? 'bg-emerald-500/10' : 'bg-rose-500/10') : (trade.result === "WIN" ? 'bg-emerald-500/20' : 'bg-rose-500/20');
                         
                         return (
                         <div 
                             key={trade.id}
                             data-id={trade.id}
-                            className={`trade-glass-box glass-box-trade absolute pointer-events-auto cursor-help group rounded-xl z-10 transition-colors duration-300 ${
-                                trade.isLive 
-                                    ? (isWinningLive ? 'border-emerald-500/60 shadow-[0_0_25px_rgba(16,185,129,0.25)]' : 'border-rose-500/60 shadow-[0_0_25px_rgba(244,63,94,0.25)]')
-                                    : (trade.result === "WIN" ? 'trade-win hover:bg-emerald-500/20' : 'trade-loss hover:bg-rose-500/20')
-                            }`}
-                            style={{ display: 'none' }}
+                            className={`trade-glass-box absolute pointer-events-auto cursor-help group rounded-xl z-20 transition-colors duration-300 ${borderColor} ${bgStatus}`}
+                            style={{ 
+                                display: 'none', 
+                                background: 'rgba(255, 255, 255, 0.15)', 
+                                backdropFilter: 'blur(4px)', 
+                                WebkitBackdropFilter: 'blur(4px)',
+                                borderWidth: '1px',
+                                borderStyle: 'solid'
+                            }}
                             onMouseEnter={(e) => {
                                 const rect = e.currentTarget.getBoundingClientRect();
                                 setHoveredTrade({ trade, x: rect.left + rect.width / 2, y: rect.top - 10 });
                             }}
                             onMouseLeave={() => setHoveredTrade(null)}
                         >
-                            <div className="profit-zone absolute left-0 right-0 z-0 pointer-events-none transition-all duration-300 rounded-xl overflow-hidden">
-                                 <span className="profit-label"></span>
-                            </div>
-                            <div className="expiry-line absolute top-0 bottom-0 border-l border-dashed border-slate-400/80 z-10 pointer-events-none">
-                                 <span className="absolute -left-3 -top-4 text-[7px] font-black tracking-widest text-slate-500 uppercase bg-white/90 px-1 py-0.5 rounded shadow-sm border border-slate-200">EXPIRY</span>
-                            </div>
-
-                            <div className="entry-dot-wrapper absolute w-0 h-0 z-20 transition-transform duration-300 group-hover:scale-125 flex items-center justify-center">
-                                <div className={`absolute w-3 h-3 -ml-[6px] -mt-[6px] rounded-full shadow-[0_0_15px_currentColor] border-[2px] border-white ${trade.type === 'CALL' ? 'bg-cyan-500 text-cyan-400' : 'bg-orange-500 text-orange-400'}`}></div>
-                                <span className={`absolute -ml-4 -top-7 text-[8px] px-2 py-0.5 rounded-md shadow-lg font-bold uppercase tracking-wider bg-slate-900 border ${trade.type === 'CALL' ? 'text-cyan-400 border-cyan-500/50' : 'text-orange-400 border-orange-500/50'} opacity-0 group-hover:opacity-100 transition-opacity`}>ENTRY</span>
-                            </div>
-
-                            <div className="exit-dot-wrapper absolute w-0 h-0 z-20 transition-transform duration-300 group-hover:scale-125 flex items-center justify-center">
-                                <div className={`absolute w-3 h-3 -ml-[6px] -mt-[6px] rounded-full shadow-[0_0_15px_currentColor] border-[2px] border-white ${
-                                    trade.isLive ? 'bg-blue-500 text-blue-400' : (trade.result === "WIN" ? 'bg-emerald-500 text-emerald-400' : 'bg-rose-500 text-rose-400')
-                                }`}></div>
-                                {trade.isLive && <div className="absolute w-6 h-6 -ml-[12px] -mt-[12px] rounded-full bg-blue-400/40 animate-ping opacity-60"></div>}
-                                <span className={`absolute -ml-4 -top-7 text-[8px] px-2 py-0.5 rounded-md shadow-lg font-bold uppercase tracking-wider bg-slate-900 border ${
-                                    trade.isLive ? 'text-blue-400 border-blue-500/50' : (trade.result === "WIN" ? 'text-emerald-400 border-emerald-500/50' : 'text-rose-400 border-rose-500/50')
-                                } opacity-0 group-hover:opacity-100 transition-opacity`}>
-                                    {trade.isLive ? 'ACTIVE' : 'EXIT'}
-                                </span>
-                            </div>
-
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[9px] font-bold tracking-widest uppercase oswald-font bg-white/95 px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-slate-800 border border-slate-200 pointer-events-none backdrop-blur-md">
-                                {trade.isLive ? 'ACTIVE TRADE' : `25 MIN • ${trade.result === "WIN" ? 'WIN' : 'LOSS'}`}
+                            <div className="absolute top-1 left-1/2 -translate-x-1/2 text-[8px] font-black tracking-widest uppercase text-slate-800 bg-white/90 px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                                25 MIN EXP
                             </div>
                         </div>
                     )})}
@@ -1231,7 +1154,7 @@
                   autoSize: true,
                   layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#475569', fontFamily: 'JetBrains Mono' },
                   grid: { vertLines: { color: 'rgba(148, 163, 184, 0.2)' }, horzLines: { color: 'rgba(148, 163, 184, 0.2)' } },
-                  timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false }, rightPriceScale: { borderVisible: false }
+                  timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false, rightOffset: 5 }, rightPriceScale: { borderVisible: false }
                 });
                 candleSeries.current = mainChart.addCandlestickSeries({ upColor: '#0ea5e9', downColor: '#ef4444', borderVisible: true, borderUpColor: '#0ea5e9', borderDownColor: '#ef4444', wickUpColor: '#0ea5e9', wickDownColor: '#ef4444' });
                 chartInstance.current = mainChart;
@@ -1335,8 +1258,8 @@
                     } else { ScanLedger.set(currTime, evaluatedStatus); }
 
                     if (!sig.valid) {
-                        if (sig.score > 40) {
-                            historicalMarkersRef.current.push({ time: currTime, position: 'inBar', color: 'rgba(148, 163, 184, 0.5)', shape: 'circle', text: 'CHK', size: 0.5 });
+                        if (sig.score > 20) {
+                            historicalMarkersRef.current.push({ time: currTime, position: 'inBar', color: '#94a3b8', shape: 'circle', text: 'CHK', size: 0.8 });
                         }
                         if (sig.reason && !sig.reason.includes('No raw signal') && !sig.reason.includes('Missing indicators') && !sig.reason.includes('Not enough data')) {
                             d_rej++; d_lastRej = `${sig.reason} (${sig.score||0})`;
@@ -1471,6 +1394,8 @@
                           if (sig.valid) {
                               lastSignalTimeRef.current = sig.signalTime; lastSignalPriceRef.current = sig.signalPrice;
                               setMtfContext(prev => ({ ...prev, score: sig.score })); setAsset(cur);
+                              
+                              // ФАЗА 1: ОБЪЯСНЕНИЕ (СТРЕЛОК ЕЩЕ НЕТ)
                               signalPhaseRef.current = 'EXPLAINING'; setSignalPhase('EXPLAINING'); setZoneInfo(null);
                               syncModeView(); playSound('found');
 
@@ -1505,6 +1430,7 @@
                               
                               await speakAsync(`Внимание. Появился сигнал ${directionText}. ${voiceReason}. Идёт подготовка ко входу.`, `signal-detect-${sig.signalTime}`, 1);
 
+                              // ФАЗА 2: ОТСЧЕТ (СТРЕЛОК ЕЩЕ НЕТ)
                               signalPhaseRef.current = 'COUNTDOWN'; setSignalPhase('COUNTDOWN');
                               for(let w=3; w>0; w--) {
                                   setCountdown(w); updateStatus(`ПОДГОТОВКА К ВХОДУ: ${w}С`, 'text-cyan-600 font-bold'); playSound('scan');
@@ -1538,7 +1464,7 @@
                                   syncModeView(); lastEvaluatedCandleTimeRef.current = evalCandleTime; break; 
                               }
 
-                              // ФАЗА ACTIVE (Стрелка + Маркер на графике + Glass Box)
+                              // ФАЗА 3: СДЕЛКА АКТИВНА (ПОЯВЛЯЮТСЯ МАРКЕРЫ, БОКСЫ И СТРЕЛКА В САЙДБАРЕ)
                               playSound('start'); updateStatus('СДЕЛКА АКТИВНА', 'text-blue-700 font-bold');
                               signalPhaseRef.current = 'ACTIVE'; setSignalPhase('ACTIVE');
                               
@@ -1634,9 +1560,9 @@
                               
                               syncModeView(); lastEvaluatedCandleTimeRef.current = evalCandleTime; await new Promise(r => setTimeout(r, 1500)); break; 
                           } else {
-                              if (sig.score > 40 && candleSeries.current) {
+                              if (sig.score > 20 && candleSeries.current) {
                                   try { 
-                                      liveMarkersRef.current.push({ time: evalCandleTime, position: 'inBar', color: 'rgba(148, 163, 184, 0.5)', shape: 'circle', text: 'CHK', size: 0.5 });
+                                      liveMarkersRef.current.push({ time: evalCandleTime, position: 'inBar', color: '#94a3b8', shape: 'circle', text: 'CHK', size: 0.8 });
                                       updateChartMarkers();
                                   } catch (e) {}
                               }
@@ -1745,7 +1671,7 @@
                   </div>
                 </div>
                 
-                <div className="w-full flex md:hidden mb-1 mt-1">
+                <div className="w-full flex md:hidden mb-2 mt-2 sticky top-0 z-[100] bg-[#eef2f6] pb-2 pt-2 border-b border-slate-200 shadow-sm px-1">
                     <BrokerButton />
                 </div>
 
@@ -2019,4 +1945,4 @@
         root.render(<App />);
     </script>
 </body>
-</html>
+    </html>
