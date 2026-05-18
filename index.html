@@ -153,14 +153,23 @@
             box-shadow: 0 8px 25px -5px rgba(15, 23, 42, 0.04), inset 0 1px 3px rgba(255, 255, 255, 1);
         }
 
-        /* Анимация пульсации зоны интереса на графике (Glass Box) */
-        @keyframes overlay-pulse {
-            0% { opacity: 0.15; }
-            50% { opacity: 0.45; }
-            100% { opacity: 0.15; }
+        .zone-active-support {
+            box-shadow: inset 0 0 35px rgba(16, 185, 129, 0.25) !important;
+            border-color: rgba(16, 185, 129, 0.4) !important;
+            animation: pulse-border-support 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
-        .overlay-pulsing-box {
-            animation: overlay-pulse 2s infinite ease-in-out;
+        .zone-active-resistance {
+            box-shadow: inset 0 0 35px rgba(244, 63, 94, 0.25) !important;
+            border-color: rgba(244, 63, 94, 0.4) !important;
+            animation: pulse-border-resistance 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-border-support {
+            0%, 100% { box-shadow: inset 0 0 35px rgba(16, 185, 129, 0.25); }
+            50% { box-shadow: inset 0 0 55px rgba(16, 185, 129, 0.45); }
+        }
+        @keyframes pulse-border-resistance {
+            0%, 100% { box-shadow: inset 0 0 35px rgba(244, 63, 94, 0.25); }
+            50% { box-shadow: inset 0 0 55px rgba(244, 63, 94, 0.45); }
         }
 
         .text-gradient {
@@ -201,16 +210,16 @@
 
         .broker-btn {
             background: linear-gradient(135deg, #0ea5e9 0%, #1d4ed8 100%);
-            box-shadow: 0 4px 15px -3px rgba(14, 165, 233, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.4);
-            border: 1px solid rgba(186, 230, 253, 0.3);
+            box-shadow: 0 8px 25px -5px rgba(14, 165, 233, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(186, 230, 253, 0.3); border-radius: 1.2rem;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .broker-btn:hover {
-            box-shadow: 0 8px 25px -5px rgba(14, 165, 233, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.6);
-            transform: translateY(-1px);
+            box-shadow: 0 12px 35px -5px rgba(14, 165, 233, 0.7), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+            transform: translateY(-2px);
         }
         .broker-btn:active {
-            transform: translateY(1px) scale(0.98);
+            transform: translateY(1px) scale(0.98); box-shadow: 0 4px 10px -5px rgba(14, 165, 233, 0.5);
         }
 
         .animated-cursor { animation: cursor-click 4s infinite; }
@@ -232,6 +241,16 @@
             25% { transform: scale(1); opacity: 0.8; }
             40% { transform: scale(3.5); opacity: 0; }
             100% { transform: scale(3.5); opacity: 0; }
+        }
+
+        @keyframes pulse-zone {
+            0% { opacity: 0.15; }
+            50% { opacity: 0.5; }
+            100% { opacity: 0.15; }
+        }
+
+        .zone-pulse-indicator-mesh {
+            animation: pulse-zone 2s infinite ease-in-out;
         }
     </style>
 </head>
@@ -284,6 +303,7 @@
             let pnl = 0;
             let balance = moneyConfig.startBalance;
             
+            // Calculate exact PNL based on specific bet amounts
             closedTrades.forEach(t => {
                 const betAmount = t.betAmount || 1000;
                 if (t.result === "WIN") {
@@ -298,7 +318,7 @@
             });
 
             const winrate = total > 0 ? Math.round((wins / total) * 100) : 0;
-            return { trades: total, wins, losses, winrate, pnl, balance, payout: moneyConfig.payout };
+            return { trades: total, wins, losses, winrate, pnl: Math.round(pnl), balance: Math.round(balance), payout: moneyConfig.payout };
         }
 
         /* ================= SCAN LEDGER MANAGER (5M SPECIFIC) ================= */
@@ -440,7 +460,16 @@
             return 'NEUTRAL';
         }
 
-        /* ================= STREAMING_CHUNK: 5M SCALPING SIGNAL ENGINE ================= */
+        function get1HTrend(data, idx) {
+            if (idx < 60) return 'NEUTRAL'; 
+            const currentClose = data[idx].close;
+            const prev5HClose = data[idx - 60].close;
+            if (currentClose > prev5HClose) return 'BULLISH';
+            if (currentClose < prev5HClose) return 'BEARISH';
+            return 'NEUTRAL';
+        }
+
+        /* ================= 5M SCALPING SIGNAL ENGINE ================= */
         function evaluateSignalEngine(data, evalIdx, liqMap, atrMap, mtfContext, engineState) {
             if (evalIdx < 100) return { valid: false, reason: 'Not enough data', score: 0 };
 
@@ -470,14 +499,17 @@
             const sweptTop = currCandle.high >= cUpper;
             const sweptBot = currCandle.low <= cLower;
 
-            const isNearTouchTop = (cUpper - currCandle.high) < cAtr * 0.2;
-            const isNearTouchBot = (currCandle.low - cLower) < cAtr * 0.2;
+            // ЗОНА БЛИЗОСТИ: увеличена в 1.5 раза
+            const isNearTouchTop = (cUpper - currCandle.high) < cAtr * 0.6;
+            const isNearTouchBot = (currCandle.low - cLower) < cAtr * 0.6;
             
-            const touchedTop = sweptTop || (isNearTouchTop && upperWick > body);
-            const touchedBot = sweptBot || (isNearTouchBot && lowerWick > body);
+            // WICK RATIO: смягчено на 30%
+            const touchedTop = sweptTop || (isNearTouchTop && upperWick > body * 0.77);
+            const touchedBot = sweptBot || (isNearTouchBot && lowerWick > body * 0.77);
 
-            const isNearTop = (cUpper - currCandle.high) < cAtr * 1.1;
-            const isNearBot = (currCandle.low - cLower) < cAtr * 1.1;
+            // ЗОНА БЛИЗОСТИ: увеличена в 1.5 раза
+            const isNearTop = (cUpper - currCandle.high) < cAtr * 1.8;
+            const isNearBot = (currCandle.low - cLower) < cAtr * 1.8;
 
             const returnedInsideTop = currCandle.close < cUpper;
             const returnedInsideBot = currCandle.close > cLower;
@@ -486,74 +518,80 @@
 
             let isCall = false; let isPut = false; let signalType = ''; let baseScore = 0; let rawSignal = false;
 
-            if (touchedTop && returnedInsideTop && structureBreakTop) { isPut = true; signalType = 'Primary Sweep'; baseScore = 50; rawSignal = true; } 
-            else if (isNearTop && upperWick > body * 1.1 && isRedCandle) { isPut = true; signalType = 'Wick Rejection'; baseScore = 45; rawSignal = true; } 
-            else if (currCandle.high >= cUpper && currCandle.close < cUpper && upperWick > cAtr * 0.2) { isPut = true; signalType = 'Edge Reaction'; baseScore = 42; rawSignal = true; } 
-            else if (isNearTop && prevCandle.high > cUpper && isRedCandle && currCandle.close < prevCandle.close) { isPut = true; signalType = 'Liquidity Return'; baseScore = 45; rawSignal = true; }
+            // WICK RATIO: смягчено (1.1 -> 0.77, 0.2 -> 0.14)
+            if (touchedTop && returnedInsideTop && structureBreakTop) { isPut = true; signalType = 'Primary Sweep'; baseScore = 55; rawSignal = true; } 
+            else if (isNearTop && upperWick > body * 0.77 && isRedCandle) { isPut = true; signalType = 'Wick Rejection'; baseScore = 50; rawSignal = true; } 
+            else if (currCandle.high >= cUpper && currCandle.close < cUpper && upperWick > cAtr * 0.14) { isPut = true; signalType = 'Edge Reaction'; baseScore = 48; rawSignal = true; } 
+            else if (isNearTop && prevCandle.high > cUpper && isRedCandle && currCandle.close < prevCandle.close) { isPut = true; signalType = 'Liquidity Return'; baseScore = 50; rawSignal = true; }
 
-            if (touchedBot && returnedInsideBot && structureBreakBot) { isCall = true; signalType = 'Primary Sweep'; baseScore = 50; rawSignal = true; } 
-            else if (isNearBot && lowerWick > body * 1.1 && isGreenCandle) { isCall = true; signalType = 'Wick Rejection'; baseScore = 45; rawSignal = true; } 
-            else if (currCandle.low <= cLower && currCandle.close > cLower && lowerWick > cAtr * 0.2) { isCall = true; signalType = 'Edge Reaction'; baseScore = 42; rawSignal = true; } 
-            else if (isNearBot && prevCandle.low < cLower && isGreenCandle && currCandle.close > prevCandle.close) { isCall = true; signalType = 'Liquidity Return'; baseScore = 45; rawSignal = true; }
+            if (touchedBot && returnedInsideBot && structureBreakBot) { isCall = true; signalType = 'Primary Sweep'; baseScore = 55; rawSignal = true; } 
+            else if (isNearBot && lowerWick > body * 0.77 && isGreenCandle) { isCall = true; signalType = 'Wick Rejection'; baseScore = 50; rawSignal = true; } 
+            else if (currCandle.low <= cLower && currCandle.close > cLower && lowerWick > cAtr * 0.14) { isCall = true; signalType = 'Edge Reaction'; baseScore = 48; rawSignal = true; } 
+            else if (isNearBot && prevCandle.low < cLower && isGreenCandle && currCandle.close > prevCandle.close) { isCall = true; signalType = 'Liquidity Return'; baseScore = 50; rawSignal = true; }
 
-            const strongBodyPut = isRedCandle && body >= cAtr * 0.8 && (currCandle.open - currCandle.close) > (currCandle.high - currCandle.low) * 0.6;
-            const strongBodyCall = isGreenCandle && body >= cAtr * 0.8 && (currCandle.close - currCandle.open) > (currCandle.high - currCandle.low) * 0.6;
+            // СМЯГЧЕНИЕ ТРЕБОВАНИЙ К ТЕЛУ СВЕЧИ
+            const strongBodyPut = isRedCandle && body >= cAtr * 0.7 && (currCandle.open - currCandle.close) > (currCandle.high - currCandle.low) * 0.42;
+            const strongBodyCall = isGreenCandle && body >= cAtr * 0.7 && (currCandle.close - currCandle.open) > (currCandle.high - currCandle.low) * 0.42;
 
             if (touchedTop && strongBodyPut && !rawSignal) {
-                isPut = true; signalType = 'Momentum Rejection (T2)'; baseScore = 50; rawSignal = true; isCall = false;
+                isPut = true; signalType = 'Momentum Rejection (T2)'; baseScore = 55; rawSignal = true; isCall = false;
             } else if (touchedBot && strongBodyCall && !rawSignal) {
-                isCall = true; signalType = 'Momentum Rejection (T2)'; baseScore = 50; rawSignal = true; isPut = false;
+                isCall = true; signalType = 'Momentum Rejection (T2)'; baseScore = 55; rawSignal = true; isPut = false;
             }
 
             if (!rawSignal) return { valid: false, reason: 'No raw signal pattern', score: 0 };
 
             let qScore = baseScore; let mtfConfStr = 'WAIT'; let rejectReason = '';
 
+            // MTF КАК СОВЕТНИК: Снижены штрафы за конфликт
             if (isCall) {
                 if (mtfContext.h4 === 'BULLISH') qScore += 15;
                 if (mtfContext.h1 === 'BULLISH') qScore += 15;
                 if (mtfContext.m15 === 'BULLISH') { qScore += 15; mtfConfStr = 'CONFIRM'; }
-                if (mtfContext.h4 === 'BEARISH' || mtfContext.h1 === 'BEARISH') { qScore -= 10; mtfConfStr = 'CONFLICT'; }
+                if (mtfContext.h4 === 'BEARISH' || mtfContext.h1 === 'BEARISH') { qScore -= 3; mtfConfStr = 'CONFLICT'; }
             } else {
                 if (mtfContext.h4 === 'BEARISH') qScore += 15;
                 if (mtfContext.h1 === 'BEARISH') qScore += 15;
                 if (mtfContext.m15 === 'BEARISH') { qScore += 15; mtfConfStr = 'CONFIRM'; }
-                if (mtfContext.h4 === 'BULLISH' || mtfContext.h1 === 'BULLISH') { qScore -= 10; mtfConfStr = 'CONFLICT'; }
+                if (mtfContext.h4 === 'BULLISH' || mtfContext.h1 === 'BULLISH') { qScore -= 3; mtfConfStr = 'CONFLICT'; }
             }
 
             if (mtfConfStr === 'WAIT' || mtfContext.h4 === 'LOCAL' || mtfContext.status.includes('LOCAL')) {
-                mtfConfStr = 'LOCAL 5M'; qScore += 20; 
+                mtfConfStr = 'LOCAL 5M'; qScore += 25; 
             }
 
             if (mtfContext.h4 === 'NEUTRAL' && mtfContext.h1 === 'NEUTRAL') {
-                qScore += 5;
+                qScore += 10;
             }
 
-            let threshold = (signalType.includes('Primary Sweep') || signalType.includes('Momentum')) ? 45 : 40;
+            // ПОРОГИ TIER 1 / TIER 2 + DEBUG РЕЖИМ (-15%)
+            let baseThreshold = (signalType.includes('Primary Sweep') || signalType.includes('Momentum')) ? 48 : 51;
+            let threshold = baseThreshold * 0.85;
 
-            const midPoint = cLower + rangeWidth / 2;
-            const distToMid = Math.abs(currCandle.close - midPoint);
-            
-            if (distToMid > rangeWidth * 0.25) qScore += 10;
-            else { qScore -= 5; rejectReason = 'middle range (soft)'; }
-
+            // СЕРЕДИНА ДИАПАЗОНА: Снижены штрафы
             const distTopLate = cUpper - currCandle.close;
             const distBotLate = currCandle.close - cLower;
-            if (isCall && distBotLate > cAtr * 0.45) { qScore -= 5; rejectReason = 'late entry'; }
-            else if (isPut && distTopLate > cAtr * 0.45) { qScore -= 5; rejectReason = 'late entry'; }
+            if (isCall && distBotLate > cAtr * 0.9) { qScore -= 2; rejectReason = 'late entry'; }
+            else if (isPut && distTopLate > cAtr * 0.9) { qScore -= 2; rejectReason = 'late entry'; }
 
-            // 5M COOLDOWN RULES
-            const candlesSinceLast = Math.floor((currTime - engineState.lastSignalTime) / 300); 
-            if (candlesSinceLast < 4) { // 20 minutes
-                qScore -= 15; rejectReason = 'cooldown (too fast)';
-            } else if (candlesSinceLast < 8) { // 40 minutes
+            // КУЛДАУН: Расслаблен на 40%
+            const candlesSinceLast = (currTime - engineState.lastSignalTime) / 300; 
+            if (candlesSinceLast < 1.8) { // ~9 minutes
+                qScore -= 5; rejectReason = 'cooldown (too fast)';
+            } else if (candlesSinceLast < 3.6) { // ~18 minutes
                 if (Math.abs(currCandle.close - engineState.lastSignalPrice) < cAtr * 0.38) {
-                    qScore -= 10; rejectReason = 'same zone cooldown';
+                    qScore -= 2; rejectReason = 'same zone cooldown';
                 }
             }
 
-            if (isCall && prevCandle.close < prevCandle.open && (prevCandle.open - prevCandle.close) > cAtr * 1.5) { qScore -= 10; rejectReason = 'impulse risk'; }
-            if (isPut && prevCandle.close > prevCandle.open && (prevCandle.close - prevCandle.open) > cAtr * 1.5) { qScore -= 10; rejectReason = 'impulse risk'; }
+            // TREND ALIGNMENT FILTER: Больше не отбрасывает автоматом, только снижает скор
+            const trend1H = get1HTrend(data, evalIdx);
+            if (trend1H === 'BULLISH' && isPut) {
+                qScore -= 5;
+            }
+            if (trend1H === 'BEARISH' && isCall) {
+                qScore -= 5;
+            }
 
             if (qScore < threshold) {
                 if (!rejectReason) {
@@ -575,7 +613,7 @@
         const LiveClock = () => {
           const [t, setT] = useState(new Date());
           useEffect(() => { const i = setInterval(() => setT(new Date()), 1000); return () => clearInterval(i); }, []);
-          return <span className="text-slate-800 text-xs md:text-sm mono-font font-bold">{t.toLocaleTimeString('ru-RU')}</span>;
+          return <span className="text-slate-800 text-sm md:text-base mono-font font-bold">{t.toLocaleTimeString('ru-RU')}</span>;
         };
 
         const MiniChart = ({ data }) => {
@@ -731,7 +769,6 @@
           )
         };
 
-        /* ================= STREAMING_CHUNK: ОТРИСОВКА СЛОЕВ ГРАФИКА (ZONES / TRADES) ================= */
         const ChartOverlays = ({ chart, series, trades, zoneInfo, zoneState, currentPriceVal }) => {
             const overlayRef = useRef(null);
             const [hoveredTrade, setHoveredTrade] = useState(null);
@@ -744,14 +781,20 @@
                     if (!chart || !series || !overlayRef.current) return;
                     const timeScale = chart.timeScale();
                     
-                    // 1. Пульсация зоны (СТРОГО 25 МИНУТ ВПЕРЕД)
+                    // Pulser zone mapped 25 mins into the future from CURRENT candle
                     const pulseBox = overlayRef.current.querySelector('.zone-pulse-indicator');
                     if (pulseBox && zoneInfo && zoneState === 'IN') {
+                        // We use current logic mapped directly to right edge bounds
                         const currentLog = timeScale.coordinateToLogical(timeScale.timeToCoordinate(zoneInfo.time));
                         if (currentLog !== null) {
                             const xStart = timeScale.logicalToCoordinate(currentLog);
-                            // 25 минут = 5 свечей по 5 минут
-                            const xEnd = timeScale.logicalToCoordinate(currentLog + 5);
+                            
+                            // Estimate xEnd based on px width of 5 candles
+                            const p1 = timeScale.logicalToCoordinate(1);
+                            const p2 = timeScale.logicalToCoordinate(2);
+                            const candlePx = (p2 !== null && p1 !== null) ? Math.abs(p2 - p1) : 10;
+                            const xEnd = xStart + (5 * candlePx); 
+
                             let yPrice = zoneInfo.type === 'RESISTANCE' ? zoneInfo.top : zoneInfo.bottom;
                             const y = series.priceToCoordinate(yPrice);
 
@@ -764,9 +807,9 @@
 
                                 const inner = pulseBox.querySelector('div');
                                 if (zoneInfo.type === 'RESISTANCE') {
-                                    inner.className = 'absolute inset-0 overlay-pulsing-box rounded-full bg-rose-500/20 border-y-2 border-rose-500/60 shadow-[0_0_15px_rgba(244,63,94,0.4)]';
+                                    inner.className = 'absolute inset-0 zone-pulse-indicator-mesh rounded-r-full bg-rose-500/20 border-y border-r border-rose-500/60 shadow-[0_0_15px_rgba(244,63,94,0.4)]';
                                 } else {
-                                    inner.className = 'absolute inset-0 overlay-pulsing-box rounded-full bg-cyan-500/20 border-y-2 border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.4)]';
+                                    inner.className = 'absolute inset-0 zone-pulse-indicator-mesh rounded-r-full bg-emerald-500/20 border-y border-r border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.4)]';
                                 }
                             } else {
                                 pulseBox.style.display = 'none';
@@ -776,7 +819,7 @@
                         pulseBox.style.display = 'none';
                     }
 
-                    // 2. Стеклянный бокс сделки
+                    // Active Trades boxes
                     const tradeBoxes = overlayRef.current.querySelectorAll('.trade-glass-box');
                     tradeBoxes.forEach(box => {
                         const tradeId = box.dataset.id;
@@ -787,10 +830,10 @@
                         let xExit = timeScale.timeToCoordinate(trade.exitTime);
 
                         if (xEntry !== null && xExit === null) {
-                            const entryLog = timeScale.coordinateToLogical(xEntry);
-                            if (entryLog !== null) {
-                                xExit = timeScale.logicalToCoordinate(entryLog + 5); // 25 минут
-                            }
+                            const p1 = timeScale.logicalToCoordinate(1);
+                            const p2 = timeScale.logicalToCoordinate(2);
+                            const candlePx = (p2 !== null && p1 !== null) ? Math.abs(p2 - p1) : 10;
+                            xExit = xEntry + (5 * candlePx);
                         }
 
                         if (xEntry === null && trade.signalTime) {
@@ -820,16 +863,6 @@
                             box.style.width = `${width}px`;
                             box.style.top = `${top}px`;
                             box.style.height = `${height}px`;
-
-                            // Динамическая обводка: зеленая в плюсе, красная в минусе
-                            if (trade.isLive) {
-                                const isWinning = trade.type === 'CALL' ? currentPriceVal > trade.entryPrice : currentPriceVal < trade.entryPrice;
-                                if (isWinning) {
-                                    box.className = "trade-glass-box absolute pointer-events-auto cursor-help rounded-xl z-20 transition-colors duration-300 border-2 border-emerald-500/80 bg-emerald-500/10 backdrop-blur-[2px]";
-                                } else {
-                                    box.className = "trade-glass-box absolute pointer-events-auto cursor-help rounded-xl z-20 transition-colors duration-300 border-2 border-rose-500/80 bg-rose-500/10 backdrop-blur-[2px]";
-                                }
-                            }
                             
                         } else {
                             box.style.display = 'none';
@@ -863,7 +896,7 @@
                     chart.unsubscribeCrosshairMove(scheduleOverlaySync);
                     if (ro) ro.disconnect();
                 };
-            }, [chart, series, trades, zoneInfo, zoneState, currentPriceVal]);
+            }, [chart, series, trades, zoneInfo, zoneState]);
 
             return (
                 <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden" ref={overlayRef}>
@@ -872,7 +905,8 @@
                     </div>
 
                     {trades.map(trade => {
-                        const isWinningLive = trade.isLive ? (trade.type === 'CALL' ? currentPriceVal > trade.entryPrice : currentPriceVal < trade.entryPrice) : false;
+                        if (trade.type === 'COOLDOWN') return null;
+                        const isWinningLive = trade.isLive ? (trade.type === 'CALL' ? trade.exitPrice > trade.entryPrice : trade.exitPrice < trade.entryPrice) : false;
                         const borderColor = trade.type === 'CALL' ? 'border-cyan-500' : 'border-rose-500';
                         const bgStatus = trade.isLive ? (isWinningLive ? 'bg-emerald-500/10' : 'bg-rose-500/10') : (trade.result === "WIN" ? 'bg-emerald-500/20' : 'bg-rose-500/20');
                         
@@ -923,14 +957,14 @@
                                 <span className="col-span-2 text-center text-slate-400 mt-1 mb-1 text-[9px] uppercase tracking-widest">ДАННЫЕ</span>
                                 <span className="text-slate-500">Цена Входа:</span><span className="text-right text-slate-800">{hoveredTrade.trade.entryPrice.toFixed(2)}</span>
                                 <span className="text-slate-500">Цена Выхода:</span><span className="text-right text-slate-800">{hoveredTrade.trade.exitPrice.toFixed(2)}</span>
-                                <span className="text-slate-500 mt-1 pt-1 border-t border-slate-200">Ставка:</span><span className="text-right text-slate-800 mt-1 pt-1 border-t border-slate-200">{(hoveredTrade.trade.betAmount || 1000).toLocaleString('ru-RU')} ₽</span>
+                                <span className="text-slate-500 mt-1 pt-1 border-t border-slate-200">Ставка:</span><span className="text-right text-slate-800 mt-1 pt-1 border-t border-slate-200">{hoveredTrade.trade.betAmount || 1000} ₽</span>
                                 <span className="text-slate-500 mt-1 uppercase font-bold">Итог:</span>
                                 <span className={`text-right font-black mt-1 text-sm ${hoveredTrade.trade.isLive ? 'text-blue-600' : (hoveredTrade.trade.result === "WIN" ? 'text-emerald-600' : 'text-rose-600')}`}>
                                     {hoveredTrade.trade.isLive ? 'В ПРОЦЕССЕ' : ((hoveredTrade.trade.result === "WIN" ? '+' : '') + (hoveredTrade.trade.result === "WIN" ? Math.round((hoveredTrade.trade.betAmount || 1000)*0.7) : -(hoveredTrade.trade.betAmount || 1000)) + ' ₽')}
                                 </span>
                             </div>
                             <div className="mt-3 pt-2 border-t border-slate-200/60 text-center text-[9px] text-slate-400 font-bold uppercase tracking-widest">
-                                PREMIUM 5M MODE • Q-SCORE: {hoveredTrade.trade.quality || 'N/A'}
+                                PURE 5M MODE • Q-SCORE: {hoveredTrade.trade.quality || 'N/A'}
                             </div>
                         </div>
                     )}
@@ -938,7 +972,6 @@
             );
         };
 
-        /* ================= STREAMING_CHUNK: ГЛАВНЫЙ КЛАСС ПРИЛОЖЕНИЯ REACT ================= */
         const App = () => {
           const [isStarted, setIsStarted] = useState(false);
           const [isTransitioning, setIsTransitioning] = useState(false);
@@ -964,7 +997,7 @@
           const [tradesHistory, setTradesHistory] = useState([]);
           const [activeLiveTrade, setActiveLiveTrade] = useState(null);
 
-          // Состояние Мартингейла (Индекс шага от 0 до 6)
+          // Martingale Step State
           const [martingaleIndex, setMartingaleIndex] = useState(0);
 
           const [pureDiag, setPureDiag] = useState({
@@ -994,7 +1027,8 @@
           const signalPhaseRef = useRef('NONE');
           const logsContainerRef = useRef(null); 
           const cryptoQuotesRef = useRef([]);
-          
+
+          const consecutiveLossesRef = useRef(0);
           const activeAnalysisLinesRef = useRef([]);
 
           const lastSignalTimeRef = useRef(0);
@@ -1215,21 +1249,22 @@
               try { const allMarkers = [...historicalMarkersRef.current, ...liveMarkersRef.current]; allMarkers.sort((a, b) => a.time - b.time); candleSeries.current.setMarkers(allMarkers); } catch (e) {}
           };
 
-          /* ================= STREAMING_CHUNK: СИМУЛЯЦИЯ И ПОИСК СИГНАЛОВ НА ИСТОРИИ И В РЕАЛЬНОМ ВРЕМЕНИ ================= */
           const runTerminalEngine = async () => {
             if (engineActive.current) return; engineActive.current = true;
             if (audioCtx.current && audioCtx.current.state === 'suspended') await audioCtx.current.resume();
 
+            // Strict purge of past logs and sessions
             ScanLedger.clear();
             historicalMarkersRef.current = []; liveMarkersRef.current = [];
             if(candleSeries.current) { candleSeries.current.setMarkers([]); }
 
-            setViewMode('DETAIL'); updateStatus('БЭКТЕСТ: PURE 5M...', 'text-cyan-600'); addLog(`ЗАПУСК ПОИСКА ЛИКВИДНОСТИ (PURE 5M)...`, true);
+            setViewMode('DETAIL'); updateStatus('БЭКТЕСТ: PURE 5M (12H)...', 'text-cyan-600'); 
+            addLog(`Анализ рынка за последние 12 часов.`, true);
 
             const curAsset = ASSETS[0]; 
-            const initialData = await ScannerAPI.getCandles(curAsset.symbol, 1440, '5m'); // Исторические свечи
+            const initialData = await ScannerAPI.getCandles(curAsset.symbol, 200, '5m'); 
             
-            if (initialData && initialData.length > 150) {
+            if (initialData && initialData.length > 100) {
                 lastDataTimeRef.current = Date.now(); setSparklines(prev => ({...prev, [curAsset.symbol]: initialData})); currentPrice.current = initialData[initialData.length - 1].close;
                 const liqZones = calcLiquidityZones(initialData, 30); const atrSeries = calcATRSeries(initialData, 14); 
 
@@ -1241,22 +1276,19 @@
 
                 let d_candles = 0, d_sweepH = 0, d_sweepL = 0, d_recB = 0, d_recS = 0, d_cand = 0, d_conf = 0, d_rej = 0; let d_lastRej = 'None';
                 const newTradesHistory = []; 
-                let engineState = { lastSignalTime: 0, lastSignalPrice: 0 };
+                let engineState = { lastSignalTime: 0, lastSignalPrice: 0, consecutiveLosses: 0 };
                 let localMartingaleIdx = 0;
 
-                const startIdx = Math.max(0, initialData.length - 720); // За последние 12 часов
-                
-                // Исключаем 3 последние свечи (игнорируем живые, формирующиеся при бэктесте)
+                /* --- BOUND BACKTEST EXACTLY TO THE LAST 12 HOURS --- */
+                const twelveHoursAgoSec = Math.floor(Date.now() / 1000) - (12 * 60 * 60);
+                let startIdx = initialData.findIndex(d => d.time >= twelveHoursAgoSec);
+                if (startIdx === -1) startIdx = Math.max(0, initialData.length - 144); // 144 candles is 12h fallback
+
+                // Exclude last 4 candles to avoid live overlapping / repainting
                 const endIdx = initialData.length - 4; 
-                const limitTimeMs = Date.now() - 12 * 60 * 60 * 1000; // Лимит: только свечи старше 12 часов
 
                 for (let idx = startIdx; idx <= endIdx; idx++) {
                     const currTime = initialData[idx].time; const currCandle = initialData[idx]; const prevCandle = initialData[idx - 1]; d_candles++;
-                    
-                    // Контроль фантомных сигналов: свеча должна быть старше 12 часов
-                    if (currTime * 1000 >= limitTimeMs) {
-                        break;
-                    }
 
                     const zones = liqMap.get(currTime); const cAtr = atrMap.get(currTime);
 
@@ -1270,15 +1302,13 @@
                         if (isReclaimBuy || isReclaimSell) d_cand++;
                     }
 
-                    // Симулируем проверки с учетом Мартингейла
-                    const dummyStateForSig = { ...engineState, consecutiveLosses: localMartingaleIdx };
-                    const sig = evaluateSignalEngine(initialData, idx, liqMap, atrMap, { status: 'LOCAL 5M MODE' }, dummyStateForSig);
+                    const sig = evaluateSignalEngine(initialData, idx, liqMap, atrMap, { status: 'LOCAL 5M MODE' }, { ...engineState, consecutiveLosses: localMartingaleIdx });
                     let evaluatedStatus = sig.valid ? 'CONFIRMED' : (sig.reason ? 'REJECTED' : 'NO_SIGNAL');
 
                     const pastLedgerStatus = ScanLedger.get(currTime);
                     if (pastLedgerStatus) {
                         if (pastLedgerStatus !== evaluatedStatus) {
-                            if (pastLedgerStatus === 'REJECTED' || pastLedgerStatus === 'NO_SIGNAL' || pastLedgerStatus === 'ZONE_ONLY') {
+                            if (pastLedgerStatus === 'REJECTED' || pastLedgerStatus === 'NO_SIGNAL' || pastLedgerStatus === 'PARITY_MISMATCH') {
                                 sig.valid = false; sig.reason = "PARITY_MISMATCH"; evaluatedStatus = pastLedgerStatus;
                             }
                         }
@@ -1293,7 +1323,7 @@
                         }
                     } else {
                         d_conf++; engineState.lastSignalTime = sig.signalTime; engineState.lastSignalPrice = sig.signalPrice;
-                        const entryIdx = idx + 1; const exitIdx = Math.min(entryIdx + 5, initialData.length - 1); // 25 мин = 5 свечей по 5 мин
+                        const entryIdx = idx + 1; const exitIdx = Math.min(entryIdx + 5, initialData.length - 1); 
                         const entryCandle = initialData[entryIdx]; const exitCandle = initialData[exitIdx];
                         const entryPrice = entryCandle.open; const exitPrice = exitCandle.close;
                         
@@ -1311,18 +1341,19 @@
                             entryPrice: entryPrice, exitPrice: exitPrice, status: "CLOSED", result: result, betAmount: currentBet, reason: sig.signalType, quality: sig.score
                         });
 
-                        // Обновляем колено Мартингейла для истории
                         if (result === "WIN") {
                             localMartingaleIdx = 0;
+                            engineState.consecutiveLosses = 0;
                         } else {
+                            engineState.consecutiveLosses++;
                             localMartingaleIdx = localMartingaleIdx < 6 ? localMartingaleIdx + 1 : 0;
                         }
-                        idx += 5; // Пропуск до экспирации (25 минут)
+                        idx += 5; // Skip expiration (5 candles of 5M is 25 minutes)
                     }
                 }
 
-                // Синхронизируем индекс Мартингейла с последним историческим результатом
                 setMartingaleIndex(localMartingaleIdx);
+                consecutiveLossesRef.current = engineState.consecutiveLosses;
 
                 lastSignalTimeRef.current = engineState.lastSignalTime; lastSignalPriceRef.current = engineState.lastSignalPrice;
                 lastEvaluatedCandleTimeRef.current = initialData[initialData.length - 4]?.time || 0; lastClosedCandleTimeUiRef.current = lastEvaluatedCandleTimeRef.current;
@@ -1339,13 +1370,13 @@
                 }
 
                 const finalStats = calculateTradingStats(newTradesHistory, TRADE_MONEY_CONFIG);
-                let speechText = "";
+                let speechText = "Анализ рынка за последние 12 часов.";
                 if (finalStats.trades > 0) {
                     addLog(`ИСТОРИЯ ЗА 12 ЧАСОВ: НАЙДЕНО СДЕЛОК: ${finalStats.trades}, ВИНРЕЙТ: ${finalStats.winrate}%`, true);
-                    speechText = `Терминал запущен. За последние двенадцать часов найдено ${finalStats.trades} сделок по SMC 5M. Винрейт составляет ${finalStats.winrate} процентов. Начинаю сканирование.`;
+                    speechText = `Анализ рынка за последние двенадцать часов. Найдено ${finalStats.trades} сделок по SMC 5M. Винрейт составляет ${finalStats.winrate} процентов. Приступаю к сканированию.`;
                 } else {
                     addLog(`ЗА 12 ЧАСОВ СИГНАЛОВ ПО СТРАТЕГИИ НЕ НАЙДЕНО.`, true);
-                    speechText = "Терминал запущен. Сигналы за 12 часов отсутствуют. Начинаю сканирование.";
+                    speechText = "Анализ рынка за последние двенадцать часов. Подтверждённых сигналов нет. Начинаю сканирование.";
                 }
                 
                 await speakAsync(speechText, 'startup-summary-current-session', 1); await awaitSpeechCompletion();
@@ -1429,11 +1460,10 @@
 
                           lastClosedCandleTimeUiRef.current = evalCandleTime;
                           
-                          // Передаем текущий уровень Мартингейла для расчёта порога принятия
                           const liveEngineState = { 
                               lastSignalTime: lastSignalTimeRef.current, 
                               lastSignalPrice: lastSignalPriceRef.current, 
-                              consecutiveLosses: martingaleIndex 
+                              consecutiveLosses: consecutiveLossesRef.current 
                           };
                           const sig = evaluateSignalEngine(data, evaluateIdx, liqMap, atrMap, cachedMtfRef.current, liveEngineState);
                           
@@ -1449,7 +1479,7 @@
                               signalPhaseRef.current = 'EXPLAINING'; setSignalPhase('EXPLAINING'); setZoneInfo(null);
                               syncModeView(); playSound('found');
 
-                              // 1. Маркер сигнала (SIGNAL) появляется СРАЗУ при обнаружении
+                              // 1. SIGNAL marker rendered instantly
                               if (candleSeries.current) {
                                   try { 
                                       liveMarkersRef.current = [
@@ -1464,41 +1494,6 @@
                                       ];
                                       updateChartMarkers();
                                   } catch (e) {}
-                              }
-
-                              // 2. ОТРИСОВКА ВИЗУАЛЬНОГО РАЗБОРА СТРАТЕГИИ НА ГРАФИКЕ (ФАЗА 1)
-                              activeAnalysisLinesRef.current.forEach(l => { try { candleSeries.current.removePriceLine(l); } catch(e){} });
-                              activeAnalysisLinesRef.current = [];
-
-                              if (candleSeries.current) {
-                                  // Линия СВИПА
-                                  const sweepPrice = sig.isCall ? sig.sweepLow : sig.sweepHigh;
-                                  const sweepLine = candleSeries.current.createPriceLine({
-                                      price: sweepPrice,
-                                      color: sig.isCall ? '#10b981' : '#f97316',
-                                      lineWidth: 2, 
-                                      lineStyle: window.LightweightCharts.LineStyle.Dashed,
-                                      title: 'SWEEP / LIQUIDITY GRAB',
-                                  });
-                                  // Граница пула
-                                  const poolPrice = sig.isCall ? sig.cLower : sig.cUpper;
-                                  const poolLine = candleSeries.current.createPriceLine({
-                                      price: poolPrice,
-                                      color: sig.isCall ? '#059669' : '#e11d48',
-                                      lineWidth: 2, 
-                                      lineStyle: window.LightweightCharts.LineStyle.Solid,
-                                      title: 'POOL BOUNDARY',
-                                  });
-                                  // Цель
-                                  const targetPrice = sig.isCall ? sig.signalPrice + sig.cAtr * 0.5 : sig.signalPrice - sig.cAtr * 0.5;
-                                  const targetLine = candleSeries.current.createPriceLine({
-                                      price: targetPrice,
-                                      color: sig.isCall ? '#34d399' : '#fb7185',
-                                      lineWidth: 2, 
-                                      lineStyle: window.LightweightCharts.LineStyle.Dashed,
-                                      title: 'TARGET / NEXT STOP LOSS',
-                                  });
-                                  activeAnalysisLinesRef.current.push(sweepLine, poolLine, targetLine);
                               }
 
                               drawIndicators(upperData, lowerData); currentPrice.current = data[lastIdx].close;
@@ -1536,9 +1531,6 @@
                               } catch(e) {}
 
                               if (tradeCancelled) {
-                                  activeAnalysisLinesRef.current.forEach(l => { try { candleSeries.current.removePriceLine(l); } catch(e){} });
-                                  activeAnalysisLinesRef.current = [];
-
                                   zoneStateRef.current = 'OUT'; setZoneState('OUT'); signalPhaseRef.current = 'NONE'; setSignalPhase('NONE');
                                   playSound('cancel'); updateStatus('ОТМЕНА: ИСТИННЫЙ ПРОБОЙ', 'text-rose-600 font-bold');
                                   await speakAsync("Внимание. Отмена. Паттерн сломан. Возвращаюсь к радару.", `signal-cancel-${sig.signalTime}`, 1);
@@ -1551,7 +1543,7 @@
                               const entryPrice = currentPrice.current; const expMins = 25; const actualEntryTime = Math.floor(Date.now() / 1000); 
                               const finalExitTime = actualEntryTime + (expMins * 60);
 
-                              // 2. Маркер входа (ENTRY) появляется СИНХРОНИЗОВАННО со стрелкой в сайдбаре
+                              // 2. ENTRY marker synchronized with arrow sidebar
                               if (candleSeries.current) {
                                   try { 
                                       liveMarkersRef.current.push({ 
@@ -1566,7 +1558,34 @@
                                   } catch (e) {}
                               }
 
-                              const currentStakeAmount = MARTINGALE_STEPS[martingaleIndex];
+                              // 3. Technical Analysis Overlays mapped ONLY at active phase
+                              activeAnalysisLinesRef.current.forEach(l => { try { candleSeries.current.removePriceLine(l); } catch(e){} });
+                              activeAnalysisLinesRef.current = [];
+
+                              if (candleSeries.current) {
+                                  const sweepPrice = sig.isCall ? sig.sweepLow : sig.sweepHigh;
+                                  const sweepLine = candleSeries.current.createPriceLine({
+                                      price: sweepPrice, color: sig.isCall ? '#10b981' : '#f97316',
+                                      lineWidth: 2, lineStyle: window.LightweightCharts.LineStyle.Dashed, title: 'SWEEP / LIQUIDITY GRAB',
+                                  });
+                                  const poolPrice = sig.isCall ? sig.cLower : sig.cUpper;
+                                  const poolLine = candleSeries.current.createPriceLine({
+                                      price: poolPrice, color: sig.isCall ? '#059669' : '#e11d48',
+                                      lineWidth: 2, lineStyle: window.LightweightCharts.LineStyle.Solid, title: 'POOL BOUNDARY',
+                                  });
+                                  const targetPrice = sig.isCall ? sig.signalPrice + sig.cAtr * 0.5 : sig.signalPrice - sig.cAtr * 0.5;
+                                  const targetLine = candleSeries.current.createPriceLine({
+                                      price: targetPrice, color: sig.isCall ? '#34d399' : '#fb7185',
+                                      lineWidth: 2, lineStyle: window.LightweightCharts.LineStyle.Dashed, title: 'TARGET / NEXT STOP LOSS',
+                                  });
+                                  activeAnalysisLinesRef.current.push(sweepLine, poolLine, targetLine);
+                              }
+
+                              let currentStakeAmount = 1000;
+                              setMartingaleIndex(prevIdx => {
+                                  currentStakeAmount = MARTINGALE_STEPS[prevIdx];
+                                  return prevIdx;
+                              });
 
                               setSignal({ type: sig.isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice }); 
                               addLog(`ВХОД ${sig.isCall ? 'ВВЕРХ' : 'ВНИЗ'} НА 25 МИНУТ. СТАВКА: ${currentStakeAmount} ₽`, true);
@@ -1609,7 +1628,7 @@
 
                               setCountdown(null); updateStatus('АНАЛИЗ РЕЗУЛЬТАТА', 'text-slate-500');
 
-                              // Очистка линий технического анализа ПОСЛЕ экспирации
+                              // Sweep cleanup - Remove analysis lines strictly at the end of the trade
                               activeAnalysisLinesRef.current.forEach(l => { try { candleSeries.current.removePriceLine(l); } catch(e){} });
                               activeAnalysisLinesRef.current = [];
 
@@ -1636,23 +1655,21 @@
                                   updateChartMarkers();
                               } catch (e) {}
 
-                              // Интеграция Мартингейла (Корректировка индекса шагов)
                               if (result === "WIN") {
-                                setMartingaleIndex(0); // Сброс на базовую ставку
+                                setMartingaleIndex(0); // Reset stake
+                                consecutiveLossesRef.current = 0; // Reset protection tracking
                                 playSound('win'); addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
-                                await speakAsync(`Сделка закрылась в плюс по системе. Сброс до первой ступени.`, `trade-result-win-${actualEntryTime}`, 1);
+                                await speakAsync(`Сделка закрылась в плюс. Отличный результат. Сброс до первой ступени.`, `trade-result-win-${actualEntryTime}`, 1);
                               } else {
-                                // Переход на следующий уровень Мартингейла до 7-го колена. Иначе: принудительный сброс.
+                                consecutiveLossesRef.current += 1;
+                                playSound('loss'); addLog(`РЕЗУЛЬТАТ: МИНУС (-).`);
+
+                                // Continuous Martingale up to 7, reset to 0 if step 7 (index 6) loses
                                 setMartingaleIndex(prev => {
                                     const nextIdx = prev < 6 ? prev + 1 : 0;
+                                    speakAsync(`Минус. Переходим на колено ${nextIdx + 1} по Мартингейлу.`, `trade-result-loss-${actualEntryTime}`, 1);
                                     return nextIdx;
                                 });
-                                playSound('loss'); addLog(`РЕЗУЛЬТАТ: МИНУС (-).`);
-                                if (martingaleIndex >= 6) {
-                                    await speakAsync(`Достигнут предел в 7 ступеней. Аварийный сброс риска.`, `trade-result-max-loss-${actualEntryTime}`, 1);
-                                } else {
-                                    await speakAsync(`Минус. Переходим на колено ${martingaleIndex + 2} по Мартингейлу.`, `trade-result-loss-${actualEntryTime}`, 1);
-                                }
                               }
 
                               setSignal(null); signalPhaseRef.current = 'NONE'; setSignalPhase('NONE'); setMetrics(prev => ({ ...prev, smartMoney: 0 }));
@@ -1723,7 +1740,6 @@
               <div className="bg-orb-2 pointer-events-none opacity-80"></div>
               <div className="absolute inset-0 bg-grid-pattern pointer-events-none z-0 opacity-60"></div>
 
-              {}
               <div className="h-7 md:h-9 glass-panel z-50 overflow-hidden flex items-center justify-between shrink-0 w-full relative pr-3">
                 <div className="h-full bg-slate-900 text-white px-3 md:px-5 flex items-center gap-2 z-20 text-[10px] md:text-xs tracking-widest shadow-[5px_0_15px_rgba(0,0,0,0.1)] font-bold oswald-font rounded-r-xl border-r border-cyan-500/50 shrink-0 relative">
                   <Globe size={14} className="text-cyan-400" /> РАДАР СЕТИ
@@ -1757,7 +1773,7 @@
                 </div>
               </div>
 
-              {/* ХЕДЕР: ТОРГОВАЯ КНОПКА ПЕРЕНЕСЕНА НАВЕРХ И ЗАКРЕПЛЕНА */}
+              {/* HEADER CONTAINER */}
               <header className="h-auto md:h-16 py-2 md:py-0 flex flex-col md:flex-row items-start md:items-center justify-between px-3 md:px-6 shrink-0 z-40 gap-2 md:gap-0 mt-2">
                 <div className="flex flex-col justify-center w-full md:w-auto">
                   <div className="flex justify-between items-center md:block">
@@ -1774,7 +1790,7 @@
                   </div>
                 </div>
                 
-                {/* Компактный запуск Broker Button в Хедере на мобильных устройствах */}
+                {/* Mobile Header Button */}
                 <div className="w-full flex md:hidden mb-1 mt-1 sticky top-0 z-[100] pb-2 pt-1 border-b border-slate-200 shadow-sm px-1 justify-between items-center gap-2 bg-[#eef2f6]">
                     <BrokerButton compact={true} />
                     <div className="flex gap-2 items-center">
@@ -1782,7 +1798,7 @@
                     </div>
                 </div>
 
-                {/* Broker Button в Хедере на Desktop */}
+                {/* Desktop Header Button */}
                 <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-2 md:gap-1.5">
                   <div className="flex items-center gap-3">
                       <div className="hidden md:block">
@@ -1794,7 +1810,7 @@
                   </div>
                   <div className="flex gap-4 items-center tracking-wider w-full md:w-auto justify-between md:justify-end">
                     <span className="text-[9px] md:text-[10px] text-slate-600 flex items-center gap-1.5 font-bold uppercase border border-slate-300 px-2 py-0.5 rounded-full bg-white/50">
-                      <div className={`w-2 h-2 rounded-full ${dataHealth.status === 'LIVE' ? 'bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(225,29,72,0.8)]'}`} />
+                      <div className={`w-2 h-2 rounded-full ${dataHealth.status === 'LIVE' ? 'bg-emerald-50 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(225,29,72,0.8)]'}`} />
                       {dataHealth.status === 'LIVE' ? 'ПОДКЛЮЧЕНО К БИРЖЕ' : 'ОБНОВЛЕНИЕ ДАННЫХ'}
                     </span>
                     <span className="hidden md:inline">
@@ -1806,7 +1822,7 @@
 
               <main className="flex-1 flex flex-col md:flex-row p-2 md:p-4 gap-3 md:gap-4 overflow-hidden z-10">
                 
-                {}
+                {/* CHART WORKSPACE */}
                 <div className="w-full md:flex-1 h-[50vh] md:h-full glass-panel-heavy rounded-3xl md:rounded-[2.5rem] relative overflow-hidden flex flex-col shrink-0">
                   
                   <div className={`absolute inset-0 z-30 transition-all duration-700 bg-transparent flex items-center justify-center p-4 md:p-8 ${viewMode === 'SCREENER' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
@@ -1869,7 +1885,9 @@
                     <div className="flex-1 relative w-full mt-32 md:mt-36 flex flex-col gap-2 px-4 pb-4 md:px-5 md:pb-5">
                         <div 
                             ref={chartContainerRef}
-                            className="flex-1 relative w-full rounded-3xl overflow-hidden bg-white/90 border border-white shadow-[inset_0_5px_20px_rgba(0,0,0,0.05)]"
+                            className={`flex-1 relative w-full rounded-3xl overflow-hidden bg-white/90 border border-white transition-all duration-500 ${
+                                zoneState === 'IN' && zoneInfo ? (zoneInfo.type === 'RESISTANCE' ? 'zone-active-resistance' : 'zone-active-support') : 'shadow-[inset_0_5px_20px_rgba(0,0,0,0.05)]'
+                            }`}
                         >
                             <ChartOverlays 
                               chart={chartInstance.current} 
@@ -1884,15 +1902,13 @@
                   </div>
                 </div>
 
-                {}
+                {/* SIDEBAR DASHBOARD */}
                 <div className="w-full md:w-[340px] lg:w-[380px] flex flex-col glass-panel-heavy rounded-3xl md:rounded-[2.5rem] overflow-hidden shrink-0 relative min-h-[50vh] md:h-full">
                   
                   <div className="border-b border-white/80 p-3 bg-gradient-to-r from-blue-100/60 to-transparent flex justify-center items-center shrink-0 min-h-[48px] shadow-sm relative z-10">
                     <div className={`text-base md:text-lg oswald-font tracking-widest flex items-center gap-2 text-center leading-none transition-all duration-300 w-full justify-center font-bold ${statusColorClass}`}>
                       {appPhase.includes('ПОДГОТОВ') ? (
                         <span className="text-amber-600 drop-shadow-[0_0_12px_rgba(217,119,6,0.4)] animate-pulse">{appPhase}</span>
-                      ) : appPhase.includes('СНАЙПЕР:') ? (
-                        <span className="text-blue-700 drop-shadow-[0_0_12px_rgba(29,78,216,0.4)] animate-pulse">{appPhase}</span>
                       ) : appPhase}
                     </div>
                   </div>
@@ -1933,7 +1949,6 @@
                     </div>
 
                     <div className="flex gap-3 h-28 md:h-32 shrink-0">
-                      {/* timing: Стрелка появляется только во время фазы ACTIVE */}
                       <div className={`w-[35%] border rounded-2xl flex flex-col items-center justify-center relative transition-all duration-500 glass-card bg-white/90 ${signalPhase === 'ACTIVE' ? 'border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.4)]' : 'border-white'}`}>
                         {signalPhase === 'ACTIVE' && signal ? (
                           <VolumetricArrow type={signal.type} />
@@ -1959,7 +1974,7 @@
                       </div>
                     </div>
 
-                    {/* БЛОК СТАТИСТИКИ С ИНТЕГРАЦИЕЙ МАРТИНГЕЙЛА */}
+                    {/* MARTINGALE HUD DISPLAY */}
                     <div className="glass-card border rounded-3xl p-4 flex flex-col gap-2 shrink-0 relative overflow-hidden transition-all duration-700 bg-white/90 border-white">
                         <div className="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full blur-2xl pointer-events-none"></div>
                         
@@ -1975,7 +1990,7 @@
                             </span>
                         </div>
 
-                        {/* ТЕКУЩАЯ СТАВКА МАРТИНГЕЙЛА И ВИЗУАЛЬНЫЙ СТЕК КОЛЕН */}
+                        {/* MARTINGALE TRACKER */}
                         <div className="flex justify-between items-center bg-cyan-950/50 p-2.5 rounded-xl border border-cyan-500/30 text-cyan-200 mt-1 relative z-10">
                             <div className="flex flex-col">
                                 <span className="text-[7.5px] font-black tracking-widest uppercase opacity-75">ТЕКУЩАЯ СТАВКА</span>
@@ -1987,7 +2002,7 @@
                             </div>
                         </div>
 
-                        {/* Сегментированный мини-бар Мартингейла */}
+                        {/* Martingale visual bar */}
                         <div className="grid grid-cols-7 gap-1 mt-0.5 px-0.5 relative z-10">
                             {[...Array(7)].map((_, i) => (
                                 <div 
@@ -2019,7 +2034,7 @@
                         </div>
 
                         <div className="flex justify-between items-center text-[9px] text-slate-400 font-bold uppercase mt-2 relative z-10 tracking-widest border-t border-slate-200/50 pt-2">
-                            <span>БАЗА: 1 000 ₽</span>
+                            <span>СТАВКА: {currentStakeVal.toLocaleString('ru-RU')} ₽ | КОЛЕНО: {martingaleIndex + 1}/7</span>
                             <span className="text-slate-600">PAYOUT: {stats.payout * 100}%</span>
                         </div>
                     </div>
@@ -2044,10 +2059,11 @@
                        </div>
                     </div>
 
+                    {/* DEBUG PANEL */}
                     <div className="flex-1 glass-card rounded-2xl overflow-hidden flex flex-col justify-start border-white bg-white shadow-[inset_0_2px_15px_rgba(0,0,0,0.02)]">
                       <div className="bg-slate-100/80 px-3 py-1.5 flex justify-between items-center border-b border-slate-200/60 mb-1 shrink-0">
-                          <span className="text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1"><BugIcon size={10}/> SMC 5M DEBUG</span>
-                          <span className="text-[8px] font-bold text-emerald-600">PARITY: PROTECTED</span>
+                          <span className="text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1"><BugIcon size={10}/> PURE 5M DEBUG</span>
+                          <span className="text-[8px] font-bold text-emerald-600">UNRESTRICTED SCALPER Active</span>
                       </div>
                       <div className="px-3 pb-1 shrink-0 grid grid-cols-2 gap-1 text-[8px] md:text-[9px] mono-font font-semibold text-slate-500 border-b border-slate-200/40 mb-1">
                           <span className="text-cyan-700">L.C: {new Date(lastClosedCandleTimeUiRef.current * 1000).toLocaleTimeString('ru-RU')}</span>
@@ -2069,6 +2085,7 @@
                 </div>
               </main>
 
+              {/* FOOTER METRICS */}
               <footer className="h-auto md:h-12 py-2 md:py-0 border-t border-white/50 flex flex-row items-center justify-between px-4 md:px-6 shrink-0 glass-panel z-40 bg-white/90">
                 <div className="flex items-center gap-2 text-slate-500 text-[10px] md:text-xs tracking-widest font-bold uppercase oswald-font">
                   <Shield size={14} className="text-cyan-600 hidden sm:block" /> 
