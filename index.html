@@ -208,18 +208,20 @@
             text-shadow: 0px 1px 1px rgba(255,255,255,0.6);
         }
 
+        /* PREMIUM BRAND BUTTON */
         .broker-btn {
-            background: linear-gradient(135deg, #0ea5e9 0%, #1d4ed8 100%);
-            box-shadow: 0 8px 25px -5px rgba(14, 165, 233, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.4);
-            border: 1px solid rgba(186, 230, 253, 0.3); border-radius: 1.2rem;
+            background: linear-gradient(135deg, #06b6d4 0%, #0284c7 40%, #1d4ed8 100%);
+            box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.45), 0 8px 25px rgba(14, 165, 233, 0.5);
+            border: 1px solid rgba(186, 230, 253, 0.4); 
+            border-radius: 1.2rem;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .broker-btn:hover {
-            box-shadow: 0 12px 35px -5px rgba(14, 165, 233, 0.7), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+            box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.65), 0 12px 30px rgba(14, 165, 233, 0.7);
             transform: translateY(-2px);
         }
         .broker-btn:active {
-            transform: translateY(1px) scale(0.98); box-shadow: 0 4px 10px -5px rgba(14, 165, 233, 0.5);
+            transform: translateY(1px) scale(0.98); box-shadow: 0 4px 10px rgba(14, 165, 233, 0.4);
         }
 
         .animated-cursor { animation: cursor-click 4s infinite; }
@@ -275,13 +277,18 @@
             </svg>
         );
 
-        /* ================= COMPACT BROKER BUTTON ================= */
+        /* ================= STREAMING_CHUNK: Defining the optimized premium Broker Button ================= */
         const BrokerButton = ({ compact = false }) => (
-            <a href="https://intrade32.bar/311164" target="_blank" rel="noopener noreferrer" className={`broker-btn group relative rounded-xl flex items-center justify-center overflow-hidden cursor-pointer no-underline shadow-md border border-cyan-400/50 ${compact ? 'px-3 py-1.5 md:px-5 md:py-2 w-auto' : 'w-full py-2.5 px-4 md:py-2 md:px-5'}`}>
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-700 ease-in-out skew-x-12"></div>
-                <span className="relative z-10 text-white font-black tracking-widest text-[10px] md:text-xs oswald-font uppercase drop-shadow-md flex items-center gap-1.5 whitespace-nowrap">
-                    <Zap size={13} className="animate-pulse text-cyan-200" />
-                    <span>{compact ? "ТОРГОВАТЬ" : "ТОРГОВАТЬ ЗДЕСЬ"}</span>
+            <a 
+                href="https://intrade32.bar/311164" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className={`broker-btn group relative flex items-center justify-center overflow-hidden cursor-pointer no-underline h-[52px] px-6 transition-all duration-300 ease-out z-50 ${compact ? 'w-auto' : 'w-full'}`}
+            >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-1000 ease-in-out skew-x-12"></div>
+                <span className="relative z-10 text-white font-black tracking-widest text-sm md:text-base oswald-font uppercase drop-shadow-md flex items-center gap-2 whitespace-nowrap">
+                    <Zap size={18} className="text-cyan-200 animate-pulse group-hover:animate-ping group-hover:scale-110 transition-transform duration-200" />
+                    <span>{compact ? "ТОРГОВАТЬ" : "ТОРГОВАТЬ ЗДЕСЬ, ЧТОБЫ ЗАРАБОТАТЬ"}</span>
                 </span>
                 <div className="absolute top-0.5 right-0.5 pointer-events-none animated-cursor scale-50">
                     <MousePointer size={14} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
@@ -469,7 +476,7 @@
             return 'NEUTRAL';
         }
 
-        /* ================= 5M SCALPING SIGNAL ENGINE ================= */
+        /* ================= STREAMING_CHUNK: SMC Evaluation Logic with dynamic filters ================= */
         function evaluateSignalEngine(data, evalIdx, liqMap, atrMap, mtfContext, engineState) {
             if (evalIdx < 100) return { valid: false, reason: 'Not enough data', score: 0 };
 
@@ -499,17 +506,19 @@
             const sweptTop = currCandle.high >= cUpper;
             const sweptBot = currCandle.low <= cLower;
 
-            // ЗОНА БЛИЗОСТИ: увеличена в 1.5 раза
-            const isNearTouchTop = (cUpper - currCandle.high) < cAtr * 0.6;
-            const isNearTouchBot = (currCandle.low - cLower) < cAtr * 0.6;
+            const isNearTouchTop = (cUpper - currCandle.high) < cAtr * 0.9;
+            const isNearTouchBot = (currCandle.low - cLower) < cAtr * 0.9;
             
-            // WICK RATIO: смягчено на 30%
-            const touchedTop = sweptTop || (isNearTouchTop && upperWick > body * 0.77);
-            const touchedBot = sweptBot || (isNearTouchBot && lowerWick > body * 0.77);
+            /* Tighter Wick ratio requirement (+10%) */
+            const minWickRatio = 0.50; 
+            const upperWickRatio = upperWick / (body || 1);
+            const lowerWickRatio = lowerWick / (body || 1);
 
-            // ЗОНА БЛИЗОСТИ: увеличена в 1.5 раза
-            const isNearTop = (cUpper - currCandle.high) < cAtr * 1.8;
-            const isNearBot = (currCandle.low - cLower) < cAtr * 1.8;
+            const touchedTop = sweptTop || (isNearTouchTop && upperWickRatio >= minWickRatio);
+            const touchedBot = sweptBot || (isNearTouchBot && lowerWickRatio >= minWickRatio);
+
+            const isNearTop = (cUpper - currCandle.high) < cAtr * 2.2;
+            const isNearBot = (currCandle.low - cLower) < cAtr * 2.2;
 
             const returnedInsideTop = currCandle.close < cUpper;
             const returnedInsideBot = currCandle.close > cLower;
@@ -518,42 +527,104 @@
 
             let isCall = false; let isPut = false; let signalType = ''; let baseScore = 0; let rawSignal = false;
 
-            // WICK RATIO: смягчено (1.1 -> 0.77, 0.2 -> 0.14)
-            if (touchedTop && returnedInsideTop && structureBreakTop) { isPut = true; signalType = 'Primary Sweep'; baseScore = 55; rawSignal = true; } 
-            else if (isNearTop && upperWick > body * 0.77 && isRedCandle) { isPut = true; signalType = 'Wick Rejection'; baseScore = 50; rawSignal = true; } 
-            else if (currCandle.high >= cUpper && currCandle.close < cUpper && upperWick > cAtr * 0.14) { isPut = true; signalType = 'Edge Reaction'; baseScore = 48; rawSignal = true; } 
-            else if (isNearTop && prevCandle.high > cUpper && isRedCandle && currCandle.close < prevCandle.close) { isPut = true; signalType = 'Liquidity Return'; baseScore = 50; rawSignal = true; }
+            /* Base scores adjusted upwards: Primary Sweep T1 = 55, Wick Rejection T2 = 51, Liquidity Return = 49 */
+            if (touchedTop && returnedInsideTop && structureBreakTop) { 
+                isPut = true; signalType = 'Primary Sweep'; baseScore = 55; rawSignal = true; 
+            } 
+            else if (isNearTop && upperWickRatio > 0.85 && isRedCandle) { 
+                isPut = true; signalType = 'Wick Rejection'; baseScore = 51; rawSignal = true; 
+            } 
+            else if (currCandle.high >= cUpper && currCandle.close < cUpper && upperWick > cAtr * 0.14) { 
+                isPut = true; signalType = 'Edge Reaction'; baseScore = 48; rawSignal = true; 
+            } 
+            else if (isNearTop && prevCandle.high > cUpper && isRedCandle && currCandle.close < prevCandle.close) { 
+                isPut = true; signalType = 'Liquidity Return'; baseScore = 49; rawSignal = true; 
+            }
 
-            if (touchedBot && returnedInsideBot && structureBreakBot) { isCall = true; signalType = 'Primary Sweep'; baseScore = 55; rawSignal = true; } 
-            else if (isNearBot && lowerWick > body * 0.77 && isGreenCandle) { isCall = true; signalType = 'Wick Rejection'; baseScore = 50; rawSignal = true; } 
-            else if (currCandle.low <= cLower && currCandle.close > cLower && lowerWick > cAtr * 0.14) { isCall = true; signalType = 'Edge Reaction'; baseScore = 48; rawSignal = true; } 
-            else if (isNearBot && prevCandle.low < cLower && isGreenCandle && currCandle.close > prevCandle.close) { isCall = true; signalType = 'Liquidity Return'; baseScore = 50; rawSignal = true; }
+            if (touchedBot && returnedInsideBot && structureBreakBot) { 
+                isCall = true; signalType = 'Primary Sweep'; baseScore = 55; rawSignal = true; 
+            } 
+            else if (isNearBot && lowerWickRatio > 0.85 && isGreenCandle) { 
+                isCall = true; signalType = 'Wick Rejection'; baseScore = 51; rawSignal = true; 
+            } 
+            else if (currCandle.low <= cLower && currCandle.close > cLower && lowerWick > cAtr * 0.14) { 
+                isCall = true; signalType = 'Edge Reaction'; baseScore = 48; rawSignal = true; 
+            } 
+            else if (isNearBot && prevCandle.low < cLower && isGreenCandle && currCandle.close > prevCandle.close) { 
+                isCall = true; signalType = 'Liquidity Return'; baseScore = 49; rawSignal = true; 
+            }
 
-            // СМЯГЧЕНИЕ ТРЕБОВАНИЙ К ТЕЛУ СВЕЧИ
             const strongBodyPut = isRedCandle && body >= cAtr * 0.7 && (currCandle.open - currCandle.close) > (currCandle.high - currCandle.low) * 0.42;
             const strongBodyCall = isGreenCandle && body >= cAtr * 0.7 && (currCandle.close - currCandle.open) > (currCandle.high - currCandle.low) * 0.42;
 
             if (touchedTop && strongBodyPut && !rawSignal) {
-                isPut = true; signalType = 'Momentum Rejection (T2)'; baseScore = 55; rawSignal = true; isCall = false;
+                isPut = true; signalType = 'Momentum Rejection (T2)'; baseScore = 51; rawSignal = true; isCall = false;
             } else if (touchedBot && strongBodyCall && !rawSignal) {
-                isCall = true; signalType = 'Momentum Rejection (T2)'; baseScore = 55; rawSignal = true; isPut = false;
+                isCall = true; signalType = 'Momentum Rejection (T2)'; baseScore = 51; rawSignal = true; isPut = false;
             }
 
             if (!rawSignal) return { valid: false, reason: 'No raw signal pattern', score: 0 };
 
             let qScore = baseScore; let mtfConfStr = 'WAIT'; let rejectReason = '';
 
-            // MTF КАК СОВЕТНИК: Снижены штрафы за конфликт
+            /* Volume Filter (NEW) */
+            let sumVol = 0;
+            let volCount = 0;
+            for (let j = 0; j < 14 && (evalIdx - j) >= 0; j++) {
+                sumVol += data[evalIdx - j].volume || 0;
+                volCount++;
+            }
+            const avgVolume = volCount > 0 ? (sumVol / volCount) : 0;
+            const currentVolume = currCandle.volume || 0;
+            if (avgVolume > 0) {
+                const volRatio = currentVolume / avgVolume;
+                if (volRatio < 0.7) {
+                    qScore -= 10;
+                    rejectReason = 'low volume interest';
+                } else if (volRatio > 1.3) {
+                    qScore += 5;
+                }
+            }
+
+            /* Impulse Filter (NEW) */
+            const prevBody = Math.abs(prevCandle.open - prevCandle.close);
+            const isPrevOpposing = (isCall && prevCandle.close < prevCandle.open) || (isPut && prevCandle.close > prevCandle.open);
+            if (prevBody > 1.5 * cAtr && isPrevOpposing) {
+                qScore -= 10;
+                rejectReason = 'impulse risk opposition';
+            }
+
+            /* Structure Confirmation Constraint (NEW) */
+            if (signalType === 'Primary Sweep') {
+                const candleRange = currCandle.high - currCandle.low;
+                if (candleRange > 0 && (body / candleRange) < 0.3) {
+                    qScore -= 15;
+                    rejectReason = 'weak sweep breakout body';
+                }
+            }
+
+            /* Reclaim Quality Constraint (NEW) */
+            if (signalType === 'Wick Rejection') {
+                const isCorrectDirection = (isCall && currCandle.close > currCandle.open) || (isPut && currCandle.close < currCandle.open);
+                const candleRange = currCandle.high - currCandle.low;
+                const ratio = candleRange > 0 ? (body / candleRange) : 0;
+                if (!isCorrectDirection || ratio < 0.4) {
+                    qScore -= 20;
+                    rejectReason = 'poor reclaim quality body';
+                }
+            }
+
+            /* MTF Context impact amplified (+18 / -18) */
             if (isCall) {
-                if (mtfContext.h4 === 'BULLISH') qScore += 15;
-                if (mtfContext.h1 === 'BULLISH') qScore += 15;
-                if (mtfContext.m15 === 'BULLISH') { qScore += 15; mtfConfStr = 'CONFIRM'; }
-                if (mtfContext.h4 === 'BEARISH' || mtfContext.h1 === 'BEARISH') { qScore -= 3; mtfConfStr = 'CONFLICT'; }
+                if (mtfContext.h4 === 'BULLISH') qScore += 18;
+                if (mtfContext.h1 === 'BULLISH') qScore += 18;
+                if (mtfContext.m15 === 'BULLISH') { qScore += 18; mtfConfStr = 'CONFIRM'; }
+                if (mtfContext.h4 === 'BEARISH' || mtfContext.h1 === 'BEARISH') { qScore -= 18; mtfConfStr = 'CONFLICT'; }
             } else {
-                if (mtfContext.h4 === 'BEARISH') qScore += 15;
-                if (mtfContext.h1 === 'BEARISH') qScore += 15;
-                if (mtfContext.m15 === 'BEARISH') { qScore += 15; mtfConfStr = 'CONFIRM'; }
-                if (mtfContext.h4 === 'BULLISH' || mtfContext.h1 === 'BULLISH') { qScore -= 3; mtfConfStr = 'CONFLICT'; }
+                if (mtfContext.h4 === 'BEARISH') qScore += 18;
+                if (mtfContext.h1 === 'BEARISH') qScore += 18;
+                if (mtfContext.m15 === 'BEARISH') { qScore += 18; mtfConfStr = 'CONFIRM'; }
+                if (mtfContext.h4 === 'BULLISH' || mtfContext.h1 === 'BULLISH') { qScore -= 18; mtfConfStr = 'CONFLICT'; }
             }
 
             if (mtfConfStr === 'WAIT' || mtfContext.h4 === 'LOCAL' || mtfContext.status.includes('LOCAL')) {
@@ -564,27 +635,41 @@
                 qScore += 10;
             }
 
-            // ПОРОГИ TIER 1 / TIER 2 + DEBUG РЕЖИМ (-15%)
-            let baseThreshold = (signalType.includes('Primary Sweep') || signalType.includes('Momentum')) ? 48 : 51;
-            let threshold = baseThreshold * 0.85;
+            /* Threshold bounds adjusted to normal, with softer -10% discount in debug mode */
+            let baseThreshold = (signalType.includes('Primary Sweep') || signalType.includes('Momentum')) ? 52 : 56;
+            let threshold = baseThreshold * 0.90; 
 
-            // СЕРЕДИНА ДИАПАЗОНА: Снижены штрафы
-            const distTopLate = cUpper - currCandle.close;
-            const distBotLate = currCandle.close - cLower;
-            if (isCall && distBotLate > cAtr * 0.9) { qScore -= 2; rejectReason = 'late entry'; }
-            else if (isPut && distTopLate > cAtr * 0.9) { qScore -= 2; rejectReason = 'late entry'; }
-
-            // КУЛДАУН: Расслаблен на 40%
-            const candlesSinceLast = (currTime - engineState.lastSignalTime) / 300; 
-            if (candlesSinceLast < 1.8) { // ~9 minutes
-                qScore -= 5; rejectReason = 'cooldown (too fast)';
-            } else if (candlesSinceLast < 3.6) { // ~18 minutes
-                if (Math.abs(currCandle.close - engineState.lastSignalPrice) < cAtr * 0.38) {
-                    qScore -= 2; rejectReason = 'same zone cooldown';
+            /* Middle Range Penalty adjusted: -25 standard, -15 with strong wick exception (ratio > 0.6 of body) */
+            const midPoint = cLower + rangeWidth / 2;
+            const distToMid = Math.abs(currCandle.close - midPoint);
+            const inMiddle = distToMid < rangeWidth * 0.15;
+            if (inMiddle) {
+                const currentWickRatio = isCall ? lowerWickRatio : upperWickRatio;
+                if (currentWickRatio > 1.2) { 
+                    qScore -= 15;
+                } else {
+                    qScore -= 25;
+                    rejectReason = 'middle range penalty';
                 }
             }
 
-            // TREND ALIGNMENT FILTER: Больше не отбрасывает автоматом, только снижает скор
+            /* Late Entry check with 0.65 ATR tolerance */
+            const distTopLate = cUpper - currCandle.close;
+            const distBotLate = currCandle.close - cLower;
+            if (isCall && distBotLate > cAtr * 0.65) { qScore -= 30; rejectReason = 'late entry'; }
+            else if (isPut && distTopLate > cAtr * 0.65) { qScore -= 30; rejectReason = 'late entry'; }
+
+            /* Cooldown updated to 5 candles, soft cooldown between 5-7 candles (-15 penalty) */
+            const candlesSinceLast = (currTime - engineState.lastSignalTime) / 300; 
+            if (candlesSinceLast < 5) { 
+                qScore -= 50; rejectReason = 'cooldown (less than 5 candles)';
+            } else if (candlesSinceLast < 7) { 
+                if (Math.abs(currCandle.close - engineState.lastSignalPrice) < cAtr * 0.38) {
+                    qScore -= 15; rejectReason = 'soft same zone cooldown';
+                }
+            }
+
+            /* Trend Filter alignment check */
             const trend1H = get1HTrend(data, evalIdx);
             if (trend1H === 'BULLISH' && isPut) {
                 qScore -= 5;
@@ -784,7 +869,6 @@
                     // Pulser zone mapped 25 mins into the future from CURRENT candle
                     const pulseBox = overlayRef.current.querySelector('.zone-pulse-indicator');
                     if (pulseBox && zoneInfo && zoneState === 'IN') {
-                        // We use current logic mapped directly to right edge bounds
                         const currentLog = timeScale.coordinateToLogical(timeScale.timeToCoordinate(zoneInfo.time));
                         if (currentLog !== null) {
                             const xStart = timeScale.logicalToCoordinate(currentLog);
@@ -1141,11 +1225,11 @@
           }, [isStarted]);
 
           useEffect(() => {
-              const loadSparklines = async () => {
-                  const data = await ScannerAPI.getCandles('BTCUSDT', 50, '5m'); 
-                  if (data && data.length > 0) { setSparklines({'BTCUSDT': data}); currentPrice.current = data[data.length - 1].close; }
-              };
-              loadSparklines();
+            const loadSparklines = async () => {
+                const data = await ScannerAPI.getCandles('BTCUSDT', 50, '5m'); 
+                if (data && data.length > 0) { setSparklines({'BTCUSDT': data}); currentPrice.current = data[data.length - 1].close; }
+            };
+            loadSparklines();
           }, []);
 
           useEffect(() => {
@@ -1249,6 +1333,7 @@
               try { const allMarkers = [...historicalMarkersRef.current, ...liveMarkersRef.current]; allMarkers.sort((a, b) => a.time - b.time); candleSeries.current.setMarkers(allMarkers); } catch (e) {}
           };
 
+          /* ================= STREAMING_CHUNK: Starting the backtest engine process ================= */
           const runTerminalEngine = async () => {
             if (engineActive.current) return; engineActive.current = true;
             if (audioCtx.current && audioCtx.current.state === 'suspended') await audioCtx.current.resume();
@@ -1282,7 +1367,7 @@
                 /* --- BOUND BACKTEST EXACTLY TO THE LAST 12 HOURS --- */
                 const twelveHoursAgoSec = Math.floor(Date.now() / 1000) - (12 * 60 * 60);
                 let startIdx = initialData.findIndex(d => d.time >= twelveHoursAgoSec);
-                if (startIdx === -1) startIdx = Math.max(0, initialData.length - 144); // 144 candles is 12h fallback
+                if (startIdx === -1) startIdx = Math.max(0, initialData.length - 144); 
 
                 // Exclude last 4 candles to avoid live overlapping / repainting
                 const endIdx = initialData.length - 4; 
@@ -1348,7 +1433,7 @@
                             engineState.consecutiveLosses++;
                             localMartingaleIdx = localMartingaleIdx < 6 ? localMartingaleIdx + 1 : 0;
                         }
-                        idx += 5; // Skip expiration (5 candles of 5M is 25 minutes)
+                        idx += 5; // Expiry spacing (5 candles of 5M)
                     }
                 }
 
@@ -1773,7 +1858,7 @@
                 </div>
               </div>
 
-              {/* HEADER CONTAINER */}
+              {}
               <header className="h-auto md:h-16 py-2 md:py-0 flex flex-col md:flex-row items-start md:items-center justify-between px-3 md:px-6 shrink-0 z-40 gap-2 md:gap-0 mt-2">
                 <div className="flex flex-col justify-center w-full md:w-auto">
                   <div className="flex justify-between items-center md:block">
@@ -1790,8 +1875,8 @@
                   </div>
                 </div>
                 
-                {/* Mobile Header Button */}
-                <div className="w-full flex md:hidden mb-1 mt-1 sticky top-0 z-[100] pb-2 pt-1 border-b border-slate-200 shadow-sm px-1 justify-between items-center gap-2 bg-[#eef2f6]">
+                {/* Mobile Header Button - Sticky, highly visible, z-50 */}
+                <div className="w-full flex md:hidden mb-1 mt-1 sticky top-0 z-50 pb-2 pt-1 border-b border-slate-200 shadow-sm px-1 justify-between items-center gap-2 bg-[#eef2f6]">
                     <BrokerButton compact={true} />
                     <div className="flex gap-2 items-center">
                         <LiveClock />
@@ -1802,9 +1887,9 @@
                 <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-2 md:gap-1.5">
                   <div className="flex items-center gap-3">
                       <div className="hidden md:block">
-                          <BrokerButton compact={true} />
+                          <BrokerButton compact={false} />
                       </div>
-                      <div className="text-xs md:text-sm text-white px-4 py-1.5 border border-white/50 bg-gradient-to-r from-blue-600 to-cyan-500 shadow-[0_5px_20px_rgba(14,165,233,0.3)] rounded-lg oswald-font tracking-widest hidden md:block font-bold">
+                      <div className="text-xs md:text-sm text-white px-4 py-1.5 border border-white/50 bg-gradient-to-r from-blue-600 to-cyan-500 shadow-[0_5px_20px_rgba(14,165,233,0.3)] rounded-lg oswald-font tracking-widest hidden md:block font-bold h-[52px] flex items-center">
                         {appPhase}
                       </div>
                   </div>
