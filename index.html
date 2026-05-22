@@ -277,10 +277,9 @@
             </svg>
         );
 
-        /* ================= STREAMING_CHUNK: Defining the optimized premium Broker Button ================= */
         const BrokerButton = ({ compact = false }) => (
             <a 
-                href="https://intrade32.bar/311164" 
+                href="https://intrade33.bar" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className={`broker-btn group relative flex items-center justify-center overflow-hidden cursor-pointer no-underline h-[52px] px-6 transition-all duration-300 ease-out z-50 ${compact ? 'w-auto' : 'w-full'}`}
@@ -297,7 +296,6 @@
             </a>
         );
 
-        /* ================= FINANCIAL UNIFICATION & MARTINGALE CONFIG ================= */
         const MARTINGALE_STEPS = [1000, 2600, 6760, 17576, 45697, 118813, 308914];
         const TRADE_MONEY_CONFIG = { startBalance: 100000, payout: 0.70 };
 
@@ -328,7 +326,6 @@
             return { trades: total, wins, losses, winrate, pnl: Math.round(pnl), balance: Math.round(balance), payout: moneyConfig.payout };
         }
 
-        /* ================= SCAN LEDGER MANAGER (5M SPECIFIC) ================= */
         const LEDGER_KEY = 'crypto_pro_max_scan_ledger_5m';
         const _inMemoryLedger = {};
         const ScanLedger = {
@@ -476,7 +473,6 @@
             return 'NEUTRAL';
         }
 
-        /* ================= STREAMING_CHUNK: SMC Evaluation Logic with dynamic filters ================= */
         function evaluateSignalEngine(data, evalIdx, liqMap, atrMap, mtfContext, engineState) {
             if (evalIdx < 100) return { valid: false, reason: 'Not enough data', score: 0 };
 
@@ -1333,7 +1329,6 @@
               try { const allMarkers = [...historicalMarkersRef.current, ...liveMarkersRef.current]; allMarkers.sort((a, b) => a.time - b.time); candleSeries.current.setMarkers(allMarkers); } catch (e) {}
           };
 
-          /* ================= STREAMING_CHUNK: Starting the backtest engine process ================= */
           const runTerminalEngine = async () => {
             if (engineActive.current) return; engineActive.current = true;
             if (audioCtx.current && audioCtx.current.state === 'suspended') await audioCtx.current.resume();
