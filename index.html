@@ -17,8 +17,8 @@
         
         body { 
             margin: 0; padding: 0; 
-            background: #eef2f6;
-            color: #0f172a; 
+            background: #050b14; /* Deep cyber background */
+            color: #e2e8f0; 
             overflow: hidden; 
             touch-action: manipulation;
             -webkit-font-smoothing: antialiased;
@@ -28,24 +28,26 @@
         .oswald-font { font-family: 'Oswald', sans-serif; letter-spacing: 0.05em; text-transform: uppercase; }
         .mono-font { font-family: 'JetBrains Mono', monospace; }
 
+        /* Premium Cyber Grid */
         .bg-grid-pattern {
             background-image: 
-                linear-gradient(to right, rgba(14, 165, 233, 0.04) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(14, 165, 233, 0.04) 1px, transparent 1px);
-            background-size: 30px 30px;
-            mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
-            -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+                linear-gradient(to right, rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            mask-image: radial-gradient(circle at center, black 30%, transparent 80%);
+            -webkit-mask-image: radial-gradient(circle at center, black 30%, transparent 80%);
         }
 
+        /* Ambient Orbs */
         .bg-orb-1 {
             position: absolute; top: -10%; left: -5%; width: 50vw; height: 50vw;
-            background: radial-gradient(circle, rgba(59, 130, 246, 0.20) 0%, rgba(37, 99, 235, 0.05) 50%, transparent 70%);
-            border-radius: 50%; filter: blur(60px); animation: float 12s ease-in-out infinite alternate;
+            background: radial-gradient(circle, rgba(0, 240, 255, 0.08) 0%, rgba(14, 165, 233, 0.02) 40%, transparent 70%);
+            border-radius: 50%; filter: blur(60px); animation: float 15s ease-in-out infinite alternate;
         }
         .bg-orb-2 {
             position: absolute; bottom: -15%; right: -10%; width: 60vw; height: 60vw;
-            background: radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, rgba(14, 165, 233, 0.05) 50%, transparent 70%);
-            border-radius: 50%; filter: blur(80px); animation: float 15s ease-in-out infinite alternate-reverse;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, rgba(99, 102, 241, 0.02) 40%, transparent 70%);
+            border-radius: 50%; filter: blur(80px); animation: float 18s ease-in-out infinite alternate-reverse;
         }
 
         @keyframes float {
@@ -63,22 +65,23 @@
             animation: gradient-x 6s ease infinite;
         }
 
+        /* 3D Splash Card */
         .card-3d-wrapper { perspective: 2000px; }
         .card-3d {
             transform-style: preserve-3d;
             animation: float-3d 12s ease-in-out infinite;
             box-shadow: 
-                0 30px 60px -15px rgba(15, 23, 42, 0.15), 
-                0 15px 30px -10px rgba(14, 165, 233, 0.15),
-                inset 0 1px 3px rgba(255, 255, 255, 1);
-            border: 1px solid rgba(255, 255, 255, 0.7);
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 249, 255, 0.75) 100%);
+                0 30px 60px -15px rgba(0, 0, 0, 0.6), 
+                0 15px 30px -10px rgba(0, 240, 255, 0.2),
+                inset 0 1px 2px rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 240, 255, 0.15);
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(5, 11, 20, 0.95) 100%);
             backdrop-filter: blur(25px);
             position: relative;
         }
         .card-3d::before {
             content: ''; position: absolute; inset: 0;
-            background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.5) 25%, transparent 30%);
+            background: linear-gradient(105deg, transparent 20%, rgba(0,240,255,0.05) 25%, transparent 30%);
             border-radius: inherit; pointer-events: none; z-index: 50; animation: glare 6s infinite linear;
         }
 
@@ -100,8 +103,8 @@
         .ticker-wrapper { display: flex; width: max-content; animation: ticker 40s linear infinite; }
         
         .scanline-anim { 
-            background: linear-gradient(to bottom, transparent, rgba(14, 165, 233, 0.1), rgba(59, 130, 246, 0.2), transparent); 
-            animation: scanline 3s cubic-bezier(0.4, 0, 0.2, 1) infinite; 
+            background: linear-gradient(to bottom, transparent, rgba(0, 240, 255, 0.05), rgba(0, 240, 255, 0.1), transparent); 
+            animation: scanline 4s cubic-bezier(0.4, 0, 0.2, 1) infinite; 
         }
         @keyframes scanline { 
             0% { transform: translateY(-100%); opacity: 0; } 
@@ -110,70 +113,71 @@
             100% { transform: translateY(500%); opacity: 0; } 
         }
         
+        /* Dark Premium Glass Panels */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.9);
-            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+            background: rgba(10, 15, 25, 0.75);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
             z-index: 40;
         }
         
         .glass-panel-heavy {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(241, 245, 249, 0.6) 100%);
-            backdrop-filter: blur(45px);
-            -webkit-backdrop-filter: blur(45px);
-            border: 1px solid rgba(255, 255, 255, 0.9);
-            box-shadow: 0 15px 40px -10px rgba(15, 23, 42, 0.08), inset 0 2px 15px rgba(255, 255, 255, 0.6);
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(5, 11, 20, 0.8) 100%);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(0, 240, 255, 0.15);
+            box-shadow: 0 15px 40px -10px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 240, 255, 0.02);
         }
 
         .glass-panel-splash {
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.95) 100%);
+            background: linear-gradient(135deg, rgba(10, 15, 30, 0.85) 0%, rgba(2, 6, 15, 0.95) 100%);
             backdrop-filter: blur(40px);
             -webkit-backdrop-filter: blur(40px);
         }
 
         .premium-glass-card {
-            background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.75) 100%);
-            border: 1px solid rgba(255, 255, 255, 1);
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+            border: 1px solid rgba(0, 240, 255, 0.2);
             backdrop-filter: blur(25px);
             -webkit-backdrop-filter: blur(25px);
             border-radius: 1.5rem;
             box-shadow: 
-                0 12px 35px -5px rgba(15, 23, 42, 0.05), 
-                inset 0 2px 4px rgba(255, 255, 255, 1),
-                inset 0 -1px 2px rgba(0, 0, 0, 0.02);
+                0 15px 35px -5px rgba(0, 0, 0, 0.6), 
+                inset 0 1px 2px rgba(255, 255, 255, 0.05);
         }
         
         .glass-card {
-            background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.7) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(25px);
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.7) 100%);
+            border: 1px solid rgba(0, 240, 255, 0.1);
+            backdrop-filter: blur(20px);
             border-radius: 1.5rem;
-            box-shadow: 0 8px 25px -5px rgba(15, 23, 42, 0.04), inset 0 1px 3px rgba(255, 255, 255, 1);
+            box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.02);
         }
 
+        /* Neon Pulse Borders */
         .zone-active-support {
-            box-shadow: inset 0 0 35px rgba(16, 185, 129, 0.25) !important;
-            border-color: rgba(16, 185, 129, 0.4) !important;
+            box-shadow: inset 0 0 35px rgba(0, 240, 255, 0.15) !important;
+            border-color: rgba(0, 240, 255, 0.4) !important;
             animation: pulse-border-support 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
         .zone-active-resistance {
-            box-shadow: inset 0 0 35px rgba(244, 63, 94, 0.25) !important;
-            border-color: rgba(244, 63, 94, 0.4) !important;
+            box-shadow: inset 0 0 35px rgba(255, 0, 85, 0.15) !important;
+            border-color: rgba(255, 0, 85, 0.4) !important;
             animation: pulse-border-resistance 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
         @keyframes pulse-border-support {
-            0%, 100% { box-shadow: inset 0 0 35px rgba(16, 185, 129, 0.25); }
-            50% { box-shadow: inset 0 0 55px rgba(16, 185, 129, 0.45); }
+            0%, 100% { box-shadow: inset 0 0 35px rgba(0, 240, 255, 0.15); }
+            50% { box-shadow: inset 0 0 55px rgba(0, 240, 255, 0.35); }
         }
         @keyframes pulse-border-resistance {
-            0%, 100% { box-shadow: inset 0 0 35px rgba(244, 63, 94, 0.25); }
-            50% { box-shadow: inset 0 0 55px rgba(244, 63, 94, 0.45); }
+            0%, 100% { box-shadow: inset 0 0 35px rgba(255, 0, 85, 0.15); }
+            50% { box-shadow: inset 0 0 55px rgba(255, 0, 85, 0.35); }
         }
 
         .text-gradient {
-            background: linear-gradient(135deg, #2563eb, #06b6d4);
+            background: linear-gradient(135deg, #00f0ff, #3b82f6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -187,41 +191,39 @@
         .hft-tick { animation: slideUpFade 1.5s ease-out forwards; }
         
         .silver-badge {
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
-            border: 1px solid rgba(255, 255, 255, 0.9);
+            background: linear-gradient(135deg, #334155 0%, #1e293b 50%, #0f172a 100%);
+            border: 1px solid rgba(0, 240, 255, 0.2);
             box-shadow: 
-                0 4px 10px -2px rgba(15, 23, 42, 0.1),
-                inset 0 2px 4px rgba(255, 255, 255, 1),
-                inset 0 -1px 2px rgba(0, 0, 0, 0.05);
+                0 4px 10px -2px rgba(0, 0, 0, 0.5),
+                inset 0 1px 2px rgba(255, 255, 255, 0.1);
             position: relative;
             overflow: hidden;
         }
         .silver-badge::after {
             content: ''; position: absolute; top: 0; left: -150%; width: 50%; height: 100%;
-            background: linear-gradient(to right, transparent, rgba(255,255,255,0.8), transparent);
+            background: linear-gradient(to right, transparent, rgba(0,240,255,0.2), transparent);
             transform: skewX(-20deg); animation: silver-shine 5s infinite;
         }
         @keyframes silver-shine { 0% { left: -150%; } 20% { left: 200%; } 100% { left: 200%; } }
         .silver-text {
-            background: linear-gradient(to right, #475569, #94a3b8, #334155);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            text-shadow: 0px 1px 1px rgba(255,255,255,0.6);
+            color: #00f0ff;
+            text-shadow: 0px 0px 8px rgba(0,240,255,0.4);
         }
 
         /* PREMIUM BRAND BUTTON */
         .broker-btn {
-            background: linear-gradient(135deg, #06b6d4 0%, #0284c7 40%, #1d4ed8 100%);
-            box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.45), 0 8px 25px rgba(14, 165, 233, 0.5);
-            border: 1px solid rgba(186, 230, 253, 0.4); 
+            background: linear-gradient(135deg, #00f0ff 0%, #0284c7 40%, #1d4ed8 100%);
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3), 0 8px 25px rgba(0, 240, 255, 0.3);
+            border: 1px solid rgba(0, 240, 255, 0.5); 
             border-radius: 1.2rem;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .broker-btn:hover {
-            box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.65), 0 12px 30px rgba(14, 165, 233, 0.7);
+            box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.4), 0 12px 30px rgba(0, 240, 255, 0.5);
             transform: translateY(-2px);
         }
         .broker-btn:active {
-            transform: translateY(1px) scale(0.98); box-shadow: 0 4px 10px rgba(14, 165, 233, 0.4);
+            transform: translateY(1px) scale(0.98); box-shadow: 0 4px 10px rgba(0, 240, 255, 0.3);
         }
 
         .animated-cursor { animation: cursor-click 4s infinite; }
@@ -233,51 +235,49 @@
             50% { transform: translate(20px, 20px) scale(1); opacity: 0; }
             100% { transform: translate(20px, 20px) scale(1); opacity: 0; }
         }
-        .click-ripple {
-            position: absolute; top: 2px; left: 2px; width: 15px; height: 15px;
-            background: rgba(255,255,255,0.8); border-radius: 50%;
-            transform: scale(0); opacity: 0; animation: ripple-effect 4s infinite; pointer-events: none;
-        }
-        @keyframes ripple-effect {
-            0%, 20% { transform: scale(0); opacity: 0; }
-            25% { transform: scale(1); opacity: 0.8; }
-            40% { transform: scale(3.5); opacity: 0; }
-            100% { transform: scale(3.5); opacity: 0; }
-        }
 
         @keyframes pulse-zone {
-            0% { opacity: 0.15; }
-            50% { opacity: 0.5; }
-            100% { opacity: 0.15; }
+            0% { opacity: 0.1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 0.1; }
         }
 
         .zone-pulse-indicator-mesh {
             animation: pulse-zone 2s infinite ease-in-out;
         }
+
+        /* Countdown specific animation */
+        @keyframes scalePulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-scale-pulse { animation: scalePulse 1s infinite; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
-        const Shield = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 4.81 17 6 19 6a1 1 0 0 1 1 1z"/></svg>;
-        const Cpu = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>;
-        const Globe = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>;
-        const Clock = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
-        const Radar = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 5.49A10 10 0 0 0 5.3 19.38"/><path d="M20 8.74A10 10 0 0 1 17.38 20"/><path d="M16 8a6 6 0 0 0-8.5-1.5"/><path d="M7.5 16.5a6 6 0 0 0 9.2-.5"/><path d="M12 12v.01"/></svg>;
-        const Zap = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
-        const BugIcon = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M12 18v.01"></path><path d="M8 12v.01"></path><path d="M16 12v.01"></path><rect x="4" y="6" width="16" height="16" rx="2" ry="2"></rect></svg>;
+        // Memoized Icons
+        const Shield = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 4.81 17 6 19 6a1 1 0 0 1 1 1z"/></svg>);
+        const Cpu = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>);
+        const Globe = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>);
+        const Clock = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>);
+        const Radar = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 5.49A10 10 0 0 0 5.3 19.38"/><path d="M20 8.74A10 10 0 0 1 17.38 20"/><path d="M16 8a6 6 0 0 0-8.5-1.5"/><path d="M7.5 16.5a6 6 0 0 0 9.2-.5"/><path d="M12 12v.01"/></svg>);
+        const Zap = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>);
+        const BugIcon = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M12 18v.01"></path><path d="M8 12v.01"></path><path d="M16 12v.01"></path><rect x="4" y="6" width="16" height="16" rx="2" ry="2"></rect></svg>);
         
-        const MousePointer = ({ size = 24, className = "" }) => (
+        const MousePointer = React.memo(({ size = 24, className = "" }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="rgba(255,255,255,0.9)" stroke="#0f172a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
                 <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
                 <path d="M13 13l6 6"/>
             </svg>
-        );
+        ));
 
-        const BrokerButton = ({ compact = false }) => (
+        const BrokerButton = React.memo(({ compact = false }) => (
             <a 
                 href="https://intrade33.bar" 
                 target="_blank" 
@@ -289,13 +289,10 @@
                     <Zap size={18} className="text-cyan-200 animate-pulse group-hover:animate-ping group-hover:scale-110 transition-transform duration-200" />
                     <span>{compact ? "ТОРГОВАТЬ" : "ТОРГОВАТЬ ЗДЕСЬ, ЧТОБЫ ЗАРАБОТАТЬ"}</span>
                 </span>
-                <div className="absolute top-0.5 right-0.5 pointer-events-none animated-cursor scale-50">
-                    <MousePointer size={14} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
-                    <div className="click-ripple"></div>
-                </div>
             </a>
-        );
+        ));
 
+        // Constants
         const MARTINGALE_STEPS = [1000, 2600, 6760, 17576, 45697, 118813, 308914];
         const TRADE_MONEY_CONFIG = { startBalance: 100000, payout: 0.70 };
 
@@ -308,7 +305,6 @@
             let pnl = 0;
             let balance = moneyConfig.startBalance;
             
-            // Calculate exact PNL based on specific bet amounts
             closedTrades.forEach(t => {
                 const betAmount = t.betAmount || 1000;
                 if (t.result === "WIN") {
@@ -505,7 +501,6 @@
             const isNearTouchTop = (cUpper - currCandle.high) < cAtr * 0.9;
             const isNearTouchBot = (currCandle.low - cLower) < cAtr * 0.9;
             
-            /* Tighter Wick ratio requirement (+10%) */
             const minWickRatio = 0.50; 
             const upperWickRatio = upperWick / (body || 1);
             const lowerWickRatio = lowerWick / (body || 1);
@@ -523,7 +518,6 @@
 
             let isCall = false; let isPut = false; let signalType = ''; let baseScore = 0; let rawSignal = false;
 
-            /* Base scores adjusted upwards: Primary Sweep T1 = 55, Wick Rejection T2 = 51, Liquidity Return = 49 */
             if (touchedTop && returnedInsideTop && structureBreakTop) { 
                 isPut = true; signalType = 'Primary Sweep'; baseScore = 55; rawSignal = true; 
             } 
@@ -563,9 +557,7 @@
 
             let qScore = baseScore; let mtfConfStr = 'WAIT'; let rejectReason = '';
 
-            /* Volume Filter (NEW) */
-            let sumVol = 0;
-            let volCount = 0;
+            let sumVol = 0; let volCount = 0;
             for (let j = 0; j < 14 && (evalIdx - j) >= 0; j++) {
                 sumVol += data[evalIdx - j].volume || 0;
                 volCount++;
@@ -582,7 +574,6 @@
                 }
             }
 
-            /* Impulse Filter (NEW) */
             const prevBody = Math.abs(prevCandle.open - prevCandle.close);
             const isPrevOpposing = (isCall && prevCandle.close < prevCandle.open) || (isPut && prevCandle.close > prevCandle.open);
             if (prevBody > 1.5 * cAtr && isPrevOpposing) {
@@ -590,27 +581,22 @@
                 rejectReason = 'impulse risk opposition';
             }
 
-            /* Structure Confirmation Constraint (NEW) */
             if (signalType === 'Primary Sweep') {
                 const candleRange = currCandle.high - currCandle.low;
                 if (candleRange > 0 && (body / candleRange) < 0.3) {
-                    qScore -= 15;
-                    rejectReason = 'weak sweep breakout body';
+                    qScore -= 15; rejectReason = 'weak sweep breakout body';
                 }
             }
 
-            /* Reclaim Quality Constraint (NEW) */
             if (signalType === 'Wick Rejection') {
                 const isCorrectDirection = (isCall && currCandle.close > currCandle.open) || (isPut && currCandle.close < currCandle.open);
                 const candleRange = currCandle.high - currCandle.low;
                 const ratio = candleRange > 0 ? (body / candleRange) : 0;
                 if (!isCorrectDirection || ratio < 0.4) {
-                    qScore -= 20;
-                    rejectReason = 'poor reclaim quality body';
+                    qScore -= 20; rejectReason = 'poor reclaim quality body';
                 }
             }
 
-            /* MTF Context impact amplified (+18 / -18) */
             if (isCall) {
                 if (mtfContext.h4 === 'BULLISH') qScore += 18;
                 if (mtfContext.h1 === 'BULLISH') qScore += 18;
@@ -627,35 +613,25 @@
                 mtfConfStr = 'LOCAL 5M'; qScore += 25; 
             }
 
-            if (mtfContext.h4 === 'NEUTRAL' && mtfContext.h1 === 'NEUTRAL') {
-                qScore += 10;
-            }
+            if (mtfContext.h4 === 'NEUTRAL' && mtfContext.h1 === 'NEUTRAL') { qScore += 10; }
 
-            /* Threshold bounds adjusted to normal, with softer -10% discount in debug mode */
             let baseThreshold = (signalType.includes('Primary Sweep') || signalType.includes('Momentum')) ? 52 : 56;
             let threshold = baseThreshold * 0.90; 
 
-            /* Middle Range Penalty adjusted: -25 standard, -15 with strong wick exception (ratio > 0.6 of body) */
             const midPoint = cLower + rangeWidth / 2;
             const distToMid = Math.abs(currCandle.close - midPoint);
             const inMiddle = distToMid < rangeWidth * 0.15;
             if (inMiddle) {
                 const currentWickRatio = isCall ? lowerWickRatio : upperWickRatio;
-                if (currentWickRatio > 1.2) { 
-                    qScore -= 15;
-                } else {
-                    qScore -= 25;
-                    rejectReason = 'middle range penalty';
-                }
+                if (currentWickRatio > 1.2) { qScore -= 15; } 
+                else { qScore -= 25; rejectReason = 'middle range penalty'; }
             }
 
-            /* Late Entry check with 0.65 ATR tolerance */
             const distTopLate = cUpper - currCandle.close;
             const distBotLate = currCandle.close - cLower;
             if (isCall && distBotLate > cAtr * 0.65) { qScore -= 30; rejectReason = 'late entry'; }
             else if (isPut && distTopLate > cAtr * 0.65) { qScore -= 30; rejectReason = 'late entry'; }
 
-            /* Cooldown updated to 5 candles, soft cooldown between 5-7 candles (-15 penalty) */
             const candlesSinceLast = (currTime - engineState.lastSignalTime) / 300; 
             if (candlesSinceLast < 5) { 
                 qScore -= 50; rejectReason = 'cooldown (less than 5 candles)';
@@ -665,14 +641,9 @@
                 }
             }
 
-            /* Trend Filter alignment check */
             const trend1H = get1HTrend(data, evalIdx);
-            if (trend1H === 'BULLISH' && isPut) {
-                qScore -= 5;
-            }
-            if (trend1H === 'BEARISH' && isCall) {
-                qScore -= 5;
-            }
+            if (trend1H === 'BULLISH' && isPut) qScore -= 5;
+            if (trend1H === 'BEARISH' && isCall) qScore -= 5;
 
             if (qScore < threshold) {
                 if (!rejectReason) {
@@ -691,13 +662,13 @@
             };
         }
 
-        const LiveClock = () => {
+        const LiveClock = React.memo(() => {
           const [t, setT] = useState(new Date());
           useEffect(() => { const i = setInterval(() => setT(new Date()), 1000); return () => clearInterval(i); }, []);
-          return <span className="text-slate-800 text-sm md:text-base mono-font font-bold">{t.toLocaleTimeString('ru-RU')}</span>;
-        };
+          return <span className="text-slate-100 text-sm md:text-base mono-font font-bold">{t.toLocaleTimeString('ru-RU')}</span>;
+        });
 
-        const MiniChart = ({ data }) => {
+        const MiniChart = React.memo(({ data }) => {
           const [scanIndex, setScanIndex] = useState(0);
           useEffect(() => {
               if (!data || !Array.isArray(data) || data.length < 2) return;
@@ -713,20 +684,20 @@
               return () => { isActive = false; clearTimeout(timeoutId); };
           }, [data]);
 
-          if (!data || !Array.isArray(data) || data.length < 2) { return <div className="w-full h-full flex items-center justify-center opacity-60 text-lg tracking-widest text-slate-500 font-bold animate-pulse oswald-font">ЗАГРУЗКА КЛАСТЕРОВ...</div>; }
+          if (!data || !Array.isArray(data) || data.length < 2) { return <div className="w-full h-full flex items-center justify-center opacity-60 text-lg tracking-widest text-slate-400 font-bold animate-pulse oswald-font">ЗАГРУЗКА КЛАСТЕРОВ...</div>; }
           const chartData = data.slice(-150); 
           const min = Math.min(...chartData.map(d => d.low)); const max = Math.max(...chartData.map(d => d.high));
           const maxVol = Math.max(...chartData.map(d => d.volume || 1));
           const range = (max - min) || 1; const width = 800, height = 120; const candleWidth = width / chartData.length;
 
           return (
-            <div className="relative w-full h-full bg-slate-50/50">
+            <div className="relative w-full h-full bg-slate-900/50">
                 <svg className="w-full h-full opacity-80" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
                   <defs>
                       <linearGradient id="scanGlow" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="rgba(34, 211, 238, 0)" />
-                          <stop offset="50%" stopColor="rgba(34, 211, 238, 0.2)" />
-                          <stop offset="100%" stopColor="rgba(34, 211, 238, 0)" />
+                          <stop offset="0%" stopColor="rgba(0, 240, 255, 0)" />
+                          <stop offset="50%" stopColor="rgba(0, 240, 255, 0.3)" />
+                          <stop offset="100%" stopColor="rgba(0, 240, 255, 0)" />
                       </linearGradient>
                   </defs>
                   {chartData.map((c, i) => {
@@ -737,9 +708,9 @@
                     return (
                       <g key={i}>
                         {isTarget && <rect x={x - candleWidth*1.5} y={0} width={candleWidth * 4} height={height} fill="url(#scanGlow)" />}
-                        <line x1={x + w / 2} y1={hY} x2={x + w / 2} y2={lY} stroke={isUp ? (isTarget ? "#06b6d4" : "#0ea5e9") : (isTarget ? "#e11d48" : "#94a3b8")} strokeWidth={isTarget ? "2" : "1"} className="transition-colors duration-150" />
-                        <rect x={x} y={isUp ? cY : oY} width={w} height={Math.max(Math.abs(cY - oY), 1.2)} fill={isUp ? (isTarget ? "#06b6d4" : "#0ea5e9") : "transparent"} stroke={isUp ? "none" : (isTarget ? "#e11d48" : "#94a3b8")} strokeWidth={isTarget ? "1.5" : "1"} rx="0.5" className="transition-colors duration-150" />
-                        <rect x={x} y={volY} width={w} height={volH} fill={isUp ? "rgba(56, 189, 248, 0.15)" : "rgba(148, 163, 184, 0.15)"} />
+                        <line x1={x + w / 2} y1={hY} x2={x + w / 2} y2={lY} stroke={isUp ? (isTarget ? "#00f0ff" : "#0284c7") : (isTarget ? "#ff0055" : "#be123c")} strokeWidth={isTarget ? "2" : "1"} className="transition-colors duration-150" />
+                        <rect x={x} y={isUp ? cY : oY} width={w} height={Math.max(Math.abs(cY - oY), 1.2)} fill={isUp ? (isTarget ? "#00f0ff" : "#0284c7") : "transparent"} stroke={isUp ? "none" : (isTarget ? "#ff0055" : "#be123c")} strokeWidth={isTarget ? "1.5" : "1"} rx="0.5" className="transition-colors duration-150" />
+                        <rect x={x} y={volY} width={w} height={volH} fill={isUp ? "rgba(0, 240, 255, 0.15)" : "rgba(255, 0, 85, 0.15)"} />
                       </g>
                     );
                   })}
@@ -747,14 +718,14 @@
                 {chartData.length > 0 && scanIndex >= 0 && scanIndex < chartData.length && (
                     <div className="absolute top-0 bottom-0 pointer-events-none transition-all duration-200 ease-out flex flex-col justify-center items-center mix-blend-screen" style={{ left: `${(scanIndex / chartData.length) * 100}%`, width: `${(1 / chartData.length) * 100}%` }}>
                         <div className="absolute w-[40px] h-[100%] bg-cyan-400/20 blur-md rounded-full -ml-[20px]"></div>
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 border border-cyan-400/50 rounded-full bg-cyan-400/10 backdrop-blur-[2px] shadow-[0_0_15px_rgba(34,211,238,0.4)] flex items-center justify-center"><div className="w-1.5 h-1.5 bg-cyan-300 rounded-full shadow-[0_0_8px_rgba(34,211,238,1)]"></div></div>
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 border border-cyan-400/50 rounded-full bg-cyan-400/10 backdrop-blur-[2px] shadow-[0_0_15px_rgba(0,240,255,0.4)] flex items-center justify-center"><div className="w-1.5 h-1.5 bg-cyan-300 rounded-full shadow-[0_0_8px_rgba(0,240,255,1)]"></div></div>
                     </div>
                 )}
             </div>
           );
-        };
+        });
 
-        const Speedometer = ({ value, label, colorHex = "#0284c7", glow = false }) => {
+        const Speedometer = React.memo(({ value, label, colorHex = "#00f0ff", glow = false }) => {
           const safeValue = isNaN(value) ? 50 : Math.max(0, Math.min(100, value));
           const angle = -90 + (safeValue / 100) * 180;
           const radius = 40; const circumference = Math.PI * radius; const strokeDashoffset = circumference - (safeValue / 100) * circumference;
@@ -765,70 +736,70 @@
                 <defs><filter id={`glow-${label.replace(/\s+/g, '')}`}><feGaussianBlur stdDeviation="3.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
                 {[0, 25, 50, 75, 100].map(tick => {
                    const a = -Math.PI + (tick/100)*Math.PI;
-                   return <line key={tick} x1={50 + 36 * Math.cos(a)} y1={50 + 36 * Math.sin(a)} x2={50 + 44 * Math.cos(a)} y2={50 + 44 * Math.sin(a)} stroke="rgba(148, 163, 184, 0.5)" strokeWidth="2" strokeLinecap="round" />
+                   return <line key={tick} x1={50 + 36 * Math.cos(a)} y1={50 + 36 * Math.sin(a)} x2={50 + 44 * Math.cos(a)} y2={50 + 44 * Math.sin(a)} stroke="rgba(148, 163, 184, 0.3)" strokeWidth="2" strokeLinecap="round" />
                 })}
-                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="rgba(226, 232, 240, 1)" strokeWidth="5" strokeLinecap="round" />
+                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="rgba(30, 41, 59, 1)" strokeWidth="5" strokeLinecap="round" />
                 <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke={colorHex} strokeWidth="5" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)' }} filter={glow ? `url(#glow-${label.replace(/\s+/g, '')})` : "none"} />
                 <g style={{ transform: `rotate(${angle}deg)`, transformOrigin: '50px 50px', transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
                   <polygon points="48,50 52,50 50,12" fill={colorHex} />
                   <circle cx="50" cy="50" r="6" fill={colorHex} />
-                  <circle cx="50" cy="50" r="2.5" fill="#ffffff" />
+                  <circle cx="50" cy="50" r="2.5" fill="#0f172a" />
                 </g>
               </svg>
-              <div className={`text-base md:text-lg mt-1.5 font-black leading-none oswald-font ${glow ? 'text-cyan-600 drop-shadow-[0_0_8px_currentColor]' : 'text-slate-800'}`} style={{color: glow ? colorHex : ''}}>{Math.round(safeValue)}</div>
-              <div className="text-[8px] md:text-[9px] text-slate-500 tracking-widest leading-none text-center font-bold mt-1 uppercase whitespace-nowrap">{label}</div>
+              <div className={`text-base md:text-lg mt-1.5 font-black leading-none oswald-font ${glow ? 'drop-shadow-[0_0_8px_currentColor]' : ''}`} style={{color: glow ? colorHex : '#f8fafc'}}>{Math.round(safeValue)}</div>
+              <div className="text-[8px] md:text-[9px] text-slate-400 tracking-widest leading-none text-center font-bold mt-1 uppercase whitespace-nowrap">{label}</div>
             </div>
           );
-        };
+        });
         
-        const VolumetricArrow = ({ type }) => {
+        const VolumetricArrow = React.memo(({ type, active }) => {
           const isUp = type === 'CALL';
           return (
-            <div className="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center animate-arrow-premium">
-               <svg viewBox="0 0 24 24" className={`w-full h-full fill-current ${isUp ? 'text-[#0ea5e9]' : 'text-[#f43f5e]'}`}><path d={isUp ? "M12 2l-10 11h7v9h6v-9h7z" : "M12 22l10-11h-7v-9h-6v9h-7z"} /></svg>
+            <div className={`relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center transition-all duration-500 ${active ? 'scale-110 drop-shadow-[0_0_20px_rgba(0,240,255,0.8)] animate-arrow-premium' : 'scale-90 opacity-50'}`}>
+               <svg viewBox="0 0 24 24" className={`w-full h-full fill-current ${isUp ? 'text-[#00f0ff]' : 'text-[#ff0055]'}`}><path d={isUp ? "M12 2l-10 11h7v9h6v-9h7z" : "M12 22l10-11h-7v-9h-6v9h-7z"} /></svg>
             </div>
           );
-        };
+        });
 
-        const OrderBookDepth = ({ price }) => {
+        const OrderBookDepth = React.memo(({ price }) => {
           const p = price || 0;
           if (!p) {
               return (
-                  <div className="flex flex-col mono-font text-slate-800 border-l border-slate-300/50 px-3 justify-center h-full w-full relative">
-                      <div className="flex justify-between text-slate-500 mb-1 border-b border-slate-300/80 pb-1 text-[10px] md:text-xs tracking-widest font-bold oswald-font"><span>ЦЕНА</span><span>ОБЪЕМ</span></div>
-                      <div className="flex items-center justify-center h-full text-[10px] md:text-xs text-slate-400 font-bold animate-pulse oswald-font tracking-widest">СИНХРОНИЗАЦИЯ...</div>
+                  <div className="flex flex-col mono-font text-slate-100 border-l border-cyan-500/20 px-3 justify-center h-full w-full relative">
+                      <div className="flex justify-between text-slate-400 mb-1 border-b border-cyan-500/20 pb-1 text-[10px] md:text-xs tracking-widest font-bold oswald-font"><span>ЦЕНА</span><span>ОБЪЕМ</span></div>
+                      <div className="flex items-center justify-center h-full text-[10px] md:text-xs text-slate-500 font-bold animate-pulse oswald-font tracking-widest">СИНХРОНИЗАЦИЯ...</div>
                   </div>
               );
           }
           const formattedP = formatPrice(p); const step = p > 1000 ? 0.5 : p > 1 ? 0.005 : 0.00005;
           return (
-            <div className="flex flex-col mono-font text-slate-800 border-l border-slate-300/50 px-3 justify-center h-full w-full relative">
-              <div className="flex justify-between text-slate-500 mb-1 border-b border-slate-300/80 pb-1 text-[10px] md:text-xs tracking-widest font-bold oswald-font"><span>ЦЕНА</span><span>ОБЪЕМ</span></div>
+            <div className="flex flex-col mono-font text-slate-100 border-l border-cyan-500/20 px-3 justify-center h-full w-full relative">
+              <div className="flex justify-between text-slate-400 mb-1 border-b border-cyan-500/20 pb-1 text-[10px] md:text-xs tracking-widest font-bold oswald-font"><span>ЦЕНА</span><span>ОБЪЕМ</span></div>
               <div className="space-y-0.5 mt-1 relative z-10">
                 {[...Array(3)].map((_, i) => {
                   const vol = Math.floor(Math.random() * 80 + 20); const width = `${Math.min(100, (vol / 100) * 100)}%`;
                   return (
-                  <div key={`ask-${i}`} className="flex justify-between text-[10px] md:text-xs text-rose-500/90 font-bold tracking-wider relative group">
-                    <div className="absolute right-0 top-0 bottom-0 bg-rose-100/50 rounded-sm transition-all" style={{width}}></div>
+                  <div key={`ask-${i}`} className="flex justify-between text-[10px] md:text-xs text-rose-400 font-bold tracking-wider relative group">
+                    <div className="absolute right-0 top-0 bottom-0 bg-rose-500/20 rounded-sm transition-all" style={{width}}></div>
                     <span className="relative z-10 drop-shadow-sm">{formatPrice(p + (4 - i) * step)}</span><span className="relative z-10 opacity-80">{vol}</span>
                   </div>)})}
-                <div className="flex justify-between text-blue-900 bg-blue-100 border border-blue-400 my-1.5 px-2 py-0.5 text-xs md:text-sm font-black shadow-[0_0_15px_rgba(14,165,233,0.3)] rounded-md relative overflow-hidden">
-                  <div className="absolute left-0 top-0 bottom-0 bg-blue-300/40" style={{width: `${Math.random()*60 + 20}%`}}></div>
-                  <span className="relative z-10 drop-shadow-sm">{formattedP}</span><span className="relative z-10 text-blue-700">{Math.floor(Math.random() * 200 + 50)}</span>
+                <div className="flex justify-between text-cyan-100 bg-cyan-900/50 border border-cyan-500/50 my-1.5 px-2 py-0.5 text-xs md:text-sm font-black shadow-[0_0_15px_rgba(0,240,255,0.2)] rounded-md relative overflow-hidden">
+                  <div className="absolute left-0 top-0 bottom-0 bg-cyan-500/30" style={{width: `${Math.random()*60 + 20}%`}}></div>
+                  <span className="relative z-10 drop-shadow-sm">{formattedP}</span><span className="relative z-10 text-cyan-300">{Math.floor(Math.random() * 200 + 50)}</span>
                 </div>
                 {[...Array(3)].map((_, i) => {
                   const vol = Math.floor(Math.random() * 80 + 20); const width = `${Math.min(100, (vol / 100) * 100)}%`;
                   return (
-                  <div key={`bid-${i}`} className="flex justify-between text-[10px] md:text-xs text-emerald-600/90 font-bold tracking-wider relative">
-                    <div className="absolute right-0 top-0 bottom-0 bg-emerald-100/50 rounded-sm transition-all" style={{width}}></div>
+                  <div key={`bid-${i}`} className="flex justify-between text-[10px] md:text-xs text-emerald-400 font-bold tracking-wider relative">
+                    <div className="absolute right-0 top-0 bottom-0 bg-emerald-500/20 rounded-sm transition-all" style={{width}}></div>
                     <span className="relative z-10 drop-shadow-sm">{formatPrice(p - (i + 1) * step)}</span><span className="relative z-10 opacity-80">{vol}</span>
                   </div>)})}
               </div>
             </div>
           );
-        };
+        });
 
-        const HftTape = ({ price }) => {
+        const HftTape = React.memo(({ price }) => {
           const [ticks, setTicks] = useState([]);
           useEffect(() => {
             if (!price) return;
@@ -841,14 +812,14 @@
           }, [price]);
           
           return (
-             <div className="flex flex-col gap-1 w-[85px] md:w-[95px] pl-2 border-l border-slate-200/50 overflow-hidden justify-end pb-1 h-full shrink-0">
+             <div className="flex flex-col gap-1 w-[85px] md:w-[95px] pl-2 border-l border-cyan-500/20 overflow-hidden justify-end pb-1 h-full shrink-0">
                 {ticks.map(t => (
-                    <div key={t.id} className={`hft-tick text-[9px] md:text-[10px] font-bold mono-font flex justify-between w-full ${t.buy ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    <div key={t.id} className={`hft-tick text-[9px] md:text-[10px] font-bold mono-font flex justify-between w-full ${t.buy ? 'text-emerald-400' : 'text-rose-400'}`}>
                         <span className="opacity-80">{t.price.slice(-2)}</span><span>{t.buy ? '▲' : '▼'}{t.amt}</span>
                     </div>))}
              </div>
           )
-        };
+        });
 
         const ChartOverlays = ({ chart, series, trades, zoneInfo, zoneState, currentPriceVal }) => {
             const overlayRef = useRef(null);
@@ -862,14 +833,11 @@
                     if (!chart || !series || !overlayRef.current) return;
                     const timeScale = chart.timeScale();
                     
-                    // Pulser zone mapped 25 mins into the future from CURRENT candle
                     const pulseBox = overlayRef.current.querySelector('.zone-pulse-indicator');
                     if (pulseBox && zoneInfo && zoneState === 'IN') {
                         const currentLog = timeScale.coordinateToLogical(timeScale.timeToCoordinate(zoneInfo.time));
                         if (currentLog !== null) {
                             const xStart = timeScale.logicalToCoordinate(currentLog);
-                            
-                            // Estimate xEnd based on px width of 5 candles
                             const p1 = timeScale.logicalToCoordinate(1);
                             const p2 = timeScale.logicalToCoordinate(2);
                             const candlePx = (p2 !== null && p1 !== null) ? Math.abs(p2 - p1) : 10;
@@ -887,19 +855,14 @@
 
                                 const inner = pulseBox.querySelector('div');
                                 if (zoneInfo.type === 'RESISTANCE') {
-                                    inner.className = 'absolute inset-0 zone-pulse-indicator-mesh rounded-r-full bg-rose-500/20 border-y border-r border-rose-500/60 shadow-[0_0_15px_rgba(244,63,94,0.4)]';
+                                    inner.className = 'absolute inset-0 zone-pulse-indicator-mesh rounded-r-full bg-rose-500/20 border-y border-r border-rose-500/60 shadow-[0_0_15px_rgba(255,0,85,0.4)]';
                                 } else {
-                                    inner.className = 'absolute inset-0 zone-pulse-indicator-mesh rounded-r-full bg-emerald-500/20 border-y border-r border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.4)]';
+                                    inner.className = 'absolute inset-0 zone-pulse-indicator-mesh rounded-r-full bg-emerald-500/20 border-y border-r border-cyan-500/60 shadow-[0_0_15px_rgba(0,240,255,0.4)]';
                                 }
-                            } else {
-                                pulseBox.style.display = 'none';
-                            }
+                            } else { pulseBox.style.display = 'none'; }
                         }
-                    } else if (pulseBox) {
-                        pulseBox.style.display = 'none';
-                    }
+                    } else if (pulseBox) { pulseBox.style.display = 'none'; }
 
-                    // Active Trades boxes
                     const tradeBoxes = overlayRef.current.querySelectorAll('.trade-glass-box');
                     tradeBoxes.forEach(box => {
                         const tradeId = box.dataset.id;
@@ -930,12 +893,10 @@
                         
                         if (xEntry !== null && xExit !== null && yEntry !== null) {
                             box.style.display = 'block';
-                            
                             const left = Math.min(xEntry, xExit);
                             const width = Math.max(Math.abs(xExit - xEntry), 15); 
                             const maxPriceY = Math.min(yEntry, yExit || yEntry); 
                             const minPriceY = Math.max(yEntry, yExit || yEntry);
-                            
                             const top = maxPriceY - 40; 
                             const height = Math.max(80, (minPriceY - maxPriceY) + 80);
                             
@@ -943,10 +904,7 @@
                             box.style.width = `${width}px`;
                             box.style.top = `${top}px`;
                             box.style.height = `${height}px`;
-                            
-                        } else {
-                            box.style.display = 'none';
-                        }
+                        } else { box.style.display = 'none'; }
                     });
                 };
 
@@ -987,8 +945,8 @@
                     {trades.map(trade => {
                         if (trade.type === 'COOLDOWN') return null;
                         const isWinningLive = trade.isLive ? (trade.type === 'CALL' ? trade.exitPrice > trade.entryPrice : trade.exitPrice < trade.entryPrice) : false;
-                        const borderColor = trade.type === 'CALL' ? 'border-cyan-500' : 'border-rose-500';
-                        const bgStatus = trade.isLive ? (isWinningLive ? 'bg-emerald-500/10' : 'bg-rose-500/10') : (trade.result === "WIN" ? 'bg-emerald-500/20' : 'bg-rose-500/20');
+                        const borderColor = trade.type === 'CALL' ? 'border-cyan-400' : 'border-rose-500';
+                        const bgStatus = trade.isLive ? (isWinningLive ? 'bg-cyan-500/10' : 'bg-rose-500/10') : (trade.result === "WIN" ? 'bg-emerald-500/20' : 'bg-slate-700/20');
                         
                         return (
                         <div 
@@ -997,7 +955,7 @@
                             className={`trade-glass-box absolute pointer-events-auto cursor-help group rounded-xl z-20 transition-colors duration-300 ${borderColor} ${bgStatus}`}
                             style={{ 
                                 display: 'none', 
-                                background: 'rgba(255, 255, 255, 0.15)', 
+                                background: 'rgba(15, 23, 42, 0.4)', 
                                 backdropFilter: 'blur(4px)', 
                                 WebkitBackdropFilter: 'blur(4px)',
                                 borderWidth: '1px',
@@ -1009,7 +967,7 @@
                             }}
                             onMouseLeave={() => setHoveredTrade(null)}
                         >
-                            <div className="absolute top-1 left-1/2 -translate-x-1/2 text-[8px] font-black tracking-widest uppercase text-slate-800 bg-white/90 px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="absolute top-1 left-1/2 -translate-x-1/2 text-[8px] font-black tracking-widest uppercase text-slate-100 bg-slate-800/90 border border-cyan-500/30 px-1.5 py-0.5 rounded shadow-[0_0_10px_rgba(0,240,255,0.2)] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
                                 25 MIN EXP
                             </div>
                         </div>
@@ -1017,33 +975,33 @@
 
                     {hoveredTrade && (
                         <div 
-                            className="fixed z-50 premium-glass-card rounded-2xl p-4 pointer-events-none transform -translate-x-1/2 -translate-y-full min-w-[220px]"
+                            className="fixed z-50 premium-glass-card rounded-2xl p-4 pointer-events-none transform -translate-x-1/2 -translate-y-full min-w-[220px] bg-slate-900 border-cyan-500/30 text-slate-100 shadow-[0_15px_30px_rgba(0,0,0,0.8)]"
                             style={{ left: hoveredTrade.x, top: hoveredTrade.y, zIndex: 999 }}
                         >
-                            <div className="flex justify-between items-center mb-3 border-b border-slate-200/60 pb-2">
-                                <span className={`text-xs font-black tracking-widest oswald-font px-2.5 py-1 rounded-md ${hoveredTrade.trade.type === 'CALL' ? 'bg-cyan-100 text-cyan-700 shadow-[inset_0_1px_3px_rgba(255,255,255,0.8)]' : 'bg-orange-100 text-orange-700 shadow-[inset_0_1px_3px_rgba(255,255,255,0.8)]'}`}>
+                            <div className="flex justify-between items-center mb-3 border-b border-slate-700 pb-2">
+                                <span className={`text-xs font-black tracking-widest oswald-font px-2.5 py-1 rounded-md ${hoveredTrade.trade.type === 'CALL' ? 'bg-cyan-900/50 text-cyan-400 border border-cyan-500/50' : 'bg-orange-900/50 text-orange-400 border border-orange-500/50'}`}>
                                     {hoveredTrade.trade.type}
                                 </span>
                                 <span className={`text-xs font-black tracking-widest oswald-font px-2.5 py-1 rounded-md ${
-                                    hoveredTrade.trade.isLive ? 'bg-blue-100 text-blue-700 shadow-[inset_0_1px_3px_rgba(255,255,255,0.8)]' : (hoveredTrade.trade.result === "WIN" ? 'bg-emerald-100 text-emerald-700 shadow-[inset_0_1px_3px_rgba(255,255,255,0.8)]' : 'bg-rose-100 text-rose-700 shadow-[inset_0_1px_3px_rgba(255,255,255,0.8)]')
+                                    hoveredTrade.trade.isLive ? 'bg-blue-900/50 text-blue-400 border border-blue-500/50' : (hoveredTrade.trade.result === "WIN" ? 'bg-emerald-900/50 text-emerald-400 border border-emerald-500/50' : 'bg-rose-900/50 text-rose-400 border border-rose-500/50')
                                 }`}>
                                     {hoveredTrade.trade.isLive ? 'ACTIVE' : (hoveredTrade.trade.result === "WIN" ? 'WIN' : 'LOSS')}
                                 </span>
                             </div>
                             <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[10px] md:text-xs mono-font font-semibold">
-                                <span className="text-slate-500">Сигнал:</span><span className="text-right text-slate-800">{new Date(hoveredTrade.trade.signalTime * 1000).toLocaleTimeString('ru-RU')}</span>
-                                <span className="text-slate-500">Вход:</span><span className="text-right text-slate-800">{new Date(hoveredTrade.trade.entryTime * 1000).toLocaleTimeString('ru-RU')}</span>
-                                <span className="text-slate-500">Выход (25м):</span><span className="text-right text-slate-800">{new Date(hoveredTrade.trade.exitTime * 1000).toLocaleTimeString('ru-RU')}</span>
-                                <span className="col-span-2 text-center text-slate-400 mt-1 mb-1 text-[9px] uppercase tracking-widest">ДАННЫЕ</span>
-                                <span className="text-slate-500">Цена Входа:</span><span className="text-right text-slate-800">{hoveredTrade.trade.entryPrice.toFixed(2)}</span>
-                                <span className="text-slate-500">Цена Выхода:</span><span className="text-right text-slate-800">{hoveredTrade.trade.exitPrice.toFixed(2)}</span>
-                                <span className="text-slate-500 mt-1 pt-1 border-t border-slate-200">Ставка:</span><span className="text-right text-slate-800 mt-1 pt-1 border-t border-slate-200">{hoveredTrade.trade.betAmount || 1000} ₽</span>
-                                <span className="text-slate-500 mt-1 uppercase font-bold">Итог:</span>
-                                <span className={`text-right font-black mt-1 text-sm ${hoveredTrade.trade.isLive ? 'text-blue-600' : (hoveredTrade.trade.result === "WIN" ? 'text-emerald-600' : 'text-rose-600')}`}>
+                                <span className="text-slate-400">Сигнал:</span><span className="text-right text-slate-100">{new Date(hoveredTrade.trade.signalTime * 1000).toLocaleTimeString('ru-RU')}</span>
+                                <span className="text-slate-400">Вход:</span><span className="text-right text-slate-100">{new Date(hoveredTrade.trade.entryTime * 1000).toLocaleTimeString('ru-RU')}</span>
+                                <span className="text-slate-400">Выход (25м):</span><span className="text-right text-slate-100">{new Date(hoveredTrade.trade.exitTime * 1000).toLocaleTimeString('ru-RU')}</span>
+                                <span className="col-span-2 text-center text-slate-500 mt-1 mb-1 text-[9px] uppercase tracking-widest">ДАННЫЕ</span>
+                                <span className="text-slate-400">Цена Входа:</span><span className="text-right text-slate-100">{hoveredTrade.trade.entryPrice.toFixed(2)}</span>
+                                <span className="text-slate-400">Цена Выхода:</span><span className="text-right text-slate-100">{hoveredTrade.trade.exitPrice.toFixed(2)}</span>
+                                <span className="text-slate-400 mt-1 pt-1 border-t border-slate-700">Ставка:</span><span className="text-right text-slate-100 mt-1 pt-1 border-t border-slate-700">{hoveredTrade.trade.betAmount || 1000} ₽</span>
+                                <span className="text-slate-400 mt-1 uppercase font-bold">Итог:</span>
+                                <span className={`text-right font-black mt-1 text-sm ${hoveredTrade.trade.isLive ? 'text-blue-400' : (hoveredTrade.trade.result === "WIN" ? 'text-emerald-400' : 'text-rose-400')}`}>
                                     {hoveredTrade.trade.isLive ? 'В ПРОЦЕССЕ' : ((hoveredTrade.trade.result === "WIN" ? '+' : '') + (hoveredTrade.trade.result === "WIN" ? Math.round((hoveredTrade.trade.betAmount || 1000)*0.7) : -(hoveredTrade.trade.betAmount || 1000)) + ' ₽')}
                                 </span>
                             </div>
-                            <div className="mt-3 pt-2 border-t border-slate-200/60 text-center text-[9px] text-slate-400 font-bold uppercase tracking-widest">
+                            <div className="mt-3 pt-2 border-t border-slate-700 text-center text-[9px] text-slate-500 font-bold uppercase tracking-widest">
                                 PURE 5M MODE • Q-SCORE: {hoveredTrade.trade.quality || 'N/A'}
                             </div>
                         </div>
@@ -1077,14 +1035,13 @@
           const [tradesHistory, setTradesHistory] = useState([]);
           const [activeLiveTrade, setActiveLiveTrade] = useState(null);
 
-          // Martingale Step State
           const [martingaleIndex, setMartingaleIndex] = useState(0);
 
           const [pureDiag, setPureDiag] = useState({
               candles: 0, sweepHigh: 0, sweepLow: 0, reclaimBuy: 0, reclaimSell: 0, candidates: 0, confirmed: 0, rejected: 0, rendered: 0, boxes: 0, lastReason: 'None'
           });
           
-          const [statusColorClass, setStatusColorClass] = useState('text-slate-800');
+          const [statusColorClass, setStatusColorClass] = useState('text-slate-100');
           const [dataHealth, setDataHealth] = useState({ age: 0, status: 'LIVE' });
           const lastDataTimeRef = useRef(Date.now());
           
@@ -1124,20 +1081,20 @@
           const isSpeakingRef = useRef(false);
           const lastSpokenKeysRef = useRef({});
 
-          const enqueueSpeech = (text, key = null, priority = 1, onDone = null) => {
+          // FIX: Improved speech logic to prevent double entries instantly
+          const enqueueSpeech = useCallback((text, key = null, priority = 1, onDone = null) => {
               if (key) {
                   if (speechQueueRef.current.some(item => item.key === key)) { if (onDone) onDone(); return; }
                   const now = Date.now();
                   if (lastSpokenKeysRef.current[key] && (now - lastSpokenKeysRef.current[key]) < 30000) { if (onDone) onDone(); return; }
-                  // FIX: Мгновенно регистрируем ключ, чтобы исключить двойное добавление в очередь из-за циклов
-                  lastSpokenKeysRef.current[key] = now;
+                  lastSpokenKeysRef.current[key] = now; // Lock immediately
               }
               speechQueueRef.current.push({ text, key, priority, onDone });
               speechQueueRef.current.sort((a, b) => a.priority - b.priority); 
               processSpeechQueue();
-          };
+          }, []);
 
-          const speakAsync = (text, key = null, priority = 1) => new Promise(resolve => enqueueSpeech(text, key, priority, resolve));
+          const speakAsync = useCallback((text, key = null, priority = 1) => new Promise(resolve => enqueueSpeech(text, key, priority, resolve)), [enqueueSpeech]);
 
           const processSpeechQueue = () => {
               if (isSpeakingRef.current || speechQueueRef.current.length === 0) return;
@@ -1202,7 +1159,7 @@
                   }
               }, 10 * 60 * 1000); 
               return () => clearInterval(voiceTimer);
-          }, [isStarted]);
+          }, [isStarted, enqueueSpeech]);
 
           useEffect(() => {
             if(!isStarted) return;
@@ -1236,11 +1193,11 @@
             return () => clearInterval(quotesInterval);
           }, []);
 
-          const addLog = (msg, isAi = false) => {
+          const addLog = useCallback((msg, isAi = false) => {
             const prefix = isAi ? 'SMC АНАЛИЗ:' : 'СИСТЕМА:'; setLogs(p => [`${prefix} ${msg}`, ...p].slice(0, 5)); 
-          };
+          }, []);
 
-          const playSound = (type) => {
+          const playSound = useCallback((type) => {
             if (!audioCtx.current) return;
             const ctx = audioCtx.current; if (ctx.state === 'suspended') ctx.resume();
             
@@ -1262,14 +1219,10 @@
             if (type === 'win') { playTone(523.25, 'triangle', 0.4, 0.04); playTone(659.25, 'triangle', 0.5, 0.04, 0.1); playTone(783.99, 'triangle', 0.8, 0.05, 0.2); }
             if (type === 'loss') { playTone(300, 'sawtooth', 0.4, 0.03); playTone(250, 'sawtooth', 0.6, 0.04, 0.2); }
             if (type === 'cancel') { playTone(400, 'square', 0.1, 0.04); playTone(300, 'square', 0.2, 0.04, 0.15); }
-          };
+          }, []);
 
           const initChart = async () => {
-            if (!chartContainerRef.current) {
-                console.log("Chart container not ready, retrying in 1s...");
-                setTimeout(initChart, 1000);
-                return;
-            }
+            if (!chartContainerRef.current) { setTimeout(initChart, 1000); return; }
             if (!window.LightweightCharts) {
               await new Promise(resolve => {
                 const script = document.createElement('script'); script.src = 'https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js';
@@ -1279,39 +1232,44 @@
             if (chartInstance.current) return;
 
             try {
+                // Dark Theme Configuration
                 const mainChart = window.LightweightCharts.createChart(chartContainerRef.current, {
                   autoSize: true,
-                  layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#475569', fontFamily: 'JetBrains Mono' },
-                  grid: { vertLines: { color: 'rgba(148, 163, 184, 0.2)' }, horzLines: { color: 'rgba(148, 163, 184, 0.2)' } },
+                  layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#94a3b8', fontFamily: 'JetBrains Mono' },
+                  grid: { vertLines: { color: 'rgba(51, 65, 85, 0.3)' }, horzLines: { color: 'rgba(51, 65, 85, 0.3)' } },
                   timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false, rightOffset: 5 }, rightPriceScale: { borderVisible: false }
                 });
-                candleSeries.current = mainChart.addCandlestickSeries({ upColor: '#0ea5e9', downColor: '#ef4444', borderVisible: true, borderUpColor: '#0ea5e9', borderDownColor: '#ef4444', wickUpColor: '#0ea5e9', wickDownColor: '#ef4444' });
+                candleSeries.current = mainChart.addCandlestickSeries({ 
+                    upColor: '#00f0ff', downColor: '#ff0055', borderVisible: true, 
+                    borderUpColor: '#00f0ff', borderDownColor: '#ff0055', 
+                    wickUpColor: '#00f0ff', wickDownColor: '#ff0055' 
+                });
                 chartInstance.current = mainChart;
             } catch(e) {}
           };
 
-          const clearChartExtras = () => {
+          const clearChartExtras = useCallback(() => {
               if (!chartInstance.current || !candleSeries.current) return;
               priceLinesRef.current.forEach(l => { try { candleSeries.current.removePriceLine(l); } catch(e){} }); priceLinesRef.current = [];
               extraSeriesRef.current.forEach(s => { try { chartInstance.current.removeSeries(s); } catch(e){} }); extraSeriesRef.current = [];
-          };
+          }, []);
 
-          const drawIndicators = (upperData, lowerData) => {
+          const drawIndicators = useCallback((upperData, lowerData) => {
               clearChartExtras();
               try {
-                  const upperSeries = chartInstance.current.addLineSeries({ color: 'rgba(244, 63, 94, 0.5)', lineWidth: 2, lineStyle: 2, title: 'BUY LIQUIDITY' });
+                  const upperSeries = chartInstance.current.addLineSeries({ color: 'rgba(255, 0, 85, 0.5)', lineWidth: 2, lineStyle: 2, title: 'SELL LIQUIDITY' });
                   upperSeries.setData(upperData); extraSeriesRef.current.push(upperSeries);
-                  const lowerSeries = chartInstance.current.addLineSeries({ color: 'rgba(16, 185, 129, 0.5)', lineWidth: 2, lineStyle: 2, title: 'SELL LIQUIDITY' });
+                  const lowerSeries = chartInstance.current.addLineSeries({ color: 'rgba(0, 240, 255, 0.5)', lineWidth: 2, lineStyle: 2, title: 'BUY LIQUIDITY' });
                   lowerSeries.setData(lowerData); extraSeriesRef.current.push(lowerSeries);
               } catch(e) {}
-          };
+          }, [clearChartExtras]);
 
-          const updateStatus = (phase, colorClass) => { setAppPhase(phase); setStatusColorClass(colorClass); };
+          const updateStatus = useCallback((phase, colorClass) => { setAppPhase(phase); setStatusColorClass(colorClass); }, []);
 
-          const syncModeView = () => {
+          const syncModeView = useCallback(() => {
               if (zoneStateRef.current === 'OUT' && signalPhaseRef.current === 'NONE') setViewMode('SCREENER');
               else setViewMode('DETAIL');
-          };
+          }, []);
 
           const fetchMtfContext = async (symbol, currentPriceVal) => {
               try {
@@ -1326,21 +1284,20 @@
               }
           };
 
-          const updateChartMarkers = () => {
+          const updateChartMarkers = useCallback(() => {
               if (!candleSeries.current) return;
               try { const allMarkers = [...historicalMarkersRef.current, ...liveMarkersRef.current]; allMarkers.sort((a, b) => a.time - b.time); candleSeries.current.setMarkers(allMarkers); } catch (e) {}
-          };
+          }, []);
 
           const runTerminalEngine = async () => {
             if (engineActive.current) return; engineActive.current = true;
             if (audioCtx.current && audioCtx.current.state === 'suspended') await audioCtx.current.resume();
 
-            // Strict purge of past logs and sessions
             ScanLedger.clear();
             historicalMarkersRef.current = []; liveMarkersRef.current = [];
             if(candleSeries.current) { candleSeries.current.setMarkers([]); }
 
-            setViewMode('DETAIL'); updateStatus('БЭКТЕСТ: PURE 5M (12H)...', 'text-cyan-600'); 
+            setViewMode('DETAIL'); updateStatus('БЭКТЕСТ: PURE 5M (12H)...', 'text-cyan-400'); 
             addLog(`Анализ рынка за последние 12 часов.`, true);
 
             const curAsset = ASSETS[0]; 
@@ -1361,17 +1318,13 @@
                 let engineState = { lastSignalTime: 0, lastSignalPrice: 0, consecutiveLosses: 0 };
                 let localMartingaleIdx = 0;
 
-                /* --- BOUND BACKTEST EXACTLY TO THE LAST 12 HOURS --- */
                 const twelveHoursAgoSec = Math.floor(Date.now() / 1000) - (12 * 60 * 60);
                 let startIdx = initialData.findIndex(d => d.time >= twelveHoursAgoSec);
                 if (startIdx === -1) startIdx = Math.max(0, initialData.length - 144); 
-
-                // Exclude last 4 candles to avoid live overlapping / repainting
                 const endIdx = initialData.length - 4; 
 
                 for (let idx = startIdx; idx <= endIdx; idx++) {
                     const currTime = initialData[idx].time; const currCandle = initialData[idx]; const prevCandle = initialData[idx - 1]; d_candles++;
-
                     const zones = liqMap.get(currTime); const cAtr = atrMap.get(currTime);
 
                     if (zones && cAtr !== undefined) {
@@ -1397,9 +1350,7 @@
                     } else { ScanLedger.set(currTime, evaluatedStatus); }
 
                     if (!sig.valid) {
-                        if (sig.score > 20) {
-                            historicalMarkersRef.current.push({ time: currTime, position: 'inBar', color: '#94a3b8', shape: 'circle', text: 'CHK', size: 0.8 });
-                        }
+                        if (sig.score > 20) historicalMarkersRef.current.push({ time: currTime, position: 'inBar', color: '#1e293b', shape: 'circle', text: 'CHK', size: 0.8 });
                         if (sig.reason && !sig.reason.includes('No raw signal') && !sig.reason.includes('Missing indicators') && !sig.reason.includes('Not enough data')) {
                             d_rej++; d_lastRej = `${sig.reason} (${sig.score||0})`;
                         }
@@ -1412,9 +1363,10 @@
                         let result = "LOSS";
                         if ((sig.isCall && exitPrice > entryPrice) || (sig.isPut && exitPrice < entryPrice) || exitPrice === entryPrice) result = "WIN";
 
-                        historicalMarkersRef.current.push({ time: currTime, position: sig.isCall ? 'belowBar' : 'aboveBar', color: sig.isCall ? '#0284c7' : '#be123c', shape: sig.isCall ? 'arrowUp' : 'arrowDown', text: 'HIST SIGNAL', size: 0.8 });
-                        historicalMarkersRef.current.push({ time: entryCandle.time, position: sig.isCall ? 'belowBar' : 'aboveBar', color: '#6d28d9', shape: 'square', text: 'ENTRY', size: 0.5 });
-                        historicalMarkersRef.current.push({ time: exitCandle.time, position: sig.isCall ? 'belowBar' : 'aboveBar', color: result==="WIN" ? '#059669' : '#be123c', shape: 'square', text: 'EXIT', size: 0.5 });
+                        // FIX: Dimmer historical markers
+                        historicalMarkersRef.current.push({ time: currTime, position: sig.isCall ? 'belowBar' : 'aboveBar', color: sig.isCall ? '#1e3a8a' : '#4c0519', shape: sig.isCall ? 'arrowUp' : 'arrowDown', text: 'H-SIG', size: 0.5 });
+                        historicalMarkersRef.current.push({ time: entryCandle.time, position: sig.isCall ? 'belowBar' : 'aboveBar', color: '#334155', shape: 'square', text: 'H-ENT', size: 0.5 });
+                        historicalMarkersRef.current.push({ time: exitCandle.time, position: sig.isCall ? 'belowBar' : 'aboveBar', color: result==="WIN" ? '#065f46' : '#7f1d1d', shape: 'square', text: 'H-EX', size: 0.5 });
 
                         const currentBet = MARTINGALE_STEPS[localMartingaleIdx];
 
@@ -1424,13 +1376,12 @@
                         });
 
                         if (result === "WIN") {
-                            localMartingaleIdx = 0;
-                            engineState.consecutiveLosses = 0;
+                            localMartingaleIdx = 0; engineState.consecutiveLosses = 0;
                         } else {
                             engineState.consecutiveLosses++;
                             localMartingaleIdx = localMartingaleIdx < 6 ? localMartingaleIdx + 1 : 0;
                         }
-                        idx += 5; // Expiry spacing (5 candles of 5M)
+                        idx += 5; 
                     }
                 }
 
@@ -1455,17 +1406,17 @@
                 let speechText = "Анализ рынка за последние 12 часов.";
                 if (finalStats.trades > 0) {
                     addLog(`ИСТОРИЯ ЗА 12 ЧАСОВ: НАЙДЕНО СДЕЛОК: ${finalStats.trades}, ВИНРЕЙТ: ${finalStats.winrate}%`, true);
-                    speechText = `Анализ рынка за последние двенадцать часов. Найдено ${finalStats.trades} сделок по SMC 5M. Винрейт составляет ${finalStats.winrate} процентов. Приступаю к сканированию.`;
+                    speechText = `Анализ рынка за последние двенадцать часов. Найдено ${finalStats.trades} сделок. Винрейт составляет ${finalStats.winrate} процентов. Приступаю к сканированию.`;
                 } else {
                     addLog(`ЗА 12 ЧАСОВ СИГНАЛОВ ПО СТРАТЕГИИ НЕ НАЙДЕНО.`, true);
                     speechText = "Анализ рынка за последние двенадцать часов. Подтверждённых сигналов нет. Начинаю сканирование.";
                 }
                 
                 await speakAsync(speechText, 'startup-summary-current-session', 1); await awaitSpeechCompletion();
-                updateStatus('АКТИВАЦИЯ ПРЕМИУМ СКАНЕРА...', 'text-cyan-600'); await new Promise(r => setTimeout(r, 1000));
+                updateStatus('АКТИВАЦИЯ ПРЕМИУМ СКАНЕРА...', 'text-cyan-400'); await new Promise(r => setTimeout(r, 1000));
                 syncModeView(); 
             } else {
-                addLog("ОШИБКА: НЕТ СВЯЗИ С БИРЖЕЙ BINANCE", true); updateStatus('ОШИБКА API BINANCE', 'text-rose-600');
+                addLog("ОШИБКА: НЕТ СВЯЗИ С БИРЖЕЙ BINANCE", true); updateStatus('ОШИБКА API BINANCE', 'text-rose-500');
                 await speakAsync('Ошибка связи с криптобиржей Бинанс. Попробуйте перезапустить утилиту позже.', 'api-error', 1);
             }
             
@@ -1473,15 +1424,15 @@
               try {
                   const currentAge = Math.floor((Date.now() - lastDataTimeRef.current) / 1000);
                   if (currentAge > 90) {
-                      updateStatus('ДАННЫЕ ОБНОВЛЯЮТСЯ. СИГНАЛЫ ПРИОСТАНОВЛЕНЫ.', 'text-rose-600 font-bold animate-pulse');
+                      updateStatus('ДАННЫЕ ОБНОВЛЯЮТСЯ. СИГНАЛЫ ПРИОСТАНОВЛЕНЫ.', 'text-rose-500 font-bold animate-pulse');
                       await new Promise(r => setTimeout(r, 2000));
                       const data = await ScannerAPI.getCandles(curAsset.symbol, 200, '5m'); 
                       if (data && data.length > 100) lastDataTimeRef.current = Date.now(); continue;
                   }
 
                   syncModeView();
-                  if (zoneStateRef.current === 'OUT' && signalPhaseRef.current === 'NONE') updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-700');
-                  else if (zoneStateRef.current === 'IN' && signalPhaseRef.current === 'NONE') updateStatus('ЗОНА ИНТЕРЕСА: ВОЗМОЖЕН СИГНАЛ', 'text-amber-600 font-bold animate-pulse');
+                  if (zoneStateRef.current === 'OUT' && signalPhaseRef.current === 'NONE') updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-400');
+                  else if (zoneStateRef.current === 'IN' && signalPhaseRef.current === 'NONE') updateStatus('ЗОНА ИНТЕРЕСА: ВОЗМОЖЕН СИГНАЛ', 'text-amber-500 font-bold animate-pulse');
                   
                   setCurrentTF('5M');
 
@@ -1518,7 +1469,7 @@
                                   let warnTxt = 'Цена подошла к зоне интереса. Ожидайте подтверждения на 5M.';
                                   if (mtf.h4 !== 'NEUTRAL' || mtf.h1 !== 'NEUTRAL') warnTxt = 'Цена подходит к старшей зоне ликвидности. Ожидайте подтверждения.';
                                   enqueueSpeech(warnTxt, `zone-approach-${latestZone.time}`, 3);
-                                  syncModeView(); updateStatus('ЗОНА ИНТЕРЕСА: ВОЗМОЖЕН СИГНАЛ', 'text-amber-600 font-bold animate-pulse');
+                                  syncModeView(); updateStatus('ЗОНА ИНТЕРЕСА: ВОЗМОЖЕН СИГНАЛ', 'text-amber-500 font-bold animate-pulse');
                               }
                           } else if (distTop > latestAtr * 2.5 && distBot > latestAtr * 2.5) {
                               if (zoneStateRef.current === 'IN') {
@@ -1526,7 +1477,7 @@
                                   zoneCooldownUntilRef.current = Date.now() + 60000; 
                                   addLog('ЦЕНА ПОКИНУЛА ЗОНУ ИНТЕРЕСА');
                                   enqueueSpeech('Цена отошла от зоны. Сигнал не подтверждён.', `zone-left-${latestZone.time}`, 3);
-                                  syncModeView(); updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-700');
+                                  syncModeView(); updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-400');
                               }
                           }
                       }
@@ -1536,164 +1487,132 @@
                       if (evalCandleTime > lastEvaluatedCandleTimeRef.current && signalPhaseRef.current === 'NONE') {
                           const pastStatus = ScanLedger.get(evalCandleTime);
                           if (pastStatus === 'REJECTED' || pastStatus === 'NO_SIGNAL' || pastStatus === 'PARITY_MISMATCH') {
-                              lastEvaluatedCandleTimeRef.current = evalCandleTime;
-                              continue;
+                              lastEvaluatedCandleTimeRef.current = evalCandleTime; continue;
                           }
 
                           lastClosedCandleTimeUiRef.current = evalCandleTime;
-                          
-                          const liveEngineState = { 
-                              lastSignalTime: lastSignalTimeRef.current, 
-                              lastSignalPrice: lastSignalPriceRef.current, 
-                              consecutiveLosses: consecutiveLossesRef.current 
-                          };
+                          const liveEngineState = { lastSignalTime: lastSignalTimeRef.current, lastSignalPrice: lastSignalPriceRef.current, consecutiveLosses: consecutiveLossesRef.current };
                           const sig = evaluateSignalEngine(data, evaluateIdx, liqMap, atrMap, cachedMtfRef.current, liveEngineState);
-                          
-                          console.log("EVALUATING CANDLE:", new Date(evalCandleTime * 1000).toLocaleTimeString(), "SCORE:", sig.score, "REASON:", sig.reason, "VALID:", sig.valid);
-
                           const evaluatedStatus = sig.valid ? 'CONFIRMED' : (sig.reason ? 'REJECTED' : 'NO_SIGNAL');
                           ScanLedger.set(evalCandleTime, evaluatedStatus);
 
                           if (sig.valid) {
+                              // FIX: Start of Signal Execution with 5-Second PREPARING Phase
                               lastSignalTimeRef.current = sig.signalTime; lastSignalPriceRef.current = sig.signalPrice;
                               setMtfContext(prev => ({ ...prev, score: sig.score })); setAsset(cur);
-                              
-                              signalPhaseRef.current = 'EXPLAINING'; setSignalPhase('EXPLAINING'); setZoneInfo(null);
-                              syncModeView(); playSound('found');
-
-                              // 1. SIGNAL marker rendered instantly
-                              if (candleSeries.current) {
-                                  try { 
-                                      liveMarkersRef.current = [
-                                          { 
-                                              time: sig.signalTime, 
-                                              position: sig.isCall ? 'belowBar' : 'aboveBar', 
-                                              color: sig.isCall ? '#0ea5e9' : '#f43f5e', 
-                                              shape: sig.isCall ? 'arrowUp' : 'arrowDown', 
-                                              text: 'SIGNAL', 
-                                              size: 1 
-                                          }
-                                      ];
-                                      updateChartMarkers();
-                                  } catch (e) {}
-                              }
-
                               drawIndicators(upperData, lowerData); currentPrice.current = data[lastIdx].close;
-                              updateStatus(`ОБЪЯСНЕНИЕ СИГНАЛА...`, 'text-cyan-600 font-bold animate-pulse'); addLog(`Accepted: ${sig.signalType} | Q:${sig.score}`, true);
-
-                              const directionText = sig.isCall ? "вверх" : "вниз";
-                              let voiceReason = "локальный сигнал на 5 минут. Старший контекст нейтральный";
-                              if (sig.score >= 80) voiceReason = "Цена находится возле зоны ликвидности старшего таймфрейма, структура подтверждена";
-                              else if (sig.mtfConfStr === 'CONFIRM') voiceReason = "на 15M есть подтверждение реакции, на 5M сформирован паттерн";
-                              else if (sig.signalType === 'Primary Sweep') voiceReason = "снятие ликвидности и возврат в зону";
-                              else if (sig.signalType.includes('Momentum')) voiceReason = "мощное импульсное отторжение от уровня ликвидности";
                               
-                              // FIX: Очищаем очередь и прерываем текущую речь для мгновенной реакции и отсутствия дублей
+                              // Kill old speech, announce IMMEDIATELY
                               window.speechSynthesis.cancel();
                               speechQueueRef.current = [];
                               isSpeakingRef.current = false;
+                              
+                              const directionText = sig.isCall ? "ВВЕРХ" : "ВНИЗ";
+                              speakAsync(`Внимание! Появился сигнал на ${directionText}. Готовьтесь ко входу.`, `signal-prep-${sig.signalTime}`, 1);
 
-                              // FIX: Запускаем речь в фоне (без await), чтобы не блокировать UI
-                              speakAsync(`Внимание. Появился сигнал ${directionText}. ${voiceReason}. Идёт подготовка ко входу.`, `signal-detect-${sig.signalTime}`, 1);
+                              signalPhaseRef.current = 'PREPARING'; setSignalPhase('PREPARING'); setZoneInfo(null);
+                              // We DO NOT set entryPrice yet. Expected price goes to state for UI if needed.
+                              setSignal({ type: sig.isCall ? 'CALL' : 'PUT', exp: 25, expectedPrice: sig.signalPrice });
+                              
+                              syncModeView(); playSound('found');
+                              addLog(`Accepted: ${sig.signalType} | Q:${sig.score}`, true);
 
-                              signalPhaseRef.current = 'COUNTDOWN'; setSignalPhase('COUNTDOWN');
-                              // FIX: Сокращаем ожидание до 1.5 сек (2 шага по 750мс), чтобы быстрее показать ENTRY
-                              for(let w=2; w>0; w--) {
-                                  setCountdown(w); updateStatus(`ПОДГОТОВКА К ВХОДУ: ${w}С`, 'text-cyan-600 font-bold'); playSound('scan');
-                                  await new Promise(r => setTimeout(r, 750));
-                              }
-                              setCountdown(null);
-
+                              // Exactly 5 seconds countdown. Arrow and Graph Marker are HIDDEN.
                               let tradeCancelled = false;
-                              try {
-                                  const liveData = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
-                                  if (liveData && liveData.length > 0) lastDataTimeRef.current = Date.now();
-                                  const liveTick = liveData[liveData.length - 1];
-                                  if (liveTick && liveTick.time >= data[data.length - 1].time) {
-                                      currentPrice.current = liveTick.close;
-                                      if (candleSeries.current) { try { candleSeries.current.update(liveTick); } catch(e){} }
-                                      const currentZones = calcLiquidityZones(data, 30);
-                                      const liveUpper = currentZones[currentZones.length-1].upper; const liveLower = currentZones[currentZones.length-1].lower;
-                                      if (sig.isPut && liveTick.close > liveUpper) tradeCancelled = true;
-                                      if (sig.isCall && liveTick.close < liveLower) tradeCancelled = true;
-                                  }
-                              } catch(e) {}
+                              for(let w = 5; w > 0; w--) {
+                                  setCountdown(w); 
+                                  updateStatus(`ПОДГОТОВКА КО ВХОДУ: ${w}С`, 'text-cyan-400 font-bold drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]'); 
+                                  playSound('scan');
+                                  await new Promise(r => setTimeout(r, 1000));
+                                  
+                                  // Live check for cancellation
+                                  try {
+                                      const liveData = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
+                                      if (liveData && liveData.length > 0) {
+                                          lastDataTimeRef.current = Date.now();
+                                          const liveTick = liveData[liveData.length - 1];
+                                          currentPrice.current = liveTick.close;
+                                          if (candleSeries.current) { try { candleSeries.current.update(liveTick); } catch(e){} }
+                                          
+                                          const currentZones = calcLiquidityZones(data, 30);
+                                          const liveUpper = currentZones[currentZones.length-1].upper; const liveLower = currentZones[currentZones.length-1].lower;
+                                          if (sig.isPut && liveTick.close > liveUpper) tradeCancelled = true;
+                                          if (sig.isCall && liveTick.close < liveLower) tradeCancelled = true;
+                                      }
+                                  } catch(e) {}
+                                  if (tradeCancelled) break;
+                              }
 
                               if (tradeCancelled) {
                                   zoneStateRef.current = 'OUT'; setZoneState('OUT'); signalPhaseRef.current = 'NONE'; setSignalPhase('NONE');
-                                  playSound('cancel'); updateStatus('ОТМЕНА: ИСТИННЫЙ ПРОБОЙ', 'text-rose-600 font-bold');
-                                  await speakAsync("Внимание. Отмена. Паттерн сломан. Возвращаюсь к радару.", `signal-cancel-${sig.signalTime}`, 1);
+                                  playSound('cancel'); updateStatus('ОТМЕНА: ИСТИННЫЙ ПРОБОЙ', 'text-rose-500 font-bold');
+                                  await speakAsync("Отмена. Паттерн сломан. Возвращаюсь к радару.", `signal-cancel-${sig.signalTime}`, 1);
                                   syncModeView(); lastEvaluatedCandleTimeRef.current = evalCandleTime; break; 
                               }
 
-                              playSound('start'); updateStatus('СДЕЛКА АКТИВНА', 'text-blue-700 font-bold');
-                              signalPhaseRef.current = 'ACTIVE'; setSignalPhase('ACTIVE');
-                              
-                              const entryPrice = currentPrice.current; const expMins = 25; const actualEntryTime = Math.floor(Date.now() / 1000); 
+                              // FIX: T=0, Trigger the trade exactly at CURRENT PRICE
+                              const actualEntryPrice = currentPrice.current; 
+                              const expMins = 25; 
+                              const actualEntryTime = Math.floor(Date.now() / 1000); 
                               const finalExitTime = actualEntryTime + (expMins * 60);
 
-                              // 2. ENTRY marker synchronized with arrow sidebar
+                              setCountdown(null);
+                              playSound('start'); 
+                              updateStatus('СДЕЛКА АКТИВНА', 'text-cyan-400 font-bold drop-shadow-[0_0_10px_rgba(0,240,255,0.8)]');
+                              
+                              signalPhaseRef.current = 'ACTIVE'; setSignalPhase('ACTIVE');
+                              setSignal({ type: sig.isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice: actualEntryPrice }); 
+
+                              // Render Graph Markers (ONLY NOW)
                               if (candleSeries.current) {
                                   try { 
+                                      // The SIGNAL marker
+                                      liveMarkersRef.current = [{ 
+                                          time: sig.signalTime, position: sig.isCall ? 'belowBar' : 'aboveBar', 
+                                          color: sig.isCall ? '#00f0ff' : '#ff0055', shape: sig.isCall ? 'arrowUp' : 'arrowDown', 
+                                          text: 'SIGNAL', size: 1 
+                                      }];
+                                      // The ENTRY marker placed strictly now
                                       liveMarkersRef.current.push({ 
-                                          time: data[data.length - 1].time, 
-                                          position: sig.isCall ? 'belowBar' : 'aboveBar', 
-                                          color: '#8b5cf6', 
-                                          shape: 'square', 
-                                          text: 'ENTRY', 
-                                          size: 0.5 
+                                          time: data[data.length - 1].time, position: sig.isCall ? 'belowBar' : 'aboveBar', 
+                                          color: '#c084fc', shape: 'square', text: 'ENTRY', size: 1.5 
                                       });
                                       updateChartMarkers();
                                   } catch (e) {}
                               }
 
-                              // 3. Technical Analysis Overlays mapped ONLY at active phase
+                              // Technical Overlays
                               activeAnalysisLinesRef.current.forEach(l => { try { candleSeries.current.removePriceLine(l); } catch(e){} });
                               activeAnalysisLinesRef.current = [];
-
                               if (candleSeries.current) {
                                   const sweepPrice = sig.isCall ? sig.sweepLow : sig.sweepHigh;
-                                  const sweepLine = candleSeries.current.createPriceLine({
-                                      price: sweepPrice, color: sig.isCall ? '#10b981' : '#f97316',
-                                      lineWidth: 2, lineStyle: window.LightweightCharts.LineStyle.Dashed, title: 'SWEEP / LIQUIDITY GRAB',
-                                  });
                                   const poolPrice = sig.isCall ? sig.cLower : sig.cUpper;
-                                  const poolLine = candleSeries.current.createPriceLine({
-                                      price: poolPrice, color: sig.isCall ? '#059669' : '#e11d48',
-                                      lineWidth: 2, lineStyle: window.LightweightCharts.LineStyle.Solid, title: 'POOL BOUNDARY',
-                                  });
-                                  const targetPrice = sig.isCall ? sig.signalPrice + sig.cAtr * 0.5 : sig.signalPrice - sig.cAtr * 0.5;
-                                  const targetLine = candleSeries.current.createPriceLine({
-                                      price: targetPrice, color: sig.isCall ? '#34d399' : '#fb7185',
-                                      lineWidth: 2, lineStyle: window.LightweightCharts.LineStyle.Dashed, title: 'TARGET / NEXT STOP LOSS',
-                                  });
+                                  const targetPrice = sig.isCall ? actualEntryPrice + sig.cAtr * 0.5 : actualEntryPrice - sig.cAtr * 0.5;
+                                  const sweepLine = candleSeries.current.createPriceLine({ price: sweepPrice, color: sig.isCall ? '#10b981' : '#f97316', lineWidth: 2, lineStyle: 2, title: 'SWEEP / LIQUIDITY GRAB' });
+                                  const poolLine = candleSeries.current.createPriceLine({ price: poolPrice, color: sig.isCall ? '#059669' : '#e11d48', lineWidth: 2, lineStyle: 0, title: 'POOL BOUNDARY' });
+                                  const targetLine = candleSeries.current.createPriceLine({ price: targetPrice, color: sig.isCall ? '#34d399' : '#fb7185', lineWidth: 2, lineStyle: 2, title: 'TARGET / NEXT STOP LOSS' });
                                   activeAnalysisLinesRef.current.push(sweepLine, poolLine, targetLine);
                               }
 
                               let currentStakeAmount = 1000;
-                              setMartingaleIndex(prevIdx => {
-                                  currentStakeAmount = MARTINGALE_STEPS[prevIdx];
-                                  return prevIdx;
-                              });
+                              setMartingaleIndex(prevIdx => { currentStakeAmount = MARTINGALE_STEPS[prevIdx]; return prevIdx; });
 
-                              setSignal({ type: sig.isCall ? 'CALL' : 'PUT', exp: expMins, entryPrice }); 
-                              addLog(`ВХОД ${sig.isCall ? 'ВВЕРХ' : 'ВНИЗ'} НА 25 МИНУТ. СТАВКА: ${currentStakeAmount} ₽`, true);
-                              enqueueSpeech(`Вход выполнен по Мартингейлу. Сделка активна.`, `trade-entry-${sig.signalTime}`, 1);
-
-                              let expirySeconds = expMins * 60; 
+                              addLog(`ВХОД ${sig.isCall ? 'ВВЕРХ' : 'ВНИЗ'}. ЦЕНА: ${formatPrice(actualEntryPrice)}. СТАВКА: ${currentStakeAmount} ₽`, true);
 
                               setActiveLiveTrade({
                                   id: `live_trade_${sig.signalTime}`, type: sig.isCall ? 'CALL' : 'PUT', signalTime: sig.signalTime, entryTime: actualEntryTime, 
-                                  exitTime: finalExitTime, entryPrice: entryPrice, exitPrice: entryPrice, isLive: true, betAmount: currentStakeAmount, reason: sig.signalType, quality: sig.score, mtfStr: sig.mtfConfStr
+                                  exitTime: finalExitTime, entryPrice: actualEntryPrice, exitPrice: actualEntryPrice, isLive: true, betAmount: currentStakeAmount, reason: sig.signalType, quality: sig.score, mtfStr: sig.mtfConfStr
                               });
 
+                              let expirySeconds = expMins * 60; 
                               let midTradeSpoken = false;
 
+                              // Active Trade Loop
                               while(expirySeconds > 0 && engineActive.current) {
                                 setCountdown(expirySeconds);
                                 if (expirySeconds === 750 && !midTradeSpoken) { 
                                     midTradeSpoken = true;
-                                    const isWinningNow = (sig.isCall && currentPrice.current > entryPrice) || (sig.isPut && currentPrice.current < entryPrice);
+                                    const isWinningNow = (sig.isCall && currentPrice.current > actualEntryPrice) || (sig.isPut && currentPrice.current < actualEntryPrice);
                                     if (isWinningNow) enqueueSpeech('Мы на середине сделки. Сейчас сигнал идёт в плюс.', `trade-mid-win-${actualEntryTime}`, 2);
                                     else enqueueSpeech('Мы на середине сделки. Цена колеблется.', `trade-mid-loss-${actualEntryTime}`, 2);
                                 }
@@ -1715,45 +1634,37 @@
                               
                               if (!engineActive.current) break;
 
-                              setCountdown(null); updateStatus('АНАЛИЗ РЕЗУЛЬТАТА', 'text-slate-500');
-
-                              // Sweep cleanup - Remove analysis lines strictly at the end of the trade
+                              setCountdown(null); updateStatus('АНАЛИЗ РЕЗУЛЬТАТА', 'text-slate-400');
                               activeAnalysisLinesRef.current.forEach(l => { try { candleSeries.current.removePriceLine(l); } catch(e){} });
                               activeAnalysisLinesRef.current = [];
 
                               const resultData = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
-                              let finalPrice = entryPrice;
-                              if (resultData && resultData.length > 0) {
-                                  lastDataTimeRef.current = Date.now(); finalPrice = resultData[resultData.length - 1].close; 
-                              }
+                              let finalPrice = actualEntryPrice;
+                              if (resultData && resultData.length > 0) { lastDataTimeRef.current = Date.now(); finalPrice = resultData[resultData.length - 1].close; }
                               
                               let result = "LOSS";
-                              if ((sig.isCall && finalPrice > entryPrice) || (sig.isPut && finalPrice < entryPrice) || finalPrice === entryPrice) result = "WIN";
+                              if ((sig.isCall && finalPrice > actualEntryPrice) || (sig.isPut && finalPrice < actualEntryPrice) || finalPrice === actualEntryPrice) result = "WIN";
 
                               setActiveLiveTrade(null); 
                               setTradesHistory(prev => {
-                                  const updated = [...prev, { 
+                                  return [...prev, { 
                                       id: `live_trade_${sig.signalTime}`, type: sig.isCall ? 'CALL' : 'PUT', signalTime: sig.signalTime, entryTime: actualEntryTime, 
-                                      exitTime: finalExitTime, entryPrice: entryPrice, exitPrice: finalPrice, status: "CLOSED", result: result, betAmount: currentStakeAmount, reason: sig.signalType, quality: sig.score, mtfStr: sig.mtfConfStr
+                                      exitTime: finalExitTime, entryPrice: actualEntryPrice, exitPrice: finalPrice, status: "CLOSED", result: result, betAmount: currentStakeAmount, reason: sig.signalType, quality: sig.score, mtfStr: sig.mtfConfStr
                                   }];
-                                  return updated;
                               });
 
                               try {
-                                  liveMarkersRef.current.push({ time: finalExitTime, position: sig.isCall ? 'belowBar' : 'aboveBar', color: result==="WIN" ? '#10b981' : '#f43f5e', shape: 'square', text: 'EXIT', size: 0.5 });
+                                  liveMarkersRef.current.push({ time: finalExitTime, position: sig.isCall ? 'belowBar' : 'aboveBar', color: result==="WIN" ? '#059669' : '#e11d48', shape: 'square', text: 'EXIT', size: 0.5 });
                                   updateChartMarkers();
                               } catch (e) {}
 
                               if (result === "WIN") {
-                                setMartingaleIndex(0); // Reset stake
-                                consecutiveLossesRef.current = 0; // Reset protection tracking
+                                setMartingaleIndex(0); consecutiveLossesRef.current = 0; 
                                 playSound('win'); addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
                                 await speakAsync(`Сделка закрылась в плюс. Отличный результат. Сброс до первой ступени.`, `trade-result-win-${actualEntryTime}`, 1);
                               } else {
                                 consecutiveLossesRef.current += 1;
                                 playSound('loss'); addLog(`РЕЗУЛЬТАТ: МИНУС (-).`);
-
-                                // Continuous Martingale up to 7, reset to 0 if step 7 (index 6) loses
                                 setMartingaleIndex(prev => {
                                     const nextIdx = prev < 6 ? prev + 1 : 0;
                                     speakAsync(`Минус. Переходим на колено ${nextIdx + 1} по Мартингейлу.`, `trade-result-loss-${actualEntryTime}`, 1);
@@ -1763,12 +1674,11 @@
 
                               setSignal(null); signalPhaseRef.current = 'NONE'; setSignalPhase('NONE'); setMetrics(prev => ({ ...prev, smartMoney: 0 }));
                               zoneStateRef.current = 'OUT'; setZoneState('OUT'); zoneCooldownUntilRef.current = Date.now() + 60000;
-                              
                               syncModeView(); lastEvaluatedCandleTimeRef.current = evalCandleTime; await new Promise(r => setTimeout(r, 1500)); break; 
                           } else {
                               if (sig.score > 20 && candleSeries.current) {
                                   try { 
-                                      liveMarkersRef.current.push({ time: evalCandleTime, position: 'inBar', color: '#94a3b8', shape: 'circle', text: 'CHK', size: 0.8 });
+                                      liveMarkersRef.current.push({ time: evalCandleTime, position: 'inBar', color: '#1e293b', shape: 'circle', text: 'CHK', size: 0.8 });
                                       updateChartMarkers();
                                   } catch (e) {}
                               }
@@ -1801,16 +1711,16 @@
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] md:w-[40vw] md:h-[40vw] bg-cyan-600/20 rounded-full blur-[120px] pointer-events-none"></div>
 
                 <div className="relative z-10 flex flex-col items-center">
-                    <h2 className="text-cyan-500/80 tracking-[0.4em] text-xs md:text-sm font-bold uppercase mb-2 oswald-font drop-shadow-md">Developed by</h2>
-                    <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-slate-100 via-cyan-300 to-slate-100 animate-gradient-x tracking-[0.2em] mb-12 drop-shadow-[0_0_25px_rgba(34,211,238,0.4)] oswald-font scale-y-110 whitespace-nowrap">
+                    <h2 className="text-cyan-500/80 tracking-[0.4em] text-xs md:text-sm font-bold uppercase mb-2 oswald-font drop-shadow-[0_0_8px_rgba(0,240,255,0.4)]">Developed by</h2>
+                    <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-slate-100 via-cyan-300 to-slate-100 animate-gradient-x tracking-[0.2em] mb-12 drop-shadow-[0_0_25px_rgba(0,240,255,0.6)] oswald-font scale-y-110 whitespace-nowrap">
                         SLAVA GORDEEV
                     </h1>
 
-                    <div className="glass-panel-splash p-8 md:p-10 rounded-3xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col items-center min-w-[320px] relative overflow-hidden">
+                    <div className="glass-panel-splash p-8 md:p-10 rounded-3xl border border-cyan-500/20 shadow-[0_20px_50px_rgba(0,0,0,0.8)] flex flex-col items-center min-w-[320px] relative overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-transparent pointer-events-none"></div>
-                        <Cpu size={48} className="text-cyan-400 mb-6 drop-shadow-[0_0_15px_rgba(34,211,238,0.8)] animate-pulse" />
+                        <Cpu size={48} className="text-cyan-400 mb-6 drop-shadow-[0_0_15px_rgba(0,240,255,0.8)] animate-pulse" />
                         <h3 className="text-xl md:text-2xl text-white font-bold tracking-widest oswald-font mb-8">TERMINAL PRO MAX</h3>
-                        <button onClick={handleLaunch} className="w-full py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white tracking-[0.3em] font-bold text-sm md:text-base rounded-xl transition-all duration-300 shadow-[0_10px_30px_rgba(34,211,238,0.4)] hover:shadow-[0_10px_40px_rgba(34,211,238,0.6)] border border-cyan-400/50 uppercase oswald-font relative overflow-hidden group">
+                        <button onClick={handleLaunch} className="w-full py-4 bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white tracking-[0.3em] font-bold text-sm md:text-base rounded-xl transition-all duration-300 shadow-[0_0_20px_rgba(0,240,255,0.3)] hover:shadow-[0_0_30px_rgba(0,240,255,0.6)] border border-cyan-400/50 uppercase oswald-font relative overflow-hidden group">
                             <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out skew-x-12"></div>
                             <span className="relative z-10">Запустить систему</span>
                         </button>
@@ -1824,61 +1734,63 @@
           const currentStakeVal = MARTINGALE_STEPS[martingaleIndex];
 
           return (
-            <div className="h-[100dvh] w-screen flex flex-col text-slate-900 relative overflow-hidden selection:bg-cyan-500/20">
-              <div className="bg-orb-1 pointer-events-none opacity-80"></div>
-              <div className="bg-orb-2 pointer-events-none opacity-80"></div>
-              <div className="absolute inset-0 bg-grid-pattern pointer-events-none z-0 opacity-60"></div>
+            <div className="h-[100dvh] w-screen flex flex-col text-slate-100 relative overflow-hidden selection:bg-cyan-500/20 bg-[#050b14]">
+              <div className="bg-orb-1 pointer-events-none opacity-60"></div>
+              <div className="bg-orb-2 pointer-events-none opacity-60"></div>
+              <div className="absolute inset-0 bg-grid-pattern pointer-events-none z-0 opacity-40"></div>
 
-              <div className="h-7 md:h-9 glass-panel z-50 overflow-hidden flex items-center justify-between shrink-0 w-full relative pr-3">
-                <div className="h-full bg-slate-900 text-white px-3 md:px-5 flex items-center gap-2 z-20 text-[10px] md:text-xs tracking-widest shadow-[5px_0_15px_rgba(0,0,0,0.1)] font-bold oswald-font rounded-r-xl border-r border-cyan-500/50 shrink-0 relative">
-                  <Globe size={14} className="text-cyan-400" /> РАДАР СЕТИ
+              {/* Top Ticker */}
+              <div className="h-7 md:h-9 glass-panel z-50 overflow-hidden flex items-center justify-between shrink-0 w-full relative pr-3 border-b border-cyan-500/20">
+                <div className="h-full bg-slate-900/80 text-white px-3 md:px-5 flex items-center gap-2 z-20 text-[10px] md:text-xs tracking-widest shadow-[5px_0_15px_rgba(0,0,0,0.4)] font-bold oswald-font rounded-r-xl border-r border-cyan-500/50 shrink-0 relative">
+                  <Globe size={14} className="text-cyan-400 drop-shadow-[0_0_5px_rgba(0,240,255,0.8)]" /> РАДАР СЕТИ
                 </div>
                 
                 <div className="flex-1 overflow-hidden relative h-full flex items-center mx-3">
-                  <div className="ticker-wrapper text-[10px] md:text-xs text-slate-700 tracking-widest pt-0.5 font-bold oswald-font">
+                  <div className="ticker-wrapper text-[10px] md:text-xs text-slate-300 tracking-widest pt-0.5 font-bold oswald-font">
                     {[...Array(2)].map((_, idx) => (
                       <div key={idx} className="flex gap-10 md:gap-16 whitespace-nowrap pr-10 md:pr-16 items-center">
                         {cryptoQuotes.length > 0 ? cryptoQuotes.map((q, i) => (
                           <span key={i} className="flex items-center gap-1.5">
                             <span className="text-slate-400 font-medium">{q.name}</span>
-                            <span className="text-slate-800 font-bold">{q.symbol}</span>
-                            <span className={`flex items-center font-bold ${q.change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            <span className="text-slate-100 font-bold">{q.symbol}</span>
+                            <span className={`flex items-center font-bold ${q.change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                                 {q.change >= 0 ? '↑' : '↓'} {Math.abs(q.change).toFixed(1)}%
                             </span>
-                            <span className="text-slate-900 font-mono font-black">${q.price < 1 ? q.price.toFixed(4) : q.price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                            <span className="w-1 h-1 rounded-full bg-cyan-500/30 mx-4"></span>
+                            <span className="text-cyan-100 font-mono font-black">${q.price < 1 ? q.price.toFixed(4) : q.price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                            <span className="w-1 h-1 rounded-full bg-cyan-500/50 mx-4 shadow-[0_0_5px_rgba(0,240,255,0.8)]"></span>
                           </span>
-                        )) : (<span className="text-slate-400 animate-pulse">ОБНОВЛЕНИЕ КОТИРОВОК...</span>)}
+                        )) : (<span className="text-slate-500 animate-pulse">ОБНОВЛЕНИЕ КОТИРОВОК...</span>)}
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="flex flex-col justify-center items-end bg-slate-100 border border-slate-200/50 px-2 py-0.5 rounded-md shadow-inner shrink-0 relative z-20">
+                <div className="flex flex-col justify-center items-end bg-slate-900/60 border border-slate-700/50 px-2 py-0.5 rounded-md shadow-inner shrink-0 relative z-20">
                     <div className="flex items-center gap-2 text-[8px] md:text-[9px] mono-font tracking-widest font-bold">
-                        <span className="text-slate-500">SOURCE: BINANCE</span><div className="w-[1px] h-3 bg-slate-300"></div>
-                        <span className="flex items-center gap-1">STATUS: <span className={dataHealth.status === 'LIVE' ? 'text-emerald-600' : 'text-rose-600 animate-pulse'}>{dataHealth.status}</span></span>
+                        <span className="text-slate-400">SOURCE: BINANCE</span><div className="w-[1px] h-3 bg-slate-600"></div>
+                        <span className="flex items-center gap-1 text-slate-300">STATUS: <span className={dataHealth.status === 'LIVE' ? 'text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.8)]' : 'text-rose-500 animate-pulse'}>{dataHealth.status}</span></span>
                     </div>
                 </div>
               </div>
 
+              {/* Main Header */}
               <header className="h-auto md:h-16 py-2 md:py-0 flex flex-col md:flex-row items-start md:items-center justify-between px-3 md:px-6 shrink-0 z-40 gap-2 md:gap-0 mt-2">
                 <div className="flex flex-col justify-center w-full md:w-auto">
                   <div className="flex justify-between items-center md:block">
-                      <h1 className="text-2xl md:text-3xl text-slate-900 leading-none font-bold flex items-center gap-2 oswald-font tracking-wider">
-                        <Zap size={28} className="text-cyan-600 drop-shadow-[0_0_10px_rgba(6,182,212,0.4)]" /> 
-                        ТЕРМИНАЛ <span className="text-gradient font-black hidden sm:inline">PRO MAX</span>
+                      <h1 className="text-2xl md:text-3xl text-slate-100 leading-none font-bold flex items-center gap-2 oswald-font tracking-wider">
+                        <Zap size={28} className="text-cyan-400 drop-shadow-[0_0_10px_rgba(0,240,255,0.8)]" /> 
+                        ТЕРМИНАЛ <span className="text-gradient font-black hidden sm:inline drop-shadow-[0_0_15px_rgba(0,240,255,0.4)]">PRO MAX</span>
                       </h1>
-                      <div className="text-[10px] text-white px-3 py-1 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-lg flex items-center shadow-[0_0_15px_rgba(14,165,233,0.3)] oswald-font tracking-widest block md:hidden font-bold">
+                      <div className="text-[10px] text-slate-900 px-3 py-1 bg-cyan-400 rounded-lg flex items-center shadow-[0_0_15px_rgba(0,240,255,0.6)] oswald-font tracking-widest block md:hidden font-black">
                         {appPhase}
                       </div>
                   </div>
-                  <div className="text-[9px] md:text-xs text-slate-500 tracking-[0.2em] mt-1 font-bold leading-none uppercase">
-                    Алгоритм SMC • Анализ Ликвидности • Martingale v7
+                  <div className="text-[9px] md:text-xs text-slate-400 tracking-[0.2em] mt-1 font-bold leading-none uppercase flex items-center gap-2">
+                    <div className="w-4 h-[1px] bg-cyan-500/50"></div> Алгоритм SMC • Анализ Ликвидности • Martingale v7
                   </div>
                 </div>
                 
-                <div className="w-full flex md:hidden mb-1 mt-1 sticky top-0 z-50 pb-2 pt-1 border-b border-slate-200 shadow-sm px-1 justify-between items-center gap-2 bg-[#eef2f6]">
+                <div className="w-full flex md:hidden mb-1 mt-1 sticky top-0 z-50 pb-2 pt-1 border-b border-slate-800 shadow-sm px-1 justify-between items-center gap-2 bg-[#050b14]/90 backdrop-blur">
                     <BrokerButton compact={true} />
                     <div className="flex gap-2 items-center">
                         <LiveClock />
@@ -1890,16 +1802,16 @@
                       <div className="hidden md:block">
                           <BrokerButton compact={false} />
                       </div>
-                      <div className="text-xs md:text-sm text-white px-4 py-1.5 border border-white/50 bg-gradient-to-r from-blue-600 to-cyan-500 shadow-[0_5px_20px_rgba(14,165,233,0.3)] rounded-lg oswald-font tracking-widest hidden md:block font-bold h-[52px] flex items-center">
+                      <div className="text-xs md:text-sm text-slate-900 px-4 py-1.5 bg-cyan-400 shadow-[0_0_20px_rgba(0,240,255,0.4)] rounded-lg oswald-font tracking-widest hidden md:block font-black h-[52px] flex items-center">
                         {appPhase}
                       </div>
                   </div>
                   <div className="flex gap-4 items-center tracking-wider w-full md:w-auto justify-between md:justify-end">
-                    <span className="text-[9px] md:text-[10px] text-slate-600 flex items-center gap-1.5 font-bold uppercase border border-slate-300 px-2 py-0.5 rounded-full bg-white/50">
-                      <div className={`w-2 h-2 rounded-full ${dataHealth.status === 'LIVE' ? 'bg-emerald-50 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(225,29,72,0.8)]'}`} />
+                    <span className="text-[9px] md:text-[10px] text-slate-300 flex items-center gap-1.5 font-bold uppercase border border-slate-700 px-2 py-0.5 rounded-full bg-slate-900/50">
+                      <div className={`w-2 h-2 rounded-full ${dataHealth.status === 'LIVE' ? 'bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.8)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(225,29,72,0.8)]'}`} />
                       {dataHealth.status === 'LIVE' ? 'ПОДКЛЮЧЕНО К БИРЖЕ' : 'ОБНОВЛЕНИЕ ДАННЫХ'}
                     </span>
-                    <span className="hidden md:inline">
+                    <span className="hidden md:inline text-cyan-50 text-shadow-[0_0_8px_rgba(255,255,255,0.5)]">
                       <LiveClock />
                     </span>
                   </div>
@@ -1908,6 +1820,7 @@
 
               <main className="flex-1 flex flex-col md:flex-row p-2 md:p-4 gap-3 md:gap-4 overflow-hidden z-10">
                 
+                {/* CHART WORKSPACE */}
                 <div className="w-full md:flex-1 h-[50vh] md:h-full glass-panel-heavy rounded-3xl md:rounded-[2.5rem] relative overflow-hidden flex flex-col shrink-0">
                   
                   <div className={`absolute inset-0 z-30 transition-all duration-700 bg-transparent flex items-center justify-center p-4 md:p-8 ${viewMode === 'SCREENER' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
@@ -1915,31 +1828,31 @@
                        <div className="card-3d relative w-full h-full flex flex-col p-5 md:p-8 rounded-[2.5rem]">
                           <div className="flex justify-between items-start mb-6 md:mb-8 relative z-10">
                               <div className="flex items-center gap-5">
-                                  <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-blue-600 to-cyan-400 text-white rounded-3xl flex items-center justify-center font-bold text-3xl md:text-5xl shadow-[0_15px_30px_rgba(14,165,233,0.4)] border border-white/60">₿</div>
+                                  <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-cyan-600 to-blue-700 text-white rounded-3xl flex items-center justify-center font-bold text-3xl md:text-5xl shadow-[0_0_30px_rgba(0,240,255,0.4)] border border-cyan-400/50">₿</div>
                                   <div>
-                                      <h2 className="text-3xl md:text-5xl font-black text-slate-900 oswald-font tracking-wider leading-none drop-shadow-sm">BITCOIN</h2>
-                                      <span className="text-base md:text-xl font-bold text-cyan-700 tracking-[0.2em] uppercase mt-2 inline-block bg-cyan-100/50 px-3 py-1 rounded-lg border border-cyan-200">BTC/USDT • {currentTF}</span>
+                                      <h2 className="text-3xl md:text-5xl font-black text-slate-100 oswald-font tracking-wider leading-none drop-shadow-sm text-shadow-[0_0_15px_rgba(255,255,255,0.2)]">BITCOIN</h2>
+                                      <span className="text-base md:text-xl font-bold text-cyan-300 tracking-[0.2em] uppercase mt-2 inline-block bg-cyan-900/50 px-3 py-1 rounded-lg border border-cyan-500/30 shadow-[0_0_10px_rgba(0,240,255,0.2)]">BTC/USDT • {currentTF}</span>
                                   </div>
                               </div>
                               <div className="flex flex-col items-end">
-                                  <div className="flex items-center gap-2 text-slate-900 bg-white/80 px-4 py-2 rounded-xl shadow-[0_10px_20px_rgba(15,23,42,0.05)] border border-slate-200">
+                                  <div className="flex items-center gap-2 text-slate-100 bg-slate-900/80 px-4 py-2 rounded-xl shadow-[0_10px_20px_rgba(0,0,0,0.5)] border border-cyan-500/30">
                                       <span className="text-xs md:text-sm font-bold tracking-widest uppercase">Premium 5M Diagnostics</span>
-                                      <Radar size={18} className="animate-spin text-cyan-500" />
+                                      <Radar size={18} className="animate-spin text-cyan-400" />
                                   </div>
                               </div>
                           </div>
 
-                          <div className="flex-1 overflow-hidden rounded-3xl bg-white/90 border-2 border-white relative shadow-[inset_0_4px_20px_rgba(0,0,0,0.05)] z-10">
+                          <div className="flex-1 overflow-hidden rounded-3xl bg-slate-900/80 border border-cyan-500/20 relative shadow-[inset_0_4px_20px_rgba(0,0,0,0.5)] z-10">
                               <MiniChart data={sparklines['BTCUSDT']} />
                               <div className="absolute inset-0 scanline-anim pointer-events-none opacity-40 mix-blend-overlay" />
                           </div>
 
-                          <div className="mt-6 flex justify-between items-center bg-white/80 p-4 rounded-2xl border border-white relative z-10 shadow-sm">
-                              <span className="text-xs md:text-sm text-slate-700 font-bold tracking-widest uppercase text-shimmer">Анализ пулов ликвидности SMC...</span>
+                          <div className="mt-6 flex justify-between items-center bg-slate-900/60 p-4 rounded-2xl border border-cyan-500/20 relative z-10 shadow-sm">
+                              <span className="text-xs md:text-sm text-slate-300 font-bold tracking-widest uppercase">Анализ пулов ликвидности SMC...</span>
                               <div className="flex gap-2">
-                                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-bounce shadow-[0_0_8px_rgba(59,130,246,0.6)]" style={{animationDelay: '0ms'}}></div>
-                                  <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-bounce shadow-[0_0_8px_rgba(34,211,238,0.6)]" style={{animationDelay: '150ms'}}></div>
-                                  <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-bounce shadow-[0_0_8px_rgba(96,165,250,0.6)]" style={{animationDelay: '300ms'}}></div>
+                                  <div className="w-2.5 h-2.5 rounded-full bg-cyan-600 animate-bounce shadow-[0_0_8px_rgba(0,240,255,0.6)]" style={{animationDelay: '0ms'}}></div>
+                                  <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-bounce shadow-[0_0_12px_rgba(0,240,255,0.8)]" style={{animationDelay: '150ms'}}></div>
+                                  <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-bounce shadow-[0_0_8px_rgba(59,130,246,0.6)]" style={{animationDelay: '300ms'}}></div>
                               </div>
                           </div>
                        </div>
@@ -1948,21 +1861,21 @@
 
                   <div className={`absolute inset-0 z-20 flex flex-col transition-all duration-700 bg-transparent ${viewMode === 'DETAIL' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                     <div className="absolute top-5 left-5 z-40 flex flex-col gap-2">
-                      <div className="glass-card p-4 md:p-5 rounded-3xl min-w-[160px] border-white shadow-[0_15px_40px_rgba(14,165,233,0.15)] relative overflow-hidden bg-white/80">
-                        <div className="absolute -right-10 -top-10 w-24 h-24 bg-cyan-400/20 rounded-full blur-xl pointer-events-none"></div>
-                        <div className="text-[10px] md:text-xs text-slate-500 tracking-widest mb-1.5 flex items-center gap-2 font-bold uppercase">
-                          <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.8)]"/> РЕАЛЬНОЕ ВРЕМЯ
+                      <div className="premium-glass-card p-4 md:p-5 rounded-3xl min-w-[160px] border-cyan-500/30 shadow-[0_15px_40px_rgba(0,0,0,0.8)] relative overflow-hidden bg-slate-900/80">
+                        <div className="absolute -right-10 -top-10 w-24 h-24 bg-cyan-400/10 rounded-full blur-xl pointer-events-none"></div>
+                        <div className="text-[10px] md:text-xs text-slate-400 tracking-widest mb-1.5 flex items-center gap-2 font-bold uppercase">
+                          <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(0,240,255,0.8)]"/> РЕАЛЬНОЕ ВРЕМЯ
                         </div>
-                        <div className="text-4xl md:text-5xl tracking-wider text-slate-900 leading-none pt-0.5 font-black oswald-font drop-shadow-sm">{asset.name}</div>
-                        <div className="mt-3 text-xs md:text-sm text-slate-700 tracking-widest font-bold flex items-center gap-2">
-                            ТАЙМФРЕЙМ: <span className="text-white bg-gradient-to-r from-blue-600 to-cyan-500 px-3 py-1 rounded-lg shadow-[0_4px_10px_rgba(14,165,233,0.4)] border border-white/50">{currentTF}</span>
+                        <div className="text-4xl md:text-5xl tracking-wider text-slate-100 leading-none pt-0.5 font-black oswald-font drop-shadow-sm text-shadow-[0_0_10px_rgba(255,255,255,0.1)]">{asset.name}</div>
+                        <div className="mt-3 text-xs md:text-sm text-slate-300 tracking-widest font-bold flex items-center gap-2">
+                            ТАЙМФРЕЙМ: <span className="text-slate-900 bg-cyan-400 px-3 py-1 rounded-lg shadow-[0_0_10px_rgba(0,240,255,0.4)] border border-cyan-300 font-black">{currentTF}</span>
                         </div>
                       </div>
                     </div>
 
                     {zoneState === 'IN' && signalPhase === 'NONE' && (
-                        <div className="absolute top-8 right-8 z-50 bg-amber-500/10 text-amber-600 px-4 py-2 rounded-xl font-bold tracking-widest uppercase oswald-font shadow-[0_0_20px_rgba(245,158,11,0.2)] border border-amber-400/50 flex items-center gap-3 backdrop-blur-md">
-                            <div className="w-2.5 h-2.5 bg-amber-500 rounded-full animate-ping"></div>
+                        <div className="absolute top-8 right-8 z-50 bg-amber-900/80 text-amber-400 px-4 py-2 rounded-xl font-bold tracking-widest uppercase oswald-font shadow-[0_0_20px_rgba(245,158,11,0.4)] border border-amber-500/50 flex items-center gap-3 backdrop-blur-md">
+                            <div className="w-2.5 h-2.5 bg-amber-400 rounded-full animate-ping shadow-[0_0_8px_rgba(251,191,36,0.8)]"></div>
                             Зона интереса: возможен сигнал
                         </div>
                     )}
@@ -1970,8 +1883,8 @@
                     <div className="flex-1 relative w-full mt-32 md:mt-36 flex flex-col gap-2 px-4 pb-4 md:px-5 md:pb-5">
                         <div 
                             ref={chartContainerRef}
-                            className={`flex-1 relative w-full rounded-3xl overflow-hidden bg-white/90 border border-white transition-all duration-500 ${
-                                zoneState === 'IN' && zoneInfo ? (zoneInfo.type === 'RESISTANCE' ? 'zone-active-resistance' : 'zone-active-support') : 'shadow-[inset_0_5px_20px_rgba(0,0,0,0.05)]'
+                            className={`flex-1 relative w-full rounded-3xl overflow-hidden bg-slate-900/90 border transition-all duration-500 ${
+                                zoneState === 'IN' && zoneInfo ? (zoneInfo.type === 'RESISTANCE' ? 'zone-active-resistance' : 'zone-active-support') : 'border-cyan-500/20 shadow-[inset_0_0_30px_rgba(0,0,0,0.8)]'
                             }`}
                         >
                             <ChartOverlays 
@@ -1987,99 +1900,99 @@
                   </div>
                 </div>
 
+                {/* SIDEBAR DASHBOARD */}
                 <div className="w-full md:w-[340px] lg:w-[380px] flex flex-col glass-panel-heavy rounded-3xl md:rounded-[2.5rem] overflow-hidden shrink-0 relative min-h-[50vh] md:h-full">
                   
-                  <div className="border-b border-white/80 p-3 bg-gradient-to-r from-blue-100/60 to-transparent flex justify-center items-center shrink-0 min-h-[48px] shadow-sm relative z-10">
+                  <div className="border-b border-cyan-500/30 p-3 bg-gradient-to-r from-slate-900/80 to-transparent flex justify-center items-center shrink-0 min-h-[48px] shadow-[0_4px_15px_rgba(0,0,0,0.3)] relative z-10">
                     <div className={`text-base md:text-lg oswald-font tracking-widest flex items-center gap-2 text-center leading-none transition-all duration-300 w-full justify-center font-bold ${statusColorClass}`}>
                       {appPhase.includes('ПОДГОТОВ') ? (
-                        <span className="text-amber-600 drop-shadow-[0_0_12px_rgba(217,119,6,0.4)] animate-pulse">{appPhase}</span>
+                        <span className="text-cyan-400 drop-shadow-[0_0_12px_rgba(0,240,255,0.8)] animate-pulse">{appPhase}</span>
                       ) : appPhase}
                     </div>
                   </div>
 
                   <div className="flex-1 flex flex-col p-3 md:p-4 gap-3 md:gap-4 overflow-y-hidden relative z-10">
                     
-                    <div className="glass-card rounded-2xl p-2 shrink-0 border-white bg-white/80 shadow-inner flex flex-col justify-center">
-                        <div className="flex justify-between items-center bg-blue-50/50 p-1.5 rounded border border-blue-200/50 shadow-sm mb-1.5 mx-1">
-                            <span className="text-[9px] text-slate-600 font-bold tracking-widest">TIMEFRAME:</span>
-                            <span className="text-[10px] font-black text-blue-700 tracking-widest">5M (SCALPING)</span>
+                    <div className="glass-card rounded-2xl p-2 shrink-0 flex flex-col justify-center shadow-[0_4px_15px_rgba(0,0,0,0.4)]">
+                        <div className="flex justify-between items-center bg-slate-900/50 p-1.5 rounded border border-cyan-500/20 shadow-sm mb-1.5 mx-1">
+                            <span className="text-[9px] text-slate-400 font-bold tracking-widest">TIMEFRAME:</span>
+                            <span className="text-[10px] font-black text-cyan-400 tracking-widest drop-shadow-[0_0_5px_rgba(0,240,255,0.5)]">5M (SCALPING)</span>
                         </div>
-                        <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest text-center border-b border-slate-200/50 pb-1.5 mb-1.5 oswald-font">MTF CONTEXT FILTER</div>
+                        <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest text-center border-b border-slate-700/50 pb-1.5 mb-1.5 oswald-font">MTF CONTEXT FILTER</div>
                         <div className="flex justify-between items-center px-1">
-                            <div className="flex flex-col items-center flex-1 border-r border-slate-200/60">
-                                <span className="text-[8px] md:text-[9px] font-bold text-slate-400 mb-0.5">4H</span>
-                                <span className={`text-[10px] md:text-xs font-black oswald-font leading-none ${mtfContext.h4 === 'BULLISH' ? 'text-emerald-500' : mtfContext.h4 === 'BEARISH' ? 'text-rose-500' : 'text-slate-600'}`}>{mtfContext.h4}</span>
+                            <div className="flex flex-col items-center flex-1 border-r border-slate-700/50">
+                                <span className="text-[8px] md:text-[9px] font-bold text-slate-500 mb-0.5">4H</span>
+                                <span className={`text-[10px] md:text-xs font-black oswald-font leading-none ${mtfContext.h4 === 'BULLISH' ? 'text-emerald-400 drop-shadow-[0_0_5px_currentColor]' : mtfContext.h4 === 'BEARISH' ? 'text-rose-400' : 'text-slate-400'}`}>{mtfContext.h4}</span>
                             </div>
-                            <div className="flex flex-col items-center flex-1 border-r border-slate-200/60">
-                                <span className="text-[8px] md:text-[9px] font-bold text-slate-400 mb-0.5">1H</span>
-                                <span className={`text-[10px] md:text-xs font-black oswald-font leading-none ${mtfContext.h1 === 'BULLISH' ? 'text-emerald-500' : mtfContext.h1 === 'BEARISH' ? 'text-rose-500' : 'text-slate-600'}`}>{mtfContext.h1}</span>
+                            <div className="flex flex-col items-center flex-1 border-r border-slate-700/50">
+                                <span className="text-[8px] md:text-[9px] font-bold text-slate-500 mb-0.5">1H</span>
+                                <span className={`text-[10px] md:text-xs font-black oswald-font leading-none ${mtfContext.h1 === 'BULLISH' ? 'text-emerald-400 drop-shadow-[0_0_5px_currentColor]' : mtfContext.h1 === 'BEARISH' ? 'text-rose-400' : 'text-slate-400'}`}>{mtfContext.h1}</span>
                             </div>
-                            <div className="flex flex-col items-center flex-1 border-r border-slate-200/60">
-                                <span className="text-[8px] md:text-[9px] font-bold text-slate-400 mb-0.5">15M</span>
-                                <span className={`text-[10px] md:text-xs font-black oswald-font leading-none ${mtfContext.m15 === 'BULLISH' ? 'text-emerald-500' : mtfContext.m15 === 'BEARISH' ? 'text-rose-500' : 'text-slate-600'}`}>{mtfContext.m15}</span>
+                            <div className="flex flex-col items-center flex-1 border-r border-slate-700/50">
+                                <span className="text-[8px] md:text-[9px] font-bold text-slate-500 mb-0.5">15M</span>
+                                <span className={`text-[10px] md:text-xs font-black oswald-font leading-none ${mtfContext.m15 === 'BULLISH' ? 'text-emerald-400 drop-shadow-[0_0_5px_currentColor]' : mtfContext.m15 === 'BEARISH' ? 'text-rose-400' : 'text-slate-400'}`}>{mtfContext.m15}</span>
                             </div>
                             <div className="flex flex-col items-center flex-1">
-                                <span className="text-[8px] md:text-[9px] font-bold text-slate-400 mb-0.5">SCORE</span>
-                                <span className={`text-base font-black oswald-font leading-none ${mtfContext.score >= 80 ? 'text-cyan-600 drop-shadow-[0_0_5px_currentColor]' : mtfContext.score >= 65 ? 'text-slate-800' : 'text-rose-400'}`}>{mtfContext.status === 'LOADING' ? '--' : (mtfContext.status.includes('LOCAL') ? 'LOCAL' : mtfContext.score)}</span>
+                                <span className="text-[8px] md:text-[9px] font-bold text-slate-500 mb-0.5">SCORE</span>
+                                <span className={`text-base font-black oswald-font leading-none ${mtfContext.score >= 80 ? 'text-cyan-400 drop-shadow-[0_0_8px_currentColor]' : mtfContext.score >= 65 ? 'text-slate-200' : 'text-rose-400'}`}>{mtfContext.status === 'LOADING' ? '--' : (mtfContext.status.includes('LOCAL') ? 'LOCAL' : mtfContext.score)}</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-2 glass-card rounded-2xl p-2 shrink-0 border-white bg-white/80 shadow-[inset_0_2px_10px_rgba(255,255,255,0.8)]">
+                    <div className="grid grid-cols-4 gap-2 glass-card rounded-2xl p-2 shrink-0">
                        <Speedometer value={metrics.structure} label="СТРУКТУРА" colorHex="#d97706" />
-                       <Speedometer value={metrics.liquidity} label="ЛИКВИДНОСТЬ" colorHex="#2563eb" glow={true} />
-                       <Speedometer value={metrics.filterLevel} label="АТР ФИЛЬТР" colorHex="#6366f1" />
-                       <Speedometer value={metrics.smartMoney} label="SMART MONEY" colorHex="#06b6d4" />
+                       <Speedometer value={metrics.liquidity} label="ЛИКВИДНОСТЬ" colorHex="#3b82f6" glow={true} />
+                       <Speedometer value={metrics.filterLevel} label="АТР ФИЛЬТР" colorHex="#8b5cf6" />
+                       <Speedometer value={metrics.smartMoney} label="SMART MONEY" colorHex="#00f0ff" />
                     </div>
 
+                    {/* VOLUMETRIC ARROW & COUNTDOWN HUD */}
                     <div className="flex gap-3 h-28 md:h-32 shrink-0">
-                      <div className={`w-[35%] border rounded-2xl flex flex-col items-center justify-center relative transition-all duration-500 glass-card bg-white/90 ${signalPhase === 'ACTIVE' ? 'border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.4)]' : 'border-white'}`}>
-                        {signalPhase === 'ACTIVE' && signal ? (
-                          <VolumetricArrow type={signal.type} />
+                      <div className={`w-[35%] border rounded-2xl flex flex-col items-center justify-center relative transition-all duration-500 glass-card bg-slate-900/80 ${signalPhase === 'PREPARING' ? 'border-cyan-400 shadow-[0_0_30px_rgba(0,240,255,0.4)] scale-[1.02]' : signalPhase === 'ACTIVE' ? 'border-cyan-500 shadow-[0_0_15px_rgba(0,240,255,0.2)]' : 'border-slate-700/50'}`}>
+                        {signalPhase === 'PREPARING' ? (
+                            <div className="flex flex-col items-center justify-center w-full h-full p-2 text-center">
+                                <span className="text-[10px] text-cyan-400 font-black tracking-widest oswald-font mb-1 leading-none drop-shadow-sm animate-pulse">ВХОД ЧЕРЕЗ</span>
+                                <div className="text-6xl font-black text-white drop-shadow-[0_0_20px_rgba(0,240,255,0.9)] mono-font animate-scale-pulse leading-none">{countdown}</div>
+                            </div>
+                        ) : signalPhase === 'ACTIVE' && signal ? (
+                            <VolumetricArrow type={signal.type} active={true} />
                         ) : (
-                          <div className="flex flex-col items-center opacity-70 px-1 text-center">
-                              {signalPhase === 'COUNTDOWN' ? (
-                                  <div className="text-4xl font-black text-cyan-600 drop-shadow-sm mb-1">{countdown}</div>
-                              ) : (
-                                  <Radar size={28} className={`text-slate-600 mb-2 ${(signalPhase === 'EXPLAINING' || signalPhase === 'DETECTED') ? 'animate-spin text-cyan-500' : ''}`} />
-                              )}
-                              <span className="text-[8px] md:text-[9px] tracking-widest font-bold text-slate-700 oswald-font leading-tight mt-1">
-                                  {signalPhase === 'EXPLAINING' ? 'ОБЪЯСНЕНИЕ СИГНАЛА' : 
-                                   signalPhase === 'COUNTDOWN' ? 'ПОДГОТОВКА К ВХОДУ' : 
-                                   signalPhase === 'DETECTED' ? 'СИГНАЛ НАЙДЕН' : 'ОЖИДАНИЕ'}
-                              </span>
-                          </div>
+                            <div className="flex flex-col items-center opacity-50 px-1 text-center">
+                                <Radar size={28} className="text-slate-400 mb-2" />
+                                <span className="text-[8px] tracking-widest font-bold text-slate-500 oswald-font leading-tight mt-1">ОЖИДАНИЕ</span>
+                            </div>
                         )}
                       </div>
                       
-                      <div className="w-[65%] rounded-2xl overflow-hidden glass-card p-1.5 bg-white border-white shadow-inner flex">
+                      <div className="w-[65%] rounded-2xl overflow-hidden glass-card p-1.5 shadow-inner flex">
                         <OrderBookDepth price={currentPrice.current} />
                         <HftTape price={currentPrice.current} />
                       </div>
                     </div>
 
-                    <div className="glass-card border rounded-3xl p-4 flex flex-col gap-2 shrink-0 relative overflow-hidden transition-all duration-700 bg-white/90 border-white">
-                        <div className="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full blur-2xl pointer-events-none"></div>
+                    {/* MARTINGALE HUD DISPLAY */}
+                    <div className="glass-card border rounded-3xl p-4 flex flex-col gap-2 shrink-0 relative overflow-hidden transition-all duration-700 bg-slate-900/90 border-cyan-500/20">
+                        <div className="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-br from-cyan-900/40 to-blue-900/20 rounded-full blur-2xl pointer-events-none"></div>
                         
                         <div className="flex justify-between items-center mb-1 relative z-10">
-                            <span className="text-slate-500 text-[10px] font-bold tracking-widest uppercase oswald-font">ДЕМО-БАЛАНС</span>
-                            <span className="text-lg font-black text-slate-900 oswald-font leading-none">{stats.balance.toLocaleString('ru-RU')} ₽</span>
+                            <span className="text-slate-400 text-[10px] font-bold tracking-widest uppercase oswald-font">ДЕМО-БАЛАНС</span>
+                            <span className="text-lg font-black text-slate-100 oswald-font leading-none">{stats.balance.toLocaleString('ru-RU')} ₽</span>
                         </div>
 
-                        <div className="flex justify-between items-center mb-1 relative z-10 pb-2 border-b border-slate-200/60">
-                            <span className="text-slate-500 text-[10px] font-bold tracking-widest uppercase oswald-font">СЕССИОННЫЙ PNL</span>
-                            <span className={`text-base font-black ios-text leading-none oswald-font ${stats.pnl >= 0 ? 'text-cyan-700' : 'text-rose-600'}`}>
+                        <div className="flex justify-between items-center mb-1 relative z-10 pb-2 border-b border-slate-700/60">
+                            <span className="text-slate-400 text-[10px] font-bold tracking-widest uppercase oswald-font">СЕССИОННЫЙ PNL</span>
+                            <span className={`text-base font-black ios-text leading-none oswald-font ${stats.pnl >= 0 ? 'text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.5)]' : 'text-rose-500'}`}>
                                 {stats.pnl > 0 ? '+' : ''}{stats.pnl.toLocaleString('ru-RU')} ₽
                             </span>
                         </div>
 
-                        <div className="flex justify-between items-center bg-cyan-950/50 p-2.5 rounded-xl border border-cyan-500/30 text-cyan-200 mt-1 relative z-10">
+                        <div className="flex justify-between items-center bg-slate-800/80 p-2.5 rounded-xl border border-cyan-500/30 text-cyan-200 mt-1 relative z-10 shadow-[inset_0_0_10px_rgba(0,0,0,0.5)]">
                             <div className="flex flex-col">
-                                <span className="text-[7.5px] font-black tracking-widest uppercase opacity-75">ТЕКУЩАЯ СТАВКА</span>
+                                <span className="text-[7.5px] font-black tracking-widest uppercase opacity-75 text-cyan-400">ТЕКУЩАЯ СТАВКА</span>
                                 <span className="text-sm font-black mono-font text-white">{currentStakeVal.toLocaleString('ru-RU')} ₽</span>
                             </div>
                             <div className="flex flex-col items-end">
-                                <span className="text-[7.5px] font-black tracking-widest uppercase opacity-75">МАРТИНГЕЙЛ (v7)</span>
+                                <span className="text-[7.5px] font-black tracking-widest uppercase opacity-75 text-cyan-400">МАРТИНГЕЙЛ (v7)</span>
                                 <span className="text-[10px] font-black text-cyan-300 tracking-wider">КОЛЕНО {martingaleIndex + 1}/7</span>
                             </div>
                         </div>
@@ -2090,49 +2003,49 @@
                                     key={i} 
                                     className={`h-1.5 rounded transition-all duration-300 ${
                                         i === martingaleIndex 
-                                            ? 'bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]' 
+                                            ? 'bg-cyan-400 shadow-[0_0_10px_rgba(0,240,255,0.9)]' 
                                             : i < martingaleIndex 
-                                                ? 'bg-cyan-600/60' 
-                                                : 'bg-slate-300/40'
+                                                ? 'bg-cyan-800/60' 
+                                                : 'bg-slate-700/40'
                                     }`}
                                 />
                             ))}
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-1.5 relative z-10 mt-1.5 text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                            <div className="flex justify-between bg-slate-50/50 p-1.5 rounded border border-slate-200/50">
-                                <span>СДЕЛОК:</span> <span className="text-slate-800">{stats.trades}</span>
+                        <div className="grid grid-cols-2 gap-1.5 relative z-10 mt-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                            <div className="flex justify-between bg-slate-800/50 p-1.5 rounded border border-slate-700/50">
+                                <span>СДЕЛОК:</span> <span className="text-slate-200">{stats.trades}</span>
                             </div>
-                            <div className="flex justify-between bg-slate-50/50 p-1.5 rounded border border-slate-200/50">
-                                <span>WINRATE:</span> <span className="text-slate-800">{stats.winrate}%</span>
+                            <div className="flex justify-between bg-slate-800/50 p-1.5 rounded border border-slate-700/50">
+                                <span>WINRATE:</span> <span className="text-slate-200">{stats.winrate}%</span>
                             </div>
-                            <div className="flex justify-between bg-emerald-50/50 p-1.5 rounded border border-emerald-200/50 text-emerald-700">
+                            <div className="flex justify-between bg-emerald-900/30 p-1.5 rounded border border-emerald-500/30 text-emerald-400">
                                 <span>WIN:</span> <span>{stats.wins}</span>
                             </div>
-                            <div className="flex justify-between bg-rose-50/50 p-1.5 rounded border border-rose-200/50 text-rose-700">
+                            <div className="flex justify-between bg-rose-900/30 p-1.5 rounded border border-rose-500/30 text-rose-400">
                                 <span>LOSS:</span> <span>{stats.losses}</span>
                             </div>
                         </div>
 
-                        <div className="flex justify-between items-center text-[9px] text-slate-400 font-bold uppercase mt-2 relative z-10 tracking-widest border-t border-slate-200/50 pt-2">
+                        <div className="flex justify-between items-center text-[9px] text-slate-500 font-bold uppercase mt-2 relative z-10 tracking-widest border-t border-slate-700/50 pt-2">
                             <span>СТАВКА: {currentStakeVal.toLocaleString('ru-RU')} ₽ | КОЛЕНО: {martingaleIndex + 1}/7</span>
-                            <span className="text-slate-600">PAYOUT: {stats.payout * 100}%</span>
+                            <span className="text-slate-400">PAYOUT: {stats.payout * 100}%</span>
                         </div>
                     </div>
 
-                    <div className="glass-card rounded-2xl p-4 flex justify-between items-center shrink-0 relative overflow-hidden shadow-md border-white bg-gradient-to-r from-white to-cyan-50/80">
-                       <div className="absolute right-0 top-0 bottom-0 w-2/3 bg-[radial-gradient(ellipse_at_right,_rgba(14,165,233,0.1),_transparent)] pointer-events-none"></div>
+                    <div className="glass-card rounded-2xl p-4 flex justify-between items-center shrink-0 relative overflow-hidden shadow-md border-cyan-500/20 bg-gradient-to-r from-slate-900 to-cyan-900/20">
+                       <div className="absolute right-0 top-0 bottom-0 w-2/3 bg-[radial-gradient(ellipse_at_right,_rgba(0,240,255,0.1),_transparent)] pointer-events-none"></div>
                        <div className="flex flex-col relative z-10">
-                          <span className="text-[9px] md:text-[10px] text-slate-500 tracking-widest font-bold leading-none uppercase">ЦЕНА ВХОДА</span>
-                          <span className="text-xl md:text-2xl text-slate-900 mt-2 font-black mono-font leading-none drop-shadow-sm">
+                          <span className="text-[9px] md:text-[10px] text-slate-400 tracking-widest font-bold leading-none uppercase">ЦЕНА ВХОДА</span>
+                          <span className="text-xl md:text-2xl text-slate-100 mt-2 font-black mono-font leading-none drop-shadow-sm">
                             {signalPhase === 'ACTIVE' && signal && signal.entryPrice ? formatPrice(signal.entryPrice) : '---.-----'}
                           </span>
                        </div>
                        <div className="flex flex-col items-end relative z-10">
-                          <span className="text-[9px] md:text-[10px] text-slate-500 tracking-widest flex items-center gap-1.5 font-bold leading-none uppercase">
-                            <Clock size={12} className="text-cyan-600"/> ЭКСПИРАЦИЯ
+                          <span className="text-[9px] md:text-[10px] text-slate-400 tracking-widest flex items-center gap-1.5 font-bold leading-none uppercase">
+                            <Clock size={12} className="text-cyan-400"/> ЭКСПИРАЦИЯ
                           </span>
-                          <span className="text-3xl md:text-4xl text-cyan-700 mt-1 font-black mono-font tracking-wider leading-none drop-shadow-sm">
+                          <span className="text-3xl md:text-4xl text-cyan-400 mt-1 font-black mono-font tracking-wider leading-none drop-shadow-[0_0_10px_rgba(0,240,255,0.4)]">
                             {signalPhase === 'ACTIVE' && countdown !== null 
                                 ? `${Math.floor(countdown/60).toString().padStart(2,'0')}:${(countdown%60).toString().padStart(2,'0')}` 
                                 : (signalPhase === 'ACTIVE' && signal && signal.exp ? `${signal.exp}:00` : '--:--')}
@@ -2140,21 +2053,21 @@
                        </div>
                     </div>
 
-                    <div className="flex-1 glass-card rounded-2xl overflow-hidden flex flex-col justify-start border-white bg-white shadow-[inset_0_2px_15px_rgba(0,0,0,0.02)]">
-                      <div className="bg-slate-100/80 px-3 py-1.5 flex justify-between items-center border-b border-slate-200/60 mb-1 shrink-0">
-                          <span className="text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1"><BugIcon size={10}/> PURE 5M DEBUG</span>
-                          <span className="text-[8px] font-bold text-emerald-600">UNRESTRICTED SCALPER Active</span>
+                    <div className="flex-1 glass-card rounded-2xl overflow-hidden flex flex-col justify-start border-cyan-500/20 shadow-[inset_0_2px_15px_rgba(0,0,0,0.5)]">
+                      <div className="bg-slate-800/80 px-3 py-1.5 flex justify-between items-center border-b border-slate-700/60 mb-1 shrink-0">
+                          <span className="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1"><BugIcon size={10}/> PURE 5M DEBUG</span>
+                          <span className="text-[8px] font-bold text-emerald-400">UNRESTRICTED SCALPER Active</span>
                       </div>
-                      <div className="px-3 pb-1 shrink-0 grid grid-cols-2 gap-1 text-[8px] md:text-[9px] mono-font font-semibold text-slate-500 border-b border-slate-200/40 mb-1">
-                          <span className="text-cyan-700">L.C: {new Date(lastClosedCandleTimeUiRef.current * 1000).toLocaleTimeString('ru-RU')}</span>
-                          <span className="text-rose-600">REJECTS: {pureDiag.rejected}</span>
+                      <div className="px-3 pb-1 shrink-0 grid grid-cols-2 gap-1 text-[8px] md:text-[9px] mono-font font-semibold text-slate-400 border-b border-slate-700/40 mb-1">
+                          <span className="text-cyan-500">L.C: {new Date(lastClosedCandleTimeUiRef.current * 1000).toLocaleTimeString('ru-RU')}</span>
+                          <span className="text-rose-500">REJECTS: {pureDiag.rejected}</span>
                       </div>
-                      <div className="px-3 pb-2 pt-1 shrink-0 text-[8px] mono-font text-rose-500 font-bold border-b border-slate-200/40">
+                      <div className="px-3 pb-2 pt-1 shrink-0 text-[8px] mono-font text-rose-500 font-bold border-b border-slate-700/40">
                           LAST REJECT: {pureDiag.lastReason}
                       </div>
                       <div ref={logsContainerRef} className="px-4 pb-4 flex flex-col gap-2 overflow-y-auto mt-2">
                           {logs.map((l, i) => (
-                            <div key={i} className={`text-[9px] md:text-[11px] leading-tight tracking-widest font-semibold mono-font ${i === 0 ? 'text-slate-900 font-bold border-l-4 border-cyan-500 pl-2 bg-cyan-50/50 py-1 rounded-r shadow-sm' : 'text-slate-400 pl-2'}`}>
+                            <div key={i} className={`text-[9px] md:text-[11px] leading-tight tracking-widest font-semibold mono-font ${i === 0 ? 'text-slate-100 font-bold border-l-4 border-cyan-400 pl-2 bg-cyan-900/30 py-1 rounded-r shadow-sm' : 'text-slate-500 pl-2'}`}>
                               {l}
                             </div>
                           ))}
@@ -2165,21 +2078,22 @@
                 </div>
               </main>
 
-              <footer className="h-auto md:h-12 py-2 md:py-0 border-t border-white/50 flex flex-row items-center justify-between px-4 md:px-6 shrink-0 glass-panel z-40 bg-white/90">
-                <div className="flex items-center gap-2 text-slate-500 text-[10px] md:text-xs tracking-widest font-bold uppercase oswald-font">
-                  <Shield size={14} className="text-cyan-600 hidden sm:block" /> 
+              {/* FOOTER METRICS */}
+              <footer className="h-auto md:h-12 py-2 md:py-0 border-t border-cyan-500/20 flex flex-row items-center justify-between px-4 md:px-6 shrink-0 glass-panel z-40">
+                <div className="flex items-center gap-2 text-slate-400 text-[10px] md:text-xs tracking-widest font-bold uppercase oswald-font">
+                  <Shield size={14} className="text-cyan-500 hidden sm:block" /> 
                   <span className="hidden sm:inline">256-BIT ШИФРОВАНИЕ СИСТЕМЫ • СОЕДИНЕНИЕ БЕЗОПАСНО</span>
                   <span className="inline sm:hidden">ЗАЩИТА АКТИВНА</span>
                 </div>
                 
                 <div className="flex items-center gap-3 md:gap-4 oswald-font">
                   <div className="silver-badge flex flex-col items-center justify-center px-2.5 py-1 rounded-lg">
-                      <span className="text-[6px] md:text-[7px] text-slate-500 font-black tracking-[0.2em] uppercase leading-none mb-0.5">PRO MAX CREATOR</span>
+                      <span className="text-[6px] md:text-[7px] text-slate-400 font-black tracking-[0.2em] uppercase leading-none mb-0.5">PRO MAX CREATOR</span>
                       <span className="text-[10px] md:text-[11px] font-black tracking-widest silver-text leading-none">SLAVA GORDEEV</span>
                   </div>
-                  <span className="text-slate-300 text-[10px] hidden md:block">|</span>
-                  <span className="text-slate-500 text-[10px] md:text-xs tracking-widest font-bold hidden sm:block uppercase">ЛИЦЕНЗИЯ:</span>
-                  <span className="text-white text-[10px] md:text-xs px-3 py-1.5 rounded-lg bg-slate-900 tracking-widest font-bold text-center shadow-[0_4px_10px_rgba(15,23,42,0.2)] border border-slate-700">
+                  <span className="text-slate-600 text-[10px] hidden md:block">|</span>
+                  <span className="text-slate-400 text-[10px] md:text-xs tracking-widest font-bold hidden sm:block uppercase">ЛИЦЕНЗИЯ:</span>
+                  <span className="text-slate-900 text-[10px] md:text-xs px-3 py-1.5 rounded-lg bg-cyan-400 tracking-widest font-black text-center shadow-[0_0_10px_rgba(0,240,255,0.4)] border border-cyan-300">
                     КРИПТО ИНВЕСТ PRO MAX
                   </span>
                 </div>
