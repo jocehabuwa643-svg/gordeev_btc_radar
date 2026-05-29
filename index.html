@@ -217,77 +217,57 @@
             transform: translateY(1px) scale(0.96); box-shadow: 0 4px 10px rgba(0, 240, 255, 0.4);
         }
 
-        /* --- MASSIVE RECTANGULAR VOLUMETRIC SCANNER (BACKTEST & LIVE) --- */
-        .premium-scanner-box {
+        /* --- NEW PREMIUM X-RAY SCANNER --- */
+        .xray-scanner {
             position: absolute;
             top: 0; bottom: 0;
-            width: 100px;
+            width: 140px;
             background: linear-gradient(90deg, 
-                rgba(0,240,255,0) 0%, 
-                rgba(0,240,255,0.15) 20%, 
-                rgba(0,240,255,0.35) 50%, 
-                rgba(0,240,255,0.15) 80%, 
-                rgba(0,240,255,0) 100%);
-            border-left: 2px solid rgba(0,240,255,0.4);
-            border-right: 2px solid rgba(0,240,255,0.9);
-            box-shadow: 0 0 35px rgba(0,240,255,0.6), inset 0 0 25px rgba(0,240,255,0.5);
-            mix-blend-mode: color-dodge;
-            backdrop-filter: blur(2px) brightness(1.1) contrast(1.2);
+                transparent 0%, 
+                rgba(0, 240, 255, 0.05) 20%, 
+                rgba(0, 240, 255, 0.2) 50%, 
+                rgba(0, 240, 255, 0.05) 80%, 
+                transparent 100%);
+            border-left: 1px solid rgba(0, 240, 255, 0.2);
+            border-right: 1px solid rgba(0, 240, 255, 0.7);
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.3), inset 0 0 15px rgba(0, 240, 255, 0.2);
+            /* The Magic X-Ray Effect */
+            backdrop-filter: brightness(1.35) contrast(1.4) saturate(1.2);
             z-index: 55;
-            animation: scanner-sweep 4s ease-in-out infinite alternate, scanner-pulse-fx 1.5s ease-in-out infinite alternate;
-            display: flex; align-items: center; justify-content: center;
-            will-change: left, filter;
             pointer-events: none;
-        }
-
-        .premium-scanner-box::after {
-            content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px;
-            background: #fff; box-shadow: 0 0 15px #fff, 0 0 25px #00f0ff; transform: translateX(-50%);
-        }
-
-        .premium-scanner-box-live {
-            position: absolute;
-            top: 0; bottom: 0;
-            width: 80px;
-            background: linear-gradient(90deg, rgba(0,240,255,0) 0%, rgba(0,240,255,0.2) 80%, rgba(0,240,255,0) 100%);
-            border-right: 2px solid rgba(0,240,255,0.5);
-            box-shadow: 10px 0 20px rgba(0,240,255,0.2);
-            mix-blend-mode: screen;
-            animation: scanner-sweep-live 6s linear infinite;
             display: flex; align-items: center; justify-content: center;
-            will-change: left;
-            pointer-events: none;
-            z-index: 55;
+            will-change: transform;
+        }
+        
+        .xray-scanner::before {
+            content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px;
+            background: rgba(0, 240, 255, 0.9); box-shadow: 0 0 12px #00f0ff, 0 0 25px #00f0ff;
+            transform: translateX(-50%);
         }
 
-        .scanner-label {
-            position: absolute;
-            left: 20px;
-            color: #fff;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-            font-weight: 900;
-            letter-spacing: 0.35em;
-            text-shadow: 0 0 10px #00f0ff, 0 0 25px #00f0ff;
-            writing-mode: vertical-rl;
-            transform: rotate(180deg);
+        .xray-label {
+            position: absolute; left: 15px;
+            writing-mode: vertical-rl; transform: rotate(180deg);
+            color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 11px;
+            letter-spacing: 0.3em; text-shadow: 0 0 8px #00f0ff, 0 0 15px #00f0ff; font-weight: 900;
             white-space: nowrap;
-            z-index: 60;
         }
 
-        @keyframes scanner-sweep {
-            0% { left: -10%; }
-            100% { left: 95%; }
+        @keyframes sweep-xray {
+            0% { transform: translateX(-150px); }
+            100% { transform: translateX(calc(100vw + 150px)); }
         }
-        @keyframes scanner-sweep-live {
-            0% { left: -10%; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { left: 100%; opacity: 0; }
+        
+        @keyframes pulse-xray-live {
+            0% { opacity: 0.3; transform: translateX(calc(100vw - 200px)); }
+            100% { opacity: 0.8; transform: translateX(calc(100vw - 180px)); }
         }
-        @keyframes scanner-pulse-fx {
-            0% { filter: hue-rotate(0deg) brightness(1); }
-            100% { filter: hue-rotate(15deg) brightness(1.4) drop-shadow(0 0 25px #00f0ff); background: linear-gradient(90deg, rgba(0,240,255,0) 0%, rgba(0,240,255,0.2) 20%, rgba(255,0,255,0.3) 50%, rgba(0,240,255,0.2) 80%, rgba(0,240,255,0) 100%);}
+
+        .scanner-backtest {
+            animation: sweep-xray 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+        }
+        .scanner-live {
+            animation: pulse-xray-live 4s ease-in-out infinite alternate;
         }
 
         @keyframes pulse-zone { 0% { opacity: 0.15; } 50% { opacity: 0.4; } 100% { opacity: 0.15; } }
@@ -316,6 +296,7 @@
         const Zap = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>);
         const BugIcon = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M12 18v.01"></path><path d="M8 12v.01"></path><path d="M16 12v.01"></path><rect x="4" y="6" width="16" height="16" rx="2" ry="2"></rect></svg>);
         
+        // --- BOOSTY LINK BROKER BUTTON ---
         const BrokerButton = React.memo(({ compact = false }) => (
             <a 
                 href="https://boosty.to/gord666/posts/0e3a7a59-c3a5-4a03-ba30-46296b5c7be6" 
@@ -508,7 +489,7 @@
             return 'NEUTRAL';
         }
 
-        // --- ENHANCED STRICT SIGNAL ENGINE ---
+        // --- BALANCED & STRICT SIGNAL ENGINE ---
         function evaluateSignalEngine(data, evalIdx, liqMap, atrMap, mtfContext, engineState) {
             if (evalIdx < 100) return { valid: false, reason: 'Not enough data', score: 0 };
 
@@ -525,7 +506,7 @@
             const cLower = zones.lower;
             const rangeWidth = cUpper - cLower;
             
-            // 1. Strict Range Filter
+            // 1. Range Filter
             if (rangeWidth < cAtr * 1.5) return { valid: false, reason: 'Range too tight (Chop)', score: 0 };
 
             const body = Math.abs(currCandle.open - currCandle.close);
@@ -545,6 +526,7 @@
             const sweepDepthTop = Math.max(0, currCandle.high - cUpper);
             const sweepDepthBot = Math.max(0, cLower - currCandle.low);
 
+            // Bonus for deep liquidity grab
             const deepSweepTop = sweepDepthTop >= cAtr * 0.25;
             const deepSweepBot = sweepDepthBot >= cAtr * 0.25;
 
@@ -555,15 +537,15 @@
             const strictMsbPut = isRedCandle && (currCandle.close < prevCandle.low) && (body > cAtr * 0.25);
             const strictMsbCall = isGreenCandle && (currCandle.close > prevCandle.high) && (body > cAtr * 0.25);
 
-            // 3. Massive Rejection Wick Alternative (Pin Bar)
-            const massiveWickPut = upperWick > cAtr * 0.6 && upperWickRatio > 0.6 && returnedInsideTop;
-            const massiveWickCall = lowerWick > cAtr * 0.6 && lowerWickRatio > 0.6 && returnedInsideBot;
+            // 3. Relaxed Pin Bar Requirement (50% instead of 60%)
+            const massiveWickPut = upperWick > cAtr * 0.5 && upperWickRatio > 0.5 && returnedInsideTop;
+            const massiveWickCall = lowerWick > cAtr * 0.5 && lowerWickRatio > 0.5 && returnedInsideBot;
 
             // 4. Momentum / Impulse Protection (Last 3 candles)
             let strongBullImpulse = false;
             let strongBearImpulse = false;
             if (evalIdx > 3) {
-                const c1 = data[evalIdx-1]; const c2 = data[evalIdx-2]; const c3 = data[evalIdx-3];
+                const c1 = data[evalIdx-1]; const c3 = data[evalIdx-3];
                 const move3 = c1.close - c3.open;
                 if (move3 > cAtr * 1.8 && c1.close > c1.open) strongBullImpulse = true;
                 if (move3 < -cAtr * 1.8 && c1.close < c1.open) strongBearImpulse = true;
@@ -573,12 +555,12 @@
 
             if (sweptTop && returnedInsideTop) {
                 if (strictMsbPut) { isPut = true; signalType = 'SMC Sweep & MSB'; baseScore = 65; }
-                else if (massiveWickPut) { isPut = true; signalType = 'Deep Rejection Wick'; baseScore = 60; }
+                else if (massiveWickPut) { isPut = true; signalType = 'Rejection Wick'; baseScore = 60; }
             }
 
             if (sweptBot && returnedInsideBot) {
                 if (strictMsbCall) { isCall = true; signalType = 'SMC Sweep & MSB'; baseScore = 65; }
-                else if (massiveWickCall) { isCall = true; signalType = 'Deep Rejection Wick'; baseScore = 60; }
+                else if (massiveWickCall) { isCall = true; signalType = 'Rejection Wick'; baseScore = 60; }
             }
 
             if (!isCall && !isPut) return { valid: false, reason: 'No strict SMC setup', score: 0 };
@@ -593,27 +575,29 @@
             if (isCall && deepSweepBot) qScore += 10;
             if (isPut && deepSweepTop) qScore += 10;
 
-            if (isCall && strongBearImpulse) { qScore -= 25; rejectReason = 'Bear Impulse Risk'; }
-            if (isPut && strongBullImpulse) { qScore -= 25; rejectReason = 'Bull Impulse Risk'; }
+            // Reduced penalty for impulse (-20 instead of -25) to find the golden middle
+            if (isCall && strongBearImpulse) { qScore -= 20; rejectReason = 'Bear Impulse Risk'; }
+            if (isPut && strongBullImpulse) { qScore -= 20; rejectReason = 'Bull Impulse Risk'; }
 
-            let sumVol = 0; let volCount = 0;
-            for (let j = 0; j < 14 && (evalIdx - j) >= 0; j++) { sumVol += data[evalIdx - j].volume || 0; volCount++; }
-            const avgVolume = volCount > 0 ? (sumVol / volCount) : 0;
-            if (avgVolume > 0 && currCandle.volume < avgVolume * 0.8) {
-                qScore -= 15; rejectReason = 'Low Volume Anomaly';
+            // Positive Volume Filter (Bonus instead of penalty)
+            const currentVolume = currCandle.volume || 0;
+            if (currentVolume > 0 && evalIdx > 14) {
+                let sumVol = 0; for (let j = 1; j <= 14; j++) sumVol += data[evalIdx - j].volume || 0;
+                const avgVolume = sumVol / 14;
+                if (currentVolume > avgVolume * 1.5) qScore += 5; // Volume climax bonus
             }
 
-            // --- Strict MTF Bias Check ---
+            // --- Relaxed MTF Bias Check ---
             const h4 = mtfContext.h4; const h1 = mtfContext.h1;
             
             if (isCall) {
-                if (h4 === 'BULLISH' || h1 === 'BULLISH') { qScore += 15; mtfConfStr = 'CONFIRMED'; }
-                if (h4 === 'BEARISH' && h1 === 'BEARISH') { qScore -= 30; rejectReason = 'Against Strong HTF Bear Trend'; mtfConfStr = 'CONFLICT'; }
-                else if (h4 === 'BEARISH') { qScore -= 15; mtfConfStr = 'WEAK HTF'; }
+                // If AT LEAST ONE is bullish, we get a bonus.
+                if (h4 === 'BULLISH' || h1 === 'BULLISH') { qScore += 10; mtfConfStr = 'CONFIRMED'; }
+                // Only if BOTH are strictly bearish do we apply a heavy penalty.
+                else if (h4 === 'BEARISH' && h1 === 'BEARISH') { qScore -= 20; rejectReason = 'Against Strong HTF Bear Trend'; mtfConfStr = 'CONFLICT'; }
             } else {
-                if (h4 === 'BEARISH' || h1 === 'BEARISH') { qScore += 15; mtfConfStr = 'CONFIRMED'; }
-                if (h4 === 'BULLISH' && h1 === 'BULLISH') { qScore -= 30; rejectReason = 'Against Strong HTF Bull Trend'; mtfConfStr = 'CONFLICT'; }
-                else if (h4 === 'BULLISH') { qScore -= 15; mtfConfStr = 'WEAK HTF'; }
+                if (h4 === 'BEARISH' || h1 === 'BEARISH') { qScore += 10; mtfConfStr = 'CONFirmed'; }
+                else if (h4 === 'BULLISH' && h1 === 'BULLISH') { qScore -= 20; rejectReason = 'Against Strong HTF Bull Trend'; mtfConfStr = 'CONFLICT'; }
             }
 
             if (mtfConfStr === 'WAIT' || h4 === 'LOCAL' || mtfContext.status.includes('LOCAL')) {
@@ -625,8 +609,8 @@
                 qScore -= 40; rejectReason = 'Cooldown Active';
             }
 
-            // --- Final Threshold ---
-            const PASS_THRESHOLD = 75; 
+            // --- Final Lowered Threshold ---
+            const PASS_THRESHOLD = 70; // Lowered from 75 to let more good setups pass
             if (qScore < PASS_THRESHOLD) {
                 if (!rejectReason) rejectReason = 'Score too low (Insufficient Quality)';
                 return { valid: false, reason: rejectReason, score: qScore };
@@ -919,17 +903,16 @@
             return (
                 <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden rounded-3xl" ref={overlayRef}>
                     
-                    {/* MASSIVE VOLUMETRIC SCANNER BOX */}
+                    {/* NEW PREMIUM X-RAY SCANNER */}
                     {isScanningBacktest && (
-                        <div className="premium-scanner-box">
-                            <div className="scanner-label">АНАЛИЗ ЗОН ЛИКВИДНОСТИ</div>
+                        <div className="xray-scanner scanner-backtest">
+                            <div className="xray-label">SCANNING LIQUIDITY ZONES</div>
                         </div>
                     )}
 
-                    {/* LIVE MODE SUBTLE SCANNER BOX */}
                     {!isScanningBacktest && zoneState !== 'IN' && (
-                        <div className="premium-scanner-box-live">
-                            <div className="scanner-label">SCANNING LIVE...</div>
+                        <div className="xray-scanner scanner-live" style={{ width: '80px' }}>
+                            <div className="xray-label">SCANNING LIVE...</div>
                         </div>
                     )}
 
@@ -1083,7 +1066,7 @@
                   if (speechQueueRef.current.some(item => item.key === key)) { if (onDone) onDone(); return; }
                   const now = Date.now();
                   if (lastSpokenKeysRef.current[key] && (now - lastSpokenKeysRef.current[key]) < 30000) { if (onDone) onDone(); return; }
-                  lastSpokenKeysRef.current[key] = now; // Lock immediately
+                  lastSpokenKeysRef.current[key] = now; 
               }
               speechQueueRef.current.push({ text, key, priority, onDone });
               speechQueueRef.current.sort((a, b) => a.priority - b.priority); 
@@ -1228,7 +1211,6 @@
             if (chartInstance.current) return;
 
             try {
-                // Dark Theme Configuration
                 const mainChart = window.LightweightCharts.createChart(chartContainerRef.current, {
                   autoSize: true,
                   layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#94a3b8', fontFamily: 'JetBrains Mono' },
@@ -1289,12 +1271,14 @@
             if (engineActive.current) return; engineActive.current = true;
             if (audioCtx.current && audioCtx.current.state === 'suspended') await audioCtx.current.resume();
 
-            ScanLedger.clear();
+            // Clear purely from memory for deterministic behavior
+            for (let k in _inMemoryLedger) delete _inMemoryLedger[k];
+            
             historicalMarkersRef.current = []; liveMarkersRef.current = [];
             if(candleSeries.current) { candleSeries.current.setMarkers([]); }
 
             setViewMode('DETAIL'); 
-            setIsScanningBacktest(true);
+            setIsScanningBacktest(true); 
             updateStatus('БЭКТЕСТ: АНАЛИЗ ИСТОРИЧЕСКИХ ЗОН ЛИКВИДНОСТИ (12H)...', 'text-cyan-400 drop-shadow-[0_0_10px_rgba(0,240,255,0.8)] animate-pulse'); 
             addLog(`Запуск системы. Анализ рынка за последние 12 часов.`, true);
 
@@ -1321,6 +1305,9 @@
                 if (startIdx === -1) startIdx = Math.max(0, initialData.length - 144); 
                 const endIdx = initialData.length - 4; 
 
+                // EXACT MTF MOCK FOR DETERMINISTIC BACKTEST
+                const mockMtf = { h4: 'LOCAL', h1: 'LOCAL', m15: 'LOCAL', status: 'LOCAL 5M MODE' };
+
                 for (let idx = startIdx; idx <= endIdx; idx++) {
                     const currTime = initialData[idx].time; const currCandle = initialData[idx]; const prevCandle = initialData[idx - 1]; d_candles++;
                     const zones = liqMap.get(currTime); const cAtr = atrMap.get(currTime);
@@ -1335,20 +1322,20 @@
                         if (isReclaimBuy || isReclaimSell) d_cand++;
                     }
 
-                    const sig = evaluateSignalEngine(initialData, idx, liqMap, atrMap, { status: 'LOCAL 5M MODE' }, { ...engineState, consecutiveLosses: localMartingaleIdx });
+                    const sig = evaluateSignalEngine(initialData, idx, liqMap, atrMap, mockMtf, { ...engineState, consecutiveLosses: localMartingaleIdx });
                     let evaluatedStatus = sig.valid ? 'CONFIRMED' : (sig.reason ? 'REJECTED' : 'NO_SIGNAL');
 
-                    const pastLedgerStatus = ScanLedger.get(currTime);
+                    // Purely deterministic memory-only ledger for backtest
+                    const pastLedgerStatus = _inMemoryLedger[currTime] || null;
                     if (pastLedgerStatus) {
                         if (pastLedgerStatus !== evaluatedStatus) {
                             if (pastLedgerStatus === 'REJECTED' || pastLedgerStatus === 'NO_SIGNAL' || pastLedgerStatus === 'PARITY_MISMATCH') {
                                 sig.valid = false; sig.reason = "PARITY_MISMATCH"; evaluatedStatus = pastLedgerStatus;
                             }
                         }
-                    } else { ScanLedger.set(currTime, evaluatedStatus); }
+                    } else { _inMemoryLedger[currTime] = evaluatedStatus; }
 
                     if (!sig.valid) {
-                        // Raised threshold for rendering check marks so chart is cleaner
                         if (sig.score > 50) historicalMarkersRef.current.push({ time: currTime, position: 'inBar', color: '#1e293b', shape: 'circle', text: 'CHK', size: 0.8 });
                         if (sig.reason && !sig.reason.includes('No strict SMC setup') && !sig.reason.includes('Missing indicators') && !sig.reason.includes('Not enough data')) {
                             d_rej++; d_lastRej = `${sig.reason} (${sig.score||0})`;
@@ -1359,8 +1346,9 @@
                         const entryIdx = idx + 1; const exitIdx = Math.min(entryIdx + 5, initialData.length - 1); 
                         const entryCandle = initialData[entryIdx]; const exitCandle = initialData[exitIdx];
                         
+                        // DETERMINISTIC SLIPPAGE
                         const candleRange = entryCandle.high - entryCandle.low;
-                        const slippagePenalty = candleRange * (0.03 + Math.random() * 0.05); 
+                        const slippagePenalty = candleRange * 0.04; // Fixed 4% penalty for realistic entry after 6s delay
                         
                         let realisticEntryPrice = entryCandle.open;
                         if (sig.isCall) {
@@ -1412,6 +1400,7 @@
                     try { chartInstance.current.timeScale().fitContent(); } catch(e) {}
                 }
 
+                // Wait for the visual scanner animation to run
                 for (let i = 0; i < 9; i++) {
                     playSound('scan');
                     await new Promise(r => setTimeout(r, 1000));
@@ -1424,10 +1413,10 @@
                 let speechText = "Анализ рынка завершён.";
                 if (finalStats.trades > 0) {
                     addLog(`ИСТОРИЯ ЗА 12 ЧАСОВ: СДЕЛОК ${finalStats.trades}, ВИНРЕЙТ ${finalStats.winrate}%`, true);
-                    speechText = `Анализ рынка завершён. Найдено ${finalStats.trades} сделок. Из них ${finalStats.wins} плюсовых и ${finalStats.losses} минусовых. Если бы трейдер заходил по 1000 рублей с учётом системы Мартингейл, итоговый профит составил бы ${finalStats.pnl} рублей.`;
+                    speechText = `Анализ рынка завершён. Найдено ${finalStats.trades} сделок. Из них ${finalStats.wins} плюсовых и ${finalStats.losses} минусовых. Если бы трейдер заходил по 1000 рублей с учётом Мартингейла, итоговый профит составил бы ${finalStats.pnl} рублей.`;
                 } else {
                     addLog(`ЗА 12 ЧАСОВ СИГНАЛОВ ПО СТРАТЕГИИ НЕ НАЙДЕНО.`, true);
-                    speechText = "Анализ рынка завершён. За последние 12 часов подтверждённых сигналов нет. Начинаю сканирование.";
+                    speechText = "Анализ рынка завершён. Найдено 0 сделок. Начинаю сканирование.";
                 }
                 
                 await speakAsync(speechText, 'startup-summary-current-session', 1); 
@@ -1946,7 +1935,7 @@
                             </div>
                             <div className="flex flex-col items-center flex-1">
                                 <span className="text-[8px] md:text-[9px] font-bold text-slate-500 mb-0.5">SCORE</span>
-                                <span className={`text-base font-black oswald-font leading-none ${mtfContext.score >= 75 ? 'text-cyan-400 drop-shadow-[0_0_10px_currentColor]' : mtfContext.score >= 50 ? 'text-slate-200' : 'text-rose-400'}`}>{mtfContext.status === 'LOADING' ? '--' : (mtfContext.status.includes('LOCAL') ? 'LOCAL' : mtfContext.score)}</span>
+                                <span className={`text-base font-black oswald-font leading-none ${mtfContext.score >= 70 ? 'text-cyan-400 drop-shadow-[0_0_10px_currentColor]' : mtfContext.score >= 50 ? 'text-slate-200' : 'text-rose-400'}`}>{mtfContext.status === 'LOADING' ? '--' : (mtfContext.status.includes('LOCAL') ? 'LOCAL' : mtfContext.score)}</span>
                             </div>
                         </div>
                     </div>
@@ -2067,8 +2056,8 @@
 
                     <div className="flex-1 glass-card rounded-2xl overflow-hidden flex flex-col justify-start border-cyan-500/30 shadow-[inset_0_4px_20px_rgba(0,0,0,0.7)] bg-slate-900/80">
                       <div className="bg-slate-800/90 px-3 py-1.5 flex justify-between items-center border-b border-slate-700/80 mb-1 shrink-0">
-                          <span className="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1"><BugIcon size={10} className="text-cyan-500"/> PURE 5M DEBUG</span>
-                          <span className="text-[8px] font-bold text-emerald-400 drop-shadow-[0_0_5px_currentColor]">STRICT SMC ENGINE</span>
+                          <span className="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1"><BugIcon size={10} className="text-cyan-500"/> SMC ENGINE</span>
+                          <span className="text-[8px] font-bold text-emerald-400 drop-shadow-[0_0_5px_currentColor]">BALANCED MODE Active</span>
                       </div>
                       <div className="px-3 pb-1 shrink-0 grid grid-cols-2 gap-1 text-[8px] md:text-[9px] mono-font font-semibold text-slate-400 border-b border-slate-700/50 mb-1">
                           <span className="text-cyan-500">L.C: {new Date(lastClosedCandleTimeUiRef.current * 1000).toLocaleTimeString('ru-RU')}</span>
