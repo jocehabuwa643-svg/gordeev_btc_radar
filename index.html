@@ -217,64 +217,80 @@
             transform: translateY(1px) scale(0.96); box-shadow: 0 4px 10px rgba(0, 240, 255, 0.4);
         }
 
-        /* --- BACKTEST VOLUMETRIC SCANNER (MASSIVE 12H SWEEP) --- */
-        .backtest-scanner-container {
-            position: absolute; inset: 0; pointer-events: none; z-index: 60; overflow: hidden;
-            border-radius: inherit;
-        }
-        .backtest-scanner-bar {
-            position: absolute; top: 0; bottom: 0; width: 140px;
-            background: linear-gradient(to right, transparent, rgba(0, 240, 255, 0.1) 30%, rgba(255, 0, 255, 0.3) 70%, rgba(255, 255, 255, 0.9) 100%);
-            border-right: 3px solid #fff;
-            box-shadow: 0 0 70px rgba(0, 240, 255, 0.9), 0 0 120px rgba(255, 0, 255, 0.6), inset -15px 0 30px rgba(255,255,255,0.5);
-            mix-blend-mode: color-dodge; /* Makes candles beneath glow brilliantly */
-            animation: backtest-sweep 3s cubic-bezier(0.4, 0.0, 0.2, 1) infinite alternate;
-            display: flex; align-items: center; justify-content: flex-end;
-            backdrop-filter: blur(2px);
-            will-change: left;
-        }
-        .backtest-scanner-text {
-            writing-mode: vertical-rl; transform: rotate(180deg);
-            font-family: 'Oswald', sans-serif; font-size: 16px; font-weight: 900;
-            letter-spacing: 0.5em; color: #fff; text-shadow: 0 0 10px #00f0ff, 0 0 20px #ff00ff;
-            margin-right: 15px; opacity: 0.95; white-space: nowrap;
-        }
-        @keyframes backtest-sweep {
-            0% { left: -20%; }
-            100% { left: 110%; }
+        /* --- MASSIVE RECTANGULAR VOLUMETRIC SCANNER (BACKTEST & LIVE) --- */
+        .premium-scanner-box {
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 100px;
+            /* Deep, volumetric gradient with transparent core and glowing edges */
+            background: linear-gradient(90deg, 
+                rgba(0,240,255,0) 0%, 
+                rgba(0,240,255,0.15) 20%, 
+                rgba(0,240,255,0.35) 50%, 
+                rgba(0,240,255,0.15) 80%, 
+                rgba(0,240,255,0) 100%);
+            border-left: 2px solid rgba(0,240,255,0.4);
+            border-right: 2px solid rgba(0,240,255,0.9);
+            box-shadow: 0 0 35px rgba(0,240,255,0.6), inset 0 0 25px rgba(0,240,255,0.5);
+            /* Color-dodge makes everything beneath the scanner intensely glow */
+            mix-blend-mode: color-dodge;
+            backdrop-filter: blur(2px) brightness(1.1) contrast(1.2);
+            z-index: 55;
+            animation: scanner-sweep 4s ease-in-out infinite alternate, scanner-pulse-fx 1.5s ease-in-out infinite alternate;
+            display: flex; align-items: center; justify-content: center;
+            will-change: left, filter;
+            pointer-events: none;
         }
 
-        /* --- LIVE LIGHT SCANNER --- */
-        .scanner-container-live {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            pointer-events: none; z-index: 35; overflow: hidden; border-radius: inherit;
+        /* Core laser line in the middle of the box */
+        .premium-scanner-box::after {
+            content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px;
+            background: #fff; box-shadow: 0 0 15px #fff, 0 0 25px #00f0ff; transform: translateX(-50%);
         }
-        .live-scanner-bar {
-            position: absolute; top: 0; bottom: 0; width: 85px;
-            animation: live-sweep 5s cubic-bezier(0.35, 0, 0.65, 1) infinite;
-            display: flex; align-items: center; justify-content: flex-end;
-            mix-blend-mode: screen; will-change: left;
+
+        .premium-scanner-box-live {
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 80px;
+            background: linear-gradient(90deg, rgba(0,240,255,0) 0%, rgba(0,240,255,0.2) 80%, rgba(0,240,255,0) 100%);
+            border-right: 2px solid rgba(0,240,255,0.5);
+            box-shadow: 10px 0 20px rgba(0,240,255,0.2);
+            mix-blend-mode: screen;
+            animation: scanner-sweep-live 6s linear infinite;
+            display: flex; align-items: center; justify-content: center;
+            will-change: left;
+            pointer-events: none;
+            z-index: 55;
         }
-        .live-scanner-bar::before {
-            content: ''; position: absolute; inset: 0;
-            background: repeating-linear-gradient(to bottom, transparent, transparent 2px, currentColor 3px, currentColor 4px);
-            opacity: 0.15;
+
+        .scanner-label {
+            position: absolute;
+            left: 20px;
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 0.35em;
+            text-shadow: 0 0 10px #00f0ff, 0 0 25px #00f0ff;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            white-space: nowrap;
+            z-index: 60;
         }
-        .live-scanner-text {
-            writing-mode: vertical-rl; transform: rotate(180deg);
-            font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 900;
-            letter-spacing: 0.35em; text-shadow: 0 0 12px currentColor; margin-right: 8px;
-            opacity: 0.95; white-space: nowrap; z-index: 2;
+
+        @keyframes scanner-sweep {
+            0% { left: -10%; }
+            100% { left: 95%; }
         }
-        .scanner-cyan {
-            color: #00f0ff; background: linear-gradient(to right, transparent, rgba(0, 240, 255, 0.05) 40%, rgba(0, 240, 255, 0.35) 100%);
-            border-right: 2px solid #00f0ff; box-shadow: 15px 0 45px -5px rgba(0, 240, 255, 0.7);
-        }
-        @keyframes live-sweep {
-            0% { left: -15%; opacity: 0; }
+        @keyframes scanner-sweep-live {
+            0% { left: -10%; opacity: 0; }
             10% { opacity: 1; }
             90% { opacity: 1; }
             100% { left: 100%; opacity: 0; }
+        }
+        @keyframes scanner-pulse-fx {
+            0% { filter: hue-rotate(0deg) brightness(1); }
+            100% { filter: hue-rotate(15deg) brightness(1.4) drop-shadow(0 0 25px #00f0ff); background: linear-gradient(90deg, rgba(0,240,255,0) 0%, rgba(0,240,255,0.2) 20%, rgba(255,0,255,0.3) 50%, rgba(0,240,255,0.2) 80%, rgba(0,240,255,0) 100%);}
         }
 
         @keyframes pulse-zone { 0% { opacity: 0.15; } 50% { opacity: 0.4; } 100% { opacity: 0.15; } }
@@ -966,21 +982,17 @@
             return (
                 <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden rounded-3xl" ref={overlayRef}>
                     
-                    {/* BACKTEST VOLUMETRIC SCANNER */}
+                    {/* MASSIVE VOLUMETRIC SCANNER BOX */}
                     {isScanningBacktest && (
-                        <div className="backtest-scanner-container">
-                            <div className="backtest-scanner-bar">
-                                <span className="backtest-scanner-text">SCANNING HISTORICAL ZONES</span>
-                            </div>
+                        <div className="premium-scanner-box">
+                            <div className="scanner-label">АНАЛИЗ ЗОН ЛИКВИДНОСТИ</div>
                         </div>
                     )}
 
-                    {/* LIVE MODE SUBTLE SCANNER */}
+                    {/* LIVE MODE SUBTLE SCANNER BOX */}
                     {!isScanningBacktest && zoneState !== 'IN' && (
-                        <div className="scanner-container-live">
-                            <div className="live-scanner-bar scanner-cyan">
-                                <span className="live-scanner-text">MONITORING LIQUIDITY...</span>
-                            </div>
+                        <div className="premium-scanner-box-live">
+                            <div className="scanner-label">SCANNING LIVE...</div>
                         </div>
                     )}
 
@@ -1348,7 +1360,7 @@
 
             // NEW: Launch sequence. Step 1: Backtest and Volumetric Scanner execution.
             setViewMode('DETAIL'); 
-            setIsScanningBacktest(true); // Triggers massive neon scanner
+            setIsScanningBacktest(true); // Triggers massive neon rectangular scanner box
             updateStatus('БЭКТЕСТ: АНАЛИЗ ИСТОРИЧЕСКИХ ЗОН ЛИКВИДНОСТИ (12H)...', 'text-cyan-400 drop-shadow-[0_0_10px_rgba(0,240,255,0.8)] animate-pulse'); 
             addLog(`Запуск системы. Анализ рынка за последние 12 часов.`, true);
 
@@ -1408,12 +1420,27 @@
                         }
                     } else {
                         d_conf++; engineState.lastSignalTime = sig.signalTime; engineState.lastSignalPrice = sig.signalPrice;
+                        
                         const entryIdx = idx + 1; const exitIdx = Math.min(entryIdx + 5, initialData.length - 1); 
                         const entryCandle = initialData[entryIdx]; const exitCandle = initialData[exitIdx];
-                        const entryPrice = entryCandle.open; const exitPrice = exitCandle.close;
+                        
+                        // NEW FIX: REALISTIC BACKTEST DELAY (Simulating 3s explain + 3s prepare)
+                        // Price moves during those 6 seconds (which is 2% of a 5m candle). 
+                        // We simulate a realistic entry slippage based on candle range.
+                        const candleRange = entryCandle.high - entryCandle.low;
+                        const slippagePenalty = candleRange * (0.03 + Math.random() * 0.05); // 3% to 8% slippage
+                        
+                        let realisticEntryPrice = entryCandle.open;
+                        if (sig.isCall) {
+                            realisticEntryPrice = entryCandle.open + slippagePenalty; // Worse (higher) price for CALL
+                        } else {
+                            realisticEntryPrice = Math.max(0.0001, entryCandle.open - slippagePenalty); // Worse (lower) price for PUT
+                        }
+                        
+                        const exitPrice = exitCandle.close;
                         
                         let result = "LOSS";
-                        if ((sig.isCall && exitPrice > entryPrice) || (sig.isPut && exitPrice < entryPrice) || exitPrice === entryPrice) result = "WIN";
+                        if ((sig.isCall && exitPrice > realisticEntryPrice) || (sig.isPut && exitPrice < realisticEntryPrice) || exitPrice === realisticEntryPrice) result = "WIN";
 
                         historicalMarkersRef.current.push({ time: currTime, position: sig.isCall ? 'belowBar' : 'aboveBar', color: sig.isCall ? '#1e3a8a' : '#4c0519', shape: sig.isCall ? 'arrowUp' : 'arrowDown', text: 'H-SIG', size: 0.5 });
                         historicalMarkersRef.current.push({ time: entryCandle.time, position: sig.isCall ? 'belowBar' : 'aboveBar', color: '#334155', shape: 'square', text: 'H-ENT', size: 0.5 });
@@ -1423,7 +1450,7 @@
 
                         newTradesHistory.push({
                             id: `hist_trade_${currTime}`, type: sig.isCall ? 'CALL' : 'PUT', signalTime: currTime, entryTime: entryCandle.time, exitTime: exitCandle.time,
-                            entryPrice: entryPrice, exitPrice: exitPrice, status: "CLOSED", result: result, betAmount: currentBet, reason: sig.signalType, quality: sig.score
+                            entryPrice: realisticEntryPrice, exitPrice: exitPrice, status: "CLOSED", result: result, betAmount: currentBet, reason: sig.signalType, quality: sig.score
                         });
 
                         if (result === "WIN") {
@@ -1453,7 +1480,7 @@
                     try { chartInstance.current.timeScale().fitContent(); } catch(e) {}
                 }
 
-                // Phase 1: Keep the massive visual scanner active for 9 seconds.
+                // Phase 1: Keep the massive volumetric scanner box active for 9 seconds.
                 for (let i = 0; i < 9; i++) {
                     playSound('scan');
                     await new Promise(r => setTimeout(r, 1000));
@@ -1468,7 +1495,7 @@
                 let speechText = "Анализ рынка завершён.";
                 if (finalStats.trades > 0) {
                     addLog(`ИСТОРИЯ ЗА 12 ЧАСОВ: СДЕЛОК ${finalStats.trades}, ВИНРЕЙТ ${finalStats.winrate}%`, true);
-                    speechText = `Анализ рынка завершён. Найдено ${finalStats.trades} сделок. Из них ${finalStats.wins} плюсовые и ${finalStats.losses} минусовые. Если бы трейдер заходил по 1000 рублей с учётом Мартингейла, итоговый профит составил бы ${finalStats.pnl} рублей.`;
+                    speechText = `Анализ рынка завершён. Найдено ${finalStats.trades} сделок. Из них ${finalStats.wins} плюсовых и ${finalStats.losses} минусовых. Если бы трейдер заходил по 1000 рублей с учётом Мартингейла, итоговый профит составил бы ${finalStats.pnl} рублей.`;
                 } else {
                     addLog(`ЗА 12 ЧАСОВ СИГНАЛОВ ПО СТРАТЕГИИ НЕ НАЙДЕНО.`, true);
                     speechText = "Анализ рынка завершён. За последние 12 часов подтверждённых сигналов нет. Начинаю сканирование.";
@@ -1578,11 +1605,11 @@
                               syncModeView(); playSound('found');
                               addLog(`Accepted: ${sig.signalType} | Q:${sig.score}`, true);
 
-                              // 3 Seconds Explanation phase
+                              // EXACT 3 Seconds Explanation phase
                               updateStatus(`ОБЪЯСНЕНИЕ СИГНАЛА...`, 'text-cyan-400 font-bold drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]');
                               await new Promise(r => setTimeout(r, 3000));
 
-                              // 3 Seconds Countdown phase
+                              // EXACT 3 Seconds Countdown preparation phase
                               let tradeCancelled = false;
                               for(let w = 3; w > 0; w--) {
                                   setCountdown(w); 
@@ -2007,7 +2034,7 @@
 
                     {/* VOLUMETRIC ARROW & COUNTDOWN HUD */}
                     <div className="flex gap-3 h-28 md:h-32 shrink-0">
-                      <div className={`w-[35%] border rounded-2xl flex flex-col items-center justify-center relative transition-all duration-500 glass-card bg-slate-900/90 ${signalPhase === 'PREPARING' ? 'border-cyan-400 shadow-[0_0_40px_rgba(0,240,255,0.6)] scale-[1.03]' : signalPhase === 'ACTIVE' ? 'border-cyan-500 shadow-[0_0_20px_rgba(0,240,255,0.3)]' : 'border-cyan-500/30'}`}>
+                      <div className={`w-[35%] border rounded-2xl flex flex-col items-center justify-center relative transition-all duration-500 glass-card bg-slate-900/90 ${signalPhase === 'PREPARING' && countdown !== null ? 'border-cyan-400 shadow-[0_0_40px_rgba(0,240,255,0.6)] scale-[1.03]' : signalPhase === 'ACTIVE' ? 'border-cyan-500 shadow-[0_0_20px_rgba(0,240,255,0.3)]' : 'border-cyan-500/30'}`}>
                         {signalPhase === 'PREPARING' && countdown !== null ? (
                             <div className="flex flex-col items-center justify-center w-full h-full p-2 text-center">
                                 <span className="text-[10px] text-cyan-400 font-black tracking-widest oswald-font mb-1 leading-none drop-shadow-md animate-pulse">ВХОД ЧЕРЕЗ</span>
