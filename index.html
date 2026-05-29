@@ -217,57 +217,51 @@
             transform: translateY(1px) scale(0.96); box-shadow: 0 4px 10px rgba(0, 240, 255, 0.4);
         }
 
-        /* --- NEW PREMIUM X-RAY SCANNER --- */
-        .xray-scanner {
+        /* --- EYE OF PROVIDENCE SCANNER CSS --- */
+        .eye-container {
             position: absolute;
-            top: 0; bottom: 0;
-            width: 140px;
-            background: linear-gradient(90deg, 
-                transparent 0%, 
-                rgba(0, 240, 255, 0.05) 20%, 
-                rgba(0, 240, 255, 0.2) 50%, 
-                rgba(0, 240, 255, 0.05) 80%, 
-                transparent 100%);
-            border-left: 1px solid rgba(0, 240, 255, 0.2);
-            border-right: 1px solid rgba(0, 240, 255, 0.7);
-            box-shadow: 0 0 25px rgba(0, 240, 255, 0.3), inset 0 0 15px rgba(0, 240, 255, 0.2);
-            /* The Magic X-Ray Effect */
-            backdrop-filter: brightness(1.35) contrast(1.4) saturate(1.2);
+            top: 0; left: 0;
+            width: 0; height: 0;
             z-index: 55;
             pointer-events: none;
-            display: flex; align-items: center; justify-content: center;
             will-change: transform;
+            transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        
-        .xray-scanner::before {
-            content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px;
-            background: rgba(0, 240, 255, 0.9); box-shadow: 0 0 12px #00f0ff, 0 0 25px #00f0ff;
-            transform: translateX(-50%);
+        .eye-graphic-wrapper {
+            position: absolute;
+            top: -40px; left: -40px;
+            width: 80px; height: 80px;
+            display: flex; align-items: center; justify-content: center;
         }
-
-        .xray-label {
-            position: absolute; left: 15px;
-            writing-mode: vertical-rl; transform: rotate(180deg);
-            color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 11px;
-            letter-spacing: 0.3em; text-shadow: 0 0 8px #00f0ff, 0 0 15px #00f0ff; font-weight: 900;
-            white-space: nowrap;
+        @keyframes slow-spin { 100% { transform: rotate(360deg); } }
+        .eye-bg-spin {
+            position: absolute; inset: -15px;
+            animation: slow-spin 15s linear infinite;
         }
-
-        @keyframes sweep-xray {
-            0% { transform: translateX(-150px); }
-            100% { transform: translateX(calc(100vw + 150px)); }
+        @keyframes beam-pulse { 0% { opacity: 0.3; } 100% { opacity: 0.8; } }
+        .eye-beam {
+            position: absolute;
+            top: 15px; left: -25px;
+            width: 50px; height: 250px;
+            background: linear-gradient(to bottom, rgba(0, 240, 255, 0.5) 0%, rgba(0, 240, 255, 0.05) 60%, transparent 100%);
+            clip-path: polygon(20% 0, 80% 0, 100% 100%, 0% 100%);
+            transform-origin: top center;
+            animation: beam-pulse 1.5s infinite alternate;
+            z-index: -1;
+            transition: opacity 0.4s ease;
         }
-        
-        @keyframes pulse-xray-live {
-            0% { opacity: 0.3; transform: translateX(calc(100vw - 200px)); }
-            100% { opacity: 0.8; transform: translateX(calc(100vw - 180px)); }
-        }
-
-        .scanner-backtest {
-            animation: sweep-xray 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
-        }
-        .scanner-live {
-            animation: pulse-xray-live 4s ease-in-out infinite alternate;
+        .eye-tooltip {
+            position: absolute;
+            left: 55px; top: -60px;
+            width: max-content;
+            background: rgba(10, 15, 30, 0.85);
+            border: 1px solid rgba(0, 240, 255, 0.4);
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.2);
+            backdrop-filter: blur(12px);
+            border-radius: 12px;
+            padding: 10px 14px;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-origin: left center;
         }
 
         @keyframes pulse-zone { 0% { opacity: 0.15; } 50% { opacity: 0.4; } 100% { opacity: 0.15; } }
@@ -296,7 +290,6 @@
         const Zap = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>);
         const BugIcon = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M12 18v.01"></path><path d="M8 12v.01"></path><path d="M16 12v.01"></path><rect x="4" y="6" width="16" height="16" rx="2" ry="2"></rect></svg>);
         
-        // --- BOOSTY LINK BROKER BUTTON ---
         const BrokerButton = React.memo(({ compact = false }) => (
             <a 
                 href="https://boosty.to/gord666/posts/0e3a7a59-c3a5-4a03-ba30-46296b5c7be6" 
@@ -312,7 +305,6 @@
             </a>
         ));
 
-        // Constants
         const MARTINGALE_STEPS = [1000, 2600, 6760, 17576, 45697, 118813, 308914];
         const TRADE_MONEY_CONFIG = { startBalance: 100000, payout: 0.70 };
 
@@ -575,28 +567,26 @@
             if (isCall && deepSweepBot) qScore += 10;
             if (isPut && deepSweepTop) qScore += 10;
 
-            // Reduced penalty for impulse (-20 instead of -25) to find the golden middle
+            // Penalty for impulse
             if (isCall && strongBearImpulse) { qScore -= 20; rejectReason = 'Bear Impulse Risk'; }
             if (isPut && strongBullImpulse) { qScore -= 20; rejectReason = 'Bull Impulse Risk'; }
 
-            // Positive Volume Filter (Bonus instead of penalty)
+            // Positive Volume Filter
             const currentVolume = currCandle.volume || 0;
             if (currentVolume > 0 && evalIdx > 14) {
                 let sumVol = 0; for (let j = 1; j <= 14; j++) sumVol += data[evalIdx - j].volume || 0;
                 const avgVolume = sumVol / 14;
-                if (currentVolume > avgVolume * 1.5) qScore += 5; // Volume climax bonus
+                if (currentVolume > avgVolume * 1.5) qScore += 5; 
             }
 
             // --- Relaxed MTF Bias Check ---
             const h4 = mtfContext.h4; const h1 = mtfContext.h1;
             
             if (isCall) {
-                // If AT LEAST ONE is bullish, we get a bonus.
                 if (h4 === 'BULLISH' || h1 === 'BULLISH') { qScore += 10; mtfConfStr = 'CONFIRMED'; }
-                // Only if BOTH are strictly bearish do we apply a heavy penalty.
                 else if (h4 === 'BEARISH' && h1 === 'BEARISH') { qScore -= 20; rejectReason = 'Against Strong HTF Bear Trend'; mtfConfStr = 'CONFLICT'; }
             } else {
-                if (h4 === 'BEARISH' || h1 === 'BEARISH') { qScore += 10; mtfConfStr = 'CONFirmed'; }
+                if (h4 === 'BEARISH' || h1 === 'BEARISH') { qScore += 10; mtfConfStr = 'CONFIRMED'; }
                 else if (h4 === 'BULLISH' && h1 === 'BULLISH') { qScore -= 20; rejectReason = 'Against Strong HTF Bull Trend'; mtfConfStr = 'CONFLICT'; }
             }
 
@@ -609,8 +599,8 @@
                 qScore -= 40; rejectReason = 'Cooldown Active';
             }
 
-            // --- Final Lowered Threshold ---
-            const PASS_THRESHOLD = 70; // Lowered from 75 to let more good setups pass
+            // --- Final Threshold ---
+            const PASS_THRESHOLD = 70; 
             if (qScore < PASS_THRESHOLD) {
                 if (!rejectReason) rejectReason = 'Score too low (Insufficient Quality)';
                 return { valid: false, reason: rejectReason, score: qScore };
@@ -785,10 +775,79 @@
           )
         });
 
-        const ChartOverlays = ({ chart, series, trades, zoneInfo, zoneState, currentPriceVal, isScanningBacktest }) => {
+        // --- NEW PREMIUM EYE OF PROVIDENCE SCANNER INTEGRATED HERE ---
+        const ChartOverlays = ({ chart, series, trades, zoneInfo, zoneState, currentPriceVal, isScanningBacktest, chartData }) => {
             const overlayRef = useRef(null);
             const [hoveredTrade, setHoveredTrade] = useState(null);
+            
+            // Eye Scanner State
+            const eyeRef = useRef(null);
+            const [scanData, setScanData] = useState(null);
+            const [isEyeScanning, setIsEyeScanning] = useState(false);
+            const targetRef = useRef(null);
 
+            // Engine for Eye Scanner
+            useEffect(() => {
+                if (!chartData || chartData.length < 5) return;
+                let isActive = true;
+
+                const scanLoop = async () => {
+                    if (!isActive) return;
+
+                    const len = chartData.length;
+                    let targetIdx;
+
+                    if (isScanningBacktest) {
+                        // Scan entire history randomly during backtest
+                        const min = Math.max(0, len - 144);
+                        targetIdx = Math.floor(Math.random() * (len - min)) + min;
+                    } else {
+                        // Live mode: Strongly prefer scanning the latest candles (zone of interest)
+                        if (Math.random() > 0.3) {
+                            const min = Math.max(0, len - 15);
+                            targetIdx = Math.floor(Math.random() * (len - min)) + min;
+                        } else {
+                            const min = Math.max(0, len - 60);
+                            targetIdx = Math.floor(Math.random() * (len - min)) + min;
+                        }
+                    }
+
+                    const targetCandle = chartData[targetIdx];
+                    if (!targetCandle) {
+                        setTimeout(scanLoop, 1000); return;
+                    }
+
+                    targetRef.current = targetCandle;
+                    setIsEyeScanning(false);
+                    setScanData(null);
+
+                    // Wait for movement transition (1.2s defined in CSS)
+                    await new Promise(r => setTimeout(r, 1200));
+                    if (!isActive) return;
+
+                    // Start actual scan & show overlay
+                    setIsEyeScanning(true);
+                    setScanData(targetCandle);
+
+                    // Hold scan for 2 seconds
+                    await new Promise(r => setTimeout(r, 2000));
+                    if (!isActive) return;
+
+                    // Stop scan
+                    setIsEyeScanning(false);
+                    setScanData(null);
+
+                    // Idle before next move
+                    await new Promise(r => setTimeout(r, 500));
+                    scanLoop();
+                };
+
+                // Start loop
+                scanLoop();
+                return () => { isActive = false; };
+            }, [chartData, isScanningBacktest]);
+
+            // Sync Positions on RAF (Trades + Pulse Zone + Eye Scanner)
             useEffect(() => {
                 if (!chart || !series || !overlayRef.current) return;
                 let overlaySyncRaf = null;
@@ -797,6 +856,7 @@
                     if (!chart || !series || !overlayRef.current) return;
                     const timeScale = chart.timeScale();
                     
+                    // 1. Zone Pulse
                     const pulseBox = overlayRef.current.querySelector('.zone-pulse-indicator');
                     if (pulseBox && zoneInfo && zoneState === 'IN') {
                         const currentLog = timeScale.coordinateToLogical(timeScale.timeToCoordinate(zoneInfo.time));
@@ -827,6 +887,7 @@
                         }
                     } else if (pulseBox) { pulseBox.style.display = 'none'; }
 
+                    // 2. Trades
                     const tradeBoxes = overlayRef.current.querySelectorAll('.trade-glass-box');
                     tradeBoxes.forEach(box => {
                         const tradeId = box.dataset.id;
@@ -870,6 +931,21 @@
                             box.style.height = `${height}px`;
                         } else { box.style.display = 'none'; }
                     });
+
+                    // 3. Eye Scanner Movement
+                    if (eyeRef.current && targetRef.current) {
+                        const cx = timeScale.timeToCoordinate(targetRef.current.time);
+                        // Hover above the High of the candle
+                        const cy = series.priceToCoordinate(targetRef.current.high);
+                        
+                        if (cx !== null && cy !== null) {
+                            // Float 90px above the candle high
+                            eyeRef.current.style.transform = `translate(${cx}px, ${cy - 90}px)`;
+                            eyeRef.current.style.opacity = '1';
+                        } else {
+                            eyeRef.current.style.opacity = '0';
+                        }
+                    }
                 };
 
                 const scheduleOverlaySync = () => {
@@ -898,23 +974,61 @@
                     chart.unsubscribeCrosshairMove(scheduleOverlaySync);
                     if (ro) ro.disconnect();
                 };
-            }, [chart, series, trades, zoneInfo, zoneState, isScanningBacktest]);
+            }, [chart, series, trades, zoneInfo, zoneState]);
+
+            const tScan = scanData ? new Date(scanData.time * 1000) : new Date();
+            const timeStr = `${tScan.getHours().toString().padStart(2,'0')}:${tScan.getMinutes().toString().padStart(2,'0')}`;
 
             return (
                 <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden rounded-3xl" ref={overlayRef}>
                     
-                    {/* NEW PREMIUM X-RAY SCANNER */}
-                    {isScanningBacktest && (
-                        <div className="xray-scanner scanner-backtest">
-                            <div className="xray-label">SCANNING LIQUIDITY ZONES</div>
-                        </div>
-                    )}
+                    {/* --- THE EYE OF PROVIDENCE SCANNER --- */}
+                    <div ref={eyeRef} className="eye-container">
+                        <div className="eye-graphic-wrapper">
+                            
+                            {/* Rotating Background Base */}
+                            <svg viewBox="0 0 100 100" className="eye-bg-spin w-full h-full opacity-80">
+                                <circle cx="50" cy="50" r="45" stroke="#00f0ff" strokeWidth="1" strokeDasharray="4 6" fill="none" opacity="0.5" />
+                                <polygon points="50,10 90,80 10,80" stroke="rgba(0, 240, 255, 0.8)" strokeWidth="1.5" fill="rgba(0, 240, 255, 0.05)" />
+                                <polygon points="50,18 80,72 20,72" stroke="rgba(255, 0, 255, 0.4)" strokeWidth="1" fill="none" />
+                            </svg>
 
-                    {!isScanningBacktest && zoneState !== 'IN' && (
-                        <div className="xray-scanner scanner-live" style={{ width: '80px' }}>
-                            <div className="xray-label">SCANNING LIVE...</div>
+                            {/* Static Foreground Eye */}
+                            <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full drop-shadow-[0_0_8px_rgba(0,240,255,1)]">
+                                {/* Eye shape */}
+                                <path d="M 20 60 Q 50 40 80 60 Q 50 80 20 60 Z" stroke="#00f0ff" strokeWidth="2.5" fill="rgba(10, 15, 30, 0.9)" />
+                                {/* Iris */}
+                                <circle cx="50" cy="60" r="9" stroke="rgba(255, 0, 255, 0.8)" strokeWidth="1.5" fill="none" />
+                                {/* Pupil (pulses when scanning) */}
+                                <circle cx="50" cy="60" r="4" fill="#00f0ff" className={isEyeScanning ? "animate-ping" : ""} />
+                                <circle cx="50" cy="60" r="2" fill="#fff" />
+                                {/* Tech rays */}
+                                <line x1="50" y1="42" x2="50" y2="35" stroke="#00f0ff" strokeWidth="1.5" />
+                                <line x1="50" y1="78" x2="50" y2="85" stroke="#00f0ff" strokeWidth="1.5" />
+                                <line x1="30" y1="60" x2="25" y2="60" stroke="#00f0ff" strokeWidth="1.5" />
+                                <line x1="70" y1="60" x2="75" y2="60" stroke="#00f0ff" strokeWidth="1.5" />
+                            </svg>
+
+                            {/* Downward X-Ray Beam (visible when scanning) */}
+                            <div className={`eye-beam ${isEyeScanning ? 'opacity-100' : 'opacity-0'}`}></div>
+
+                            {/* Info Tooltip (visible when scanning) */}
+                            <div className={`eye-tooltip ${isEyeScanning && scanData ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
+                                <div className="text-[8px] text-cyan-400 font-black tracking-widest uppercase mb-1.5 flex items-center gap-1.5 border-b border-cyan-500/30 pb-1">
+                                    <Radar size={11} className="animate-spin text-fuchsia-400" /> 
+                                    <span style={{ textShadow: '0 0 5px #00f0ff' }}>SCANNING LIQUIDITY</span>
+                                </div>
+                                {scanData && (
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[9px] mono-font text-slate-300 font-bold">
+                                        <span className="text-slate-500">TIME:</span> <span className="text-right text-slate-100">{timeStr}</span>
+                                        <span className="text-slate-500">HIGH:</span> <span className="text-right text-emerald-400">{scanData.high.toFixed(2)}</span>
+                                        <span className="text-slate-500">LOW:</span> <span className="text-right text-rose-400">{scanData.low.toFixed(2)}</span>
+                                        <span className="text-slate-500">VOL:</span> <span className="text-right text-cyan-200 drop-shadow-[0_0_2px_#00f0ff]">{Math.floor(scanData.volume)}</span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    )}
+                    </div>
 
                     <div className="zone-pulse-indicator absolute pointer-events-none z-10" style={{ display: 'none' }}>
                         <div className="absolute inset-0 rounded-full opacity-50" />
@@ -951,7 +1065,7 @@
                         </div>
                     )})}
 
-                    {hoveredTrade && !isScanningBacktest && (
+                    {hoveredTrade && (
                         <div 
                             className="fixed z-50 premium-glass-card rounded-2xl p-4 pointer-events-none transform -translate-x-1/2 -translate-y-full min-w-[220px] bg-slate-900 border-cyan-500/30 text-slate-100 shadow-[0_15px_30px_rgba(0,0,0,0.8)]"
                             style={{ left: hoveredTrade.x, top: hoveredTrade.y, zIndex: 999 }}
@@ -1348,7 +1462,7 @@
                         
                         // DETERMINISTIC SLIPPAGE
                         const candleRange = entryCandle.high - entryCandle.low;
-                        const slippagePenalty = candleRange * 0.04; // Fixed 4% penalty for realistic entry after 6s delay
+                        const slippagePenalty = candleRange * 0.04; 
                         
                         let realisticEntryPrice = entryCandle.open;
                         if (sig.isCall) {
@@ -1895,6 +2009,7 @@
                               zoneState={zoneState} 
                               currentPriceVal={currentPrice.current}
                               isScanningBacktest={isScanningBacktest}
+                              chartData={sparklines['BTCUSDT']}
                             />
                         </div>
                     </div>
