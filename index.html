@@ -302,24 +302,32 @@
         const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
         // Подавление безопасной ошибки ResizeObserver для предотвращения спама в консоли браузера/React
-        window.addEventListener('error', function(e) {
-            if (e.message && typeof e.message === 'string' && e.message.includes('ResizeObserver')) {
-                e.stopImmediatePropagation();
-                e.preventDefault();
-            }
-        });
-        window.addEventListener('unhandledrejection', function(e) {
-            if (e.reason && typeof e.reason.message === 'string' && e.reason.message.includes('ResizeObserver')) {
-                e.stopImmediatePropagation();
-                e.preventDefault();
-            }
-        });
-
-        const _originalError = console.error;
-        console.error = function(...args) {
-            if (args[0] && typeof args[0] === 'string' && args[0].includes('ResizeObserver')) return;
-            _originalError.apply(console, args);
+        const suppressResizeObserverErrors = () => {
+            window.addEventListener('error', function(e) {
+                if (e.message && typeof e.message === 'string' && e.message.includes('ResizeObserver')) {
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                }
+            });
+            window.addEventListener('unhandledrejection', function(e) {
+                if (e.reason && typeof e.reason.message === 'string' && e.reason.message.includes('ResizeObserver')) {
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                }
+            });
+            const _onerror = window.onerror;
+            window.onerror = function(msg, url, line, col, error) {
+                if (typeof msg === 'string' && msg.includes('ResizeObserver')) return true;
+                if (_onerror) return _onerror(msg, url, line, col, error);
+                return false;
+            };
+            const _originalError = console.error;
+            console.error = function(...args) {
+                if (args[0] && typeof args[0] === 'string' && args[0].includes('ResizeObserver')) return;
+                _originalError.apply(console, args);
+            };
         };
+        suppressResizeObserverErrors();
 
         // Memoized Icons
         const Shield = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 4.81 17 6 19 6a1 1 0 0 1 1 1z"/></svg>);
@@ -1355,7 +1363,8 @@
 
             try {
                 const mainChart = window.LightweightCharts.createChart(chartContainerRef.current, {
-                  autoSize: true,
+                  width: chartContainerRef.current.clientWidth,
+                  height: chartContainerRef.current.clientHeight,
                   layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#94a3b8', fontFamily: 'JetBrains Mono' },
                   grid: { vertLines: { color: 'rgba(51, 65, 85, 0.3)' }, horzLines: { color: 'rgba(51, 65, 85, 0.3)' } },
                   timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false, rightOffset: 5 }, rightPriceScale: { borderVisible: false }
@@ -1366,6 +1375,17 @@
                     wickUpColor: '#00f0ff', wickDownColor: '#ff0055' 
                 });
                 chartInstance.current = mainChart;
+                
+                const ro = new ResizeObserver(entries => {
+                    if (!chartInstance.current || !chartContainerRef.current) return;
+                    const { width, height } = entries[0].contentRect;
+                    window.requestAnimationFrame(() => {
+                        if (chartInstance.current) {
+                            chartInstance.current.applyOptions({ width, height });
+                        }
+                    });
+                });
+                ro.observe(chartContainerRef.current);
             } catch(e) {}
           };
 
