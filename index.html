@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -217,6 +216,27 @@
             transform: translateY(1px) scale(0.96); box-shadow: 0 4px 10px rgba(0, 240, 255, 0.4);
         }
 
+        /* --- PREMIUM STATUS BADGE (BUTTON-LIKE HOVER) --- */
+        .premium-status-badge {
+            background: linear-gradient(135deg, #00f0ff 0%, #0284c7 100%);
+            color: #0f172a;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4), inset 0 0 5px rgba(255,255,255,0.4);
+            border: 1px solid rgba(255,255,255,0.3);
+            animation: premium-badge-pulse 3s infinite alternate;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: default;
+        }
+        .premium-status-badge:hover {
+            transform: scale(1.03) translateY(-2px);
+            filter: brightness(1.2);
+            box-shadow: 0 0 35px rgba(0, 240, 255, 0.8), inset 0 0 10px rgba(255,255,255,0.6);
+            border-color: #fff;
+        }
+        @keyframes premium-badge-pulse {
+            0% { box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); text-shadow: 0 0 2px rgba(255,255,255,0.3); }
+            100% { box-shadow: 0 0 25px rgba(0, 240, 255, 0.7); text-shadow: 0 0 8px rgba(255,255,255,0.8); }
+        }
+
         /* --- EYE OF PROVIDENCE SCANNER CSS --- */
         .eye-container {
             position: absolute;
@@ -268,9 +288,9 @@
         .zone-pulse-indicator-mesh { animation: pulse-zone 2s infinite ease-in-out; }
 
         @keyframes scalePulse {
-            0% { transform: scale(1); opacity: 1; text-shadow: 0 0 20px rgba(0,240,255,0.9); }
-            50% { transform: scale(1.15); opacity: 0.9; text-shadow: 0 0 40px rgba(0,240,255,1); }
-            100% { transform: scale(1); opacity: 1; text-shadow: 0 0 20px rgba(0,240,255,0.9); }
+            0% { transform: scale(1); opacity: 1; text-shadow: 0 0 15px rgba(0,240,255,0.7); }
+            50% { transform: scale(1.1); opacity: 0.9; text-shadow: 0 0 30px rgba(0,240,255,1); }
+            100% { transform: scale(1); opacity: 1; text-shadow: 0 0 15px rgba(0,240,255,0.7); }
         }
         .animate-scale-pulse { animation: scalePulse 1s infinite; }
     </style>
@@ -280,6 +300,26 @@
 
     <script type="text/babel">
         const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+        // Подавление безопасной ошибки ResizeObserver для предотвращения спама в консоли браузера/React
+        window.addEventListener('error', function(e) {
+            if (e.message && typeof e.message === 'string' && e.message.includes('ResizeObserver')) {
+                e.stopImmediatePropagation();
+                e.preventDefault();
+            }
+        });
+        window.addEventListener('unhandledrejection', function(e) {
+            if (e.reason && typeof e.reason.message === 'string' && e.reason.message.includes('ResizeObserver')) {
+                e.stopImmediatePropagation();
+                e.preventDefault();
+            }
+        });
+
+        const _originalError = console.error;
+        console.error = function(...args) {
+            if (args[0] && typeof args[0] === 'string' && args[0].includes('ResizeObserver')) return;
+            _originalError.apply(console, args);
+        };
 
         // Memoized Icons
         const Shield = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 4.81 17 6 19 6a1 1 0 0 1 1 1z"/></svg>);
@@ -498,7 +538,6 @@
             const cLower = zones.lower;
             const rangeWidth = cUpper - cLower;
             
-            // 1. Range Filter
             if (rangeWidth < cAtr * 1.5) return { valid: false, reason: 'Range too tight (Chop)', score: 0 };
 
             const body = Math.abs(currCandle.open - currCandle.close);
@@ -518,22 +557,19 @@
             const sweepDepthTop = Math.max(0, currCandle.high - cUpper);
             const sweepDepthBot = Math.max(0, cLower - currCandle.low);
 
-            // Bonus for deep liquidity grab
             const deepSweepTop = sweepDepthTop >= cAtr * 0.25;
             const deepSweepBot = sweepDepthBot >= cAtr * 0.25;
 
             const returnedInsideTop = currCandle.close < cUpper;
             const returnedInsideBot = currCandle.close > cLower;
 
-            // 2. Strict Structure Break (MSB) Requirement
             const strictMsbPut = isRedCandle && (currCandle.close < prevCandle.low) && (body > cAtr * 0.25);
             const strictMsbCall = isGreenCandle && (currCandle.close > prevCandle.high) && (body > cAtr * 0.25);
 
-            // 3. Relaxed Pin Bar Requirement (50% instead of 60%)
-            const massiveWickPut = upperWick > cAtr * 0.5 && upperWickRatio > 0.5 && returnedInsideTop;
-            const massiveWickCall = lowerWick > cAtr * 0.5 && lowerWickRatio > 0.5 && returnedInsideBot;
+            // Relaxed Pin Bar Requirement (45% instead of 50/60%)
+            const massiveWickPut = upperWick > cAtr * 0.45 && upperWickRatio > 0.45 && returnedInsideTop;
+            const massiveWickCall = lowerWick > cAtr * 0.45 && lowerWickRatio > 0.45 && returnedInsideBot;
 
-            // 4. Momentum / Impulse Protection (Last 3 candles)
             let strongBullImpulse = false;
             let strongBearImpulse = false;
             if (evalIdx > 3) {
@@ -562,16 +598,13 @@
             let rejectReason = '';
             let mtfConfStr = 'WAIT';
 
-            // --- Quality Adjustments ---
-            
             if (isCall && deepSweepBot) qScore += 10;
             if (isPut && deepSweepTop) qScore += 10;
 
-            // Penalty for impulse
-            if (isCall && strongBearImpulse) { qScore -= 20; rejectReason = 'Bear Impulse Risk'; }
-            if (isPut && strongBullImpulse) { qScore -= 20; rejectReason = 'Bull Impulse Risk'; }
+            // Penalty for impulse (softened to -15 to allow some setups)
+            if (isCall && strongBearImpulse) { qScore -= 15; rejectReason = 'Bear Impulse Risk'; }
+            if (isPut && strongBullImpulse) { qScore -= 15; rejectReason = 'Bull Impulse Risk'; }
 
-            // Positive Volume Filter
             const currentVolume = currCandle.volume || 0;
             if (currentVolume > 0 && evalIdx > 14) {
                 let sumVol = 0; for (let j = 1; j <= 14; j++) sumVol += data[evalIdx - j].volume || 0;
@@ -579,15 +612,14 @@
                 if (currentVolume > avgVolume * 1.5) qScore += 5; 
             }
 
-            // --- Relaxed MTF Bias Check ---
             const h4 = mtfContext.h4; const h1 = mtfContext.h1;
             
             if (isCall) {
-                if (h4 === 'BULLISH' || h1 === 'BULLISH') { qScore += 10; mtfConfStr = 'CONFIRMED'; }
-                else if (h4 === 'BEARISH' && h1 === 'BEARISH') { qScore -= 20; rejectReason = 'Against Strong HTF Bear Trend'; mtfConfStr = 'CONFLICT'; }
+                if (h4 === 'BULLISH' || h1 === 'BULLISH') { qScore += 12; mtfConfStr = 'CONFIRMED'; }
+                else if (h4 === 'BEARISH' && h1 === 'BEARISH') { qScore -= 15; rejectReason = 'Against HTF Trend'; mtfConfStr = 'CONFLICT'; }
             } else {
-                if (h4 === 'BEARISH' || h1 === 'BEARISH') { qScore += 10; mtfConfStr = 'CONFIRMED'; }
-                else if (h4 === 'BULLISH' && h1 === 'BULLISH') { qScore -= 20; rejectReason = 'Against Strong HTF Bull Trend'; mtfConfStr = 'CONFLICT'; }
+                if (h4 === 'BEARISH' || h1 === 'BEARISH') { qScore += 12; mtfConfStr = 'CONFIRMED'; }
+                else if (h4 === 'BULLISH' && h1 === 'BULLISH') { qScore -= 15; rejectReason = 'Against HTF Trend'; mtfConfStr = 'CONFLICT'; }
             }
 
             if (mtfConfStr === 'WAIT' || h4 === 'LOCAL' || mtfContext.status.includes('LOCAL')) {
@@ -595,12 +627,12 @@
             }
 
             const candlesSinceLast = (currTime - engineState.lastSignalTime) / 300; 
-            if (candlesSinceLast < 8) { 
-                qScore -= 40; rejectReason = 'Cooldown Active';
+            if (candlesSinceLast < 6) { 
+                qScore -= 35; rejectReason = 'Cooldown Active';
             }
 
-            // --- Final Threshold ---
-            const PASS_THRESHOLD = 70; 
+            // --- Final Softened Threshold ---
+            const PASS_THRESHOLD = 68; // Lowered to hit golden middle
             if (qScore < PASS_THRESHOLD) {
                 if (!rejectReason) rejectReason = 'Score too low (Insufficient Quality)';
                 return { valid: false, reason: rejectReason, score: qScore };
@@ -701,7 +733,7 @@
                 </g>
               </svg>
               <div className={`text-base md:text-lg mt-1.5 font-black leading-none oswald-font ${glow ? 'drop-shadow-[0_0_8px_currentColor]' : ''}`} style={{color: glow ? colorHex : '#f8fafc'}}>{Math.round(safeValue)}</div>
-              <div className="text-[8px] md:text-[9px] text-slate-400 tracking-widest leading-none text-center font-bold mt-1 uppercase whitespace-nowrap">{label}</div>
+              <div className="text-[7px] md:text-[9px] text-slate-400 tracking-widest leading-none text-center font-bold mt-1 uppercase whitespace-nowrap">{label}</div>
             </div>
           );
         });
@@ -775,7 +807,7 @@
           )
         });
 
-        // --- NEW PREMIUM EYE OF PROVIDENCE SCANNER INTEGRATED HERE ---
+        // --- PREMIUM EYE OF PROVIDENCE SCANNER ---
         const ChartOverlays = ({ chart, series, trades, zoneInfo, zoneState, currentPriceVal, isScanningBacktest, chartData }) => {
             const overlayRef = useRef(null);
             const [hoveredTrade, setHoveredTrade] = useState(null);
@@ -798,11 +830,9 @@
                     let targetIdx;
 
                     if (isScanningBacktest) {
-                        // Scan entire history randomly during backtest
                         const min = Math.max(0, len - 144);
                         targetIdx = Math.floor(Math.random() * (len - min)) + min;
                     } else {
-                        // Live mode: Strongly prefer scanning the latest candles (zone of interest)
                         if (Math.random() > 0.3) {
                             const min = Math.max(0, len - 15);
                             targetIdx = Math.floor(Math.random() * (len - min)) + min;
@@ -821,28 +851,22 @@
                     setIsEyeScanning(false);
                     setScanData(null);
 
-                    // Wait for movement transition (1.2s defined in CSS)
                     await new Promise(r => setTimeout(r, 1200));
                     if (!isActive) return;
 
-                    // Start actual scan & show overlay
                     setIsEyeScanning(true);
                     setScanData(targetCandle);
 
-                    // Hold scan for 2 seconds
                     await new Promise(r => setTimeout(r, 2000));
                     if (!isActive) return;
 
-                    // Stop scan
                     setIsEyeScanning(false);
                     setScanData(null);
 
-                    // Idle before next move
                     await new Promise(r => setTimeout(r, 500));
                     scanLoop();
                 };
 
-                // Start loop
                 scanLoop();
                 return () => { isActive = false; };
             }, [chartData, isScanningBacktest]);
@@ -939,7 +963,6 @@
                         const cy = series.priceToCoordinate(targetRef.current.high);
                         
                         if (cx !== null && cy !== null) {
-                            // Float 90px above the candle high
                             eyeRef.current.style.transform = `translate(${cx}px, ${cy - 90}px)`;
                             eyeRef.current.style.opacity = '1';
                         } else {
@@ -964,7 +987,12 @@
 
                 let ro;
                 if (window.ResizeObserver && overlayRef.current) {
-                    ro = new ResizeObserver(scheduleOverlaySync); ro.observe(overlayRef.current);
+                    let resizeTimer;
+                    ro = new ResizeObserver(() => {
+                        clearTimeout(resizeTimer);
+                        resizeTimer = setTimeout(scheduleOverlaySync, 20);
+                    });
+                    ro.observe(overlayRef.current);
                 }
 
                 return () => {
@@ -1112,6 +1140,7 @@
           const [sparklines, setSparklines] = useState({});
           
           const [signalPhase, setSignalPhase] = useState('NONE'); 
+          const [explainText, setExplainText] = useState('');
           const [signal, setSignal] = useState(null);
           
           const [countdown, setCountdown] = useState(null); 
@@ -1527,7 +1556,7 @@
                 let speechText = "Анализ рынка завершён.";
                 if (finalStats.trades > 0) {
                     addLog(`ИСТОРИЯ ЗА 12 ЧАСОВ: СДЕЛОК ${finalStats.trades}, ВИНРЕЙТ ${finalStats.winrate}%`, true);
-                    speechText = `Анализ рынка завершён. Найдено ${finalStats.trades} сделок. Из них ${finalStats.wins} плюсовых и ${finalStats.losses} минусовых. Если бы трейдер заходил по 1000 рублей с учётом Мартингейла, итоговый профит составил бы ${finalStats.pnl} рублей.`;
+                    speechText = `Анализ рынка завершён. Найдено ${finalStats.trades} сделок. Из них ${finalStats.wins} плюсовые и ${finalStats.losses} минусовые. Если бы трейдер заходил по 1000 рублей с учётом Мартингейла, итоговый профит составил бы ${finalStats.pnl} рублей.`;
                 } else {
                     addLog(`ЗА 12 ЧАСОВ СИГНАЛОВ ПО СТРАТЕГИИ НЕ НАЙДЕНО.`, true);
                     speechText = "Анализ рынка завершён. Найдено 0 сделок. Начинаю сканирование.";
@@ -1628,16 +1657,20 @@
                               window.speechSynthesis.cancel(); speechQueueRef.current = []; isSpeakingRef.current = false;
                               
                               const directionText = sig.isCall ? "ВВЕРХ" : "ВНИЗ";
-                              speakAsync(`Внимание! Появился сигнал на ${directionText}. Готовьтесь ко входу.`, `signal-prep-${sig.signalTime}`, 1);
+                              speakAsync(`Внимание! Появился сигнал на ${directionText} по причине: ${sig.signalType}. Готовьтесь ко входу.`, `signal-prep-${sig.signalTime}`, 1);
 
-                              signalPhaseRef.current = 'PREPARING'; setSignalPhase('PREPARING'); setZoneInfo(null);
+                              setExplainText(sig.signalType);
+                              signalPhaseRef.current = 'EXPLAINING'; setSignalPhase('EXPLAINING'); setZoneInfo(null);
                               setSignal({ type: sig.isCall ? 'CALL' : 'PUT', exp: 25, expectedPrice: sig.signalPrice });
                               
                               syncModeView(); playSound('found');
                               addLog(`Accepted: ${sig.signalType} | Q:${sig.score}`, true);
 
                               updateStatus(`ОБЪЯСНЕНИЕ СИГНАЛА...`, 'text-cyan-400 font-bold drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]');
+                              // EXACT 3 Seconds Explanation phase
                               await new Promise(r => setTimeout(r, 3000));
+
+                              signalPhaseRef.current = 'PREPARING'; setSignalPhase('PREPARING');
 
                               let tradeCancelled = false;
                               for(let w = 3; w > 0; w--) {
@@ -1895,7 +1928,7 @@
                         <Zap size={28} className="text-cyan-400 drop-shadow-[0_0_12px_rgba(0,240,255,0.9)]" /> 
                         ТЕРМИНАЛ <span className="text-gradient font-black hidden sm:inline drop-shadow-[0_0_20px_rgba(0,240,255,0.5)]">PRO MAX</span>
                       </h1>
-                      <div className="text-[10px] text-slate-900 px-3 py-1 bg-cyan-400 rounded-lg flex items-center shadow-[0_0_15px_rgba(0,240,255,0.8)] oswald-font tracking-widest block md:hidden font-black">
+                      <div className="premium-status-badge text-[9px] px-3 py-1 rounded-lg flex items-center oswald-font tracking-widest block md:hidden font-black">
                         {appPhase}
                       </div>
                   </div>
@@ -1916,7 +1949,7 @@
                       <div className="hidden md:block">
                           <BrokerButton compact={false} />
                       </div>
-                      <div className="text-xs md:text-sm text-slate-900 px-4 py-1.5 bg-cyan-400 shadow-[0_0_25px_rgba(0,240,255,0.6)] rounded-lg oswald-font tracking-widest hidden md:block font-black h-[52px] flex items-center border border-white/20">
+                      <div className="premium-status-badge text-xs md:text-sm px-4 py-1.5 rounded-lg oswald-font tracking-widest hidden md:flex items-center font-black h-[52px]">
                         {appPhase}
                       </div>
                   </div>
@@ -1935,20 +1968,20 @@
               <main className="flex-1 flex flex-col md:flex-row p-2 md:p-4 gap-3 md:gap-4 overflow-hidden z-10">
                 
                 {/* CHART WORKSPACE */}
-                <div className="w-full md:flex-1 h-[50vh] md:h-full glass-panel-heavy rounded-3xl md:rounded-[2.5rem] relative overflow-hidden flex flex-col shrink-0">
+                <div className="w-full md:flex-1 min-h-[50vh] md:min-h-0 md:h-full glass-panel-heavy rounded-3xl md:rounded-[2.5rem] relative overflow-hidden flex flex-col shrink-0">
                   
-                  <div className={`absolute inset-0 z-30 transition-all duration-700 bg-transparent flex items-center justify-center p-4 md:p-8 ${viewMode === 'SCREENER' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                  <div className={`absolute inset-0 z-30 transition-all duration-700 bg-transparent flex items-center justify-center p-2 md:p-8 ${viewMode === 'SCREENER' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                     <div className="card-3d-wrapper w-full max-w-[95%] xl:max-w-[90%] h-[45vh] md:h-[65vh] flex">
-                       <div className="card-3d relative w-full h-full flex flex-col p-5 md:p-8 rounded-[2.5rem]">
+                       <div className="card-3d relative w-full h-full flex flex-col p-4 md:p-8 rounded-[2.5rem]">
                           <div className="flex justify-between items-start mb-6 md:mb-8 relative z-10">
-                              <div className="flex items-center gap-5">
-                                  <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-cyan-600 to-blue-700 text-white rounded-3xl flex items-center justify-center font-bold text-3xl md:text-5xl shadow-[0_0_40px_rgba(0,240,255,0.6)] border border-cyan-400/60">₿</div>
+                              <div className="flex items-center gap-4 md:gap-5">
+                                  <div className="w-12 h-12 md:w-20 md:h-20 bg-gradient-to-br from-cyan-600 to-blue-700 text-white rounded-2xl md:rounded-3xl flex items-center justify-center font-bold text-2xl md:text-5xl shadow-[0_0_40px_rgba(0,240,255,0.6)] border border-cyan-400/60 shrink-0">₿</div>
                                   <div>
-                                      <h2 className="text-3xl md:text-5xl font-black text-slate-100 oswald-font tracking-wider leading-none drop-shadow-md text-shadow-[0_0_20px_rgba(255,255,255,0.3)]">BITCOIN</h2>
-                                      <span className="text-base md:text-xl font-bold text-cyan-300 tracking-[0.2em] uppercase mt-2 inline-block bg-cyan-900/60 px-3 py-1 rounded-lg border border-cyan-500/40 shadow-[0_0_15px_rgba(0,240,255,0.3)]">BTC/USDT • {currentTF}</span>
+                                      <h2 className="text-2xl md:text-5xl font-black text-slate-100 oswald-font tracking-wider leading-none drop-shadow-md text-shadow-[0_0_20px_rgba(255,255,255,0.3)]">BITCOIN</h2>
+                                      <span className="text-[10px] md:text-xl font-bold text-cyan-300 tracking-[0.2em] uppercase mt-1.5 md:mt-2 inline-block bg-cyan-900/60 px-2 md:px-3 py-1 rounded-lg border border-cyan-500/40 shadow-[0_0_15px_rgba(0,240,255,0.3)]">BTC/USDT • {currentTF}</span>
                                   </div>
                               </div>
-                              <div className="flex flex-col items-end">
+                              <div className="flex flex-col items-end hidden sm:flex">
                                   <div className="flex items-center gap-2 text-slate-100 bg-slate-900/90 px-4 py-2 rounded-xl shadow-[0_15px_30px_rgba(0,0,0,0.7)] border border-cyan-500/40">
                                       <span className="text-xs md:text-sm font-bold tracking-widest uppercase">Premium 5M Diagnostics</span>
                                       <Radar size={18} className="animate-spin text-cyan-400 drop-shadow-[0_0_5px_rgba(0,240,255,0.8)]" />
@@ -1956,17 +1989,17 @@
                               </div>
                           </div>
 
-                          <div className="flex-1 overflow-hidden rounded-3xl bg-slate-900/90 border border-cyan-500/30 relative shadow-[inset_0_4px_30px_rgba(0,0,0,0.8)] z-10">
+                          <div className="flex-1 overflow-hidden rounded-2xl md:rounded-3xl bg-slate-900/90 border border-cyan-500/30 relative shadow-[inset_0_4px_30px_rgba(0,0,0,0.8)] z-10">
                               <MiniChart data={sparklines['BTCUSDT']} />
                               <div className="absolute inset-0 scanline-anim pointer-events-none opacity-50 mix-blend-overlay" />
                           </div>
 
-                          <div className="mt-6 flex justify-between items-center bg-slate-900/80 p-4 rounded-2xl border border-cyan-500/30 relative z-10 shadow-lg">
-                              <span className="text-xs md:text-sm text-slate-300 font-bold tracking-widest uppercase">Анализ пулов ликвидности SMC...</span>
+                          <div className="mt-4 md:mt-6 flex justify-between items-center bg-slate-900/80 p-3 md:p-4 rounded-2xl border border-cyan-500/30 relative z-10 shadow-lg">
+                              <span className="text-[10px] md:text-sm text-slate-300 font-bold tracking-widest uppercase">Анализ пулов ликвидности SMC...</span>
                               <div className="flex gap-2">
-                                  <div className="w-2.5 h-2.5 rounded-full bg-cyan-600 animate-bounce shadow-[0_0_10px_rgba(0,240,255,0.8)]" style={{animationDelay: '0ms'}}></div>
-                                  <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-bounce shadow-[0_0_15px_rgba(0,240,255,1)]" style={{animationDelay: '150ms'}}></div>
-                                  <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-bounce shadow-[0_0_10px_rgba(59,130,246,0.8)]" style={{animationDelay: '300ms'}}></div>
+                                  <div className="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-cyan-600 animate-bounce shadow-[0_0_10px_rgba(0,240,255,0.8)]" style={{animationDelay: '0ms'}}></div>
+                                  <div className="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-cyan-400 animate-bounce shadow-[0_0_15px_rgba(0,240,255,1)]" style={{animationDelay: '150ms'}}></div>
+                                  <div className="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-blue-400 animate-bounce shadow-[0_0_10px_rgba(59,130,246,0.8)]" style={{animationDelay: '300ms'}}></div>
                               </div>
                           </div>
                        </div>
@@ -1974,7 +2007,7 @@
                   </div>
 
                   <div className={`absolute inset-0 z-20 flex flex-col transition-all duration-700 bg-transparent ${viewMode === 'DETAIL' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                    <div className="absolute top-5 left-5 z-40 flex flex-col gap-2">
+                    <div className="absolute top-5 left-5 z-40 flex flex-col gap-2 scale-75 md:scale-100 origin-top-left">
                       <div className="premium-glass-card p-4 md:p-5 rounded-3xl min-w-[160px] border-cyan-500/40 shadow-[0_20px_50px_rgba(0,0,0,0.9)] relative overflow-hidden bg-slate-900/90">
                         <div className="absolute -right-10 -top-10 w-24 h-24 bg-cyan-400/15 rounded-full blur-xl pointer-events-none"></div>
                         <div className="text-[10px] md:text-xs text-slate-400 tracking-widest mb-1.5 flex items-center gap-2 font-bold uppercase">
@@ -1988,16 +2021,16 @@
                     </div>
 
                     {zoneState === 'IN' && signalPhase === 'NONE' && (
-                        <div className="absolute top-8 right-8 z-50 bg-amber-900/90 text-amber-400 px-4 py-2 rounded-xl font-bold tracking-widest uppercase oswald-font shadow-[0_0_30px_rgba(245,158,11,0.6)] border border-amber-500/60 flex items-center gap-3 backdrop-blur-xl">
-                            <div className="w-2.5 h-2.5 bg-amber-400 rounded-full animate-ping shadow-[0_0_12px_rgba(251,191,36,1)]"></div>
+                        <div className="absolute top-8 right-8 z-50 bg-amber-900/90 text-amber-400 px-3 md:px-4 py-2 rounded-xl font-bold text-[9px] md:text-xs tracking-widest uppercase oswald-font shadow-[0_0_30px_rgba(245,158,11,0.6)] border border-amber-500/60 flex items-center gap-2 md:gap-3 backdrop-blur-xl">
+                            <div className="w-2 h-2 md:w-2.5 md:h-2.5 bg-amber-400 rounded-full animate-ping shadow-[0_0_12px_rgba(251,191,36,1)]"></div>
                             Зона интереса: возможен сигнал
                         </div>
                     )}
                     
-                    <div className="flex-1 relative w-full mt-32 md:mt-36 flex flex-col gap-2 px-4 pb-4 md:px-5 md:pb-5">
+                    <div className="flex-1 relative w-full mt-24 md:mt-36 flex flex-col gap-2 px-2 pb-2 md:px-5 md:pb-5">
                         <div 
                             ref={chartContainerRef}
-                            className={`flex-1 relative w-full rounded-3xl overflow-hidden bg-slate-900/95 border transition-all duration-500 ${
+                            className={`flex-1 relative w-full rounded-2xl md:rounded-3xl overflow-hidden bg-slate-900/95 border transition-all duration-500 ${
                                 zoneState === 'IN' && zoneInfo ? (zoneInfo.type === 'RESISTANCE' ? 'zone-active-resistance' : 'zone-active-support') : 'border-cyan-500/30 shadow-[inset_0_0_40px_rgba(0,0,0,0.9)]'
                             }`}
                         >
@@ -2020,21 +2053,21 @@
                 <div className="w-full md:w-[340px] lg:w-[380px] flex flex-col glass-panel-heavy rounded-3xl md:rounded-[2.5rem] overflow-hidden shrink-0 relative min-h-[50vh] md:h-full shadow-[0_0_30px_rgba(0,0,0,0.8)]">
                   
                   <div className="border-b border-cyan-500/40 p-3 bg-gradient-to-r from-slate-900/90 to-transparent flex justify-center items-center shrink-0 min-h-[48px] shadow-[0_5px_20px_rgba(0,0,0,0.5)] relative z-10">
-                    <div className={`text-base md:text-lg oswald-font tracking-widest flex items-center gap-2 text-center leading-none transition-all duration-300 w-full justify-center font-bold ${statusColorClass}`}>
+                    <div className={`premium-status-badge w-full text-center py-1.5 rounded-lg text-xs md:text-[13px] oswald-font tracking-widest flex items-center justify-center gap-2 leading-none transition-all duration-300 font-black`}>
                       {appPhase.includes('ПОДГОТОВ') ? (
-                        <span className="text-cyan-400 drop-shadow-[0_0_15px_rgba(0,240,255,0.9)] animate-pulse">{appPhase}</span>
+                        <span className="drop-shadow-[0_0_15px_rgba(0,0,0,0.5)]">{appPhase}</span>
                       ) : appPhase}
                     </div>
                   </div>
 
-                  <div className="flex-1 flex flex-col p-3 md:p-4 gap-3 md:gap-4 overflow-y-hidden relative z-10">
+                  <div className="flex-1 flex flex-col p-2 md:p-4 gap-2 md:gap-4 overflow-y-hidden relative z-10">
                     
                     <div className="glass-card rounded-2xl p-2 shrink-0 flex flex-col justify-center shadow-[0_5px_20px_rgba(0,0,0,0.5)] border-cyan-500/30">
                         <div className="flex justify-between items-center bg-slate-900/70 p-1.5 rounded border border-cyan-500/30 shadow-md mb-1.5 mx-1">
                             <span className="text-[9px] text-slate-400 font-bold tracking-widest">TIMEFRAME:</span>
                             <span className="text-[10px] font-black text-cyan-400 tracking-widest drop-shadow-[0_0_8px_rgba(0,240,255,0.7)]">5M (SCALPING)</span>
                         </div>
-                        <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest text-center border-b border-slate-700/60 pb-1.5 mb-1.5 oswald-font">MTF CONTEXT FILTER</div>
+                        <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest text-center border-b border-slate-700/60 pb-1 mb-1.5 oswald-font">MTF CONTEXT FILTER</div>
                         <div className="flex justify-between items-center px-1">
                             <div className="flex flex-col items-center flex-1 border-r border-slate-700/60">
                                 <span className="text-[8px] md:text-[9px] font-bold text-slate-500 mb-0.5">4H</span>
@@ -2050,12 +2083,12 @@
                             </div>
                             <div className="flex flex-col items-center flex-1">
                                 <span className="text-[8px] md:text-[9px] font-bold text-slate-500 mb-0.5">SCORE</span>
-                                <span className={`text-base font-black oswald-font leading-none ${mtfContext.score >= 70 ? 'text-cyan-400 drop-shadow-[0_0_10px_currentColor]' : mtfContext.score >= 50 ? 'text-slate-200' : 'text-rose-400'}`}>{mtfContext.status === 'LOADING' ? '--' : (mtfContext.status.includes('LOCAL') ? 'LOCAL' : mtfContext.score)}</span>
+                                <span className={`text-[13px] md:text-base font-black oswald-font leading-none ${mtfContext.score >= 68 ? 'text-cyan-400 drop-shadow-[0_0_10px_currentColor]' : mtfContext.score >= 50 ? 'text-slate-200' : 'text-rose-400'}`}>{mtfContext.status === 'LOADING' ? '--' : (mtfContext.status.includes('LOCAL') ? 'LOCAL' : mtfContext.score)}</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-2 glass-card rounded-2xl p-2 shrink-0 border-cyan-500/30">
+                    <div className="grid grid-cols-4 gap-1 glass-card rounded-2xl p-1.5 md:p-2 shrink-0 border-cyan-500/30">
                        <Speedometer value={metrics.structure} label="СТРУКТУРА" colorHex="#d97706" />
                        <Speedometer value={metrics.liquidity} label="ЛИКВИДНОСТЬ" colorHex="#3b82f6" glow={true} />
                        <Speedometer value={metrics.filterLevel} label="АТР ФИЛЬТР" colorHex="#8b5cf6" />
@@ -2063,53 +2096,58 @@
                     </div>
 
                     {/* VOLUMETRIC ARROW & COUNTDOWN HUD */}
-                    <div className="flex gap-3 h-28 md:h-32 shrink-0">
-                      <div className={`w-[35%] border rounded-2xl flex flex-col items-center justify-center relative transition-all duration-500 glass-card bg-slate-900/90 ${signalPhase === 'PREPARING' && countdown !== null ? 'border-cyan-400 shadow-[0_0_40px_rgba(0,240,255,0.6)] scale-[1.03]' : signalPhase === 'ACTIVE' ? 'border-cyan-500 shadow-[0_0_20px_rgba(0,240,255,0.3)]' : 'border-cyan-500/30'}`}>
-                        {signalPhase === 'PREPARING' && countdown !== null ? (
+                    <div className="flex gap-2 h-24 md:h-32 shrink-0">
+                      <div className={`w-[38%] md:w-[35%] border rounded-2xl flex flex-col items-center justify-center relative transition-all duration-500 glass-card bg-slate-900/90 ${signalPhase === 'PREPARING' && countdown !== null ? 'border-cyan-400 shadow-[0_0_40px_rgba(0,240,255,0.6)] scale-[1.03]' : signalPhase === 'ACTIVE' || signalPhase === 'EXPLAINING' ? 'border-cyan-500 shadow-[0_0_20px_rgba(0,240,255,0.3)]' : 'border-cyan-500/30'}`}>
+                        {signalPhase === 'EXPLAINING' ? (
+                            <div className="flex flex-col items-center justify-center w-full h-full p-2 text-center animate-pulse">
+                                <span className="text-[9px] text-cyan-400 font-black tracking-widest oswald-font mb-1 leading-none drop-shadow-md">АЛГОРИТМ НАШЕЛ</span>
+                                <div className="text-[10px] md:text-sm font-black text-white drop-shadow-[0_0_15px_rgba(0,240,255,1)] uppercase">{explainText}</div>
+                            </div>
+                        ) : signalPhase === 'PREPARING' && countdown !== null ? (
                             <div className="flex flex-col items-center justify-center w-full h-full p-2 text-center">
-                                <span className="text-[10px] text-cyan-400 font-black tracking-widest oswald-font mb-1 leading-none drop-shadow-md animate-pulse">ВХОД ЧЕРЕЗ</span>
-                                <div className="text-6xl font-black text-white drop-shadow-[0_0_25px_rgba(0,240,255,1)] mono-font animate-scale-pulse leading-none">{countdown}</div>
+                                <span className="text-[9px] md:text-[10px] text-cyan-400 font-black tracking-widest oswald-font mb-1 leading-none drop-shadow-md animate-pulse">ВХОД ЧЕРЕЗ</span>
+                                <div className="text-4xl md:text-6xl font-black text-white drop-shadow-[0_0_25px_rgba(0,240,255,1)] mono-font animate-scale-pulse leading-none">{countdown}</div>
                             </div>
                         ) : signalPhase === 'ACTIVE' && signal ? (
                             <VolumetricArrow type={signal.type} active={true} />
                         ) : (
                             <div className="flex flex-col items-center opacity-60 px-1 text-center">
-                                <Radar size={28} className="text-slate-400 mb-2 drop-shadow-sm" />
-                                <span className="text-[8px] tracking-widest font-bold text-slate-500 oswald-font leading-tight mt-1">ОЖИДАНИЕ</span>
+                                <Radar size={24} className="text-slate-400 mb-1 md:mb-2 drop-shadow-sm" />
+                                <span className="text-[7px] md:text-[8px] tracking-widest font-bold text-slate-500 oswald-font leading-tight mt-1">ОЖИДАНИЕ</span>
                             </div>
                         )}
                       </div>
                       
-                      <div className="w-[65%] rounded-2xl overflow-hidden glass-card p-1.5 shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)] flex border-cyan-500/30 bg-slate-900/70">
+                      <div className="w-[62%] md:w-[65%] rounded-2xl overflow-hidden glass-card p-1 md:p-1.5 shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)] flex border-cyan-500/30 bg-slate-900/70">
                         <OrderBookDepth price={currentPrice.current} />
                         <HftTape price={currentPrice.current} />
                       </div>
                     </div>
 
                     {/* MARTINGALE HUD DISPLAY */}
-                    <div className="glass-card border rounded-3xl p-4 flex flex-col gap-2 shrink-0 relative overflow-hidden transition-all duration-700 bg-slate-900/95 border-cyan-500/30 shadow-[0_5px_20px_rgba(0,0,0,0.6)]">
+                    <div className="glass-card border rounded-3xl p-3 md:p-4 flex flex-col gap-1 md:gap-2 shrink-0 relative overflow-hidden transition-all duration-700 bg-slate-900/95 border-cyan-500/30 shadow-[0_5px_20px_rgba(0,0,0,0.6)]">
                         <div className="absolute -right-4 -top-4 w-24 h-24 bg-gradient-to-br from-cyan-800/40 to-blue-900/30 rounded-full blur-2xl pointer-events-none"></div>
                         
                         <div className="flex justify-between items-center mb-1 relative z-10">
-                            <span className="text-slate-400 text-[10px] font-bold tracking-widest uppercase oswald-font">ДЕМО-БАЛАНС</span>
-                            <span className="text-lg font-black text-slate-100 oswald-font leading-none">{stats.balance.toLocaleString('ru-RU')} ₽</span>
+                            <span className="text-slate-400 text-[9px] md:text-[10px] font-bold tracking-widest uppercase oswald-font">ДЕМО-БАЛАНС</span>
+                            <span className="text-base md:text-lg font-black text-slate-100 oswald-font leading-none">{stats.balance.toLocaleString('ru-RU')} ₽</span>
                         </div>
 
-                        <div className="flex justify-between items-center mb-1 relative z-10 pb-2 border-b border-slate-700/80">
-                            <span className="text-slate-400 text-[10px] font-bold tracking-widest uppercase oswald-font">СЕССИОННЫЙ PNL</span>
-                            <span className={`text-base font-black ios-text leading-none oswald-font ${stats.pnl >= 0 ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.7)]' : 'text-rose-500 drop-shadow-[0_0_8px_rgba(225,29,72,0.7)]'}`}>
+                        <div className="flex justify-between items-center mb-1 relative z-10 pb-1 md:pb-2 border-b border-slate-700/80">
+                            <span className="text-slate-400 text-[9px] md:text-[10px] font-bold tracking-widest uppercase oswald-font">СЕССИОННЫЙ PNL</span>
+                            <span className={`text-sm md:text-base font-black ios-text leading-none oswald-font ${stats.pnl >= 0 ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.7)]' : 'text-rose-500 drop-shadow-[0_0_8px_rgba(225,29,72,0.7)]'}`}>
                                 {stats.pnl > 0 ? '+' : ''}{stats.pnl.toLocaleString('ru-RU')} ₽
                             </span>
                         </div>
 
-                        <div className="flex justify-between items-center bg-slate-800/90 p-2.5 rounded-xl border border-cyan-500/40 text-cyan-200 mt-1 relative z-10 shadow-[inset_0_0_15px_rgba(0,0,0,0.7)]">
+                        <div className="flex justify-between items-center bg-slate-800/90 p-2 md:p-2.5 rounded-xl border border-cyan-500/40 text-cyan-200 mt-1 relative z-10 shadow-[inset_0_0_15px_rgba(0,0,0,0.7)]">
                             <div className="flex flex-col">
-                                <span className="text-[7.5px] font-black tracking-widest uppercase opacity-80 text-cyan-400">ТЕКУЩАЯ СТАВКА</span>
-                                <span className="text-sm font-black mono-font text-white drop-shadow-sm">{currentStakeVal.toLocaleString('ru-RU')} ₽</span>
+                                <span className="text-[7px] md:text-[7.5px] font-black tracking-widest uppercase opacity-80 text-cyan-400">ТЕКУЩАЯ СТАВКА</span>
+                                <span className="text-xs md:text-sm font-black mono-font text-white drop-shadow-sm">{currentStakeVal.toLocaleString('ru-RU')} ₽</span>
                             </div>
                             <div className="flex flex-col items-end">
-                                <span className="text-[7.5px] font-black tracking-widest uppercase opacity-80 text-cyan-400">МАРТИНГЕЙЛ (v7)</span>
-                                <span className="text-[10px] font-black text-cyan-300 tracking-wider">КОЛЕНО {martingaleIndex + 1}/7</span>
+                                <span className="text-[7px] md:text-[7.5px] font-black tracking-widest uppercase opacity-80 text-cyan-400">МАРТИНГЕЙЛ (v7)</span>
+                                <span className="text-[9px] md:text-[10px] font-black text-cyan-300 tracking-wider">КОЛЕНО {martingaleIndex + 1}/7</span>
                             </div>
                         </div>
 
@@ -2117,7 +2155,7 @@
                             {[...Array(7)].map((_, i) => (
                                 <div 
                                     key={i} 
-                                    className={`h-1.5 rounded transition-all duration-300 ${
+                                    className={`h-1 md:h-1.5 rounded transition-all duration-300 ${
                                         i === martingaleIndex 
                                             ? 'bg-cyan-400 shadow-[0_0_12px_rgba(0,240,255,1)]' 
                                             : i < martingaleIndex 
@@ -2128,40 +2166,40 @@
                             ))}
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-1.5 relative z-10 mt-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                            <div className="flex justify-between bg-slate-800/70 p-1.5 rounded border border-slate-700/60">
+                        <div className="grid grid-cols-2 gap-1.5 relative z-10 mt-1.5 text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                            <div className="flex justify-between bg-slate-800/70 p-1 md:p-1.5 rounded border border-slate-700/60">
                                 <span>СДЕЛОК:</span> <span className="text-slate-200">{stats.trades}</span>
                             </div>
-                            <div className="flex justify-between bg-slate-800/70 p-1.5 rounded border border-slate-700/60">
+                            <div className="flex justify-between bg-slate-800/70 p-1 md:p-1.5 rounded border border-slate-700/60">
                                 <span>WINRATE:</span> <span className="text-slate-200">{stats.winrate}%</span>
                             </div>
-                            <div className="flex justify-between bg-emerald-900/40 p-1.5 rounded border border-emerald-500/40 text-emerald-400 shadow-[inset_0_0_8px_rgba(16,185,129,0.2)]">
+                            <div className="flex justify-between bg-emerald-900/40 p-1 md:p-1.5 rounded border border-emerald-500/40 text-emerald-400 shadow-[inset_0_0_8px_rgba(16,185,129,0.2)]">
                                 <span>WIN:</span> <span className="drop-shadow-[0_0_5px_currentColor]">{stats.wins}</span>
                             </div>
-                            <div className="flex justify-between bg-rose-900/40 p-1.5 rounded border border-rose-500/40 text-rose-400 shadow-[inset_0_0_8px_rgba(225,29,72,0.2)]">
+                            <div className="flex justify-between bg-rose-900/40 p-1 md:p-1.5 rounded border border-rose-500/40 text-rose-400 shadow-[inset_0_0_8px_rgba(225,29,72,0.2)]">
                                 <span>LOSS:</span> <span className="drop-shadow-[0_0_5px_currentColor]">{stats.losses}</span>
                             </div>
                         </div>
 
-                        <div className="flex justify-between items-center text-[9px] text-slate-500 font-bold uppercase mt-2 relative z-10 tracking-widest border-t border-slate-700/60 pt-2">
-                            <span>СТАВКА: {currentStakeVal.toLocaleString('ru-RU')} ₽ | КОЛЕНО: {martingaleIndex + 1}/7</span>
+                        <div className="flex justify-between items-center text-[8px] md:text-[9px] text-slate-500 font-bold uppercase mt-1 md:mt-2 relative z-10 tracking-widest border-t border-slate-700/60 pt-1 md:pt-2">
+                            <span>СТАВКА: {currentStakeVal.toLocaleString('ru-RU')} ₽ | {martingaleIndex + 1}/7</span>
                             <span className="text-slate-400">PAYOUT: {stats.payout * 100}%</span>
                         </div>
                     </div>
 
-                    <div className="glass-card rounded-2xl p-4 flex justify-between items-center shrink-0 relative overflow-hidden shadow-[0_5px_15px_rgba(0,0,0,0.5)] border-cyan-500/30 bg-gradient-to-r from-slate-900 to-cyan-900/25">
+                    <div className="glass-card rounded-2xl p-3 md:p-4 flex justify-between items-center shrink-0 relative overflow-hidden shadow-[0_5px_15px_rgba(0,0,0,0.5)] border-cyan-500/30 bg-gradient-to-r from-slate-900 to-cyan-900/25">
                        <div className="absolute right-0 top-0 bottom-0 w-2/3 bg-[radial-gradient(ellipse_at_right,_rgba(0,240,255,0.15),_transparent)] pointer-events-none"></div>
                        <div className="flex flex-col relative z-10">
-                          <span className="text-[9px] md:text-[10px] text-slate-400 tracking-widest font-bold leading-none uppercase">ЦЕНА ВХОДА</span>
-                          <span className="text-xl md:text-2xl text-slate-100 mt-2 font-black mono-font leading-none drop-shadow-md">
+                          <span className="text-[8px] md:text-[10px] text-slate-400 tracking-widest font-bold leading-none uppercase">ЦЕНА ВХОДА</span>
+                          <span className="text-lg md:text-2xl text-slate-100 mt-1 md:mt-2 font-black mono-font leading-none drop-shadow-md">
                             {signalPhase === 'ACTIVE' && signal && signal.entryPrice ? formatPrice(signal.entryPrice) : '---.-----'}
                           </span>
                        </div>
                        <div className="flex flex-col items-end relative z-10">
-                          <span className="text-[9px] md:text-[10px] text-slate-400 tracking-widest flex items-center gap-1.5 font-bold leading-none uppercase">
-                            <Clock size={12} className="text-cyan-400"/> ЭКСПИРАЦИЯ
+                          <span className="text-[8px] md:text-[10px] text-slate-400 tracking-widest flex items-center gap-1.5 font-bold leading-none uppercase">
+                            <Clock size={10} className="text-cyan-400 md:w-3 md:h-3"/> ЭКСПИРАЦИЯ
                           </span>
-                          <span className="text-3xl md:text-4xl text-cyan-400 mt-1 font-black mono-font tracking-wider leading-none drop-shadow-[0_0_15px_rgba(0,240,255,0.6)]">
+                          <span className="text-2xl md:text-4xl text-cyan-400 mt-1 font-black mono-font tracking-wider leading-none drop-shadow-[0_0_15px_rgba(0,240,255,0.6)]">
                             {signalPhase === 'ACTIVE' && countdown !== null 
                                 ? `${Math.floor(countdown/60).toString().padStart(2,'0')}:${(countdown%60).toString().padStart(2,'0')}` 
                                 : (signalPhase === 'ACTIVE' && signal && signal.exp ? `${signal.exp}:00` : '--:--')}
@@ -2172,18 +2210,18 @@
                     <div className="flex-1 glass-card rounded-2xl overflow-hidden flex flex-col justify-start border-cyan-500/30 shadow-[inset_0_4px_20px_rgba(0,0,0,0.7)] bg-slate-900/80">
                       <div className="bg-slate-800/90 px-3 py-1.5 flex justify-between items-center border-b border-slate-700/80 mb-1 shrink-0">
                           <span className="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1"><BugIcon size={10} className="text-cyan-500"/> SMC ENGINE</span>
-                          <span className="text-[8px] font-bold text-emerald-400 drop-shadow-[0_0_5px_currentColor]">BALANCED MODE Active</span>
+                          <span className="text-[7px] md:text-[8px] font-bold text-emerald-400 drop-shadow-[0_0_5px_currentColor]">BALANCED MODE</span>
                       </div>
                       <div className="px-3 pb-1 shrink-0 grid grid-cols-2 gap-1 text-[8px] md:text-[9px] mono-font font-semibold text-slate-400 border-b border-slate-700/50 mb-1">
-                          <span className="text-cyan-500">L.C: {new Date(lastClosedCandleTimeUiRef.current * 1000).toLocaleTimeString('ru-RU')}</span>
-                          <span className="text-rose-500">REJECTS: {pureDiag.rejected}</span>
+                          <span className="text-cyan-500 truncate">L.C: {new Date(lastClosedCandleTimeUiRef.current * 1000).toLocaleTimeString('ru-RU')}</span>
+                          <span className="text-rose-500">REJ: {pureDiag.rejected}</span>
                       </div>
-                      <div className="px-3 pb-2 pt-1 shrink-0 text-[8px] mono-font text-rose-500 font-bold border-b border-slate-700/50">
+                      <div className="px-3 pb-2 pt-1 shrink-0 text-[7px] md:text-[8px] mono-font text-rose-500 font-bold border-b border-slate-700/50 truncate">
                           LAST REJECT: {pureDiag.lastReason}
                       </div>
-                      <div ref={logsContainerRef} className="px-4 pb-4 flex flex-col gap-2 overflow-y-auto mt-2">
+                      <div ref={logsContainerRef} className="px-2 md:px-4 pb-2 md:pb-4 flex flex-col gap-1.5 overflow-y-auto mt-1 md:mt-2">
                           {logs.map((l, i) => (
-                            <div key={i} className={`text-[9px] md:text-[11px] leading-tight tracking-widest font-semibold mono-font ${i === 0 ? 'text-slate-100 font-bold border-l-4 border-cyan-400 pl-2 bg-cyan-900/40 py-1 rounded-r shadow-sm' : 'text-slate-500 pl-2'}`}>
+                            <div key={i} className={`text-[8px] md:text-[11px] leading-tight tracking-widest font-semibold mono-font ${i === 0 ? 'text-slate-100 font-bold border-l-4 border-cyan-400 pl-2 bg-cyan-900/40 py-1 rounded-r shadow-sm' : 'text-slate-500 pl-2'}`}>
                               {l}
                             </div>
                           ))}
@@ -2196,20 +2234,20 @@
 
               {/* FOOTER METRICS */}
               <footer className="h-auto md:h-12 py-2 md:py-0 border-t border-cyan-500/30 flex flex-row items-center justify-between px-4 md:px-6 shrink-0 glass-panel z-40">
-                <div className="flex items-center gap-2 text-slate-400 text-[10px] md:text-xs tracking-widest font-bold uppercase oswald-font">
+                <div className="flex items-center gap-2 text-slate-400 text-[9px] md:text-xs tracking-widest font-bold uppercase oswald-font">
                   <Shield size={14} className="text-cyan-500 hidden sm:block drop-shadow-[0_0_5px_rgba(0,240,255,0.8)]" /> 
                   <span className="hidden sm:inline">256-BIT ШИФРОВАНИЕ СИСТЕМЫ • СОЕДИНЕНИЕ БЕЗОПАСНО</span>
                   <span className="inline sm:hidden">ЗАЩИТА АКТИВНА</span>
                 </div>
                 
                 <div className="flex items-center gap-3 md:gap-4 oswald-font">
-                  <div className="silver-badge flex flex-col items-center justify-center px-2.5 py-1 rounded-lg">
-                      <span className="text-[6px] md:text-[7px] text-slate-400 font-black tracking-[0.2em] uppercase leading-none mb-0.5">PRO MAX CREATOR</span>
-                      <span className="text-[10px] md:text-[11px] font-black tracking-widest silver-text leading-none">SLAVA GORDEEV</span>
+                  <div className="silver-badge flex flex-col items-center justify-center px-2 py-0.5 md:px-2.5 md:py-1 rounded-lg">
+                      <span className="text-[5px] md:text-[7px] text-slate-400 font-black tracking-[0.2em] uppercase leading-none mb-0.5">PRO MAX CREATOR</span>
+                      <span className="text-[8px] md:text-[11px] font-black tracking-widest silver-text leading-none">SLAVA GORDEEV</span>
                   </div>
                   <span className="text-slate-600 text-[10px] hidden md:block">|</span>
                   <span className="text-slate-400 text-[10px] md:text-xs tracking-widest font-bold hidden sm:block uppercase">ЛИЦЕНЗИЯ:</span>
-                  <span className="text-slate-900 text-[10px] md:text-xs px-3 py-1.5 rounded-lg bg-cyan-400 tracking-widest font-black text-center shadow-[0_0_15px_rgba(0,240,255,0.6)] border border-cyan-300">
+                  <span className="text-slate-900 text-[8px] md:text-xs px-2 py-1 md:px-3 md:py-1.5 rounded-lg bg-cyan-400 tracking-widest font-black text-center shadow-[0_0_15px_rgba(0,240,255,0.6)] border border-cyan-300">
                     КРИПТО ИНВЕСТ PRO MAX
                   </span>
                 </div>
@@ -2223,6 +2261,3 @@
     </script>
 </body>
 </html>
-
-
-```
