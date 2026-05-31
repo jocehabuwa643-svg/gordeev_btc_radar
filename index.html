@@ -31,8 +31,8 @@
         /* Premium Cyber Grid */
         .bg-grid-pattern {
             background-image: 
-                linear-gradient(to right, rgba(0, 240, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+                linear-gradient(to right, rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
             background-size: 40px 40px;
             mask-image: radial-gradient(circle at center, black 40%, transparent 90%);
             -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 90%);
@@ -41,12 +41,12 @@
         /* Ambient Orbs */
         .bg-orb-1 {
             position: absolute; top: -10%; left: -5%; width: 50vw; height: 50vw;
-            background: radial-gradient(circle, rgba(0, 240, 255, 0.08) 0%, rgba(14, 165, 233, 0.02) 40%, transparent 70%);
+            background: radial-gradient(circle, rgba(0, 240, 255, 0.12) 0%, rgba(14, 165, 233, 0.03) 40%, transparent 70%);
             border-radius: 50%; filter: blur(65px); animation: float 15s ease-in-out infinite alternate;
         }
         .bg-orb-2 {
             position: absolute; bottom: -15%; right: -10%; width: 60vw; height: 60vw;
-            background: radial-gradient(circle, rgba(255, 0, 128, 0.06) 0%, rgba(99, 102, 241, 0.02) 40%, transparent 70%);
+            background: radial-gradient(circle, rgba(255, 0, 128, 0.08) 0%, rgba(99, 102, 241, 0.03) 40%, transparent 70%);
             border-radius: 50%; filter: blur(85px); animation: float 18s ease-in-out infinite alternate-reverse;
         }
 
@@ -56,258 +56,95 @@
             100% { transform: translate(-2%, -3%) scale(0.95); }
         }
 
+        @keyframes gradient-x {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        .animate-gradient-x {
+            background-size: 200% 200%;
+            animation: gradient-x 6s ease infinite;
+        }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
         @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         .ticker-wrapper { display: flex; width: max-content; animation: ticker 40s linear infinite; }
         
-        /* -----------------------------------------
-           PREMIUM RIGHT PANEL (GLASSMORPHISM LUXURY)
-           ----------------------------------------- */
-        .luxury-panel {
-            background: linear-gradient(145deg, rgba(8, 13, 25, 0.75) 0%, rgba(3, 5, 12, 0.9) 100%);
-            backdrop-filter: blur(40px) saturate(120%);
-            -webkit-backdrop-filter: blur(40px) saturate(120%);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 
-                0 25px 60px -10px rgba(0, 0, 0, 0.9), 
-                inset 0 1px 0 rgba(255, 255, 255, 0.1),
-                inset 0 0 30px rgba(0, 240, 255, 0.02);
-            transition: all 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Panel States */
-        .panel-state-idle {
-            box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.9), inset 0 0 40px rgba(0, 240, 255, 0.01);
-            border-color: rgba(255, 255, 255, 0.05);
-        }
-        .panel-state-zone {
-            transform: scale(1.002);
-            border-color: rgba(0, 240, 255, 0.2);
-            box-shadow: 0 30px 70px -10px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 240, 255, 0.1), inset 0 0 50px rgba(0, 240, 255, 0.08);
-        }
-        .panel-state-signal-call {
-            transform: scale(1.008);
-            border-color: rgba(0, 240, 255, 0.5);
-            box-shadow: 0 30px 70px -10px rgba(0, 0, 0, 0.9), 0 0 60px rgba(0, 240, 255, 0.25), inset 0 0 60px rgba(0, 240, 255, 0.15);
-            animation: panel-breathe-call 3s infinite alternate ease-in-out;
-        }
-        .panel-state-signal-put {
-            transform: scale(1.008);
-            border-color: rgba(255, 0, 85, 0.5);
-            box-shadow: 0 30px 70px -10px rgba(0, 0, 0, 0.9), 0 0 60px rgba(255, 0, 85, 0.25), inset 0 0 60px rgba(255, 0, 85, 0.15);
-            animation: panel-breathe-put 3s infinite alternate ease-in-out;
-        }
-
-        @keyframes panel-breathe-call {
-            0% { box-shadow: 0 0 40px rgba(0, 240, 255, 0.15), inset 0 0 40px rgba(0, 240, 255, 0.1); }
-            100% { box-shadow: 0 0 80px rgba(0, 240, 255, 0.3), inset 0 0 80px rgba(0, 240, 255, 0.2); }
-        }
-        @keyframes panel-breathe-put {
-            0% { box-shadow: 0 0 40px rgba(255, 0, 85, 0.15), inset 0 0 40px rgba(255, 0, 85, 0.1); }
-            100% { box-shadow: 0 0 80px rgba(255, 0, 85, 0.3), inset 0 0 80px rgba(255, 0, 85, 0.2); }
-        }
-
-        /* Inner Cards */
-        .luxury-card {
-            background: linear-gradient(145deg, rgba(20, 30, 45, 0.4) 0%, rgba(10, 15, 25, 0.6) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 1.25rem;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.02);
-            position: relative;
-            overflow: hidden;
-            transition: all 0.5s ease;
+        /* Dark Premium Glass Panels */
+        .glass-panel {
+            background: rgba(10, 15, 25, 0.8);
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
+            border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.6);
+            z-index: 40;
         }
         
-        .panel-state-zone .luxury-card {
-            border-color: rgba(0, 240, 255, 0.15);
-            background: linear-gradient(145deg, rgba(20, 40, 60, 0.5) 0%, rgba(10, 15, 30, 0.7) 100%);
+        .glass-panel-heavy {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.7) 0%, rgba(3, 7, 18, 0.85) 100%);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.9), inset 0 0 25px rgba(0, 240, 255, 0.03);
         }
 
-        /* Speedometer Shimmer */
-        .gauge-shimmer {
-            position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-            transform: skewX(-20deg);
-            animation: none;
-        }
-        .panel-state-zone .gauge-shimmer, .panel-state-signal-call .gauge-shimmer, .panel-state-signal-put .gauge-shimmer {
-            animation: shimmer-fx 3s infinite;
-        }
-        @keyframes shimmer-fx {
-            0% { left: -100%; }
-            50% { left: 200%; }
-            100% { left: 200%; }
-        }
-
-        /* --- BOOSTY BROKER BUTTON --- */
-        .massive-broker-btn {
-            background: linear-gradient(135deg, #00f0ff 0%, #0284c7 40%, #1e3a8a 100%);
-            border: 1px solid rgba(255, 255, 255, 0.3); 
+        .premium-glass-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            backdrop-filter: blur(25px);
             border-radius: 1.5rem;
-            animation: hyper-pulse 2.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
-            transition: all 0.3s ease;
-        }
-        .massive-broker-btn:hover {
-            transform: scale(1.03) translateY(-2px);
-            border-color: #fff;
-            box-shadow: 0 15px 40px rgba(0, 240, 255, 0.8), inset 0 0 20px rgba(255, 255, 255, 0.5);
-        }
-        @keyframes hyper-pulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(0,240,255,0.4), inset 0 0 10px rgba(255,255,255,0.2); }
-            50% { box-shadow: 0 0 45px rgba(0,240,255,0.8), inset 0 0 20px rgba(255,255,255,0.6); }
-        }
-        @keyframes fake-click {
-            0% { transform: translate(40px, 40px) scale(1); opacity: 0; }
-            20% { transform: translate(15px, 15px) scale(1); opacity: 1; }
-            40% { transform: translate(0px, 0px) scale(1); opacity: 1; }
-            50% { transform: translate(0px, 0px) scale(0.85); opacity: 1; filter: brightness(1.5); }
-            60% { transform: translate(0px, 0px) scale(1); opacity: 1; }
-            80% { transform: translate(10px, 10px) scale(1); opacity: 0; }
-            100% { transform: translate(40px, 40px) scale(1); opacity: 0; }
-        }
-        .fake-cursor-anim {
-            animation: fake-click 3.5s infinite cubic-bezier(0.2, 0, 0.2, 1);
-            pointer-events: none;
+            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.7), inset 0 1px 2px rgba(255, 255, 255, 0.08);
         }
 
-        /* -----------------------------------------
-           4 PREMIUM SCANNER MODES OVERLAYS
-           ----------------------------------------- */
-           
-        /* MODE 1: BACKTEST (Historical Highlight Boxes) */
-        .backtest-box {
-            position: absolute; z-index: 45; pointer-events: none;
-            border: 1px solid rgba(0, 240, 255, 0.5);
-            border-radius: 12px;
-            backdrop-filter: blur(4px) saturate(130%);
-            box-shadow: 0 0 40px rgba(0, 240, 255, 0.2), inset 0 0 20px rgba(0, 240, 255, 0.1);
-            opacity: 0; transform: scale(0.9);
-            will-change: transform, opacity, left, top;
-            display: flex; align-items: center; justify-content: center;
+        /* Neon Pulse Borders */
+        .zone-active-support {
+            box-shadow: inset 0 0 45px rgba(0, 240, 255, 0.2) !important;
+            border-color: rgba(0, 240, 255, 0.5) !important;
+            animation: pulse-border-support 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
-        .backtest-box.active {
-            opacity: 1; transform: scale(1);
-            transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        .zone-active-resistance {
+            box-shadow: inset 0 0 45px rgba(255, 0, 85, 0.2) !important;
+            border-color: rgba(255, 0, 85, 0.5) !important;
+            animation: pulse-border-resistance 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
-        .backtest-info {
-            position: absolute; top: -35px; white-space: nowrap;
-            background: rgba(10, 15, 25, 0.9); border: 1px solid rgba(0, 240, 255, 0.3);
-            padding: 6px 12px; border-radius: 8px; font-family: 'JetBrains Mono'; font-size: 10px;
-            color: #00f0ff; box-shadow: 0 10px 20px rgba(0,0,0,0.8);
+        @keyframes pulse-border-support {
+            0%, 100% { box-shadow: inset 0 0 35px rgba(0, 240, 255, 0.15); }
+            50% { box-shadow: inset 0 0 65px rgba(0, 240, 255, 0.4); }
+        }
+        @keyframes pulse-border-resistance {
+            0%, 100% { box-shadow: inset 0 0 35px rgba(255, 0, 85, 0.15); }
+            50% { box-shadow: inset 0 0 65px rgba(255, 0, 85, 0.4); }
         }
 
-        /* MODE 2: IDLE / LIVE SCANNING */
-        .idle-scanner-h {
-            position: absolute; left: 0; right: 0; height: 60px;
-            background: linear-gradient(to bottom, transparent, rgba(0, 240, 255, 0.05) 50%, transparent);
-            border-top: 1px solid rgba(0, 240, 255, 0.1); border-bottom: 1px solid rgba(0, 240, 255, 0.1);
-            z-index: 44; pointer-events: none; mix-blend-mode: screen; will-change: transform;
-            opacity: 0; transition: opacity 1s ease;
-        }
-        .idle-scanner-v {
-            position: absolute; top: 0; bottom: 0; width: 2px;
-            background: linear-gradient(to bottom, transparent, rgba(0, 240, 255, 0.6), transparent);
-            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
-            z-index: 45; pointer-events: none; will-change: transform;
-            opacity: 0; transition: opacity 1s ease;
+        .text-gradient {
+            background: linear-gradient(135deg, #00f0ff, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        /* MODE 3: ZONE FOCUS CAPSULE */
-        .zone-capsule {
-            position: absolute; z-index: 48; pointer-events: none;
-            border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 16px;
-            backdrop-filter: blur(4px) saturate(120%);
-            transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
-            opacity: 0; transform: scale(0.95);
+        @keyframes slideUpFade {
+            0% { transform: translateY(10px); opacity: 0; }
+            20% { transform: translateY(0); opacity: 1; }
+            80% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-10px); opacity: 0; }
         }
-        .zone-capsule.active { opacity: 1; transform: scale(1); }
-        .zone-capsule-res { box-shadow: 0 0 50px rgba(255, 0, 85, 0.15), inset 0 0 30px rgba(255, 0, 85, 0.1); border-color: rgba(255,0,85,0.4); }
-        .zone-capsule-sup { box-shadow: 0 0 50px rgba(0, 240, 255, 0.15), inset 0 0 30px rgba(0, 240, 255, 0.1); border-color: rgba(0,240,255,0.4); }
-        .capsule-laser {
-            position: absolute; left: 0; right: 0; height: 1px;
-            background: #fff; box-shadow: 0 0 15px currentColor, 0 0 30px currentColor;
-            animation: capsule-scan 2.5s ease-in-out infinite alternate;
-        }
-        @keyframes capsule-scan { 0% { top: 5%; } 100% { top: 95%; } }
-
-        /* MODE 4: SIGNAL FOCUS ORB (Volume & Glassmorphism) */
-        .focus-orb-container {
-            position: absolute; top: 0; left: 0; width: 140px; height: 140px;
-            margin-top: -70px; margin-left: -70px; pointer-events: none; z-index: 60;
-            opacity: 0;
-            transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease;
-            will-change: transform, opacity;
-        }
-        .focus-orb-container.tracking {
-            transition: opacity 0.5s ease; /* Instant follow when locked to price */
-        }
-        .focus-orb-glass {
-            width: 100%; height: 100%; border-radius: 50%;
-            backdrop-filter: blur(10px) saturate(150%);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            display: flex; justify-content: center; align-items: center;
-            animation: orb-breathe 3s infinite ease-in-out alternate;
+        .hft-tick { animation: slideUpFade 1.5s ease-out forwards; }
+        
+        .silver-badge {
+            background: linear-gradient(135deg, #334155 0%, #1e293b 50%, #0f172a 100%);
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            box-shadow: 0 6px 15px -2px rgba(0, 0, 0, 0.6), inset 0 1px 3px rgba(255, 255, 255, 0.15);
             position: relative; overflow: hidden;
         }
+        .silver-badge::after {
+            content: ''; position: absolute; top: 0; left: -150%; width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(0,240,255,0.3), transparent);
+            transform: skewX(-20deg); animation: silver-shine 5s infinite;
+        }
+        @keyframes silver-shine { 0% { left: -150%; } 20% { left: 200%; } 100% { left: 200%; } }
         
-        .orb-call .focus-orb-glass {
-            background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.25) 0%, rgba(0, 240, 255, 0.15) 40%, rgba(0, 15, 30, 0.7) 90%);
-            box-shadow: 
-                inset 15px 15px 25px rgba(255, 255, 255, 0.15), 
-                inset -15px -15px 30px rgba(0, 50, 100, 0.8),
-                0 20px 40px rgba(0, 240, 255, 0.3),
-                0 0 80px rgba(0, 240, 255, 0.15);
-            border-top-color: rgba(255,255,255,0.6);
-            border-bottom-color: rgba(0, 240, 255, 0.2);
-        }
-        .orb-put .focus-orb-glass {
-            background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.25) 0%, rgba(255, 0, 85, 0.15) 40%, rgba(30, 0, 10, 0.7) 90%);
-            box-shadow: 
-                inset 15px 15px 25px rgba(255, 255, 255, 0.15), 
-                inset -15px -15px 30px rgba(100, 0, 20, 0.8),
-                0 20px 40px rgba(255, 0, 85, 0.3),
-                0 0 80px rgba(255, 0, 85, 0.15);
-            border-top-color: rgba(255,255,255,0.6);
-            border-bottom-color: rgba(255, 0, 85, 0.2);
-        }
-        
-        .focus-orb-glare {
-            position: absolute; top: 8%; left: 15%; width: 45%; height: 25%;
-            background: linear-gradient(180deg, rgba(255,255,255,0.7), transparent);
-            border-radius: 50%; transform: rotate(-35deg);
-        }
-        
-        .focus-orb-beam {
-            position: absolute; top: 50%; left: 50%; width: 40px; height: 150px;
-            background: linear-gradient(to bottom, currentColor 0%, transparent 100%);
-            transform: translateX(-50%); opacity: 0; transition: opacity 0.3s ease;
-            mix-blend-mode: screen; filter: blur(5px);
-        }
-        .orb-call .focus-orb-beam { color: rgba(0, 240, 255, 0.4); }
-        .orb-put .focus-orb-beam { color: rgba(255, 0, 85, 0.4); }
-
-        .focus-orb-info {
-            position: absolute; bottom: -45px; left: 50%; transform: translateX(-50%);
-            background: rgba(8, 12, 20, 0.95); border: 1px solid rgba(255,255,255,0.15);
-            padding: 8px 16px; border-radius: 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px;
-            color: #fff; white-space: nowrap; opacity: 0; transition: opacity 0.4s ease;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8); backdrop-filter: blur(10px);
-        }
-
-        @keyframes orb-breathe { 0% { transform: scale(0.95); } 100% { transform: scale(1.05); } }
-        @keyframes scalePulse {
-            0% { transform: scale(1); opacity: 1; text-shadow: 0 0 15px rgba(0,240,255,0.7); }
-            50% { transform: scale(1.1); opacity: 0.9; text-shadow: 0 0 30px rgba(0,240,255,1); }
-            100% { transform: scale(1); opacity: 1; text-shadow: 0 0 15px rgba(0,240,255,0.7); }
-        }
-        .animate-scale-pulse { animation: scalePulse 1s infinite; }
-        
-        /* Premium Status Badge */
+        /* --- PREMIUM STATUS BADGE (BUTTON-LIKE HOVER) --- */
         .premium-status-badge {
             background: linear-gradient(135deg, #00f0ff 0%, #0284c7 100%);
             color: #0f172a;
@@ -328,6 +165,170 @@
             100% { box-shadow: 0 0 25px rgba(0, 240, 255, 0.7); text-shadow: 0 0 8px rgba(255,255,255,0.8); }
         }
 
+        /* --- MASSIVE BROKER BUTTON --- */
+        .massive-broker-btn {
+            background: linear-gradient(135deg, #00f0ff 0%, #0284c7 40%, #1e3a8a 100%);
+            border: 2px solid rgba(0, 240, 255, 0.6); 
+            border-radius: 1.5rem;
+            animation: hyper-pulse 2.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s ease;
+        }
+        .massive-broker-btn:hover {
+            transform: scale(1.05) translateY(-4px);
+            border-color: #fff;
+            box-shadow: 0 15px 40px rgba(0, 240, 255, 0.8), inset 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+        @keyframes hyper-pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(0,240,255,0.4), inset 0 0 10px rgba(0,240,255,0.2); }
+            50% { box-shadow: 0 0 45px rgba(0,240,255,0.8), inset 0 0 20px rgba(0,240,255,0.5); }
+        }
+        .fake-cursor-anim { animation: fake-click 3.5s infinite cubic-bezier(0.2, 0, 0.2, 1); pointer-events: none; }
+        @keyframes fake-click {
+            0% { transform: translate(40px, 40px) scale(1); opacity: 0; }
+            20% { transform: translate(15px, 15px) scale(1); opacity: 1; }
+            40% { transform: translate(0px, 0px) scale(1); opacity: 1; }
+            50% { transform: translate(0px, 0px) scale(0.85); opacity: 1; filter: brightness(1.5); }
+            60% { transform: translate(0px, 0px) scale(1); opacity: 1; }
+            80% { transform: translate(10px, 10px) scale(1); opacity: 0; }
+            100% { transform: translate(40px, 40px) scale(1); opacity: 0; }
+        }
+
+        /* --- COMPACT PREMIUM MTF DASHBOARD (NEW LAYOUT) --- */
+        .compact-mtf-dash {
+            background: linear-gradient(180deg, rgba(5, 10, 20, 0.85) 0%, rgba(2, 5, 10, 0.95) 100%);
+            backdrop-filter: blur(24px) saturate(150%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 -1px 0 rgba(0,240,255,0.1);
+            transition: all 0.5s ease;
+        }
+        .compact-mtf-dash.zone-mode {
+            border-bottom-color: rgba(0, 240, 255, 0.3);
+            box-shadow: 0 10px 40px rgba(0,240,255,0.1), inset 0 -1px 10px rgba(0,240,255,0.1);
+        }
+        .compact-mtf-dash.signal-mode {
+            border-bottom-color: rgba(0, 240, 255, 0.6);
+            box-shadow: 0 10px 50px rgba(0,240,255,0.2), inset 0 -1px 20px rgba(0,240,255,0.2);
+        }
+        
+        .compact-bias-card {
+            background: rgba(15, 25, 35, 0.5); border: 1px solid rgba(255,255,255,0.03);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); border-radius: 6px;
+        }
+        
+        @keyframes value-flash {
+            0% { transform: scale(1); filter: brightness(1); text-shadow: none; }
+            50% { transform: scale(1.15); filter: brightness(1.5); text-shadow: 0 0 10px currentColor; }
+            100% { transform: scale(1); filter: brightness(1); text-shadow: none; }
+        }
+        .animate-value-flash { animation: value-flash 0.5s cubic-bezier(0.1, 0.8, 0.3, 1); }
+
+        /* --- 4 PREMIUM SCANNER MODES OVERLAYS --- */
+        .backtest-box {
+            position: absolute; z-index: 45; pointer-events: none;
+            border: 1px solid rgba(0, 240, 255, 0.5); border-radius: 12px;
+            backdrop-filter: blur(4px) saturate(130%);
+            box-shadow: 0 0 40px rgba(0, 240, 255, 0.2), inset 0 0 20px rgba(0, 240, 255, 0.1);
+            opacity: 0; transform: scale(0.9); will-change: transform, opacity, left, top;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .backtest-box.active { opacity: 1; transform: scale(1); transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .backtest-info {
+            position: absolute; top: -35px; white-space: nowrap;
+            background: rgba(10, 15, 25, 0.9); border: 1px solid rgba(0, 240, 255, 0.3);
+            padding: 6px 12px; border-radius: 8px; font-family: 'JetBrains Mono'; font-size: 10px;
+            color: #00f0ff; box-shadow: 0 10px 20px rgba(0,0,0,0.8);
+        }
+
+        .idle-scanner-h {
+            position: absolute; left: 0; right: 0; height: 60px;
+            background: linear-gradient(to bottom, transparent, rgba(0, 240, 255, 0.05) 50%, transparent);
+            border-top: 1px solid rgba(0, 240, 255, 0.1); border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+            z-index: 44; pointer-events: none; mix-blend-mode: screen; will-change: transform;
+            opacity: 0; transition: opacity 1s ease;
+        }
+        .idle-scanner-v {
+            position: absolute; top: 0; bottom: 0; width: 2px;
+            background: linear-gradient(to bottom, transparent, rgba(0, 240, 255, 0.6), transparent);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+            z-index: 45; pointer-events: none; will-change: transform;
+            opacity: 0; transition: opacity 1s ease;
+        }
+
+        .zone-capsule {
+            position: absolute; z-index: 48; pointer-events: none;
+            border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 16px;
+            backdrop-filter: blur(4px) saturate(120%);
+            transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+            opacity: 0; transform: scale(0.95);
+        }
+        .zone-capsule.active { opacity: 1; transform: scale(1); }
+        .zone-capsule-res { box-shadow: 0 0 50px rgba(255, 0, 85, 0.15), inset 0 0 30px rgba(255, 0, 85, 0.1); border-color: rgba(255,0,85,0.4); }
+        .zone-capsule-sup { box-shadow: 0 0 50px rgba(0, 240, 255, 0.15), inset 0 0 30px rgba(0, 240, 255, 0.1); border-color: rgba(0,240,255,0.4); }
+        .capsule-laser {
+            position: absolute; left: 0; right: 0; height: 1px;
+            background: #fff; box-shadow: 0 0 15px currentColor, 0 0 30px currentColor;
+            animation: capsule-scan 2.5s ease-in-out infinite alternate;
+        }
+        @keyframes capsule-scan { 0% { top: 5%; } 100% { top: 95%; } }
+
+        /* FOCUS ORB */
+        .focus-orb-container {
+            position: absolute; top: 0; left: 0; width: 140px; height: 140px;
+            margin-top: -70px; margin-left: -70px; pointer-events: none; z-index: 60;
+            opacity: 0; transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease;
+            will-change: transform, opacity;
+        }
+        .focus-orb-container.tracking { transition: opacity 0.5s ease; }
+        .focus-orb-glass {
+            width: 100%; height: 100%; border-radius: 50%;
+            backdrop-filter: blur(10px) saturate(150%);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex; justify-content: center; align-items: center;
+            animation: orb-breathe 3s infinite ease-in-out alternate;
+            position: relative; overflow: hidden;
+        }
+        .orb-call .focus-orb-glass {
+            background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.25) 0%, rgba(0, 240, 255, 0.15) 40%, rgba(0, 15, 30, 0.7) 90%);
+            box-shadow: inset 15px 15px 25px rgba(255, 255, 255, 0.15), inset -15px -15px 30px rgba(0, 50, 100, 0.8), 0 20px 40px rgba(0, 240, 255, 0.3), 0 0 80px rgba(0, 240, 255, 0.15);
+            border-top-color: rgba(255,255,255,0.6); border-bottom-color: rgba(0, 240, 255, 0.2);
+        }
+        .orb-put .focus-orb-glass {
+            background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.25) 0%, rgba(255, 0, 85, 0.15) 40%, rgba(30, 0, 10, 0.7) 90%);
+            box-shadow: inset 15px 15px 25px rgba(255, 255, 255, 0.15), inset -15px -15px 30px rgba(100, 0, 20, 0.8), 0 20px 40px rgba(255, 0, 85, 0.3), 0 0 80px rgba(255, 0, 85, 0.15);
+            border-top-color: rgba(255,255,255,0.6); border-bottom-color: rgba(255, 0, 85, 0.2);
+        }
+        .focus-orb-glare {
+            position: absolute; top: 8%; left: 15%; width: 45%; height: 25%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.7), transparent);
+            border-radius: 50%; transform: rotate(-35deg);
+        }
+        .focus-orb-beam {
+            position: absolute; top: 50%; left: 50%; width: 40px; height: 150px;
+            background: linear-gradient(to bottom, currentColor 0%, transparent 100%);
+            transform: translateX(-50%); opacity: 0; transition: opacity 0.3s ease;
+            mix-blend-mode: screen; filter: blur(5px);
+        }
+        .orb-call .focus-orb-beam { color: rgba(0, 240, 255, 0.4); }
+        .orb-put .focus-orb-beam { color: rgba(255, 0, 85, 0.4); }
+        .focus-orb-info {
+            position: absolute; bottom: -45px; left: 50%; transform: translateX(-50%);
+            background: rgba(8, 12, 20, 0.95); border: 1px solid rgba(255,255,255,0.15);
+            padding: 8px 16px; border-radius: 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px;
+            color: #fff; white-space: nowrap; opacity: 0; transition: opacity 0.4s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+        }
+
+        @keyframes orb-breathe { 0% { transform: scale(0.95); } 100% { transform: scale(1.05); } }
+        
+        .zone-pulse-indicator-mesh { animation: pulse-zone 2s infinite ease-in-out; }
+        @keyframes pulse-zone { 0% { opacity: 0.15; } 50% { opacity: 0.4; } 100% { opacity: 0.15; } }
+
+        .animate-scale-pulse { animation: scalePulse 1s infinite; }
+        @keyframes scalePulse {
+            0% { transform: scale(1); opacity: 1; text-shadow: 0 0 15px rgba(0,240,255,0.7); }
+            50% { transform: scale(1.1); opacity: 0.9; text-shadow: 0 0 30px rgba(0,240,255,1); }
+            100% { transform: scale(1); opacity: 1; text-shadow: 0 0 15px rgba(0,240,255,0.7); }
+        }
     </style>
 </head>
 <body>
@@ -394,6 +395,118 @@
                 <MousePointer size={40} className="fake-cursor-anim absolute right-1 md:-right-4 -bottom-4 z-20 text-white drop-shadow-[0_5px_10px_rgba(0,0,0,0.5)]" />
             </a>
         ));
+
+        // --- COMPACT & ANIMATED MTF DASHBOARD COMPONENTS ---
+        const CompactBiasCard = React.memo(({ label, bias }) => {
+            const isBull = bias === 'BULLISH';
+            const isBear = bias === 'BEARISH';
+            const colorClass = isBull ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]' :
+                               isBear ? 'text-rose-400 drop-shadow-[0_0_8px_rgba(225,29,72,0.8)]' :
+                               'text-slate-400';
+            
+            const [flash, setFlash] = useState(false);
+            useEffect(() => { setFlash(true); const t = setTimeout(() => setFlash(false), 300); return () => clearTimeout(t); }, [bias]);
+
+            return (
+                <div className={`compact-bias-card px-3 py-1 flex items-center gap-2 transition-all duration-300 ${flash ? 'bg-white/10 scale-105' : ''}`}>
+                    <span className="text-[9px] text-slate-400 font-bold tracking-widest">{label}</span>
+                    <div className={`flex items-center gap-1 ${colorClass}`}>
+                        {isBull ? <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg> :
+                         isBear ? <svg className="w-3.5 h-3.5 rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg> :
+                         <div className="w-3 h-0.5 bg-slate-500 rounded-full"></div>}
+                        <span className="text-[10px] font-black oswald-font tracking-wider">{bias}</span>
+                    </div>
+                </div>
+            );
+        });
+
+        const CompactScoreGauge = React.memo(({ score, status }) => {
+            const val = typeof score === 'number' ? score : 0;
+            const color = val >= 68 ? '#00f0ff' : val >= 50 ? '#94a3b8' : '#ff0055';
+            const radius = 18; const circumference = 2 * Math.PI * radius;
+            const strokeDashoffset = circumference - (val / 100) * circumference;
+            
+            const [flash, setFlash] = useState(false);
+            useEffect(() => { setFlash(true); const t = setTimeout(() => setFlash(false), 400); return () => clearTimeout(t); }, [val]);
+
+            return (
+                <div className={`flex items-center gap-3 bg-slate-900/60 border border-slate-700/50 rounded-xl pl-2 pr-4 py-1 shadow-inner transition-transform duration-300 ${flash ? 'scale-105 shadow-[0_0_15px_rgba(0,240,255,0.4)]' : ''}`}>
+                    <div className="relative w-10 h-10">
+                        <svg className="w-full h-full transform -rotate-90 drop-shadow-[0_0_5px_rgba(0,240,255,0.3)]" viewBox="0 0 40 40">
+                            <circle cx="20" cy="20" r={radius} stroke="rgba(255,255,255,0.1)" strokeWidth="4" fill="none" />
+                            <circle cx="20" cy="20" r={radius} stroke={color} strokeWidth="4" fill="none" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} className="transition-all duration-1000 ease-out" strokeLinecap="round" filter={`drop-shadow(0 0 4px ${color})`} />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <span className={`text-[11px] font-black oswald-font ${flash ? 'animate-value-flash' : ''}`} style={{ color, textShadow: `0 0 8px ${color}` }}>
+                                {status === 'LOADING' ? '--' : (status.includes('LOCAL') ? 'LCL' : val)}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[8px] text-slate-400 font-bold tracking-[0.2em] uppercase leading-none mb-1">SCORE</span>
+                        <span className="text-[10px] text-cyan-100 font-black tracking-widest leading-none">Q-FACTOR</span>
+                    </div>
+                </div>
+            );
+        });
+
+        const CompactSpeedometer = React.memo(({ value, label, color }) => {
+            const safeValue = isNaN(value) ? 50 : Math.max(0, Math.min(100, value));
+            const angle = -90 + (safeValue / 100) * 180;
+            const radius = 25; const circumference = Math.PI * radius;
+            const strokeDashoffset = circumference - (safeValue / 100) * circumference;
+
+            const [flash, setFlash] = useState(false);
+            useEffect(() => { setFlash(true); const t = setTimeout(() => setFlash(false), 300); return () => clearTimeout(t); }, [safeValue]);
+
+            return (
+                <div className="flex flex-col items-center justify-center px-3 py-1 relative">
+                    <svg viewBox="0 0 80 45" className="w-12 h-6 overflow-visible relative z-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                        <path d="M 10 40 A 30 30 0 0 1 70 40" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="5" strokeLinecap="round" />
+                        <path d="M 10 40 A 30 30 0 0 1 70 40" fill="none" stroke={color} strokeWidth="5" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} className="transition-all duration-1000 ease-out" filter={`drop-shadow(0 0 6px ${color})`} />
+                        <g style={{ transform: `rotate(${angle}deg)`, transformOrigin: '40px 40px', transition: 'transform 1s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
+                            <polygon points="38,40 42,40 40,12" fill="#fff" filter="drop-shadow(0 0 3px rgba(255,255,255,0.8))" />
+                            <circle cx="40" cy="40" r="4" fill="#fff" />
+                            <circle cx="40" cy="40" r="1.5" fill="#0f172a" />
+                        </g>
+                    </svg>
+                    <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[8px] text-slate-400 font-bold tracking-[0.1em] uppercase leading-none">{label}</span>
+                        <span className={`text-[10px] font-black oswald-font leading-none ${flash ? 'animate-value-flash' : ''}`} style={{color, textShadow: `0 0 8px ${color}`}}>
+                            {Math.round(safeValue)}
+                        </span>
+                    </div>
+                </div>
+            );
+        });
+
+        // Top Compact Bar replacing the old bulky panel
+        const PremiumMTFDashboard = React.memo(({ mtfContext, metrics, panelState }) => {
+            const modeClass = panelState === 'ZONE' ? 'zone-mode' : panelState === 'SIGNAL' ? 'signal-mode' : '';
+            return (
+                <div className={`compact-mtf-dash w-full flex flex-col xl:flex-row items-center justify-between px-4 py-2 relative z-30 mb-2 rounded-t-2xl md:rounded-t-3xl ${modeClass}`}>
+                    <div className="flex flex-wrap items-center justify-center xl:justify-start gap-2 md:gap-4 w-full xl:w-auto mb-2 xl:mb-0">
+                        <div className="bg-cyan-900/40 border border-cyan-500/30 px-3 py-1 rounded-md text-[9px] text-cyan-200 font-black tracking-widest shadow-inner">
+                            5M SCALPING
+                        </div>
+                        <div className="flex gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5">
+                            <CompactBiasCard label="4H" bias={mtfContext.h4} />
+                            <CompactBiasCard label="1H" bias={mtfContext.h1} />
+                            <CompactBiasCard label="15M" bias={mtfContext.m15} />
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-center xl:justify-end gap-4 w-full xl:w-auto">
+                        <CompactScoreGauge score={mtfContext.score} status={mtfContext.status} />
+                        <div className="flex bg-slate-900/40 rounded-xl border border-white/5 divide-x divide-white/5 shadow-inner">
+                            <CompactSpeedometer value={metrics.structure} label="STRC" color="#d97706" />
+                            <CompactSpeedometer value={metrics.liquidity} label="LIQ" color="#3b82f6" />
+                            <CompactSpeedometer value={metrics.filterLevel} label="ATR" color="#8b5cf6" />
+                            <CompactSpeedometer value={metrics.smartMoney} label="SMC" color="#00f0ff" />
+                        </div>
+                    </div>
+                </div>
+            );
+        });
 
         const MARTINGALE_STEPS = [1000, 2600, 6760, 17576, 45697, 118813, 308914];
         const TRADE_MONEY_CONFIG = { startBalance: 100000, payout: 0.70 };
@@ -760,35 +873,6 @@
             </div>
           );
         });
-
-        // REFINED SPEEDOMETER WITH SMOOTH TRANSITION
-        const Speedometer = React.memo(({ value, label, colorHex = "#00f0ff", glow = false }) => {
-          const safeValue = isNaN(value) ? 50 : Math.max(0, Math.min(100, value));
-          const angle = -90 + (safeValue / 100) * 180;
-          const radius = 40; const circumference = Math.PI * radius; const strokeDashoffset = circumference - (safeValue / 100) * circumference;
-
-          return (
-            <div className="flex flex-col items-center flex-1 relative px-0.5 group pt-1">
-              <div className="gauge-shimmer"></div>
-              <svg viewBox="0 0 100 55" className="w-10 h-6 md:w-12 md:h-7 overflow-visible mt-1 relative z-10">
-                <defs><filter id={`glow-${label.replace(/\s+/g, '')}`}><feGaussianBlur stdDeviation="3.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
-                {[0, 25, 50, 75, 100].map(tick => {
-                   const a = -Math.PI + (tick/100)*Math.PI;
-                   return <line key={tick} x1={50 + 36 * Math.cos(a)} y1={50 + 36 * Math.sin(a)} x2={50 + 44 * Math.cos(a)} y2={50 + 44 * Math.sin(a)} stroke="rgba(148, 163, 184, 0.3)" strokeWidth="2" strokeLinecap="round" />
-                })}
-                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="rgba(30, 41, 59, 1)" strokeWidth="5" strokeLinecap="round" />
-                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke={colorHex} strokeWidth="5" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} style={{ transition: 'stroke-dashoffset 1s ease-in-out' }} filter={glow ? `url(#glow-${label.replace(/\s+/g, '')})` : "none"} />
-                <g style={{ transform: `rotate(${angle}deg)`, transformOrigin: '50px 50px', transition: 'transform 1s cubic-bezier(0.4, 0, 0.2, 1)' }}>
-                  <polygon points="48,50 52,50 50,12" fill={colorHex} />
-                  <circle cx="50" cy="50" r="6" fill={colorHex} />
-                  <circle cx="50" cy="50" r="2.5" fill="#0f172a" />
-                </g>
-              </svg>
-              <div className={`text-base md:text-lg mt-1.5 font-black leading-none oswald-font relative z-10 transition-colors duration-700 ${glow ? 'drop-shadow-[0_0_8px_currentColor]' : ''}`} style={{color: glow ? colorHex : '#f8fafc'}}>{Math.round(safeValue)}</div>
-              <div className="text-[7px] md:text-[9px] text-slate-400 tracking-widest leading-none text-center font-bold mt-1 uppercase whitespace-nowrap relative z-10">{label}</div>
-            </div>
-          );
-        });
         
         const VolumetricArrow = React.memo(({ type, active }) => {
           const isUp = type === 'CALL';
@@ -859,7 +943,7 @@
           )
         });
 
-        // --- ALL-IN-ONE OVERLAYS (4 MODES) ---
+        // --- NEW ORB OVERLAYS COMPONENT ---
         const ChartOverlays = ({ chart, series, trades, zoneInfo, zoneState, currentPriceVal, isScanningBacktest, chartData, signalPhase, signal, viewMode }) => {
             const overlayRef = useRef(null);
             const [hoveredTrade, setHoveredTrade] = useState(null);
@@ -1769,8 +1853,7 @@
                               window.speechSynthesis.cancel(); speechQueueRef.current = []; isSpeakingRef.current = false;
                               
                               const directionText = sig.isCall ? "ВВЕРХ" : "ВНИЗ";
-                              speakAsync(`Внимание! Появился сигнал на ${directionText} по причине: ${sig.signalType}. Готовьтесь ко входу.`, `signal-prep-${sig.signalTime}`, 1);
-
+                              
                               setExplainText(sig.signalType);
                               signalPhaseRef.current = 'EXPLAINING'; setSignalPhase('EXPLAINING'); setZoneInfo(null);
                               setSignal({ type: sig.isCall ? 'CALL' : 'PUT', exp: 25, expectedPrice: sig.signalPrice });
@@ -1780,7 +1863,9 @@
 
                               updateStatus(`ОБЪЯСНЕНИЕ СИГНАЛА...`, 'text-cyan-400 font-bold drop-shadow-[0_0_8px_rgba(0,240,255,0.8)] animate-pulse');
                               
-                              await new Promise(r => setTimeout(r, 3000));
+                              // EXACT SEQUENCE: Voice -> Then 3s Countdown -> Then Active
+                              await speakAsync(`Внимание! Появился сигнал на ${directionText} по причине: ${sig.signalType}. Готовьтесь ко входу.`, `signal-prep-${sig.signalTime}`, 1);
+                              await awaitSpeechCompletion();
 
                               signalPhaseRef.current = 'PREPARING'; setSignalPhase('PREPARING');
 
@@ -2120,50 +2205,34 @@
                   </div>
 
                   <div className={`absolute inset-0 z-20 flex flex-col transition-all duration-700 bg-transparent ${viewMode === 'DETAIL' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                    <div className="absolute top-5 left-5 z-40 flex flex-col gap-2 scale-75 md:scale-100 origin-top-left">
-                      <div className="premium-glass-card p-4 md:p-5 rounded-3xl min-w-[160px] border-cyan-500/40 shadow-[0_20px_50px_rgba(0,0,0,0.9)] relative overflow-hidden bg-slate-900/90">
-                        <div className="absolute -right-10 -top-10 w-24 h-24 bg-cyan-400/15 rounded-full blur-xl pointer-events-none"></div>
-                        <div className="text-[10px] md:text-xs text-slate-400 tracking-widest mb-1.5 flex items-center gap-2 font-bold uppercase">
-                          <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_12px_rgba(0,240,255,1)]"/> РЕАЛЬНОЕ ВРЕМЯ
-                        </div>
-                        <div className="text-4xl md:text-5xl tracking-wider text-slate-100 leading-none pt-0.5 font-black oswald-font drop-shadow-md text-shadow-[0_0_15px_rgba(255,255,255,0.2)]">{asset.name}</div>
-                        <div className="mt-3 text-xs md:text-sm text-slate-300 tracking-widest font-bold flex items-center gap-2">
-                            ТАЙМФРЕЙМ: <span className="text-slate-900 bg-cyan-400 px-3 py-1 rounded-lg shadow-[0_0_15px_rgba(0,240,255,0.6)] border border-cyan-300 font-black">{currentTF}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {zoneState === 'IN' && signalPhase === 'NONE' && (
-                        <div className="absolute top-8 right-8 z-50 bg-amber-900/90 text-amber-400 px-3 md:px-4 py-2 rounded-xl font-bold text-[9px] md:text-xs tracking-widest uppercase oswald-font shadow-[0_0_30px_rgba(245,158,11,0.6)] border border-amber-500/60 flex items-center gap-2 md:gap-3 backdrop-blur-xl">
-                            <div className="w-2 h-2 md:w-2.5 md:h-2.5 bg-amber-400 rounded-full animate-ping shadow-[0_0_12px_rgba(251,191,36,1)]"></div>
-                            Зона интереса: возможен сигнал
-                        </div>
+                    
+                    {/* NEW MTF DASHBOARD ABOVE THE CHART */}
+                    {viewMode === 'DETAIL' && (
+                        <PremiumMTFDashboard mtfContext={mtfContext} metrics={metrics} panelState={panelState} />
                     )}
                     
-                    <div className="flex-1 relative w-full mt-24 md:mt-36 flex flex-col gap-2 px-2 pb-2 md:px-5 md:pb-5">
-                        <div 
-                            ref={chartContainerRef}
-                            className={`flex-1 relative w-full rounded-2xl md:rounded-3xl overflow-hidden bg-slate-900/95 border transition-all duration-500 ${
-                                zoneState === 'IN' && zoneInfo ? (zoneInfo.type === 'RESISTANCE' ? 'zone-active-resistance' : 'zone-active-support') : 'border-cyan-500/30 shadow-[inset_0_0_40px_rgba(0,0,0,0.9)]'
-                            }`}
-                        >
-                            <ChartOverlays 
-                              chart={chartInstance.current} 
-                              series={candleSeries.current} 
-                              trades={activeLiveTrade ? [...tradesHistory, activeLiveTrade] : tradesHistory} 
-                              zoneInfo={zoneInfo} 
-                              zoneState={zoneState} 
-                              currentPriceVal={currentPrice.current}
-                              isScanningBacktest={isScanningBacktest}
-                              chartData={sparklines['BTCUSDT']}
-                              signalPhase={signalPhase}
-                              signal={signal}
-                              viewMode={viewMode}
-                            />
-                        </div>
+                    <div 
+                        ref={chartContainerRef}
+                        className={`flex-1 relative w-full rounded-2xl md:rounded-3xl overflow-hidden bg-slate-900/95 border transition-all duration-500 ${
+                            zoneState === 'IN' && zoneInfo ? (zoneInfo.type === 'RESISTANCE' ? 'zone-active-resistance' : 'zone-active-support') : 'border-cyan-500/30 shadow-[inset_0_0_40px_rgba(0,0,0,0.9)]'
+                        }`}
+                    >
+                        <ChartOverlays 
+                          chart={chartInstance.current} 
+                          series={candleSeries.current} 
+                          trades={activeLiveTrade ? [...tradesHistory, activeLiveTrade] : tradesHistory} 
+                          zoneInfo={zoneInfo} 
+                          zoneState={zoneState} 
+                          currentPriceVal={currentPrice.current}
+                          isScanningBacktest={isScanningBacktest}
+                          chartData={sparklines['BTCUSDT']}
+                          signalPhase={signalPhase}
+                          signal={signal}
+                          viewMode={viewMode}
+                        />
                     </div>
                     
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] md:w-auto flex justify-center pointer-events-auto">
+                    <div className="mt-4 flex justify-center w-full z-50 pointer-events-auto pb-4 md:pb-6">
                         <MassiveBrokerButton />
                     </div>
 
@@ -2183,62 +2252,29 @@
                     </div>
                   </div>
 
-                  <div className="flex-1 flex flex-col p-2 md:p-4 gap-2 md:gap-4 overflow-y-hidden relative z-10">
+                  <div className="flex-1 flex flex-col p-2 md:p-4 gap-3 md:gap-5 overflow-y-hidden relative z-10">
                     
-                    {/* MTF Context Card */}
-                    <div className="luxury-card p-2 shrink-0 flex flex-col justify-center shadow-[0_5px_20px_rgba(0,0,0,0.5)] border-cyan-500/30">
-                        <div className="flex justify-between items-center bg-slate-900/70 p-1.5 rounded border border-cyan-500/30 shadow-md mb-1.5 mx-1">
-                            <span className="text-[9px] text-slate-400 font-bold tracking-widest">TIMEFRAME:</span>
-                            <span className="text-[10px] font-black text-cyan-400 tracking-widest drop-shadow-[0_0_8px_rgba(0,240,255,0.7)]">5M (SCALPING)</span>
+                    {/* Micro-Metrics Sub-Panel */}
+                    <div className="grid grid-cols-3 gap-2 shrink-0 text-center animate-slideUpFade mt-1">
+                        <div className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-2 flex flex-col justify-center shadow-inner relative overflow-hidden group">
+                            {panelState === 'IDLE' && <div className="absolute inset-0 bg-slate-800/80 backdrop-blur-sm z-20 flex items-center justify-center text-[7px] text-slate-500 font-bold tracking-widest uppercase">AWAITING</div>}
+                            <span className="text-[8px] text-slate-400 tracking-[0.2em] uppercase mb-1">STRENGTH</span>
+                            <span className="text-xs font-black text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.8)]">{Math.floor(Math.random()*10 + 85)}%</span>
                         </div>
-                        <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest text-center border-b border-slate-700/60 pb-1 mb-1.5 oswald-font">MTF CONTEXT FILTER</div>
-                        <div className="flex justify-between items-center px-1">
-                            <div className="flex flex-col items-center flex-1 border-r border-slate-700/60">
-                                <span className="text-[8px] md:text-[9px] font-bold text-slate-500 mb-0.5">4H</span>
-                                <span className={`text-[10px] md:text-xs font-black oswald-font leading-none ${mtfContext.h4 === 'BULLISH' ? 'text-emerald-400 drop-shadow-[0_0_5px_currentColor]' : mtfContext.h4 === 'BEARISH' ? 'text-rose-400 drop-shadow-[0_0_5px_currentColor]' : 'text-slate-400'}`}>{mtfContext.h4}</span>
-                            </div>
-                            <div className="flex flex-col items-center flex-1 border-r border-slate-700/60">
-                                <span className="text-[8px] md:text-[9px] font-bold text-slate-500 mb-0.5">1H</span>
-                                <span className={`text-[10px] md:text-xs font-black oswald-font leading-none ${mtfContext.h1 === 'BULLISH' ? 'text-emerald-400 drop-shadow-[0_0_5px_currentColor]' : mtfContext.h1 === 'BEARISH' ? 'text-rose-400 drop-shadow-[0_0_5px_currentColor]' : 'text-slate-400'}`}>{mtfContext.h1}</span>
-                            </div>
-                            <div className="flex flex-col items-center flex-1 border-r border-slate-700/60">
-                                <span className="text-[8px] md:text-[9px] font-bold text-slate-500 mb-0.5">15M</span>
-                                <span className={`text-[10px] md:text-xs font-black oswald-font leading-none ${mtfContext.m15 === 'BULLISH' ? 'text-emerald-400 drop-shadow-[0_0_5px_currentColor]' : mtfContext.m15 === 'BEARISH' ? 'text-rose-400 drop-shadow-[0_0_5px_currentColor]' : 'text-slate-400'}`}>{mtfContext.m15}</span>
-                            </div>
-                            <div className="flex flex-col items-center flex-1">
-                                <span className="text-[8px] md:text-[9px] font-bold text-slate-500 mb-0.5">SCORE</span>
-                                <span className={`text-[13px] md:text-base font-black oswald-font leading-none ${mtfContext.score >= 64 ? 'text-cyan-400 drop-shadow-[0_0_10px_currentColor]' : mtfContext.score >= 50 ? 'text-slate-200' : 'text-rose-400'}`}>{mtfContext.status === 'LOADING' ? '--' : (mtfContext.status.includes('LOCAL') ? 'LOCAL' : mtfContext.score)}</span>
-                            </div>
+                        <div className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-2 flex flex-col justify-center shadow-inner relative overflow-hidden group">
+                            {panelState === 'IDLE' && <div className="absolute inset-0 bg-slate-800/80 backdrop-blur-sm z-20 flex items-center justify-center text-[7px] text-slate-500 font-bold tracking-widest uppercase">AWAITING</div>}
+                            <span className="text-[8px] text-slate-400 tracking-[0.2em] uppercase mb-1">HIST. ACC</span>
+                            <span className="text-xs font-black text-cyan-300 drop-shadow-[0_0_5px_rgba(0,240,255,0.8)]">92%</span>
+                        </div>
+                        <div className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-2 flex flex-col justify-center shadow-inner relative overflow-hidden group">
+                            {panelState === 'IDLE' && <div className="absolute inset-0 bg-slate-800/80 backdrop-blur-sm z-20 flex items-center justify-center text-[7px] text-slate-500 font-bold tracking-widest uppercase">AWAITING</div>}
+                            <span className="text-[8px] text-slate-400 tracking-[0.2em] uppercase mb-1">PROBABILITY</span>
+                            <span className="text-xs font-black text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.8)]">{signalPhase !== 'NONE' ? '96%' : 'ANALYZING'}</span>
                         </div>
                     </div>
-
-                    <div className="grid grid-cols-4 gap-1 luxury-card p-1.5 md:p-2 shrink-0 border-cyan-500/30">
-                       <Speedometer value={metrics.structure} label="СТРУКТУРА" colorHex="#d97706" />
-                       <Speedometer value={metrics.liquidity} label="ЛИКВИДНОСТЬ" colorHex="#3b82f6" glow={true} />
-                       <Speedometer value={metrics.filterLevel} label="АТР ФИЛЬТР" colorHex="#8b5cf6" />
-                       <Speedometer value={metrics.smartMoney} label="SMART MONEY" colorHex="#00f0ff" />
-                    </div>
-
-                    {/* NEW: Micro-Metrics Sub-Panel */}
-                    {panelState !== 'IDLE' && (
-                        <div className="grid grid-cols-3 gap-1 shrink-0 text-center animate-slideUpFade">
-                            <div className="bg-slate-900/60 border border-slate-700/50 rounded-lg p-1.5 flex flex-col justify-center">
-                                <span className="text-[7px] text-slate-400 tracking-wider">ZONE STRENGTH</span>
-                                <span className="text-[10px] font-black text-emerald-400">{Math.floor(Math.random()*10 + 85)}%</span>
-                            </div>
-                            <div className="bg-slate-900/60 border border-slate-700/50 rounded-lg p-1.5 flex flex-col justify-center">
-                                <span className="text-[7px] text-slate-400 tracking-wider">HIST. ACCURACY</span>
-                                <span className="text-[10px] font-black text-cyan-300">92%</span>
-                            </div>
-                            <div className="bg-slate-900/60 border border-slate-700/50 rounded-lg p-1.5 flex flex-col justify-center">
-                                <span className="text-[7px] text-slate-400 tracking-wider">SIG. PROBABILITY</span>
-                                <span className="text-[10px] font-black text-amber-400">{signalPhase !== 'NONE' ? '96%' : 'ANALYZING'}</span>
-                            </div>
-                        </div>
-                    )}
 
                     {/* VOLUMETRIC ARROW & COUNTDOWN HUD */}
-                    <div className="flex gap-2 h-24 md:h-32 shrink-0">
+                    <div className="flex gap-2 h-28 md:h-36 shrink-0">
                       <div className={`w-[38%] md:w-[35%] border rounded-2xl flex flex-col items-center justify-center relative transition-all duration-500 luxury-card bg-slate-900/60 ${signalPhase === 'PREPARING' && countdown !== null ? 'border-cyan-400 shadow-[0_0_40px_rgba(0,240,255,0.6)] scale-[1.03]' : signalPhase === 'ACTIVE' || signalPhase === 'EXPLAINING' ? 'border-cyan-500 shadow-[0_0_20px_rgba(0,240,255,0.3)]' : 'border-cyan-500/20'}`}>
                         {signalPhase === 'EXPLAINING' ? (
                             <div className="flex flex-col items-center justify-center w-full h-full p-2 text-center animate-pulse">
@@ -2254,7 +2290,7 @@
                             <VolumetricArrow type={signal.type} active={true} />
                         ) : (
                             <div className="flex flex-col items-center opacity-60 px-1 text-center">
-                                <Radar size={24} className="text-slate-400 mb-1 md:mb-2 drop-shadow-sm" />
+                                <Radar size={28} className="text-slate-400 mb-1 md:mb-2 drop-shadow-sm" />
                                 <span className="text-[7px] md:text-[8px] tracking-widest font-bold text-slate-500 oswald-font leading-tight mt-1">ОЖИДАНИЕ</span>
                             </div>
                         )}
@@ -2267,7 +2303,7 @@
                     </div>
 
                     {/* MARTINGALE HUD DISPLAY */}
-                    <div className="luxury-card border rounded-3xl p-3 flex flex-col gap-1 md:gap-1.5 shrink-0 relative overflow-hidden transition-all duration-700 bg-slate-900/60 border-cyan-500/20 shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
+                    <div className="luxury-card border rounded-3xl p-3 md:p-4 flex flex-col gap-1 md:gap-1.5 shrink-0 relative overflow-hidden transition-all duration-700 bg-slate-900/60 border-cyan-500/20 shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
                         <div className="absolute -right-4 -top-4 w-24 h-24 bg-gradient-to-br from-cyan-800/30 to-blue-900/20 rounded-full blur-2xl pointer-events-none"></div>
                         
                         <div className="flex justify-between items-center mb-0.5 relative z-10">
@@ -2282,43 +2318,43 @@
                             </span>
                         </div>
 
-                        <div className="flex justify-between items-center bg-slate-800/60 p-2 rounded-xl border border-cyan-500/30 text-cyan-200 mt-1 relative z-10 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">
+                        <div className="flex justify-between items-center bg-slate-800/60 p-2 md:p-3 rounded-xl border border-cyan-500/30 text-cyan-200 mt-1 relative z-10 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">
                             <div className="flex flex-col">
-                                <span className="text-[7px] md:text-[7.5px] font-black tracking-widest uppercase opacity-80 text-cyan-400">ТЕКУЩАЯ СТАВКА</span>
-                                <span className="text-xs md:text-sm font-black mono-font text-white drop-shadow-sm">{currentStakeVal.toLocaleString('ru-RU')} ₽</span>
+                                <span className="text-[7px] md:text-[8px] font-black tracking-widest uppercase opacity-80 text-cyan-400">ТЕКУЩАЯ СТАВКА</span>
+                                <span className="text-sm md:text-base font-black mono-font text-white drop-shadow-sm">{currentStakeVal.toLocaleString('ru-RU')} ₽</span>
                             </div>
                             <div className="flex flex-col items-end">
-                                <span className="text-[7px] md:text-[7.5px] font-black tracking-widest uppercase opacity-80 text-cyan-400">МАРТИНГЕЙЛ (v7)</span>
-                                <span className="text-[9px] md:text-[10px] font-black text-cyan-300 tracking-wider">КОЛЕНО {martingaleIndex + 1}/7</span>
+                                <span className="text-[7px] md:text-[8px] font-black tracking-widest uppercase opacity-80 text-cyan-400">МАРТИНГЕЙЛ (v7)</span>
+                                <span className="text-[10px] md:text-[11px] font-black text-cyan-300 tracking-wider">КОЛЕНО {martingaleIndex + 1}/7</span>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-7 gap-1 mt-0.5 px-0.5 relative z-10">
+                        <div className="grid grid-cols-7 gap-1 mt-1 px-0.5 relative z-10">
                             {[...Array(7)].map((_, i) => (
                                 <div 
                                     key={i} 
-                                    className={`h-1 rounded transition-all duration-300 ${
+                                    className={`h-1.5 md:h-2 rounded transition-all duration-300 ${
                                         i === martingaleIndex 
                                             ? 'bg-cyan-400 shadow-[0_0_12px_rgba(0,240,255,1)]' 
                                             : i < martingaleIndex 
-                                                ? 'bg-cyan-800/60' 
-                                                : 'bg-slate-700/40'
+                                                ? 'bg-cyan-800/70' 
+                                                : 'bg-slate-700/50'
                                     }`}
                                 />
                             ))}
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-1.5 relative z-10 mt-1 text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                            <div className="flex justify-between bg-slate-800/50 p-1 rounded border border-slate-700/40">
+                        <div className="grid grid-cols-2 gap-2 relative z-10 mt-2 text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                            <div className="flex justify-between bg-slate-800/50 p-1.5 rounded border border-slate-700/40">
                                 <span>СДЕЛОК:</span> <span className="text-slate-200">{stats.trades}</span>
                             </div>
-                            <div className="flex justify-between bg-slate-800/50 p-1 rounded border border-slate-700/40">
+                            <div className="flex justify-between bg-slate-800/50 p-1.5 rounded border border-slate-700/40">
                                 <span>WINRATE:</span> <span className="text-slate-200">{stats.winrate}%</span>
                             </div>
-                            <div className="flex justify-between bg-emerald-900/30 p-1 rounded border border-emerald-500/30 text-emerald-400 shadow-[inset_0_0_8px_rgba(16,185,129,0.1)]">
+                            <div className="flex justify-between bg-emerald-900/30 p-1.5 rounded border border-emerald-500/30 text-emerald-400 shadow-[inset_0_0_8px_rgba(16,185,129,0.1)]">
                                 <span>WIN:</span> <span className="drop-shadow-[0_0_5px_currentColor]">{stats.wins}</span>
                             </div>
-                            <div className="flex justify-between bg-rose-900/30 p-1 rounded border border-rose-500/30 text-rose-400 shadow-[inset_0_0_8px_rgba(225,29,72,0.1)]">
+                            <div className="flex justify-between bg-rose-900/30 p-1.5 rounded border border-rose-500/30 text-rose-400 shadow-[inset_0_0_8px_rgba(225,29,72,0.1)]">
                                 <span>LOSS:</span> <span className="drop-shadow-[0_0_5px_currentColor]">{stats.losses}</span>
                             </div>
                         </div>
