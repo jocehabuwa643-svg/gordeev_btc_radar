@@ -199,23 +199,6 @@
             text-shadow: 0px 0px 10px rgba(0,240,255,0.5);
         }
 
-        /* --- BOOSTY BROKER BUTTON --- */
-        .broker-btn {
-            background: linear-gradient(135deg, #00f0ff 0%, #0284c7 40%, #1d4ed8 100%);
-            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.4), 0 8px 25px rgba(0, 240, 255, 0.4);
-            border: 1px solid rgba(0, 240, 255, 0.6); 
-            border-radius: 1.2rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .broker-btn:hover {
-            box-shadow: inset 0 2px 5px rgba(255, 255, 255, 0.5), 0 15px 40px rgba(0, 240, 255, 0.7);
-            transform: translateY(-2px) scale(1.02);
-            border-color: #fff;
-        }
-        .broker-btn:active {
-            transform: translateY(1px) scale(0.96); box-shadow: 0 4px 10px rgba(0, 240, 255, 0.4);
-        }
-
         /* --- PREMIUM STATUS BADGE (BUTTON-LIKE HOVER) --- */
         .premium-status-badge {
             background: linear-gradient(135deg, #00f0ff 0%, #0284c7 100%);
@@ -235,6 +218,37 @@
         @keyframes premium-badge-pulse {
             0% { box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); text-shadow: 0 0 2px rgba(255,255,255,0.3); }
             100% { box-shadow: 0 0 25px rgba(0, 240, 255, 0.7); text-shadow: 0 0 8px rgba(255,255,255,0.8); }
+        }
+
+        /* --- MASSIVE BROKER BUTTON (NEW) --- */
+        .massive-broker-btn {
+            background: linear-gradient(135deg, #00f0ff 0%, #0284c7 40%, #1e3a8a 100%);
+            border: 2px solid rgba(0, 240, 255, 0.6); 
+            border-radius: 1.5rem;
+            animation: hyper-pulse 2.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s ease;
+        }
+        .massive-broker-btn:hover {
+            transform: scale(1.05) translateY(-4px);
+            border-color: #fff;
+            box-shadow: 0 15px 40px rgba(0, 240, 255, 0.8), inset 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+        @keyframes hyper-pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(0,240,255,0.4), inset 0 0 10px rgba(0,240,255,0.2); }
+            50% { box-shadow: 0 0 45px rgba(0,240,255,0.8), inset 0 0 20px rgba(0,240,255,0.5); }
+        }
+        @keyframes fake-click {
+            0% { transform: translate(40px, 40px) scale(1); opacity: 0; }
+            20% { transform: translate(15px, 15px) scale(1); opacity: 1; }
+            40% { transform: translate(0px, 0px) scale(1); opacity: 1; }
+            50% { transform: translate(0px, 0px) scale(0.85); opacity: 1; filter: brightness(1.5); }
+            60% { transform: translate(0px, 0px) scale(1); opacity: 1; }
+            80% { transform: translate(10px, 10px) scale(1); opacity: 0; }
+            100% { transform: translate(40px, 40px) scale(1); opacity: 0; }
+        }
+        .fake-cursor-anim {
+            animation: fake-click 3s infinite cubic-bezier(0.2, 0, 0.2, 1);
+            pointer-events: none;
         }
 
         /* --- EYE OF PROVIDENCE SCANNER CSS --- */
@@ -301,7 +315,6 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
-        // Подавление безопасной ошибки ResizeObserver для предотвращения спама в консоли браузера/React
         const suppressResizeObserverErrors = () => {
             window.addEventListener('error', function(e) {
                 if (e.message && typeof e.message === 'string' && e.message.includes('ResizeObserver')) {
@@ -337,19 +350,27 @@
         const Radar = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 5.49A10 10 0 0 0 5.3 19.38"/><path d="M20 8.74A10 10 0 0 1 17.38 20"/><path d="M16 8a6 6 0 0 0-8.5-1.5"/><path d="M7.5 16.5a6 6 0 0 0 9.2-.5"/><path d="M12 12v.01"/></svg>);
         const Zap = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>);
         const BugIcon = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M12 18v.01"></path><path d="M8 12v.01"></path><path d="M16 12v.01"></path><rect x="4" y="6" width="16" height="16" rx="2" ry="2"></rect></svg>);
-        
-        const BrokerButton = React.memo(({ compact = false }) => (
+        const MousePointer = React.memo(({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="rgba(255,255,255,0.9)" stroke="#0f172a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+                <path d="M13 13l6 6"/>
+            </svg>
+        ));
+
+        // --- MASSIVE BROKER BUTTON (NEW) ---
+        const MassiveBrokerButton = React.memo(() => (
             <a 
                 href="https://boosty.to/gord666/posts/0e3a7a59-c3a5-4a03-ba30-46296b5c7be6" 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className={`broker-btn group relative flex items-center justify-center overflow-hidden cursor-pointer no-underline h-[52px] px-6 z-50 ${compact ? 'w-auto' : 'w-full'}`}
+                className="massive-broker-btn group relative flex items-center justify-center overflow-hidden cursor-pointer no-underline px-6 md:px-10 py-4 z-50 w-[90%] md:w-auto mx-auto"
             >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-[1200ms] ease-in-out skew-x-12"></div>
-                <span className="relative z-10 text-white font-black tracking-widest text-sm md:text-base oswald-font uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] flex items-center gap-2 whitespace-nowrap">
-                    <Zap size={18} className="text-cyan-100 animate-pulse group-hover:animate-ping group-hover:scale-125 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
-                    <span>{compact ? "ТОРГОВАТЬ" : "ТОРГОВАТЬ ЗДЕСЬ, ЧТОБЫ ЗАРАБОТАТЬ"}</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-[1000ms] ease-in-out skew-x-12"></div>
+                <span className="relative z-10 text-white font-black tracking-widest text-sm md:text-xl oswald-font uppercase drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] flex items-center gap-2 md:gap-3 whitespace-nowrap">
+                    <Zap size={28} className="text-cyan-100 animate-pulse drop-shadow-[0_0_12px_rgba(255,255,255,0.9)] hidden sm:block" />
+                    <span>ТОРГОВАТЬ ЗДЕСЬ, ЧТОБЫ ЗАРАБОТАТЬ</span>
                 </span>
+                <MousePointer size={40} className="fake-cursor-anim absolute right-1 md:-right-4 -bottom-4 z-20 text-white drop-shadow-[0_5px_10px_rgba(0,0,0,0.5)]" />
             </a>
         ));
 
@@ -529,7 +550,7 @@
             return 'NEUTRAL';
         }
 
-        // --- BALANCED & STRICT SIGNAL ENGINE ---
+        // --- BALANCED & RELAXED SIGNAL ENGINE ---
         function evaluateSignalEngine(data, evalIdx, liqMap, atrMap, mtfContext, engineState) {
             if (evalIdx < 100) return { valid: false, reason: 'Not enough data', score: 0 };
 
@@ -574,17 +595,17 @@
             const strictMsbPut = isRedCandle && (currCandle.close < prevCandle.low) && (body > cAtr * 0.25);
             const strictMsbCall = isGreenCandle && (currCandle.close > prevCandle.high) && (body > cAtr * 0.25);
 
-            // Relaxed Pin Bar Requirement (45% instead of 50/60%)
-            const massiveWickPut = upperWick > cAtr * 0.45 && upperWickRatio > 0.45 && returnedInsideTop;
-            const massiveWickCall = lowerWick > cAtr * 0.45 && lowerWickRatio > 0.45 && returnedInsideBot;
+            // Relaxed Pin Bar Requirement (40% instead of 45/50%)
+            const massiveWickPut = upperWick > cAtr * 0.40 && upperWickRatio > 0.40 && returnedInsideTop;
+            const massiveWickCall = lowerWick > cAtr * 0.40 && lowerWickRatio > 0.40 && returnedInsideBot;
 
             let strongBullImpulse = false;
             let strongBearImpulse = false;
             if (evalIdx > 3) {
                 const c1 = data[evalIdx-1]; const c3 = data[evalIdx-3];
                 const move3 = c1.close - c3.open;
-                if (move3 > cAtr * 1.8 && c1.close > c1.open) strongBullImpulse = true;
-                if (move3 < -cAtr * 1.8 && c1.close < c1.open) strongBearImpulse = true;
+                if (move3 > cAtr * 2.0 && c1.close > c1.open) strongBullImpulse = true;
+                if (move3 < -cAtr * 2.0 && c1.close < c1.open) strongBearImpulse = true;
             }
 
             let isCall = false; let isPut = false; let signalType = ''; let baseScore = 0;
@@ -609,9 +630,9 @@
             if (isCall && deepSweepBot) qScore += 10;
             if (isPut && deepSweepTop) qScore += 10;
 
-            // Penalty for impulse (softened to -15 to allow some setups)
-            if (isCall && strongBearImpulse) { qScore -= 15; rejectReason = 'Bear Impulse Risk'; }
-            if (isPut && strongBullImpulse) { qScore -= 15; rejectReason = 'Bull Impulse Risk'; }
+            // Penalty for impulse softened
+            if (isCall && strongBearImpulse) { qScore -= 10; rejectReason = 'Bear Impulse Risk'; }
+            if (isPut && strongBullImpulse) { qScore -= 10; rejectReason = 'Bull Impulse Risk'; }
 
             const currentVolume = currCandle.volume || 0;
             if (currentVolume > 0 && evalIdx > 14) {
@@ -624,10 +645,10 @@
             
             if (isCall) {
                 if (h4 === 'BULLISH' || h1 === 'BULLISH') { qScore += 12; mtfConfStr = 'CONFIRMED'; }
-                else if (h4 === 'BEARISH' && h1 === 'BEARISH') { qScore -= 15; rejectReason = 'Against HTF Trend'; mtfConfStr = 'CONFLICT'; }
+                else if (h4 === 'BEARISH' && h1 === 'BEARISH') { qScore -= 10; rejectReason = 'Against HTF Trend'; mtfConfStr = 'CONFLICT'; }
             } else {
                 if (h4 === 'BEARISH' || h1 === 'BEARISH') { qScore += 12; mtfConfStr = 'CONFIRMED'; }
-                else if (h4 === 'BULLISH' && h1 === 'BULLISH') { qScore -= 15; rejectReason = 'Against HTF Trend'; mtfConfStr = 'CONFLICT'; }
+                else if (h4 === 'BULLISH' && h1 === 'BULLISH') { qScore -= 10; rejectReason = 'Against HTF Trend'; mtfConfStr = 'CONFLICT'; }
             }
 
             if (mtfConfStr === 'WAIT' || h4 === 'LOCAL' || mtfContext.status.includes('LOCAL')) {
@@ -635,12 +656,12 @@
             }
 
             const candlesSinceLast = (currTime - engineState.lastSignalTime) / 300; 
-            if (candlesSinceLast < 6) { 
-                qScore -= 35; rejectReason = 'Cooldown Active';
+            if (candlesSinceLast < 5) { // Faster cooldown
+                qScore -= 25; rejectReason = 'Cooldown Active';
             }
 
             // --- Final Softened Threshold ---
-            const PASS_THRESHOLD = 68; // Lowered to hit golden middle
+            const PASS_THRESHOLD = 64; // Hit the golden middle to trigger more signals
             if (qScore < PASS_THRESHOLD) {
                 if (!rejectReason) rejectReason = 'Score too low (Insufficient Quality)';
                 return { valid: false, reason: rejectReason, score: qScore };
@@ -820,13 +841,11 @@
             const overlayRef = useRef(null);
             const [hoveredTrade, setHoveredTrade] = useState(null);
             
-            // Eye Scanner State
             const eyeRef = useRef(null);
             const [scanData, setScanData] = useState(null);
             const [isEyeScanning, setIsEyeScanning] = useState(false);
             const targetRef = useRef(null);
 
-            // Engine for Eye Scanner
             useEffect(() => {
                 if (!chartData || chartData.length < 5) return;
                 let isActive = true;
@@ -879,7 +898,6 @@
                 return () => { isActive = false; };
             }, [chartData, isScanningBacktest]);
 
-            // Sync Positions on RAF (Trades + Pulse Zone + Eye Scanner)
             useEffect(() => {
                 if (!chart || !series || !overlayRef.current) return;
                 let overlaySyncRaf = null;
@@ -888,7 +906,6 @@
                     if (!chart || !series || !overlayRef.current) return;
                     const timeScale = chart.timeScale();
                     
-                    // 1. Zone Pulse
                     const pulseBox = overlayRef.current.querySelector('.zone-pulse-indicator');
                     if (pulseBox && zoneInfo && zoneState === 'IN') {
                         const currentLog = timeScale.coordinateToLogical(timeScale.timeToCoordinate(zoneInfo.time));
@@ -919,7 +936,6 @@
                         }
                     } else if (pulseBox) { pulseBox.style.display = 'none'; }
 
-                    // 2. Trades
                     const tradeBoxes = overlayRef.current.querySelectorAll('.trade-glass-box');
                     tradeBoxes.forEach(box => {
                         const tradeId = box.dataset.id;
@@ -964,10 +980,8 @@
                         } else { box.style.display = 'none'; }
                     });
 
-                    // 3. Eye Scanner Movement
                     if (eyeRef.current && targetRef.current) {
                         const cx = timeScale.timeToCoordinate(targetRef.current.time);
-                        // Hover above the High of the candle
                         const cy = series.priceToCoordinate(targetRef.current.high);
                         
                         if (cx !== null && cy !== null) {
@@ -1045,10 +1059,10 @@
                                 <line x1="70" y1="60" x2="75" y2="60" stroke="#00f0ff" strokeWidth="1.5" />
                             </svg>
 
-                            {/* Downward X-Ray Beam (visible when scanning) */}
+                            {/* Downward X-Ray Beam */}
                             <div className={`eye-beam ${isEyeScanning ? 'opacity-100' : 'opacity-0'}`}></div>
 
-                            {/* Info Tooltip (visible when scanning) */}
+                            {/* Info Tooltip */}
                             <div className={`eye-tooltip ${isEyeScanning && scanData ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
                                 <div className="text-[8px] text-cyan-400 font-black tracking-widest uppercase mb-1.5 flex items-center gap-1.5 border-b border-cyan-500/30 pb-1">
                                     <Radar size={11} className="animate-spin text-fuchsia-400" /> 
@@ -1434,7 +1448,6 @@
             if (engineActive.current) return; engineActive.current = true;
             if (audioCtx.current && audioCtx.current.state === 'suspended') await audioCtx.current.resume();
 
-            // Clear purely from memory for deterministic behavior
             for (let k in _inMemoryLedger) delete _inMemoryLedger[k];
             
             historicalMarkersRef.current = []; liveMarkersRef.current = [];
@@ -1468,7 +1481,6 @@
                 if (startIdx === -1) startIdx = Math.max(0, initialData.length - 144); 
                 const endIdx = initialData.length - 4; 
 
-                // EXACT MTF MOCK FOR DETERMINISTIC BACKTEST
                 const mockMtf = { h4: 'LOCAL', h1: 'LOCAL', m15: 'LOCAL', status: 'LOCAL 5M MODE' };
 
                 for (let idx = startIdx; idx <= endIdx; idx++) {
@@ -1488,7 +1500,6 @@
                     const sig = evaluateSignalEngine(initialData, idx, liqMap, atrMap, mockMtf, { ...engineState, consecutiveLosses: localMartingaleIdx });
                     let evaluatedStatus = sig.valid ? 'CONFIRMED' : (sig.reason ? 'REJECTED' : 'NO_SIGNAL');
 
-                    // Purely deterministic memory-only ledger for backtest
                     const pastLedgerStatus = _inMemoryLedger[currTime] || null;
                     if (pastLedgerStatus) {
                         if (pastLedgerStatus !== evaluatedStatus) {
@@ -1509,7 +1520,6 @@
                         const entryIdx = idx + 1; const exitIdx = Math.min(entryIdx + 5, initialData.length - 1); 
                         const entryCandle = initialData[entryIdx]; const exitCandle = initialData[exitIdx];
                         
-                        // DETERMINISTIC SLIPPAGE
                         const candleRange = entryCandle.high - entryCandle.low;
                         const slippagePenalty = candleRange * 0.04; 
                         
@@ -1563,14 +1573,13 @@
                     try { chartInstance.current.timeScale().fitContent(); } catch(e) {}
                 }
 
-                // Wait for the visual scanner animation to run
                 for (let i = 0; i < 9; i++) {
                     playSound('scan');
                     await new Promise(r => setTimeout(r, 1000));
                 }
                 
                 setIsScanningBacktest(false);
-                updateStatus('АКТИВАЦИЯ ПРЕМИУМ СКАНЕРА...', 'text-cyan-400');
+                updateStatus('АКТИВАЦИЯ ПРЕМИУМ СКАНЕРА...', 'text-cyan-400 drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]');
 
                 const finalStats = calculateTradingStats(newTradesHistory, TRADE_MONEY_CONFIG);
                 let speechText = "Анализ рынка завершён.";
@@ -1641,7 +1650,7 @@
                                   if (mtf.h4 !== 'NEUTRAL' || mtf.h1 !== 'NEUTRAL') warnTxt = 'Цена подходит к старшей зоне ликвидности. Ожидайте подтверждения.';
                                   enqueueSpeech(warnTxt, `zone-approach-${latestZone.time}`, 3);
                                   syncModeView(); 
-                                  updateStatus('ЗОНА ИНТЕРЕСА: ВОЗМОЖЕН СИГНАЛ', 'text-amber-500 font-bold animate-pulse');
+                                  updateStatus('ЗОНА ИНТЕРЕСА: ВОЗМОЖЕН СИГНАЛ', 'text-amber-500 font-bold animate-pulse text-shadow-[0_0_15px_rgba(245,158,11,0.6)]');
                               }
                           } else if (distTop > latestAtr * 2.5 && distBot > latestAtr * 2.5) {
                               if (zoneStateRef.current === 'IN') {
@@ -1686,7 +1695,7 @@
                               syncModeView(); playSound('found');
                               addLog(`Accepted: ${sig.signalType} | Q:${sig.score}`, true);
 
-                              updateStatus(`ОБЪЯСНЕНИЕ СИГНАЛА...`, 'text-cyan-400 font-bold drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]');
+                              updateStatus(`ОБЪЯСНЕНИЕ СИГНАЛА...`, 'text-cyan-400 font-bold drop-shadow-[0_0_8px_rgba(0,240,255,0.8)] animate-pulse');
                               // EXACT 3 Seconds Explanation phase
                               await new Promise(r => setTimeout(r, 3000));
 
@@ -1958,17 +1967,13 @@
                 </div>
                 
                 <div className="w-full flex md:hidden mb-1 mt-1 sticky top-0 z-50 pb-2 pt-1 border-b border-slate-800 shadow-sm px-1 justify-between items-center gap-2 bg-[#01030a]/90 backdrop-blur-md">
-                    <BrokerButton compact={true} />
-                    <div className="flex gap-2 items-center">
+                    <div className="flex gap-2 items-center mx-auto">
                         <LiveClock />
                     </div>
                 </div>
 
                 <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-2 md:gap-1.5">
                   <div className="flex items-center gap-3">
-                      <div className="hidden md:block">
-                          <BrokerButton compact={false} />
-                      </div>
                       <div className="premium-status-badge text-xs md:text-sm px-4 py-1.5 rounded-lg oswald-font tracking-widest hidden md:flex items-center font-black h-[52px]">
                         {appPhase}
                       </div>
@@ -1990,7 +1995,7 @@
                 {/* CHART WORKSPACE */}
                 <div className="w-full md:flex-1 min-h-[50vh] md:min-h-0 md:h-full glass-panel-heavy rounded-3xl md:rounded-[2.5rem] relative overflow-hidden flex flex-col shrink-0">
                   
-                  <div className={`absolute inset-0 z-30 transition-all duration-700 bg-transparent flex items-center justify-center p-2 md:p-8 ${viewMode === 'SCREENER' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                  <div className={`absolute inset-0 z-30 transition-all duration-700 bg-transparent flex flex-col items-center justify-center p-2 md:p-8 ${viewMode === 'SCREENER' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                     <div className="card-3d-wrapper w-full max-w-[95%] xl:max-w-[90%] h-[45vh] md:h-[65vh] flex">
                        <div className="card-3d relative w-full h-full flex flex-col p-4 md:p-8 rounded-[2.5rem]">
                           <div className="flex justify-between items-start mb-6 md:mb-8 relative z-10">
@@ -2024,6 +2029,11 @@
                           </div>
                        </div>
                     </div>
+
+                    <div className="mt-6 flex justify-center w-full z-20 pointer-events-auto">
+                        <MassiveBrokerButton />
+                    </div>
+
                   </div>
 
                   <div className={`absolute inset-0 z-20 flex flex-col transition-all duration-700 bg-transparent ${viewMode === 'DETAIL' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
@@ -2066,6 +2076,11 @@
                             />
                         </div>
                     </div>
+                    
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] md:w-auto flex justify-center pointer-events-auto">
+                        <MassiveBrokerButton />
+                    </div>
+
                   </div>
                 </div>
 
@@ -2075,7 +2090,7 @@
                   <div className="border-b border-cyan-500/40 p-3 bg-gradient-to-r from-slate-900/90 to-transparent flex justify-center items-center shrink-0 min-h-[48px] shadow-[0_5px_20px_rgba(0,0,0,0.5)] relative z-10">
                     <div className={`premium-status-badge w-full text-center py-1.5 rounded-lg text-xs md:text-[13px] oswald-font tracking-widest flex items-center justify-center gap-2 leading-none transition-all duration-300 font-black`}>
                       {appPhase.includes('ПОДГОТОВ') ? (
-                        <span className="drop-shadow-[0_0_15px_rgba(0,0,0,0.5)]">{appPhase}</span>
+                        <span className="drop-shadow-[0_0_15px_rgba(0,0,0,0.5)] text-cyan-200">{appPhase}</span>
                       ) : appPhase}
                     </div>
                   </div>
@@ -2103,7 +2118,7 @@
                             </div>
                             <div className="flex flex-col items-center flex-1">
                                 <span className="text-[8px] md:text-[9px] font-bold text-slate-500 mb-0.5">SCORE</span>
-                                <span className={`text-[13px] md:text-base font-black oswald-font leading-none ${mtfContext.score >= 68 ? 'text-cyan-400 drop-shadow-[0_0_10px_currentColor]' : mtfContext.score >= 50 ? 'text-slate-200' : 'text-rose-400'}`}>{mtfContext.status === 'LOADING' ? '--' : (mtfContext.status.includes('LOCAL') ? 'LOCAL' : mtfContext.score)}</span>
+                                <span className={`text-[13px] md:text-base font-black oswald-font leading-none ${mtfContext.score >= 64 ? 'text-cyan-400 drop-shadow-[0_0_10px_currentColor]' : mtfContext.score >= 50 ? 'text-slate-200' : 'text-rose-400'}`}>{mtfContext.status === 'LOADING' ? '--' : (mtfContext.status.includes('LOCAL') ? 'LOCAL' : mtfContext.score)}</span>
                             </div>
                         </div>
                     </div>
