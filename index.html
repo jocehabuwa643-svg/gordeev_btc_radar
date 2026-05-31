@@ -220,7 +220,7 @@
             100% { box-shadow: 0 0 25px rgba(0, 240, 255, 0.7); text-shadow: 0 0 8px rgba(255,255,255,0.8); }
         }
 
-        /* --- MASSIVE BROKER BUTTON (NEW) --- */
+        /* --- MASSIVE BROKER BUTTON --- */
         .massive-broker-btn {
             background: linear-gradient(135deg, #00f0ff 0%, #0284c7 40%, #1e3a8a 100%);
             border: 2px solid rgba(0, 240, 255, 0.6); 
@@ -251,55 +251,66 @@
             pointer-events: none;
         }
 
-        /* --- EYE OF PROVIDENCE SCANNER CSS --- */
-        .eye-container {
-            position: absolute;
-            top: 0; left: 0;
-            width: 0; height: 0;
-            z-index: 55;
-            pointer-events: none;
+        /* --- SMART ZONE SCANNER CSS --- */
+        .smart-scanner-line {
+            position: absolute; top: 0; bottom: 0; left: 0; width: 2px;
+            background: linear-gradient(to bottom, rgba(0, 240, 255, 0), #00f0ff, rgba(0, 240, 255, 0));
+            box-shadow: 0 0 20px #00f0ff, 0 0 40px rgba(0, 240, 255, 0.4);
+            z-index: 55; pointer-events: none;
             will-change: transform;
-            transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .eye-graphic-wrapper {
+        .smart-scanner-dot {
+            position: absolute; left: -4px; top: 0; width: 10px; height: 10px;
+            background: #fff; border-radius: 50%;
+            box-shadow: 0 0 15px #fff, 0 0 30px #00f0ff;
+            will-change: transform;
+            transition: transform 0.1s linear;
+        }
+        .smart-scanner-tooltip {
+            position: absolute; left: 20px; top: 50%; 
+            transform: translateY(-50%) scale(0.95);
+            background: rgba(10, 15, 25, 0.9);
+            border: 1px solid rgba(0, 240, 255, 0.6);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 240, 255, 0.3);
+            backdrop-filter: blur(12px); border-radius: 8px;
+            padding: 10px 16px;
+            color: #00f0ff; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800;
+            white-space: nowrap; text-shadow: 0 0 8px rgba(0,240,255,0.8);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .smart-zone-pulse {
             position: absolute;
-            top: -40px; left: -40px;
             width: 80px; height: 80px;
-            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 54;
+            transform: scale(0.5);
         }
-        @keyframes slow-spin { 100% { transform: rotate(360deg); } }
-        .eye-bg-spin {
-            position: absolute; inset: -15px;
-            animation: slow-spin 15s linear infinite;
+        .smart-pulse-sell {
+            border: 2px solid #ff4500;
+            background: radial-gradient(circle, rgba(255,69,0,0.3) 0%, transparent 70%);
+            box-shadow: inset 0 0 30px rgba(255,69,0,0.5), 0 0 30px rgba(255,69,0,0.5);
         }
-        @keyframes beam-pulse { 0% { opacity: 0.3; } 100% { opacity: 0.8; } }
-        .eye-beam {
-            position: absolute;
-            top: 15px; left: -25px;
-            width: 50px; height: 250px;
-            background: linear-gradient(to bottom, rgba(0, 240, 255, 0.5) 0%, rgba(0, 240, 255, 0.05) 60%, transparent 100%);
-            clip-path: polygon(20% 0, 80% 0, 100% 100%, 0% 100%);
-            transform-origin: top center;
-            animation: beam-pulse 1.5s infinite alternate;
-            z-index: -1;
-            transition: opacity 0.4s ease;
+        .smart-pulse-buy {
+            border: 2px solid #a855f7;
+            background: radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%);
+            box-shadow: inset 0 0 30px rgba(168,85,247,0.5), 0 0 30px rgba(168,85,247,0.5);
         }
-        .eye-tooltip {
-            position: absolute;
-            left: 55px; top: -60px;
-            width: max-content;
-            background: rgba(10, 15, 30, 0.85);
-            border: 1px solid rgba(0, 240, 255, 0.4);
-            box-shadow: 0 0 25px rgba(0, 240, 255, 0.2);
-            backdrop-filter: blur(12px);
-            border-radius: 12px;
-            padding: 10px 14px;
-            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-            transform-origin: left center;
+        .smart-pulse-neutral {
+            border: 2px solid #00f0ff;
+            background: radial-gradient(circle, rgba(0,240,255,0.3) 0%, transparent 70%);
+            box-shadow: inset 0 0 30px rgba(0,240,255,0.5), 0 0 30px rgba(0,240,255,0.5);
         }
-
-        @keyframes pulse-zone { 0% { opacity: 0.15; } 50% { opacity: 0.4; } 100% { opacity: 0.15; } }
-        .zone-pulse-indicator-mesh { animation: pulse-zone 2s infinite ease-in-out; }
+        .active-smart-pulse {
+            animation: smartZoneAnim 2.5s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+        }
+        @keyframes smartZoneAnim {
+            0% { transform: scale(0.5); opacity: 1; }
+            50% { opacity: 0.9; }
+            100% { transform: scale(2.2); opacity: 0; border-width: 0; }
+        }
 
         @keyframes scalePulse {
             0% { transform: scale(1); opacity: 1; text-shadow: 0 0 15px rgba(0,240,255,0.7); }
@@ -357,7 +368,7 @@
             </svg>
         ));
 
-        // --- MASSIVE BROKER BUTTON (NEW) ---
+        // --- MASSIVE BROKER BUTTON ---
         const MassiveBrokerButton = React.memo(() => (
             <a 
                 href="https://boosty.to/gord666/posts/0e3a7a59-c3a5-4a03-ba30-46296b5c7be6" 
@@ -550,7 +561,7 @@
             return 'NEUTRAL';
         }
 
-        // --- BALANCED & RELAXED SIGNAL ENGINE ---
+        // --- ENHANCED BALANCED SIGNAL ENGINE ---
         function evaluateSignalEngine(data, evalIdx, liqMap, atrMap, mtfContext, engineState) {
             if (evalIdx < 100) return { valid: false, reason: 'Not enough data', score: 0 };
 
@@ -595,7 +606,7 @@
             const strictMsbPut = isRedCandle && (currCandle.close < prevCandle.low) && (body > cAtr * 0.25);
             const strictMsbCall = isGreenCandle && (currCandle.close > prevCandle.high) && (body > cAtr * 0.25);
 
-            // Relaxed Pin Bar Requirement (40% instead of 45/50%)
+            // Relaxed Pin Bar Requirement (40%)
             const massiveWickPut = upperWick > cAtr * 0.40 && upperWickRatio > 0.40 && returnedInsideTop;
             const massiveWickCall = lowerWick > cAtr * 0.40 && lowerWickRatio > 0.40 && returnedInsideBot;
 
@@ -656,12 +667,12 @@
             }
 
             const candlesSinceLast = (currTime - engineState.lastSignalTime) / 300; 
-            if (candlesSinceLast < 5) { // Faster cooldown
+            if (candlesSinceLast < 5) { 
                 qScore -= 25; rejectReason = 'Cooldown Active';
             }
 
             // --- Final Softened Threshold ---
-            const PASS_THRESHOLD = 64; // Hit the golden middle to trigger more signals
+            const PASS_THRESHOLD = 64; 
             if (qScore < PASS_THRESHOLD) {
                 if (!rejectReason) rejectReason = 'Score too low (Insufficient Quality)';
                 return { valid: false, reason: rejectReason, score: qScore };
@@ -836,16 +847,17 @@
           )
         });
 
-        // --- PREMIUM EYE OF PROVIDENCE SCANNER ---
+        // --- SMART ZONE SCANNER OVERLAY ---
         const ChartOverlays = ({ chart, series, trades, zoneInfo, zoneState, currentPriceVal, isScanningBacktest, chartData }) => {
             const overlayRef = useRef(null);
             const [hoveredTrade, setHoveredTrade] = useState(null);
             
-            const eyeRef = useRef(null);
-            const [scanData, setScanData] = useState(null);
-            const [isEyeScanning, setIsEyeScanning] = useState(false);
-            const targetRef = useRef(null);
+            const smartScannerRef = useRef(null);
+            const scannerDotRef = useRef(null);
+            const tooltipRef = useRef(null);
+            const pulseRefs = useRef([]);
 
+            // Scanner Engine Logic
             useEffect(() => {
                 if (!chartData || chartData.length < 5) return;
                 let isActive = true;
@@ -860,11 +872,13 @@
                         const min = Math.max(0, len - 144);
                         targetIdx = Math.floor(Math.random() * (len - min)) + min;
                     } else {
-                        if (Math.random() > 0.3) {
-                            const min = Math.max(0, len - 15);
+                        // Background Live Patrol Mode:
+                        // Move around recent history randomly, sometimes darting back further
+                        if (Math.random() > 0.4) {
+                            const min = Math.max(0, len - 20); // Focus tightly on very recent candles
                             targetIdx = Math.floor(Math.random() * (len - min)) + min;
                         } else {
-                            const min = Math.max(0, len - 60);
+                            const min = Math.max(0, len - 80); // Occasionally check older liquidity
                             targetIdx = Math.floor(Math.random() * (len - min)) + min;
                         }
                     }
@@ -878,36 +892,171 @@
                     setIsEyeScanning(false);
                     setScanData(null);
 
+                    // Travel time for the scanner to reach the target
                     await new Promise(r => setTimeout(r, 1200));
                     if (!isActive) return;
 
                     setIsEyeScanning(true);
                     setScanData(targetCandle);
 
+                    // Pause and "analyze"
                     await new Promise(r => setTimeout(r, 2000));
                     if (!isActive) return;
 
                     setIsEyeScanning(false);
                     setScanData(null);
 
+                    // Small delay before picking next target
                     await new Promise(r => setTimeout(r, 500));
                     scanLoop();
                 };
 
-                scanLoop();
+                // Internal state to hold target for RAF mapping
+                const targetRef = { current: null };
+                const setIsEyeScanning = () => {}; // Dummy, state is handled in RAF
+                const setScanData = () => {}; // Dummy, state is handled in RAF
+                
+                // Actual scan trigger is embedded within the RAF loop now for smoother state management
+
                 return () => { isActive = false; };
             }, [chartData, isScanningBacktest]);
 
+            // Sync Positions on RAF (Trades + Pulse Zone + Smart Scanner)
             useEffect(() => {
                 if (!chart || !series || !overlayRef.current) return;
-                let overlaySyncRaf = null;
+                let isActive = true;
+                let scannerRaf = null;
+                
+                let vPos = 0;
+                let vDir = 3.5;
+                let liveState = 'tracking';
+                let lastAnalysisTime = Date.now();
 
-                const syncPositions = () => {
-                    if (!chart || !series || !overlayRef.current) return;
+                const phrases = [
+                    "Анализ SELL LIQUIDITY зоны",
+                    "Анализ BUY LIQUIDITY зоны",
+                    "Проверка исторического экстремума",
+                    "Оценка структуры и импульса",
+                    "Сравнение с исторической зоной",
+                    "Сканирование зоны интереса"
+                ];
+
+                const firePulse = (x, y, type) => {
+                    const availablePulse = pulseRefs.current.find(el => el && !el.classList.contains('active-smart-pulse'));
+                    if (availablePulse) {
+                        availablePulse.style.left = `${x - 40}px`;
+                        availablePulse.style.top = `${y - 40}px`;
+                        availablePulse.className = `smart-zone-pulse active-smart-pulse smart-pulse-${type}`;
+                        setTimeout(() => {
+                            if (availablePulse && isActive) availablePulse.classList.remove('active-smart-pulse');
+                        }, 2500);
+                    }
+                };
+
+                const loop = () => {
+                    if (!isActive || !overlayRef.current) return;
+                    const width = overlayRef.current.clientWidth;
+                    const now = Date.now();
+
+                    // 1. Scanner Movement Logic
+                    if (isScanningBacktest) {
+                        vPos += vDir;
+                        if (vPos > width + 50) vPos = -50;
+                    } else {
+                        // LIVE PATROL MODE
+                        const targetV = width * 0.95; // Current price area
+                        if (zoneState === 'IN' && zoneInfo && chart) {
+                            const zoneX = chart.timeScale().timeToCoordinate(zoneInfo.time);
+                            if (zoneX !== null) vPos += (zoneX - vPos) * 0.15; // Lock onto active zone
+                        } else {
+                            if (liveState === 'tracking') {
+                                vPos += (targetV - vPos) * 0.1; // Stay near current price
+                                // Occasionally decide to go check history
+                                if (now - lastAnalysisTime > 4000 && Math.random() > 0.95) {
+                                    liveState = 'checking_history';
+                                    vDir = -(Math.random() * 4 + 3); 
+                                }
+                            } else {
+                                vPos += vDir; // Move left into history
+                                if (vPos < width * 0.4 || vPos < 50) liveState = 'returning';
+                                if (liveState === 'returning') {
+                                    vPos += (targetV - vPos) * 0.08; // Snap back to present
+                                    if (Math.abs(targetV - vPos) < 10) liveState = 'tracking';
+                                }
+                            }
+                        }
+                    }
+
+                    if (smartScannerRef.current) smartScannerRef.current.style.transform = `translateX(${vPos}px)`;
+
+                    // 2. Y-Tracking & Smart Analysis Triggers
+                    if (chart && series && chartData && chartData.length > 0) {
+                        const logical = chart.timeScale().coordinateToLogical(vPos);
+                        if (logical !== null) {
+                            const idx = Math.max(0, Math.min(chartData.length - 1, Math.round(logical)));
+                            const candle = chartData[idx];
+                            if (candle) {
+                                const yClose = series.priceToCoordinate(candle.close);
+                                const yHigh = series.priceToCoordinate(candle.high);
+                                const yLow = series.priceToCoordinate(candle.low);
+                                
+                                if (scannerDotRef.current && yClose !== null) {
+                                    scannerDotRef.current.style.transform = `translateY(${yClose}px)`;
+                                }
+
+                                // Trigger analysis overlay periodically
+                                if (now - lastAnalysisTime > 3500) {
+                                    if (Math.random() > 0.5 || (zoneState === 'IN' && now - lastAnalysisTime > 2000)) {
+                                        lastAnalysisTime = now;
+                                        
+                                        let isSell = false, isBuy = false, type = 'neutral';
+                                        let pulseY = yClose;
+                                        let phrase = phrases[3]; 
+
+                                        if (zoneState === 'IN' && zoneInfo) {
+                                            isSell = zoneInfo.type === 'RESISTANCE';
+                                            isBuy = zoneInfo.type === 'SUPPORT';
+                                            phrase = isSell ? "Анализ SELL LIQUIDITY (Active)" : "Анализ BUY LIQUIDITY (Active)";
+                                            pulseY = series.priceToCoordinate(isSell ? zoneInfo.top : zoneInfo.bottom);
+                                            type = isSell ? 'sell' : 'buy';
+                                        } else {
+                                            const r = Math.random();
+                                            if (r > 0.7) {
+                                                phrase = phrases[0]; pulseY = yHigh; type = 'sell';
+                                            } else if (r > 0.4) {
+                                                phrase = phrases[1]; pulseY = yLow; type = 'buy';
+                                            } else if (r > 0.2) {
+                                                phrase = phrases[2]; type = 'neutral';
+                                            } else {
+                                                phrase = phrases[4]; type = 'neutral';
+                                            }
+                                        }
+
+                                        if (tooltipRef.current) {
+                                            tooltipRef.current.innerText = phrase;
+                                            tooltipRef.current.style.opacity = '1';
+                                            tooltipRef.current.style.transform = 'translateY(-50%) scale(1)';
+                                            setTimeout(() => {
+                                                if(tooltipRef.current && isActive) {
+                                                    tooltipRef.current.style.opacity = '0';
+                                                    tooltipRef.current.style.transform = 'translateY(-50%) scale(0.95)';
+                                                }
+                                            }, 2500);
+                                        }
+
+                                        if (pulseY !== null) {
+                                            firePulse(vPos, pulseY, type);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 3. Sync Other Overlays (Trades & Zone Pulse)
                     const timeScale = chart.timeScale();
-                    
-                    const pulseBox = overlayRef.current.querySelector('.zone-pulse-indicator');
-                    if (pulseBox && zoneInfo && zoneState === 'IN') {
+                    const pBox = overlayRef.current.querySelector('.zone-pulse-indicator');
+                    if (pBox && zoneInfo && zoneState === 'IN') {
                         const currentLog = timeScale.coordinateToLogical(timeScale.timeToCoordinate(zoneInfo.time));
                         if (currentLog !== null) {
                             const xStart = timeScale.logicalToCoordinate(currentLog);
@@ -920,21 +1069,21 @@
                             const y = series.priceToCoordinate(yPrice);
 
                             if (xStart !== null && xEnd !== null && y !== null) {
-                                pulseBox.style.display = 'block';
-                                pulseBox.style.left = `${xStart}px`;
-                                pulseBox.style.width = `${Math.max(xEnd - xStart, 30)}px`;
-                                pulseBox.style.top = `${y - 15}px`; 
-                                pulseBox.style.height = `30px`;
+                                pBox.style.display = 'block';
+                                pBox.style.left = `${xStart}px`;
+                                pBox.style.width = `${Math.max(xEnd - xStart, 30)}px`;
+                                pBox.style.top = `${y - 15}px`; 
+                                pBox.style.height = `30px`;
 
-                                const inner = pulseBox.querySelector('div');
+                                const inner = pBox.querySelector('div');
                                 if (zoneInfo.type === 'RESISTANCE') {
                                     inner.className = 'absolute inset-0 zone-pulse-indicator-mesh rounded-r-full bg-rose-500/20 border-y border-r border-rose-500/60 shadow-[0_0_15px_rgba(255,0,85,0.4)]';
                                 } else {
                                     inner.className = 'absolute inset-0 zone-pulse-indicator-mesh rounded-r-full bg-emerald-500/20 border-y border-r border-cyan-500/60 shadow-[0_0_15px_rgba(0,240,255,0.4)]';
                                 }
-                            } else { pulseBox.style.display = 'none'; }
+                            } else { pBox.style.display = 'none'; }
                         }
-                    } else if (pulseBox) { pulseBox.style.display = 'none'; }
+                    } else if (pBox) { pBox.style.display = 'none'; }
 
                     const tradeBoxes = overlayRef.current.querySelectorAll('.trade-glass-box');
                     tradeBoxes.forEach(box => {
@@ -980,104 +1129,41 @@
                         } else { box.style.display = 'none'; }
                     });
 
-                    if (eyeRef.current && targetRef.current) {
-                        const cx = timeScale.timeToCoordinate(targetRef.current.time);
-                        const cy = series.priceToCoordinate(targetRef.current.high);
-                        
-                        if (cx !== null && cy !== null) {
-                            eyeRef.current.style.transform = `translate(${cx}px, ${cy - 90}px)`;
-                            eyeRef.current.style.opacity = '1';
-                        } else {
-                            eyeRef.current.style.opacity = '0';
-                        }
-                    }
+                    scannerRaf = requestAnimationFrame(loop);
                 };
 
+                scannerRaf = requestAnimationFrame(loop);
+
+                // Re-sync purely static elements when panning
                 const scheduleOverlaySync = () => {
-                    if (overlaySyncRaf) return;
-                    overlaySyncRaf = requestAnimationFrame(() => {
-                        overlaySyncRaf = null;
-                        syncPositions();
-                    });
+                    // Logic is handled in continuous loop for smoothness now
                 };
-
-                scheduleOverlaySync();
 
                 chart.timeScale().subscribeVisibleLogicalRangeChange(scheduleOverlaySync);
                 try { chart.timeScale().subscribeVisibleTimeRangeChange(scheduleOverlaySync); } catch(e){}
                 chart.subscribeCrosshairMove(scheduleOverlaySync);
 
-                let ro;
-                if (window.ResizeObserver && overlayRef.current) {
-                    let resizeTimer;
-                    ro = new ResizeObserver(() => {
-                        clearTimeout(resizeTimer);
-                        resizeTimer = setTimeout(scheduleOverlaySync, 20);
-                    });
-                    ro.observe(overlayRef.current);
-                }
-
                 return () => {
-                    if (overlaySyncRaf) cancelAnimationFrame(overlaySyncRaf);
+                    isActive = false;
+                    cancelAnimationFrame(scannerRaf);
                     chart.timeScale().unsubscribeVisibleLogicalRangeChange(scheduleOverlaySync);
                     try { chart.timeScale().unsubscribeVisibleTimeRangeChange(scheduleOverlaySync); } catch(e){}
                     chart.unsubscribeCrosshairMove(scheduleOverlaySync);
-                    if (ro) ro.disconnect();
                 };
-            }, [chart, series, trades, zoneInfo, zoneState]);
-
-            const tScan = scanData ? new Date(scanData.time * 1000) : new Date();
-            const timeStr = `${tScan.getHours().toString().padStart(2,'0')}:${tScan.getMinutes().toString().padStart(2,'0')}`;
+            }, [chart, series, trades, zoneInfo, zoneState, isScanningBacktest, chartData]);
 
             return (
                 <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden rounded-3xl" ref={overlayRef}>
                     
-                    {/* --- THE EYE OF PROVIDENCE SCANNER --- */}
-                    <div ref={eyeRef} className="eye-container">
-                        <div className="eye-graphic-wrapper">
-                            
-                            {/* Rotating Background Base */}
-                            <svg viewBox="0 0 100 100" className="eye-bg-spin w-full h-full opacity-80">
-                                <circle cx="50" cy="50" r="45" stroke="#00f0ff" strokeWidth="1" strokeDasharray="4 6" fill="none" opacity="0.5" />
-                                <polygon points="50,10 90,80 10,80" stroke="rgba(0, 240, 255, 0.8)" strokeWidth="1.5" fill="rgba(0, 240, 255, 0.05)" />
-                                <polygon points="50,18 80,72 20,72" stroke="rgba(255, 0, 255, 0.4)" strokeWidth="1" fill="none" />
-                            </svg>
+                    {/* SMART SCANNER PULSES POOL */}
+                    {[0, 1, 2, 3, 4].map(i => (
+                        <div key={`pulse-${i}`} ref={el => pulseRefs.current[i] = el} className="smart-zone-pulse"></div>
+                    ))}
 
-                            {/* Static Foreground Eye */}
-                            <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full drop-shadow-[0_0_8px_rgba(0,240,255,1)]">
-                                {/* Eye shape */}
-                                <path d="M 20 60 Q 50 40 80 60 Q 50 80 20 60 Z" stroke="#00f0ff" strokeWidth="2.5" fill="rgba(10, 15, 30, 0.9)" />
-                                {/* Iris */}
-                                <circle cx="50" cy="60" r="9" stroke="rgba(255, 0, 255, 0.8)" strokeWidth="1.5" fill="none" />
-                                {/* Pupil (pulses when scanning) */}
-                                <circle cx="50" cy="60" r="4" fill="#00f0ff" className={isEyeScanning ? "animate-ping" : ""} />
-                                <circle cx="50" cy="60" r="2" fill="#fff" />
-                                {/* Tech rays */}
-                                <line x1="50" y1="42" x2="50" y2="35" stroke="#00f0ff" strokeWidth="1.5" />
-                                <line x1="50" y1="78" x2="50" y2="85" stroke="#00f0ff" strokeWidth="1.5" />
-                                <line x1="30" y1="60" x2="25" y2="60" stroke="#00f0ff" strokeWidth="1.5" />
-                                <line x1="70" y1="60" x2="75" y2="60" stroke="#00f0ff" strokeWidth="1.5" />
-                            </svg>
-
-                            {/* Downward X-Ray Beam */}
-                            <div className={`eye-beam ${isEyeScanning ? 'opacity-100' : 'opacity-0'}`}></div>
-
-                            {/* Info Tooltip */}
-                            <div className={`eye-tooltip ${isEyeScanning && scanData ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
-                                <div className="text-[8px] text-cyan-400 font-black tracking-widest uppercase mb-1.5 flex items-center gap-1.5 border-b border-cyan-500/30 pb-1">
-                                    <Radar size={11} className="animate-spin text-fuchsia-400" /> 
-                                    <span style={{ textShadow: '0 0 5px #00f0ff' }}>SCANNING LIQUIDITY</span>
-                                </div>
-                                {scanData && (
-                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[9px] mono-font text-slate-300 font-bold">
-                                        <span className="text-slate-500">TIME:</span> <span className="text-right text-slate-100">{timeStr}</span>
-                                        <span className="text-slate-500">HIGH:</span> <span className="text-right text-emerald-400">{scanData.high.toFixed(2)}</span>
-                                        <span className="text-slate-500">LOW:</span> <span className="text-right text-rose-400">{scanData.low.toFixed(2)}</span>
-                                        <span className="text-slate-500">VOL:</span> <span className="text-right text-cyan-200 drop-shadow-[0_0_2px_#00f0ff]">{Math.floor(scanData.volume)}</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                    {/* SMART SCANNER LINE & DOT */}
+                    <div ref={smartScannerRef} className="smart-scanner-line">
+                        <div ref={scannerDotRef} className="smart-scanner-dot"></div>
+                        <div ref={tooltipRef} className="smart-scanner-tooltip">Ожидание...</div>
                     </div>
 
                     <div className="zone-pulse-indicator absolute pointer-events-none z-10" style={{ display: 'none' }}>
