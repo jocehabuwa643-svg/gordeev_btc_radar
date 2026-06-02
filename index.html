@@ -255,20 +255,57 @@
             opacity: 0; transition: opacity 1s ease;
         }
 
+        /* --- UPDATED PREMIUM GLASSMORPHIC ZONE CAPSULE --- */
         .zone-capsule {
             position: absolute; z-index: 48; pointer-events: none;
-            border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 16px;
-            backdrop-filter: blur(4px) saturate(120%);
+            border-radius: 24px;
+            backdrop-filter: blur(12px) saturate(150%);
+            -webkit-backdrop-filter: blur(12px) saturate(150%);
             transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
             opacity: 0; transform: scale(0.95);
+            animation: subtle-breathe 2.5s infinite alternate ease-in-out;
+            overflow: hidden;
         }
         .zone-capsule.active { opacity: 1; transform: scale(1); }
-        .zone-capsule-res { box-shadow: 0 0 50px rgba(255, 0, 85, 0.15), inset 0 0 30px rgba(255, 0, 85, 0.1); border-color: rgba(255,0,85,0.4); }
-        .zone-capsule-sup { box-shadow: 0 0 50px rgba(0, 240, 255, 0.15), inset 0 0 30px rgba(0, 240, 255, 0.1); border-color: rgba(0,240,255,0.4); }
+        
+        /* Prioritized Focus Modes */
+        .zone-capsule-forced-call {
+            color: rgba(16, 185, 129, 0.4);
+            box-shadow: 0 0 50px rgba(16, 185, 129, 0.2), inset 0 0 30px rgba(16, 185, 129, 0.15); 
+            border: 1px solid rgba(16, 185, 129, 0.5);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.05));
+        }
+        .zone-capsule-forced-put {
+            color: rgba(225, 29, 72, 0.4);
+            box-shadow: 0 0 50px rgba(225, 29, 72, 0.2), inset 0 0 30px rgba(225, 29, 72, 0.15); 
+            border: 1px solid rgba(225, 29, 72, 0.5);
+            background: linear-gradient(135deg, rgba(225, 29, 72, 0.15), rgba(190, 18, 60, 0.05));
+        }
+        
+        /* Fallback Default Zones */
+        .zone-capsule-res { color: rgba(255, 0, 85, 0.4); box-shadow: 0 0 50px rgba(255, 0, 85, 0.15), inset 0 0 30px rgba(255, 0, 85, 0.1); border: 1px solid rgba(255,0,85,0.4); background: rgba(255,0,85,0.05); }
+        .zone-capsule-sup { color: rgba(0, 240, 255, 0.4); box-shadow: 0 0 50px rgba(0, 240, 255, 0.15), inset 0 0 30px rgba(0, 240, 255, 0.1); border: 1px solid rgba(0,240,255,0.4); background: rgba(0,240,255,0.05); }
+
+        .capsule-particles { position: absolute; inset: 0; pointer-events: none; }
+        .capsule-particle { position: absolute; width: 2px; height: 12px; background: currentColor; border-radius: 2px; animation: zone-float-up 2s infinite linear; }
+        .cp1 { left: 20%; top: 100%; animation-duration: 2.5s; }
+        .cp2 { left: 50%; top: 100%; animation-duration: 1.8s; animation-delay: 0.5s; }
+        .cp3 { left: 80%; top: 100%; animation-duration: 2.2s; animation-delay: 1s; }
+
         .capsule-laser {
             position: absolute; left: 0; right: 0; height: 1px;
-            background: #fff; box-shadow: 0 0 15px currentColor, 0 0 30px currentColor;
+            background: currentColor; box-shadow: 0 0 15px currentColor, 0 0 30px currentColor;
             animation: capsule-scan 2.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes subtle-breathe { 
+            0% { transform: scale(0.98); opacity: 0.85; } 
+            100% { transform: scale(1.02); opacity: 1; } 
+        }
+        @keyframes zone-float-up {
+            0% { transform: translateY(0) scale(1); opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(-40px) scale(0.5); opacity: 0; }
         }
         @keyframes capsule-scan { 0% { top: 5%; } 100% { top: 95%; } }
 
@@ -727,12 +764,20 @@
             const returnedInsideTop = currCandle.close < cUpper;
             const returnedInsideBot = currCandle.close > cLower;
 
-            const strictMsbPut = isRedCandle && (currCandle.close < prevCandle.low) && (body > cAtr * 0.25);
-            const strictMsbCall = isGreenCandle && (currCandle.close > prevCandle.high) && (body > cAtr * 0.25);
+            // --- LOGIC: OVERRIDE DIRECTION ON CONSECUTIVE LOSSES ---
+            const isForcedCall = engineState.forcedDirection === 'CALL';
+            const isForcedPut = engineState.forcedDirection === 'PUT';
 
-            // Relaxed Pin Bar Requirement (40%)
-            const massiveWickPut = upperWick > cAtr * 0.40 && upperWickRatio > 0.40 && returnedInsideTop;
-            const massiveWickCall = lowerWick > cAtr * 0.40 && lowerWickRatio > 0.40 && returnedInsideBot;
+            // ADAPTIVE MULTIPLIERS FOR RELAXED CRITERIA IN FAVOURED DIRECTION
+            const atrMult = (isForcedPut && isRedCandle) || (isForcedCall && isGreenCandle) ? 0.15 : 0.25;
+            const wickMult = (isForcedPut) || (isForcedCall) ? 0.30 : 0.40;
+
+            const strictMsbPut = isRedCandle && (currCandle.close < prevCandle.low) && (body > cAtr * atrMult);
+            const strictMsbCall = isGreenCandle && (currCandle.close > prevCandle.high) && (body > cAtr * atrMult);
+
+            // Relaxed Pin Bar Requirement
+            const massiveWickPut = upperWick > cAtr * wickMult && upperWickRatio > wickMult && returnedInsideTop;
+            const massiveWickCall = lowerWick > cAtr * wickMult && lowerWickRatio > wickMult && returnedInsideBot;
 
             let strongBullImpulse = false;
             let strongBearImpulse = false;
@@ -754,10 +799,6 @@
                 if (strictMsbCall) { isCall = true; signalType = 'SMC Sweep & MSB'; baseScore = 65; }
                 else if (massiveWickCall) { isCall = true; signalType = 'Rejection Wick'; baseScore = 60; }
             }
-
-            // --- LOGIC: OVERRIDE DIRECTION ON CONSECUTIVE LOSSES ---
-            const isForcedCall = engineState.forcedDirection === 'CALL';
-            const isForcedPut = engineState.forcedDirection === 'PUT';
 
             let rejectReason = '';
             if (isForcedCall && isPut) {
@@ -970,7 +1011,7 @@
         });
 
         // --- NEW ORB OVERLAYS COMPONENT ---
-        const ChartOverlays = ({ chart, series, trades, zoneInfo, zoneState, currentPriceVal, isScanningBacktest, chartData, signalPhase, signal, viewMode }) => {
+        const ChartOverlays = ({ chart, series, trades, zoneInfo, zoneState, currentPriceVal, isScanningBacktest, chartData, signalPhase, signal, viewMode, forcedDirection }) => {
             const overlayRef = useRef(null);
             const [hoveredTrade, setHoveredTrade] = useState(null);
             
@@ -1070,7 +1111,6 @@
                                     if (orbInfoRef.current) orbInfoRef.current.style.opacity = '0';
                                 }
                             }
-                            // In EXPLAINING phase, movement is handled via a separate async function to ensure smooth delays.
                         }
                     }
                     // --- MODE 3: ZONE CAPSULE ---
@@ -1098,7 +1138,12 @@
                                 capsuleRef.current.style.height = `${maxY - minY + 20}px`;
                                 capsuleRef.current.style.left = `${zX - 50}px`;
                                 capsuleRef.current.style.width = `100px`;
-                                capsuleRef.current.className = `zone-capsule active ${zoneInfo.type === 'RESISTANCE' ? 'zone-capsule-res' : 'zone-capsule-sup'}`;
+                                
+                                let colorClass = zoneInfo.type === 'RESISTANCE' ? 'zone-capsule-res' : 'zone-capsule-sup';
+                                if (forcedDirection === 'CALL') colorClass = 'zone-capsule-forced-call';
+                                else if (forcedDirection === 'PUT') colorClass = 'zone-capsule-forced-put';
+                                
+                                capsuleRef.current.className = `zone-capsule active ${colorClass}`;
                             }
                         }
                     } 
@@ -1174,7 +1219,7 @@
 
                 rafId = requestAnimationFrame(loop);
                 return () => { isActive = false; cancelAnimationFrame(rafId); };
-            }, [chart, series, zoneInfo, zoneState, isScanningBacktest, signalPhase, viewMode, backtestTargets, trades, chartData, signal]);
+            }, [chart, series, zoneInfo, zoneState, isScanningBacktest, signalPhase, viewMode, backtestTargets, trades, chartData, signal, forcedDirection]);
 
             // Async Logic for EXPLAINING Orb Float
             useEffect(() => {
@@ -1227,8 +1272,6 @@
             useEffect(() => {
                 if (!chart) return;
                 const scheduleOverlaySync = () => {}; 
-                // Currently handled rapidly by the continuous RAF loop above, 
-                // but registering to timescale ensures no glitches if RAF is throttled.
                 chart.timeScale().subscribeVisibleLogicalRangeChange(scheduleOverlaySync);
                 return () => {
                     chart.timeScale().unsubscribeVisibleLogicalRangeChange(scheduleOverlaySync);
@@ -1252,9 +1295,14 @@
                     {/* MODE 3: ZONE CAPSULE */}
                     <div ref={capsuleRef} className="zone-capsule">
                         <div className="capsule-laser"></div>
-                        <div className="capsule-info">
-                            <div className="text-[9px] text-cyan-400 font-bold opacity-80 mb-0.5 tracking-wider">ZONE ANALYTICS</div>
-                            <div className="text-xs font-black text-shadow-sm">Density: {Math.floor(Math.random() * 10 + 85)}%</div>
+                        <div className="capsule-particles">
+                            <div className="capsule-particle cp1"></div>
+                            <div className="capsule-particle cp2"></div>
+                            <div className="capsule-particle cp3"></div>
+                        </div>
+                        <div className="capsule-info absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full">
+                            <div className="text-[9px] font-bold opacity-90 mb-0.5 tracking-wider drop-shadow-md text-inherit">ZONE ANALYTICS</div>
+                            <div className="text-xs font-black text-shadow-sm text-inherit">Density: {Math.floor(Math.random() * 10 + 85)}%</div>
                         </div>
                     </div>
 
@@ -1808,9 +1856,9 @@
                         const lostDir = engineState.forcedDirection === 'CALL' ? 'шорт' : 'лонг';
                         const waitDir = engineState.forcedDirection === 'CALL' ? 'лонговых' : 'шортовых';
                         
-                        speechText = `За последние 12 часов было ${finalStats.trades} сигналов: ${finalStats.wins} плюсовых и ${finalStats.losses} минусовых. Сработала система безопасности. После двух убытков подряд в ${lostDir}, алгоритм перешел в режим ожидания ${waitDir} сигналов с ослабленными фильтрами. Текущий результат: ${pnlStr} рублей. Это временная просадка. Мы ожидаем разворот и планируем отыграть этот минус в следующих сделках.`;
+                        speechText = `За последние 12 часов найдено ${finalStats.trades} сигналов: ${finalStats.wins} в плюс и ${finalStats.losses} в минус. Текущий финансовый результат: ${pnlStr} рублей. Сработала система безопасности после двух убытков подряд в ${lostDir}. Алгоритм переключил приоритет на поиск ${waitDir} сигналов с адаптированными фильтрами. Этот минус — временная просадка, мы ожидаем разворот и планируем отыграть его в следующих сделках.`;
                     } else {
-                        speechText = `За последние 12 часов было ${finalStats.trades} сигналов: ${finalStats.wins} плюсовых и ${finalStats.losses} минусовых. Текущий результат: ${pnlStr} рублей. Стратегия работает в штатном режиме.`;
+                        speechText = `За последние 12 часов найдено ${finalStats.trades} сигналов: ${finalStats.wins} в плюс и ${finalStats.losses} в минус. Финансовый результат: ${pnlStr} рублей. Стратегия работает в штатном режиме.`;
                     }
                     addLog(`ИСТОРИЯ ЗА 12 ЧАСОВ: СДЕЛОК ${finalStats.trades}, PNL ${finalStats.pnl}`, true);
                 } else {
@@ -2314,6 +2362,7 @@
                           signalPhase={signalPhase}
                           signal={signal}
                           viewMode={viewMode}
+                          forcedDirection={forcedDirectionRef.current}
                         />
                     </div>
                     
