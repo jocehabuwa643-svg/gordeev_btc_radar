@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -754,11 +755,21 @@
                 else if (massiveWickCall) { isCall = true; signalType = 'Rejection Wick'; baseScore = 60; }
             }
 
-            if (!isCall && !isPut) return { valid: false, reason: 'No strict SMC setup', score: 0 };
+            // --- NEW LOGIC: OVERRIDE DIRECTION ON CONSECUTIVE LOSSES ---
+            let rejectReason = '';
+            if (engineState.forcedDirection === 'CALL' && isPut) {
+                isPut = false;
+                rejectReason = 'Direction Override (Forced CALL)';
+            }
+            if (engineState.forcedDirection === 'PUT' && isCall) {
+                isCall = false;
+                rejectReason = 'Direction Override (Forced PUT)';
+            }
+
+            if (!isCall && !isPut) return { valid: false, reason: rejectReason || 'No strict SMC setup', score: 0 };
             if (isCall && isPut) return { valid: false, reason: 'Conflicting signals', score: 0 };
 
             let qScore = baseScore;
-            let rejectReason = '';
             let mtfConfStr = 'WAIT';
 
             if (isCall && deepSweepBot) qScore += 10;
@@ -1385,6 +1396,11 @@
           const isSpeakingRef = useRef(false);
           const lastSpokenKeysRef = useRef({});
 
+          // Новые переменные для отслеживания убытков по направлению
+          const forcedDirectionRef = useRef(null);
+          const lastLossDirectionRef = useRef(null);
+          const lossesInDirRef = useRef(0);
+
           // Sync Panel State
           useEffect(() => {
               if (signalPhase !== 'NONE') setPanelState('SIGNAL');
@@ -1640,7 +1656,7 @@
 
                 let d_candles = 0, d_sweepH = 0, d_sweepL = 0, d_recB = 0, d_recS = 0, d_cand = 0, d_conf = 0, d_rej = 0; let d_lastRej = 'None';
                 const newTradesHistory = []; 
-                let engineState = { lastSignalTime: 0, lastSignalPrice: 0, consecutiveLosses: 0 };
+                let engineState = { lastSignalTime: 0, lastSignalPrice: 0, consecutiveLosses: 0, forcedDirection: null, lastLossDirection: null, lossesInDir: 0 };
                 let localMartingaleIdx = 0;
 
                 const twelveHoursAgoSec = Math.floor(Date.now() / 1000) - (12 * 60 * 60);
@@ -1715,9 +1731,25 @@
 
                         if (result === "WIN") {
                             localMartingaleIdx = 0; engineState.consecutiveLosses = 0;
+                            engineState.forcedDirection = null;
+                            engineState.lastLossDirection = null;
+                            engineState.lossesInDir = 0;
                         } else {
                             engineState.consecutiveLosses++;
                             localMartingaleIdx = localMartingaleIdx < 6 ? localMartingaleIdx + 1 : 0;
+
+                            const tradeDir = sig.isCall ? 'CALL' : 'PUT';
+                            if (engineState.lastLossDirection === tradeDir) {
+                                engineState.lossesInDir++;
+                            } else {
+                                engineState.lastLossDirection = tradeDir;
+                                engineState.lossesInDir = 1;
+                            }
+
+                            if (engineState.lossesInDir >= 2) {
+                                engineState.forcedDirection = tradeDir === 'CALL' ? 'PUT' : 'CALL';
+                                engineState.lossesInDir = 0;
+                            }
                         }
                         idx += 5; 
                     }
@@ -1725,6 +1757,9 @@
 
                 setMartingaleIndex(localMartingaleIdx);
                 consecutiveLossesRef.current = engineState.consecutiveLosses;
+                forcedDirectionRef.current = engineState.forcedDirection;
+                lastLossDirectionRef.current = engineState.lastLossDirection;
+                lossesInDirRef.current = engineState.lossesInDir;
 
                 lastSignalTimeRef.current = engineState.lastSignalTime; lastSignalPriceRef.current = engineState.lastSignalPrice;
                 lastEvaluatedCandleTimeRef.current = initialData[initialData.length - 4]?.time || 0; lastClosedCandleTimeUiRef.current = lastEvaluatedCandleTimeRef.current;
@@ -1840,7 +1875,14 @@
                           }
 
                           lastClosedCandleTimeUiRef.current = evalCandleTime;
-                          const liveEngineState = { lastSignalTime: lastSignalTimeRef.current, lastSignalPrice: lastSignalPriceRef.current, consecutiveLosses: consecutiveLossesRef.current };
+                          const liveEngineState = { 
+                              lastSignalTime: lastSignalTimeRef.current, 
+                              lastSignalPrice: lastSignalPriceRef.current, 
+                              consecutiveLosses: consecutiveLossesRef.current,
+                              forcedDirection: forcedDirectionRef.current,
+                              lastLossDirection: lastLossDirectionRef.current,
+                              lossesInDir: lossesInDirRef.current
+                          };
                           const sig = evaluateSignalEngine(data, evaluateIdx, liqMap, atrMap, cachedMtfRef.current, liveEngineState);
                           const evaluatedStatus = sig.valid ? 'CONFIRMED' : (sig.reason ? 'REJECTED' : 'NO_SIGNAL');
                           ScanLedger.set(evalCandleTime, evaluatedStatus);
@@ -2004,11 +2046,29 @@
 
                               if (result === "WIN") {
                                 setMartingaleIndex(0); consecutiveLossesRef.current = 0; 
+                                forcedDirectionRef.current = null;
+                                lastLossDirectionRef.current = null;
+                                lossesInDirRef.current = 0;
                                 playSound('win'); addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
                                 await speakAsync(`Сделка закрылась в плюс. Отличный результат. Сброс до первой ступени.`, `trade-result-win-${actualEntryTime}`, 1);
                               } else {
                                 consecutiveLossesRef.current += 1;
                                 playSound('loss'); addLog(`РЕЗУЛЬТАТ: МИНУС (-).`);
+
+                                const tradeDir = sig.isCall ? 'CALL' : 'PUT';
+                                if (lastLossDirectionRef.current === tradeDir) {
+                                    lossesInDirRef.current += 1;
+                                } else {
+                                    lastLossDirectionRef.current = tradeDir;
+                                    lossesInDirRef.current = 1;
+                                }
+
+                                if (lossesInDirRef.current >= 2) {
+                                    forcedDirectionRef.current = tradeDir === 'CALL' ? 'PUT' : 'CALL';
+                                    lossesInDirRef.current = 0;
+                                    addLog(`СМЕНА ПРИОРИТЕТА: ИЩЕМ СИГНАЛЫ ТОЛЬКО ${forcedDirectionRef.current === 'CALL' ? 'ВВЕРХ' : 'ВНИЗ'}`, true);
+                                }
+
                                 setMartingaleIndex(prev => {
                                     const nextIdx = prev < 6 ? prev + 1 : 0;
                                     speakAsync(`Минус. Переходим на колено ${nextIdx + 1} по Мартингейлу.`, `trade-result-loss-${actualEntryTime}`, 1);
@@ -2413,3 +2473,6 @@
     </script>
 </body>
 </html>
+
+
+```
