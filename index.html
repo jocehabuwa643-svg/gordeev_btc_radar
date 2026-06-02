@@ -294,7 +294,7 @@
             border-top-color: rgba(255,255,255,0.6); border-bottom-color: rgba(0, 240, 255, 0.2);
         }
         .orb-put .focus-orb-glass {
-            background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.25) 0%, rgba(255, 0, 85, 0.15) 40%, rgba(30, 0, 10, 0.7) 90%);
+            background: radial-gradient(circle at 35% 35%, rgba(255, 0, 85, 0.15) 40%, rgba(30, 0, 10, 0.7) 90%);
             box-shadow: inset 15px 15px 25px rgba(255, 255, 255, 0.15), inset -15px -15px 30px rgba(100, 0, 20, 0.8), 0 20px 40px rgba(255, 0, 85, 0.3), 0 0 80px rgba(255, 0, 85, 0.15);
             border-top-color: rgba(255,255,255,0.6); border-bottom-color: rgba(255, 0, 85, 0.2);
         }
@@ -685,7 +685,7 @@
             return 'NEUTRAL';
         }
 
-        // --- ENHANCED BALANCED SIGNAL ENGINE ---
+        // --- ENHANCED BALANCED SIGNAL ENGINE WITH RELAXED FILTERS ---
         function evaluateSignalEngine(data, evalIdx, liqMap, atrMap, mtfContext, engineState) {
             if (evalIdx < 100) return { valid: false, reason: 'Not enough data', score: 0 };
 
@@ -755,13 +755,16 @@
                 else if (massiveWickCall) { isCall = true; signalType = 'Rejection Wick'; baseScore = 60; }
             }
 
-            // --- NEW LOGIC: OVERRIDE DIRECTION ON CONSECUTIVE LOSSES ---
+            // --- LOGIC: OVERRIDE DIRECTION ON CONSECUTIVE LOSSES ---
+            const isForcedCall = engineState.forcedDirection === 'CALL';
+            const isForcedPut = engineState.forcedDirection === 'PUT';
+
             let rejectReason = '';
-            if (engineState.forcedDirection === 'CALL' && isPut) {
+            if (isForcedCall && isPut) {
                 isPut = false;
                 rejectReason = 'Direction Override (Forced CALL)';
             }
-            if (engineState.forcedDirection === 'PUT' && isCall) {
+            if (isForcedPut && isCall) {
                 isCall = false;
                 rejectReason = 'Direction Override (Forced PUT)';
             }
@@ -775,9 +778,9 @@
             if (isCall && deepSweepBot) qScore += 10;
             if (isPut && deepSweepTop) qScore += 10;
 
-            // Penalty for impulse softened
-            if (isCall && strongBearImpulse) { qScore -= 10; rejectReason = 'Bear Impulse Risk'; }
-            if (isPut && strongBullImpulse) { qScore -= 10; rejectReason = 'Bull Impulse Risk'; }
+            // RELAXED FILTERS: Penalty for impulse softened or disabled if forced
+            if (isCall && strongBearImpulse && !isForcedCall) { qScore -= 10; rejectReason = 'Bear Impulse Risk'; }
+            if (isPut && strongBullImpulse && !isForcedPut) { qScore -= 10; rejectReason = 'Bull Impulse Risk'; }
 
             const currentVolume = currCandle.volume || 0;
             if (currentVolume > 0 && evalIdx > 14) {
@@ -788,12 +791,19 @@
 
             const h4 = mtfContext.h4; const h1 = mtfContext.h1;
             
+            // RELAXED FILTERS: MTF conflict penalty disabled if forced
             if (isCall) {
                 if (h4 === 'BULLISH' || h1 === 'BULLISH') { qScore += 12; mtfConfStr = 'CONFIRMED'; }
-                else if (h4 === 'BEARISH' && h1 === 'BEARISH') { qScore -= 10; rejectReason = 'Against HTF Trend'; mtfConfStr = 'CONFLICT'; }
-            } else {
+                else if (h4 === 'BEARISH' && h1 === 'BEARISH') { 
+                    if (!isForcedCall) { qScore -= 10; rejectReason = 'Against HTF Trend'; mtfConfStr = 'CONFLICT'; }
+                    else { mtfConfStr = 'FORCED'; }
+                }
+            } else if (isPut) {
                 if (h4 === 'BEARISH' || h1 === 'BEARISH') { qScore += 12; mtfConfStr = 'CONFIRMED'; }
-                else if (h4 === 'BULLISH' && h1 === 'BULLISH') { qScore -= 10; rejectReason = 'Against HTF Trend'; mtfConfStr = 'CONFLICT'; }
+                else if (h4 === 'BULLISH' && h1 === 'BULLISH') { 
+                    if (!isForcedPut) { qScore -= 10; rejectReason = 'Against HTF Trend'; mtfConfStr = 'CONFLICT'; }
+                    else { mtfConfStr = 'FORCED'; }
+                }
             }
 
             if (mtfConfStr === 'WAIT' || h4 === 'LOCAL' || mtfContext.status.includes('LOCAL')) {
@@ -803,6 +813,11 @@
             const candlesSinceLast = (currTime - engineState.lastSignalTime) / 300; 
             if (candlesSinceLast < 5) { 
                 qScore -= 25; rejectReason = 'Cooldown Active';
+            }
+
+            // RELAXED FILTERS: Boost score and pass easily if it's the favored direction
+            if ((isCall && isForcedCall) || (isPut && isForcedPut)) {
+                qScore += 15; // Massive boost to bypass strict thresholds
             }
 
             // --- Final Softened Threshold ---
@@ -1396,7 +1411,7 @@
           const isSpeakingRef = useRef(false);
           const lastSpokenKeysRef = useRef({});
 
-          // Новые переменные для отслеживания убытков по направлению
+          // Переменные для отслеживания убытков по направлению
           const forcedDirectionRef = useRef(null);
           const lastLossDirectionRef = useRef(null);
           const lossesInDirRef = useRef(0);
@@ -1784,13 +1799,23 @@
                 updateStatus('АКТИВАЦИЯ ПРЕМИУМ СКАНЕРА...', 'text-cyan-400 drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]');
 
                 const finalStats = calculateTradingStats(newTradesHistory, TRADE_MONEY_CONFIG);
-                let speechText = "Анализ рынка завершён.";
+                let speechText = "";
+                
                 if (finalStats.trades > 0) {
-                    addLog(`ИСТОРИЯ ЗА 12 ЧАСОВ: СДЕЛОК ${finalStats.trades}, ВИНРЕЙТ ${finalStats.winrate}%`, true);
-                    speechText = `Анализ рынка завершён. Найдено ${finalStats.trades} сделок. Из них ${finalStats.wins} плюсовые и ${finalStats.losses} минусовые. Если бы трейдер заходил по 1000 рублей с учётом Мартингейла, итоговый профит составил бы ${finalStats.pnl} рублей.`;
+                    const pnlStr = finalStats.pnl >= 0 ? `плюс ${finalStats.pnl}` : `минус ${Math.abs(finalStats.pnl)}`;
+                    
+                    if (engineState.forcedDirection) {
+                        const lostDir = engineState.forcedDirection === 'CALL' ? 'шорт' : 'лонг';
+                        const waitDir = engineState.forcedDirection === 'CALL' ? 'лонговых' : 'шортовых';
+                        
+                        speechText = `За последние 12 часов было ${finalStats.trades} сигналов: ${finalStats.wins} плюсовых и ${finalStats.losses} минусовых. Сработала система безопасности. После двух убытков подряд в ${lostDir}, алгоритм перешел в режим ожидания ${waitDir} сигналов с ослабленными фильтрами. Текущий результат: ${pnlStr} рублей. Это временная просадка. Мы ожидаем разворот и планируем отыграть этот минус в следующих сделках.`;
+                    } else {
+                        speechText = `За последние 12 часов было ${finalStats.trades} сигналов: ${finalStats.wins} плюсовых и ${finalStats.losses} минусовых. Текущий результат: ${pnlStr} рублей. Стратегия работает в штатном режиме.`;
+                    }
+                    addLog(`ИСТОРИЯ ЗА 12 ЧАСОВ: СДЕЛОК ${finalStats.trades}, PNL ${finalStats.pnl}`, true);
                 } else {
                     addLog(`ЗА 12 ЧАСОВ СИГНАЛОВ ПО СТРАТЕГИИ НЕ НАЙДЕНО.`, true);
-                    speechText = "Анализ рынка завершён. Найдено 0 сделок. Начинаю сканирование.";
+                    speechText = "Анализ рынка завершён. За последние 12 часов сигналов не найдено. Начинаю сканирование.";
                 }
                 
                 await speakAsync(speechText, 'startup-summary-current-session', 1); 
