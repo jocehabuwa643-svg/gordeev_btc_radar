@@ -267,7 +267,7 @@
         .idle-crosshair::before { width: 6px; height: 2px; left: -3px; }
         .idle-crosshair::after { width: 2px; height: 6px; top: -3px; }
 
-        /* --- УЛУЧШЕННАЯ КАПСУЛА ЗОНЫ --- */
+        /* --- УЛУЧШЕННАЯ КАПСУЛА ЗОНЫ И ТРИГГЕРНАЯ ЛИНИЯ --- */
         .zone-capsule {
             position: absolute; z-index: 48; pointer-events: none;
             border-radius: 24px;
@@ -306,6 +306,31 @@
             background: currentColor; box-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
             animation: capsule-scan 2.5s ease-in-out infinite alternate;
         }
+        
+        .zone-trigger-line {
+            position: absolute; z-index: 49; height: 1px;
+            background: currentColor; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s, top 0.1s linear, left 0.1s linear;
+            box-shadow: 0 0 10px currentColor;
+        }
+        .zone-trigger-line.active { opacity: 1; }
+        .zone-trigger-line.trigger-imminent {
+            height: 2px;
+            background: #fff;
+            box-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
+            animation: trigger-pulse-extreme 0.5s infinite alternate;
+        }
+        .trigger-label {
+            position: absolute; right: 0; bottom: 6px;
+            background: rgba(10, 15, 25, 0.95);
+            border: 1px solid currentColor;
+            color: #fff;
+            text-shadow: 0 0 5px currentColor;
+            padding: 3px 8px; border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 900;
+            backdrop-filter: blur(12px); box-shadow: 0 0 15px rgba(0,0,0,0.9), inset 0 0 10px currentColor;
+            white-space: nowrap;
+        }
 
         @keyframes subtle-breathe { 
             0% { transform: scale(0.98); opacity: 0.85; } 
@@ -317,6 +342,10 @@
             100% { transform: translateY(-40px) scale(0.5); opacity: 0; }
         }
         @keyframes capsule-scan { 0% { top: 5%; } 100% { top: 95%; } }
+        @keyframes trigger-pulse-extreme {
+            0% { filter: brightness(1); }
+            100% { filter: brightness(1.8) drop-shadow(0 0 8px currentColor); }
+        }
 
         /* --- УЛУЧШЕННЫЙ FOCUS ORB --- */
         .focus-orb-container {
@@ -746,7 +775,7 @@
             return 'NEUTRAL';
         }
 
-        // --- УЛУЧШЕННЫЙ И СТРОГИЙ ДВИЖОК СИГНАЛОВ С УЧЕТОМ НАПРАВЛЕНИЯ ---
+        // --- ОБНОВЛЕННЫЙ ДВИЖОК СИГНАЛОВ: РАЗДЕЛЬНАЯ ЛОГИКА ДЛЯ FAVOURED SHORT/LONG И НОРМАЛЬНОГО РЕЖИМА ---
         function evaluateSignalEngine(data, evalIdx, liqMap, atrMap, mtfContext, engineState) {
             if (evalIdx < 100) return { valid: false, reason: 'Not enough data', score: 0 };
 
@@ -776,18 +805,39 @@
             const upperWickRatio = candleRange > 0 ? upperWick / candleRange : 0;
             const lowerWickRatio = candleRange > 0 ? lowerWick / candleRange : 0;
 
-            // --- СТРОГАЯ ЛОГИКА ПРИОРИТЕТА ---
             const isForcedCall = engineState.forcedDirection === 'CALL';
             const isForcedPut = engineState.forcedDirection === 'PUT';
 
-            // ОСЛАБЛЕНИЕ КРИТЕРИЕВ В FAVOURED РЕЖИМЕ. В НОРМАЛЬНОМ - СТРОЖЕ.
-            const isFavouredMode = isForcedCall || isForcedPut;
-            const allowedMiss = isFavouredMode ? cAtr * 0.25 : 0; // В нормальном режиме недобой зоны = 0 (строгое касание/пробой)
-            const atrMult = isFavouredMode ? 0.15 : 0.35; // В нормальном режиме требуем сильное тело (35% ATR)
-            const wickMult = isFavouredMode ? 0.30 : 0.50; // В нормальном режиме требуем длинную тень отторжения (50% ATR)
+            // ГИБКАЯ НАСТРОЙКА КРИТЕРИЕВ С СУЩЕСТВЕННЫМ ОСЛАБЛЕНИЕМ ШОРТОВ В FAVOURED РЕЖИМЕ
+            let allowedMissTop = 0; 
+            let allowedMissBot = 0;
+            let atrMultPut = 0.35;
+            let wickMultPut = 0.50;
+            let atrMultCall = 0.35;
+            let wickMultCall = 0.50;
+
+            if (isForcedPut) {
+                // ОЧЕНЬ МЯГКИЕ УСЛОВИЯ ДЛЯ FAVOURED SHORT (чтобы ловить откаты и микро-касания)
+                allowedMissTop = cAtr * 0.80; // Прощает огромный недобой зоны
+                atrMultPut = 0.02; // Почти любое красное тело
+                wickMultPut = 0.10; // Почти любая тень
+            } else if (isForcedCall) {
+                // Мягкие условия для лонга
+                allowedMissBot = cAtr * 0.50;
+                atrMultCall = 0.05;
+                wickMultCall = 0.15;
+            } else {
+                // Нормальный режим: строже, но шорты всё равно чуть мягче лонгов (как просили)
+                allowedMissTop = cAtr * 0.30;
+                allowedMissBot = cAtr * 0.20;
+                atrMultPut = 0.10;
+                wickMultPut = 0.20;
+                atrMultCall = 0.15;
+                wickMultCall = 0.25;
+            }
             
-            const sweptTop = currCandle.high >= (cUpper - allowedMiss);
-            const sweptBot = currCandle.low <= (cLower + allowedMiss);
+            const sweptTop = currCandle.high >= (cUpper - allowedMissTop);
+            const sweptBot = currCandle.low <= (cLower + allowedMissBot);
 
             const sweepDepthTop = Math.max(0, currCandle.high - cUpper);
             const sweepDepthBot = Math.max(0, cLower - currCandle.low);
@@ -798,11 +848,11 @@
             const returnedInsideTop = currCandle.close < cUpper;
             const returnedInsideBot = currCandle.close > cLower;
 
-            const strictMsbPut = isRedCandle && (currCandle.close < prevCandle.low) && (body > cAtr * atrMult);
-            const strictMsbCall = isGreenCandle && (currCandle.close > prevCandle.high) && (body > cAtr * atrMult);
+            const strictMsbPut = isRedCandle && (currCandle.close < prevCandle.low) && (body > cAtr * atrMultPut);
+            const strictMsbCall = isGreenCandle && (currCandle.close > prevCandle.high) && (body > cAtr * atrMultCall);
 
-            const massiveWickPut = upperWick > cAtr * wickMult && upperWickRatio > wickMult && returnedInsideTop;
-            const massiveWickCall = lowerWick > cAtr * wickMult && lowerWickRatio > wickMult && returnedInsideBot;
+            const massiveWickPut = upperWick > cAtr * wickMultPut && upperWickRatio > wickMultPut && returnedInsideTop;
+            const massiveWickCall = lowerWick > cAtr * wickMultCall && lowerWickRatio > wickMultCall && returnedInsideBot;
 
             let strongBullImpulse = false;
             let strongBearImpulse = false;
@@ -835,8 +885,11 @@
             let qScore = baseScore;
             let mtfConfStr = 'WAIT';
 
-            if (isCall && deepSweepBot) qScore += 10;
-            if (isPut && deepSweepTop) qScore += 10;
+            // Штрафуем отсутствие глубокого свипа только в нормальном режиме
+            if (!isForcedCall && !isForcedPut) {
+                if (isCall && !deepSweepBot) qScore -= 5;
+                if (isPut && !deepSweepTop) qScore -= 5;
+            }
 
             if (isCall && strongBearImpulse && !isForcedCall) { qScore -= 10; return { valid: false, reason: 'Bear Impulse Risk', score: qScore }; }
             if (isPut && strongBullImpulse && !isForcedPut) { qScore -= 10; return { valid: false, reason: 'Bull Impulse Risk', score: qScore }; }
@@ -873,12 +926,17 @@
                 qScore -= 25; return { valid: false, reason: 'Cooldown Active', score: qScore };
             }
 
-            // ПРОПУСК ПО Q-SCORE ДЛЯ FAVOURED НАПРАВЛЕНИЯ
-            if (isFavouredMode) {
-                qScore += 15; // Помогаем сигналу пройти порог, так как это наше приоритетное направление
+            // БОНУСЫ И ПОРОГИ
+            let PASS_THRESHOLD = 58; // Нормальный режим
+            
+            if (isForcedPut && isPut) {
+                qScore += 35; // Мега-бонус для Favoured Short
+                PASS_THRESHOLD = 45; // Очень низкий порог
+            } else if (isForcedCall && isCall) {
+                qScore += 25; // Бонус для Favoured Long
+                PASS_THRESHOLD = 50;
             }
 
-            const PASS_THRESHOLD = 66; // Чуть строже по умолчанию (было 64)
             if (qScore < PASS_THRESHOLD) {
                 return { valid: false, reason: 'Score too low (Insufficient Quality)', score: qScore };
             }
@@ -1040,8 +1098,9 @@
             const idleVRef = useRef(null);
             const idleCrosshairRef = useRef(null);
 
-            // Mode 3: Capsule
+            // Mode 3: Capsule & Trigger
             const capsuleRef = useRef(null);
+            const triggerLineRef = useRef(null);
 
             // Mode 4: Orb
             const orbRef = useRef(null);
@@ -1083,6 +1142,7 @@
                         if (idleVRef.current) idleVRef.current.style.opacity = '0';
                         if (idleCrosshairRef.current) idleCrosshairRef.current.style.opacity = '0';
                         if (capsuleRef.current) capsuleRef.current.classList.remove('active');
+                        if (triggerLineRef.current) triggerLineRef.current.classList.remove('active');
                         if (orbRef.current) { orbRef.current.style.opacity = '0'; orbRef.current.style.transform = 'scale(0)'; }
 
                         // Iterate through backtest targets slowly
@@ -1114,6 +1174,7 @@
                         if (idleVRef.current) idleVRef.current.style.opacity = '0';
                         if (idleCrosshairRef.current) idleCrosshairRef.current.style.opacity = '0';
                         if (capsuleRef.current) capsuleRef.current.classList.remove('active');
+                        if (triggerLineRef.current) triggerLineRef.current.classList.remove('active');
                         backtestBoxesRef.current.forEach(b => b && b.classList.remove('active'));
 
                         if (orbRef.current && chartData && chartData.length > 0 && signal) {
@@ -1167,10 +1228,36 @@
                                 capsuleRef.current.className = `zone-capsule active ${colorClass}`;
                             }
                         }
+
+                        if (triggerLineRef.current && zoneInfo.triggerPrice) {
+                            const tY = series.priceToCoordinate(zoneInfo.triggerPrice);
+                            if (tY !== null && zX !== null) {
+                                triggerLineRef.current.style.top = `${tY}px`;
+                                triggerLineRef.current.style.left = `${zX - 70}px`;
+                                triggerLineRef.current.style.width = `140px`;
+                                
+                                let colorClass = zoneInfo.type === 'RESISTANCE' ? 'text-rose-500' : 'text-cyan-400';
+                                if (forcedDirection === 'CALL') colorClass = 'text-emerald-500';
+                                else if (forcedDirection === 'PUT') colorClass = 'text-rose-500';
+                                
+                                triggerLineRef.current.className = `zone-trigger-line active ${colorClass}`;
+                                const lbl = triggerLineRef.current.querySelector('.trigger-label');
+                                if (lbl) lbl.textContent = `TRIGGER: ${zoneInfo.triggerPrice.toFixed(2)}`;
+                                
+                                const currY = series.priceToCoordinate(currentPriceVal);
+                                if (currY !== null && Math.abs(currY - tY) < 15) {
+                                    triggerLineRef.current.classList.add('trigger-imminent');
+                                } else {
+                                    triggerLineRef.current.classList.remove('trigger-imminent');
+                                }
+                            }
+                        }
+
                     } 
                     // --- MODE 2: IDLE ---
                     else {
                         if (capsuleRef.current) capsuleRef.current.classList.remove('active');
+                        if (triggerLineRef.current) triggerLineRef.current.classList.remove('active');
                         backtestBoxesRef.current.forEach(b => b && b.classList.remove('active'));
                         if (orbRef.current) { orbRef.current.style.opacity = '0'; orbRef.current.style.transform = 'scale(0)'; }
 
@@ -1325,7 +1412,7 @@
                     <div ref={idleVRef} className="idle-scanner-v"></div>
                     <div ref={idleCrosshairRef} className="idle-crosshair"></div>
 
-                    {/* MODE 3: ZONE CAPSULE */}
+                    {/* MODE 3: ZONE CAPSULE AND TRIGGER LINE */}
                     <div ref={capsuleRef} className="zone-capsule">
                         <div className="capsule-laser"></div>
                         <div className="capsule-particles">
@@ -1347,6 +1434,10 @@
                                 </div>
                             </div>
                         )}
+                    </div>
+                    
+                    <div ref={triggerLineRef} className="zone-trigger-line">
+                         <div className="trigger-label">TRIG: 0.00</div>
                     </div>
 
                     {/* MODE 4: FOCUS ORB FOREGROUND */}
@@ -1505,10 +1596,8 @@
           const isSpeakingRef = useRef(false);
           const lastSpokenKeysRef = useRef({});
 
-          // Переменные для отслеживания убытков по направлению
+          // Переменные для отслеживания жесткого авто-разворота
           const forcedDirectionRef = useRef(null);
-          const lastLossDirectionRef = useRef(null);
-          const lossesInDirRef = useRef(0);
 
           // Sync Panel State
           useEffect(() => {
@@ -1769,9 +1858,7 @@
                     lastSignalTime: 0, 
                     lastSignalPrice: 0, 
                     consecutiveLosses: 0, 
-                    forcedDirection: null, 
-                    lastLossDirection: null, 
-                    lossesInDir: 0
+                    forcedDirection: null // СТРОГОЕ УДЕРЖАНИЕ НАПРАВЛЕНИЯ
                 };
                 let localMartingaleIdx = 0;
 
@@ -1810,7 +1897,7 @@
 
                     if (!sig.valid) {
                         if (sig.score > 50) historicalMarkersRef.current.push({ time: currTime, position: 'inBar', color: '#1e293b', shape: 'circle', text: 'CHK', size: 0.8 });
-                        if (sig.reason && !sig.reason.includes('No strict SMC setup') && !sig.reason.includes('Missing indicators') && !sig.reason.includes('Not enough data') && !sig.reason.includes('Ignoring')) {
+                        if (sig.reason && !sig.reason.includes('No strict SMC setup') && !sig.reason.includes('Missing indicators') && !sig.reason.includes('Not enough data')) {
                             d_rej++; d_lastRej = `${sig.reason} (${sig.score||0})`;
                         }
                     } else {
@@ -1845,35 +1932,17 @@
                             entryPrice: realisticEntryPrice, exitPrice: exitPrice, status: "CLOSED", result: result, betAmount: currentBet, reason: sig.signalType, quality: sig.score
                         });
 
-                        // ОБНОВЛЕННАЯ СТРОГАЯ ЛОГИКА ЗАЩИТЫ В БЭКТЕСТЕ
+                        // АВТО РАЗВОРОТ ПОСЛЕ ЛЮБОГО МИНУСА (BACKTEST)
                         if (result === "WIN") {
                             localMartingaleIdx = 0; 
                             engineState.consecutiveLosses = 0;
                             engineState.forcedDirection = null; // Сброс ТОЛЬКО при профите
-                            engineState.lastLossDirection = null;
-                            engineState.lossesInDir = 0;
                         } else {
                             engineState.consecutiveLosses++;
                             localMartingaleIdx = localMartingaleIdx < 6 ? localMartingaleIdx + 1 : 0;
-
                             const tradeDir = sig.isCall ? 'CALL' : 'PUT';
-                            
-                            // Считаем минусы подряд только если еще нет жесткого переключения
-                            if (!engineState.forcedDirection) {
-                                if (engineState.lastLossDirection === tradeDir) {
-                                    engineState.lossesInDir++;
-                                } else {
-                                    engineState.lastLossDirection = tradeDir;
-                                    engineState.lossesInDir = 1;
-                                }
-
-                                // Два минуса подряд в одном направлении — переключаем в противоположное
-                                if (engineState.lossesInDir >= 2) {
-                                    engineState.forcedDirection = tradeDir === 'CALL' ? 'PUT' : 'CALL';
-                                }
-                            }
-                            // Если мы УЖЕ в forcedDirection и ловим LOSS — ничего не сбрасываем.
-                            // Мы продолжаем ждать сигнал в том же (forced) направлении.
+                            // Всегда разворачиваем направление после убытка
+                            engineState.forcedDirection = tradeDir === 'CALL' ? 'PUT' : 'CALL';
                         }
                         idx += 5; 
                     }
@@ -1882,8 +1951,6 @@
                 setMartingaleIndex(localMartingaleIdx);
                 consecutiveLossesRef.current = engineState.consecutiveLosses;
                 forcedDirectionRef.current = engineState.forcedDirection;
-                lastLossDirectionRef.current = engineState.lastLossDirection;
-                lossesInDirRef.current = engineState.lossesInDir;
 
                 lastSignalTimeRef.current = engineState.lastSignalTime; lastSignalPriceRef.current = engineState.lastSignalPrice;
                 lastEvaluatedCandleTimeRef.current = initialData[initialData.length - 4]?.time || 0; lastClosedCandleTimeUiRef.current = lastEvaluatedCandleTimeRef.current;
@@ -1917,7 +1984,7 @@
                         const lostDir = engineState.forcedDirection === 'CALL' ? 'шорт' : 'лонг';
                         const waitDir = engineState.forcedDirection === 'CALL' ? 'лонговых' : 'шортовых';
                         
-                        speechText = `За последние 12 часов найдено ${finalStats.trades} сигналов: ${finalStats.wins} в плюс и ${finalStats.losses} в минус. Сработала строгая система безопасности. Алгоритм жестко зафиксировал приоритет на поиск ${waitDir} сигналов и будет держать его до получения прибыли. Текущий финансовый результат: ${pnlStr} рублей.`;
+                        speechText = `За последние 12 часов найдено ${finalStats.trades} сигналов: ${finalStats.wins} в плюс и ${finalStats.losses} в минус. Алгоритм зафиксировал убыток в ${lostDir} и совершил автоматический разворот. Включен режим поиска ${waitDir} сигналов с ослабленными фильтрами ликвидности. Текущий финансовый результат: ${pnlStr} рублей. Ожидаем разворотное движение.`;
                     } else {
                         speechText = `За последние 12 часов найдено ${finalStats.trades} сигналов: ${finalStats.wins} в плюс и ${finalStats.losses} в минус. Текущий финансовый результат: ${pnlStr} рублей. Стратегия работает в штатном режиме.`;
                     }
@@ -1981,7 +2048,8 @@
                                       type: distTop < latestAtr * 1.1 ? 'RESISTANCE' : 'SUPPORT',
                                       top: latestZone.upper, bottom: latestZone.lower, time: data[lastIdx].time,
                                       density: Math.floor(Math.random() * 15 + 80),
-                                      strength: Math.floor(Math.random() * 20 + 75)
+                                      strength: Math.floor(Math.random() * 20 + 75),
+                                      triggerPrice: distTop < latestAtr * 1.1 ? latestZone.upper : latestZone.lower
                                   });
                                   addLog('ЦЕНА ВОШЛА В ЗОНУ ИНТЕРЕСА');
                                   const mtf = cachedMtfRef.current;
@@ -2016,9 +2084,7 @@
                               lastSignalTime: lastSignalTimeRef.current, 
                               lastSignalPrice: lastSignalPriceRef.current, 
                               consecutiveLosses: consecutiveLossesRef.current,
-                              forcedDirection: forcedDirectionRef.current,
-                              lastLossDirection: lastLossDirectionRef.current,
-                              lossesInDir: lossesInDirRef.current
+                              forcedDirection: forcedDirectionRef.current
                           };
                           const sig = evaluateSignalEngine(data, evaluateIdx, liqMap, atrMap, cachedMtfRef.current, liveEngineState);
                           const evaluatedStatus = sig.valid ? 'CONFIRMED' : (sig.reason ? 'REJECTED' : 'NO_SIGNAL');
@@ -2181,13 +2247,11 @@
                                   updateChartMarkers();
                               } catch (e) {}
 
-                              // ОБНОВЛЕННАЯ СТРОГАЯ ЛОГИКА ЗАЩИТЫ В LIVE-РЕЖИМЕ
+                              // АВТО РАЗВОРОТ В LIVE-РЕЖИМЕ
                               if (result === "WIN") {
                                 setMartingaleIndex(0); 
                                 consecutiveLossesRef.current = 0; 
                                 forcedDirectionRef.current = null; // Сброс ТОЛЬКО при профите
-                                lastLossDirectionRef.current = null;
-                                lossesInDirRef.current = 0;
 
                                 playSound('win'); addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
                                 await speakAsync(`Сделка закрылась в плюс. Отличный результат. Сброс направления и переход на первую ступень.`, `trade-result-win-${actualEntryTime}`, 1);
@@ -2197,26 +2261,13 @@
 
                                 const tradeDir = sig.isCall ? 'CALL' : 'PUT';
                                 
-                                // Считаем минусы подряд только если еще нет жесткого переключения
-                                if (!forcedDirectionRef.current) {
-                                    if (lastLossDirectionRef.current === tradeDir) {
-                                        lossesInDirRef.current += 1;
-                                    } else {
-                                        lastLossDirectionRef.current = tradeDir;
-                                        lossesInDirRef.current = 1;
-                                    }
-
-                                    // Два минуса подряд в одном направлении — переключаем в противоположное
-                                    if (lossesInDirRef.current >= 2) {
-                                        forcedDirectionRef.current = tradeDir === 'CALL' ? 'PUT' : 'CALL';
-                                        addLog(`СМЕНА ПРИОРИТЕТА: ИЩЕМ СИГНАЛЫ ТОЛЬКО ${forcedDirectionRef.current === 'CALL' ? 'ВВЕРХ' : 'ВНИЗ'}`, true);
-                                    }
-                                } 
-                                // Если мы УЖЕ в forcedDirection и ловим LOSS — ничего не сбрасываем.
+                                // ВСЕГДА разворачиваем после любого убытка
+                                forcedDirectionRef.current = tradeDir === 'CALL' ? 'PUT' : 'CALL';
+                                addLog(`АВТО-РАЗВОРОТ: ИЩЕМ СИГНАЛЫ ТОЛЬКО ${forcedDirectionRef.current === 'CALL' ? 'ВВЕРХ' : 'ВНИЗ'}`, true);
 
                                 setMartingaleIndex(prev => {
                                     const nextIdx = prev < 6 ? prev + 1 : 0;
-                                    speakAsync(`Минус. Переходим на колено ${nextIdx + 1} по Мартингейлу.`, `trade-result-loss-${actualEntryTime}`, 1);
+                                    speakAsync(`Минус. Алгоритм выполнил автоматический разворот. Переходим на колено ${nextIdx + 1} по Мартингейлу.`, `trade-result-loss-${actualEntryTime}`, 1);
                                     return nextIdx;
                                 });
                               }
