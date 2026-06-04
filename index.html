@@ -779,11 +779,12 @@
             // --- СТРОГАЯ ЛОГИКА ПРИОРИТЕТА ---
             const isForcedCall = engineState.forcedDirection === 'CALL';
             const isForcedPut = engineState.forcedDirection === 'PUT';
-            const forcedAttempts = engineState.attemptsInForcedDirection || 0;
-            const isThirdAttemptOrMore = forcedAttempts >= 2;
 
-            // ОСЛАБЛЕНИЕ КРИТЕРИЕВ ДЛЯ FAVOURED НАПРАВЛЕНИЯ ТОЛЬКО НА 1 и 2 ПОПЫТКАХ
-            const allowedMiss = (isForcedCall || isForcedPut) && !isThirdAttemptOrMore ? cAtr * 0.15 : 0;
+            // ОСЛАБЛЕНИЕ КРИТЕРИЕВ В FAVOURED РЕЖИМЕ. В НОРМАЛЬНОМ - СТРОЖЕ.
+            const isFavouredMode = isForcedCall || isForcedPut;
+            const allowedMiss = isFavouredMode ? cAtr * 0.25 : 0; // В нормальном режиме недобой зоны = 0 (строгое касание/пробой)
+            const atrMult = isFavouredMode ? 0.15 : 0.35; // В нормальном режиме требуем сильное тело (35% ATR)
+            const wickMult = isFavouredMode ? 0.30 : 0.50; // В нормальном режиме требуем длинную тень отторжения (50% ATR)
             
             const sweptTop = currCandle.high >= (cUpper - allowedMiss);
             const sweptBot = currCandle.low <= (cLower + allowedMiss);
@@ -796,9 +797,6 @@
 
             const returnedInsideTop = currCandle.close < cUpper;
             const returnedInsideBot = currCandle.close > cLower;
-
-            const atrMult = (isForcedPut || isForcedCall) && !isThirdAttemptOrMore ? 0.1 : 0.25;
-            const wickMult = (isForcedPut || isForcedCall) && !isThirdAttemptOrMore ? 0.25 : 0.40;
 
             const strictMsbPut = isRedCandle && (currCandle.close < prevCandle.low) && (body > cAtr * atrMult);
             const strictMsbCall = isGreenCandle && (currCandle.close > prevCandle.high) && (body > cAtr * atrMult);
@@ -828,35 +826,20 @@
             }
 
             // ЖЁСТКАЯ БЛОКИРОВКА НЕПРИОРИТЕТНЫХ СИГНАЛОВ
-            let rejectReason = '';
-            if (isForcedCall && isPut) {
-                isPut = false;
-                rejectReason = 'Direction Override (Strict CALL Priority Active)';
-            }
-            if (isForcedPut && isCall) {
-                isCall = false;
-                rejectReason = 'Direction Override (Strict PUT Priority Active)';
-            }
+            if (isForcedCall && isPut) return { valid: false, reason: 'Strict CALL Priority Active - Ignoring PUT', score: 0 };
+            if (isForcedPut && isCall) return { valid: false, reason: 'Strict PUT Priority Active - Ignoring CALL', score: 0 };
 
-            if (!isCall && !isPut) return { valid: false, reason: rejectReason || 'No strict SMC setup', score: 0 };
+            if (!isCall && !isPut) return { valid: false, reason: 'No strict SMC setup', score: 0 };
             if (isCall && isPut) return { valid: false, reason: 'Conflicting signals', score: 0 };
 
             let qScore = baseScore;
             let mtfConfStr = 'WAIT';
 
-            // Если это 3-я или более попытка в favoured направлении — вводим жесткие санкции за слабый свип
-            if (isCall && isForcedCall && isThirdAttemptOrMore && !deepSweepBot) {
-                qScore -= 15; rejectReason = 'Strict Mode (3rd attempt): Requires deep sweep';
-            }
-            if (isPut && isForcedPut && isThirdAttemptOrMore && !deepSweepTop) {
-                qScore -= 15; rejectReason = 'Strict Mode (3rd attempt): Requires deep sweep';
-            }
-
             if (isCall && deepSweepBot) qScore += 10;
             if (isPut && deepSweepTop) qScore += 10;
 
-            if (isCall && strongBearImpulse && !isForcedCall) { qScore -= 10; rejectReason = 'Bear Impulse Risk'; }
-            if (isPut && strongBullImpulse && !isForcedPut) { qScore -= 10; rejectReason = 'Bull Impulse Risk'; }
+            if (isCall && strongBearImpulse && !isForcedCall) { qScore -= 10; return { valid: false, reason: 'Bear Impulse Risk', score: qScore }; }
+            if (isPut && strongBullImpulse && !isForcedPut) { qScore -= 10; return { valid: false, reason: 'Bull Impulse Risk', score: qScore }; }
 
             const currentVolume = currCandle.volume || 0;
             if (currentVolume > 0 && evalIdx > 14) {
@@ -870,13 +853,13 @@
             if (isCall) {
                 if (h4 === 'BULLISH' || h1 === 'BULLISH') { qScore += 12; mtfConfStr = 'CONFIRMED'; }
                 else if (h4 === 'BEARISH' && h1 === 'BEARISH') { 
-                    if (!isForcedCall) { qScore -= 10; rejectReason = 'Against HTF Trend'; mtfConfStr = 'CONFLICT'; }
+                    if (!isForcedCall) { qScore -= 10; return { valid: false, reason: 'Against HTF Trend', score: qScore }; }
                     else { mtfConfStr = 'FORCED'; }
                 }
             } else if (isPut) {
                 if (h4 === 'BEARISH' || h1 === 'BEARISH') { qScore += 12; mtfConfStr = 'CONFIRMED'; }
                 else if (h4 === 'BULLISH' && h1 === 'BULLISH') { 
-                    if (!isForcedPut) { qScore -= 10; rejectReason = 'Against HTF Trend'; mtfConfStr = 'CONFLICT'; }
+                    if (!isForcedPut) { qScore -= 10; return { valid: false, reason: 'Against HTF Trend', score: qScore }; }
                     else { mtfConfStr = 'FORCED'; }
                 }
             }
@@ -887,22 +870,17 @@
 
             const candlesSinceLast = (currTime - engineState.lastSignalTime) / 300; 
             if (candlesSinceLast < 5) { 
-                qScore -= 25; rejectReason = 'Cooldown Active';
+                qScore -= 25; return { valid: false, reason: 'Cooldown Active', score: qScore };
             }
 
             // ПРОПУСК ПО Q-SCORE ДЛЯ FAVOURED НАПРАВЛЕНИЯ
-            if ((isCall && isForcedCall) || (isPut && isForcedPut)) {
-                if (!isThirdAttemptOrMore) {
-                    qScore += 25; // Сильное расслабление на первых попытках
-                } else {
-                    qScore += 5; // На третьей попытке бонус минимален, должен пройти строгие проверки
-                }
+            if (isFavouredMode) {
+                qScore += 15; // Помогаем сигналу пройти порог, так как это наше приоритетное направление
             }
 
-            const PASS_THRESHOLD = 64; 
+            const PASS_THRESHOLD = 66; // Чуть строже по умолчанию (было 64)
             if (qScore < PASS_THRESHOLD) {
-                if (!rejectReason) rejectReason = 'Score too low (Insufficient Quality)';
-                return { valid: false, reason: rejectReason, score: qScore };
+                return { valid: false, reason: 'Score too low (Insufficient Quality)', score: qScore };
             }
 
             return { 
@@ -1531,7 +1509,6 @@
           const forcedDirectionRef = useRef(null);
           const lastLossDirectionRef = useRef(null);
           const lossesInDirRef = useRef(0);
-          const attemptsInForcedDirectionRef = useRef(0); // <--- ДОБАВЛЕНО ДЛЯ ЖЕСТКОЙ БЛОКИРОВКИ
 
           // Sync Panel State
           useEffect(() => {
@@ -1794,8 +1771,7 @@
                     consecutiveLosses: 0, 
                     forcedDirection: null, 
                     lastLossDirection: null, 
-                    lossesInDir: 0,
-                    attemptsInForcedDirection: 0 // СЧЕТЧИК ПОПЫТОК ДЛЯ ЖЕСТКОЙ ЛОГИКИ
+                    lossesInDir: 0
                 };
                 let localMartingaleIdx = 0;
 
@@ -1834,7 +1810,7 @@
 
                     if (!sig.valid) {
                         if (sig.score > 50) historicalMarkersRef.current.push({ time: currTime, position: 'inBar', color: '#1e293b', shape: 'circle', text: 'CHK', size: 0.8 });
-                        if (sig.reason && !sig.reason.includes('No strict SMC setup') && !sig.reason.includes('Missing indicators') && !sig.reason.includes('Not enough data')) {
+                        if (sig.reason && !sig.reason.includes('No strict SMC setup') && !sig.reason.includes('Missing indicators') && !sig.reason.includes('Not enough data') && !sig.reason.includes('Ignoring')) {
                             d_rej++; d_lastRej = `${sig.reason} (${sig.score||0})`;
                         }
                     } else {
@@ -1873,10 +1849,9 @@
                         if (result === "WIN") {
                             localMartingaleIdx = 0; 
                             engineState.consecutiveLosses = 0;
-                            engineState.forcedDirection = null; // Сброс только при профите
+                            engineState.forcedDirection = null; // Сброс ТОЛЬКО при профите
                             engineState.lastLossDirection = null;
                             engineState.lossesInDir = 0;
-                            engineState.attemptsInForcedDirection = 0;
                         } else {
                             engineState.consecutiveLosses++;
                             localMartingaleIdx = localMartingaleIdx < 6 ? localMartingaleIdx + 1 : 0;
@@ -1895,12 +1870,10 @@
                                 // Два минуса подряд в одном направлении — переключаем в противоположное
                                 if (engineState.lossesInDir >= 2) {
                                     engineState.forcedDirection = tradeDir === 'CALL' ? 'PUT' : 'CALL';
-                                    engineState.attemptsInForcedDirection = 0; // Начинаем отсчет в новом направлении
                                 }
-                            } else {
-                                // Если мы уже в forcedDirection и ловим минус - просто наращиваем счетчик попыток
-                                engineState.attemptsInForcedDirection++;
                             }
+                            // Если мы УЖЕ в forcedDirection и ловим LOSS — ничего не сбрасываем.
+                            // Мы продолжаем ждать сигнал в том же (forced) направлении.
                         }
                         idx += 5; 
                     }
@@ -1911,7 +1884,6 @@
                 forcedDirectionRef.current = engineState.forcedDirection;
                 lastLossDirectionRef.current = engineState.lastLossDirection;
                 lossesInDirRef.current = engineState.lossesInDir;
-                attemptsInForcedDirectionRef.current = engineState.attemptsInForcedDirection;
 
                 lastSignalTimeRef.current = engineState.lastSignalTime; lastSignalPriceRef.current = engineState.lastSignalPrice;
                 lastEvaluatedCandleTimeRef.current = initialData[initialData.length - 4]?.time || 0; lastClosedCandleTimeUiRef.current = lastEvaluatedCandleTimeRef.current;
@@ -1945,7 +1917,7 @@
                         const lostDir = engineState.forcedDirection === 'CALL' ? 'шорт' : 'лонг';
                         const waitDir = engineState.forcedDirection === 'CALL' ? 'лонговых' : 'шортовых';
                         
-                        speechText = `За последние 12 часов найдено ${finalStats.trades} сигналов: ${finalStats.wins} в плюс и ${finalStats.losses} в минус. Сработала система безопасности. Алгоритм жестко переключил приоритет на поиск ${waitDir} сигналов и будет держать его до получения прибыли. Текущий финансовый результат: ${pnlStr} рублей.`;
+                        speechText = `За последние 12 часов найдено ${finalStats.trades} сигналов: ${finalStats.wins} в плюс и ${finalStats.losses} в минус. Сработала строгая система безопасности. Алгоритм жестко зафиксировал приоритет на поиск ${waitDir} сигналов и будет держать его до получения прибыли. Текущий финансовый результат: ${pnlStr} рублей.`;
                     } else {
                         speechText = `За последние 12 часов найдено ${finalStats.trades} сигналов: ${finalStats.wins} в плюс и ${finalStats.losses} в минус. Текущий финансовый результат: ${pnlStr} рублей. Стратегия работает в штатном режиме.`;
                     }
@@ -2004,7 +1976,7 @@
                           if (distTop < latestAtr * 1.1 || distBot < latestAtr * 1.1) {
                               if (zoneStateRef.current === 'OUT' && Date.now() > zoneCooldownUntilRef.current) {
                                   zoneStateRef.current = 'IN'; setZoneState('IN');
-                                  // Генерируем данные зоны для нового интерфейса капсулы
+                                  // Генерируем данные зоны для интерфейса капсулы
                                   setZoneInfo({
                                       type: distTop < latestAtr * 1.1 ? 'RESISTANCE' : 'SUPPORT',
                                       top: latestZone.upper, bottom: latestZone.lower, time: data[lastIdx].time,
@@ -2046,8 +2018,7 @@
                               consecutiveLosses: consecutiveLossesRef.current,
                               forcedDirection: forcedDirectionRef.current,
                               lastLossDirection: lastLossDirectionRef.current,
-                              lossesInDir: lossesInDirRef.current,
-                              attemptsInForcedDirection: attemptsInForcedDirectionRef.current // Передаем жесткий счетчик
+                              lossesInDir: lossesInDirRef.current
                           };
                           const sig = evaluateSignalEngine(data, evaluateIdx, liqMap, atrMap, cachedMtfRef.current, liveEngineState);
                           const evaluatedStatus = sig.valid ? 'CONFIRMED' : (sig.reason ? 'REJECTED' : 'NO_SIGNAL');
@@ -2214,10 +2185,9 @@
                               if (result === "WIN") {
                                 setMartingaleIndex(0); 
                                 consecutiveLossesRef.current = 0; 
-                                forcedDirectionRef.current = null; // Сброс только при профите
+                                forcedDirectionRef.current = null; // Сброс ТОЛЬКО при профите
                                 lastLossDirectionRef.current = null;
                                 lossesInDirRef.current = 0;
-                                attemptsInForcedDirectionRef.current = 0;
 
                                 playSound('win'); addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
                                 await speakAsync(`Сделка закрылась в плюс. Отличный результат. Сброс направления и переход на первую ступень.`, `trade-result-win-${actualEntryTime}`, 1);
@@ -2239,13 +2209,10 @@
                                     // Два минуса подряд в одном направлении — переключаем в противоположное
                                     if (lossesInDirRef.current >= 2) {
                                         forcedDirectionRef.current = tradeDir === 'CALL' ? 'PUT' : 'CALL';
-                                        attemptsInForcedDirectionRef.current = 0;
                                         addLog(`СМЕНА ПРИОРИТЕТА: ИЩЕМ СИГНАЛЫ ТОЛЬКО ${forcedDirectionRef.current === 'CALL' ? 'ВВЕРХ' : 'ВНИЗ'}`, true);
                                     }
-                                } else {
-                                    attemptsInForcedDirectionRef.current++;
-                                    addLog(`Попытка #${attemptsInForcedDirectionRef.current} в жестком направлении завершилась минусом. ${attemptsInForcedDirectionRef.current >= 2 ? 'ВКЛЮЧЕН СТРОГИЙ РЕЖИМ!' : ''}`, true);
-                                }
+                                } 
+                                // Если мы УЖЕ в forcedDirection и ловим LOSS — ничего не сбрасываем.
 
                                 setMartingaleIndex(prev => {
                                     const nextIdx = prev < 6 ? prev + 1 : 0;
@@ -2264,7 +2231,7 @@
                                       updateChartMarkers();
                                   } catch (e) {}
                               }
-                              if (sig.reason && !sig.reason.includes('No strict SMC setup') && !sig.reason.includes('Missing indicators') && !sig.reason.includes('PARITY_MISMATCH')) {
+                              if (sig.reason && !sig.reason.includes('No strict SMC setup') && !sig.reason.includes('Missing indicators') && !sig.reason.includes('PARITY_MISMATCH') && !sig.reason.includes('Ignoring')) {
                                   addLog(`Live Rejected: ${sig.reason} (${sig.score||0})`, true);
                               }
                               lastEvaluatedCandleTimeRef.current = evalCandleTime;
