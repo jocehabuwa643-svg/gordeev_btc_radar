@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -240,27 +239,40 @@
             color: #00f0ff; box-shadow: 0 10px 20px rgba(0,0,0,0.8);
         }
 
+        /* --- УЛУЧШЕННЫЙ IDLE СКАНЕР --- */
         .idle-scanner-h {
-            position: absolute; left: 0; right: 0; height: 60px;
-            background: linear-gradient(to bottom, transparent, rgba(0, 240, 255, 0.05) 50%, transparent);
-            border-top: 1px solid rgba(0, 240, 255, 0.1); border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+            position: absolute; left: 0; right: 0; height: 80px;
+            background: linear-gradient(to bottom, transparent, rgba(0, 240, 255, 0.08) 50%, transparent);
+            border-top: 1px solid rgba(0, 240, 255, 0.15); border-bottom: 1px solid rgba(0, 240, 255, 0.15);
             z-index: 44; pointer-events: none; mix-blend-mode: screen; will-change: transform;
             opacity: 0; transition: opacity 1s ease;
         }
         .idle-scanner-v {
             position: absolute; top: 0; bottom: 0; width: 2px;
-            background: linear-gradient(to bottom, transparent, rgba(0, 240, 255, 0.6), transparent);
-            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+            background: linear-gradient(to bottom, transparent, rgba(0, 240, 255, 0.8), transparent);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.6);
             z-index: 45; pointer-events: none; will-change: transform;
             opacity: 0; transition: opacity 1s ease;
         }
+        .idle-crosshair {
+            position: absolute; width: 60px; height: 60px;
+            border: 1px dashed rgba(0, 240, 255, 0.3); border-radius: 50%;
+            transform: translate(-50%, -50%); z-index: 46; pointer-events: none;
+            transition: opacity 1s ease; opacity: 0;
+            box-shadow: inset 0 0 15px rgba(0, 240, 255, 0.1), 0 0 25px rgba(0, 240, 255, 0.2);
+            display: flex; justify-content: center; align-items: center;
+            animation: spin-ring 10s linear infinite;
+        }
+        .idle-crosshair::before, .idle-crosshair::after { content:''; position: absolute; background: rgba(0, 240, 255, 0.9); box-shadow: 0 0 8px rgba(0, 240, 255, 1); }
+        .idle-crosshair::before { width: 6px; height: 2px; left: -3px; }
+        .idle-crosshair::after { width: 2px; height: 6px; top: -3px; }
 
-        /* --- UPDATED PREMIUM GLASSMORPHIC ZONE CAPSULE --- */
+        /* --- УЛУЧШЕННАЯ КАПСУЛА ЗОНЫ --- */
         .zone-capsule {
             position: absolute; z-index: 48; pointer-events: none;
             border-radius: 24px;
-            backdrop-filter: blur(12px) saturate(150%);
-            -webkit-backdrop-filter: blur(12px) saturate(150%);
+            backdrop-filter: blur(16px) saturate(160%);
+            -webkit-backdrop-filter: blur(16px) saturate(160%);
             transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
             opacity: 0; transform: scale(0.95);
             animation: subtle-breathe 2.5s infinite alternate ease-in-out;
@@ -268,23 +280,20 @@
         }
         .zone-capsule.active { opacity: 1; transform: scale(1); }
         
-        /* Prioritized Focus Modes */
         .zone-capsule-forced-call {
-            color: rgba(16, 185, 129, 0.4);
-            box-shadow: 0 0 50px rgba(16, 185, 129, 0.2), inset 0 0 30px rgba(16, 185, 129, 0.15); 
-            border: 1px solid rgba(16, 185, 129, 0.5);
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.05));
+            color: rgba(16, 185, 129, 0.6);
+            box-shadow: 0 0 60px rgba(16, 185, 129, 0.25), inset 0 0 40px rgba(16, 185, 129, 0.2); 
+            border: 1px solid rgba(16, 185, 129, 0.6);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.08));
         }
         .zone-capsule-forced-put {
-            color: rgba(225, 29, 72, 0.4);
-            box-shadow: 0 0 50px rgba(225, 29, 72, 0.2), inset 0 0 30px rgba(225, 29, 72, 0.15); 
-            border: 1px solid rgba(225, 29, 72, 0.5);
-            background: linear-gradient(135deg, rgba(225, 29, 72, 0.15), rgba(190, 18, 60, 0.05));
+            color: rgba(225, 29, 72, 0.6);
+            box-shadow: 0 0 60px rgba(225, 29, 72, 0.25), inset 0 0 40px rgba(225, 29, 72, 0.2); 
+            border: 1px solid rgba(225, 29, 72, 0.6);
+            background: linear-gradient(135deg, rgba(225, 29, 72, 0.2), rgba(190, 18, 60, 0.08));
         }
-        
-        /* Fallback Default Zones */
-        .zone-capsule-res { color: rgba(255, 0, 85, 0.4); box-shadow: 0 0 50px rgba(255, 0, 85, 0.15), inset 0 0 30px rgba(255, 0, 85, 0.1); border: 1px solid rgba(255,0,85,0.4); background: rgba(255,0,85,0.05); }
-        .zone-capsule-sup { color: rgba(0, 240, 255, 0.4); box-shadow: 0 0 50px rgba(0, 240, 255, 0.15), inset 0 0 30px rgba(0, 240, 255, 0.1); border: 1px solid rgba(0,240,255,0.4); background: rgba(0,240,255,0.05); }
+        .zone-capsule-res { color: rgba(255, 0, 85, 0.6); box-shadow: 0 0 60px rgba(255, 0, 85, 0.2), inset 0 0 40px rgba(255, 0, 85, 0.15); border: 1px solid rgba(255,0,85,0.5); background: rgba(255,0,85,0.1); }
+        .zone-capsule-sup { color: rgba(0, 240, 255, 0.6); box-shadow: 0 0 60px rgba(0, 240, 255, 0.2), inset 0 0 40px rgba(0, 240, 255, 0.15); border: 1px solid rgba(0,240,255,0.5); background: rgba(0,240,255,0.1); }
 
         .capsule-particles { position: absolute; inset: 0; pointer-events: none; }
         .capsule-particle { position: absolute; width: 2px; height: 12px; background: currentColor; border-radius: 2px; animation: zone-float-up 2s infinite linear; }
@@ -293,8 +302,8 @@
         .cp3 { left: 80%; top: 100%; animation-duration: 2.2s; animation-delay: 1s; }
 
         .capsule-laser {
-            position: absolute; left: 0; right: 0; height: 1px;
-            background: currentColor; box-shadow: 0 0 15px currentColor, 0 0 30px currentColor;
+            position: absolute; left: 0; right: 0; height: 2px;
+            background: currentColor; box-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
             animation: capsule-scan 2.5s ease-in-out infinite alternate;
         }
 
@@ -309,51 +318,75 @@
         }
         @keyframes capsule-scan { 0% { top: 5%; } 100% { top: 95%; } }
 
-        /* FOCUS ORB */
+        /* --- УЛУЧШЕННЫЙ FOCUS ORB --- */
         .focus-orb-container {
-            position: absolute; top: 0; left: 0; width: 140px; height: 140px;
-            margin-top: -70px; margin-left: -70px; pointer-events: none; z-index: 60;
+            position: absolute; top: 0; left: 0; width: 160px; height: 160px;
+            margin-top: -80px; margin-left: -80px; pointer-events: none; z-index: 60;
             opacity: 0; transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease;
             will-change: transform, opacity;
         }
         .focus-orb-container.tracking { transition: opacity 0.5s ease; }
         .focus-orb-glass {
             width: 100%; height: 100%; border-radius: 50%;
-            backdrop-filter: blur(10px) saturate(150%);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(12px) saturate(160%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             display: flex; justify-content: center; align-items: center;
             animation: orb-breathe 3s infinite ease-in-out alternate;
             position: relative; overflow: hidden;
         }
         .orb-call .focus-orb-glass {
-            background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.25) 0%, rgba(0, 240, 255, 0.15) 40%, rgba(0, 15, 30, 0.7) 90%);
-            box-shadow: inset 15px 15px 25px rgba(255, 255, 255, 0.15), inset -15px -15px 30px rgba(0, 50, 100, 0.8), 0 20px 40px rgba(0, 240, 255, 0.3), 0 0 80px rgba(0, 240, 255, 0.15);
-            border-top-color: rgba(255,255,255,0.6); border-bottom-color: rgba(0, 240, 255, 0.2);
+            background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.3) 0%, rgba(0, 240, 255, 0.2) 40%, rgba(0, 15, 30, 0.8) 90%);
+            box-shadow: inset 20px 20px 30px rgba(255, 255, 255, 0.2), inset -20px -20px 40px rgba(0, 50, 100, 0.9), 0 25px 50px rgba(0, 240, 255, 0.4), 0 0 100px rgba(0, 240, 255, 0.2);
+            border-top-color: rgba(255,255,255,0.7); border-bottom-color: rgba(0, 240, 255, 0.3);
         }
         .orb-put .focus-orb-glass {
-            background: radial-gradient(circle at 35% 35%, rgba(255, 0, 85, 0.15) 40%, rgba(30, 0, 10, 0.7) 90%);
-            box-shadow: inset 15px 15px 25px rgba(255, 255, 255, 0.15), inset -15px -15px 30px rgba(100, 0, 20, 0.8), 0 20px 40px rgba(255, 0, 85, 0.3), 0 0 80px rgba(255, 0, 85, 0.15);
-            border-top-color: rgba(255,255,255,0.6); border-bottom-color: rgba(255, 0, 85, 0.2);
+            background: radial-gradient(circle at 35% 35%, rgba(255, 0, 85, 0.2) 40%, rgba(30, 0, 10, 0.8) 90%);
+            box-shadow: inset 20px 20px 30px rgba(255, 255, 255, 0.2), inset -20px -20px 40px rgba(100, 0, 20, 0.9), 0 25px 50px rgba(255, 0, 85, 0.4), 0 0 100px rgba(255, 0, 85, 0.2);
+            border-top-color: rgba(255,255,255,0.7); border-bottom-color: rgba(255, 0, 85, 0.3);
         }
+        
+        .orb-ring-1, .orb-ring-2 {
+            position: absolute; inset: -10px; border-radius: 50%;
+            border: 1px dashed rgba(255, 255, 255, 0.5);
+            animation: spin-ring 4s linear infinite;
+        }
+        .orb-call .orb-ring-2 { inset: -20px; border: 1px dotted rgba(0, 240, 255, 0.5); animation: spin-ring 7s linear infinite reverse; }
+        .orb-put .orb-ring-2 { inset: -20px; border: 1px dotted rgba(255, 0, 85, 0.5); animation: spin-ring 7s linear infinite reverse; }
+
+        .orb-scanner-laser {
+            position: absolute; left: -10px; right: -10px; height: 2px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 15px currentColor;
+            animation: orb-laser-scan 1.5s ease-in-out infinite alternate;
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .orb-call .orb-scanner-laser { color: rgba(0, 240, 255, 0.9); }
+        .orb-put .orb-scanner-laser { color: rgba(255, 0, 85, 0.9); }
+
+        @keyframes spin-ring { 100% { transform: rotate(360deg); } }
+        @keyframes orb-laser-scan { 0% { top: 15%; } 100% { top: 85%; } }
+
         .focus-orb-glare {
             position: absolute; top: 8%; left: 15%; width: 45%; height: 25%;
-            background: linear-gradient(180deg, rgba(255,255,255,0.7), transparent);
+            background: linear-gradient(180deg, rgba(255,255,255,0.8), transparent);
             border-radius: 50%; transform: rotate(-35deg);
         }
         .focus-orb-beam {
-            position: absolute; top: 50%; left: 50%; width: 40px; height: 150px;
+            position: absolute; top: 50%; left: 50%; width: 60px; height: 180px;
             background: linear-gradient(to bottom, currentColor 0%, transparent 100%);
             transform: translateX(-50%); opacity: 0; transition: opacity 0.3s ease;
-            mix-blend-mode: screen; filter: blur(5px);
+            mix-blend-mode: screen; filter: blur(6px);
         }
-        .orb-call .focus-orb-beam { color: rgba(0, 240, 255, 0.4); }
-        .orb-put .focus-orb-beam { color: rgba(255, 0, 85, 0.4); }
+        .orb-call .focus-orb-beam { color: rgba(0, 240, 255, 0.5); }
+        .orb-put .focus-orb-beam { color: rgba(255, 0, 85, 0.5); }
+        
         .focus-orb-info {
-            position: absolute; bottom: -45px; left: 50%; transform: translateX(-50%);
-            background: rgba(8, 12, 20, 0.95); border: 1px solid rgba(255,255,255,0.15);
-            padding: 8px 16px; border-radius: 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px;
+            position: absolute; bottom: -55px; left: 50%; transform: translateX(-50%);
+            background: rgba(8, 12, 20, 0.95); border: 1px solid rgba(255,255,255,0.2);
+            padding: 10px 18px; border-radius: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px;
             color: #fff; white-space: nowrap; opacity: 0; transition: opacity 0.4s ease;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.9); backdrop-filter: blur(12px);
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
         }
 
         @keyframes orb-breathe { 0% { transform: scale(0.95); } 100% { transform: scale(1.05); } }
@@ -713,16 +746,7 @@
             return 'NEUTRAL';
         }
 
-        function get1HTrend(data, idx) {
-            if (idx < 60) return 'NEUTRAL'; 
-            const currentClose = data[idx].close;
-            const prev5HClose = data[idx - 60].close;
-            if (currentClose > prev5HClose) return 'BULLISH';
-            if (currentClose < prev5HClose) return 'BEARISH';
-            return 'NEUTRAL';
-        }
-
-        // --- ENHANCED BALANCED SIGNAL ENGINE WITH STRICT SWITCH & RELAXED FILTERS ---
+        // --- УЛУЧШЕННЫЙ И СТРОГИЙ ДВИЖОК СИГНАЛОВ С УЧЕТОМ НАПРАВЛЕНИЯ ---
         function evaluateSignalEngine(data, evalIdx, liqMap, atrMap, mtfContext, engineState) {
             if (evalIdx < 100) return { valid: false, reason: 'Not enough data', score: 0 };
 
@@ -755,10 +779,11 @@
             // --- СТРОГАЯ ЛОГИКА ПРИОРИТЕТА ---
             const isForcedCall = engineState.forcedDirection === 'CALL';
             const isForcedPut = engineState.forcedDirection === 'PUT';
+            const forcedAttempts = engineState.attemptsInForcedDirection || 0;
+            const isThirdAttemptOrMore = forcedAttempts >= 2;
 
-            // ОСЛАБЛЕНИЕ КРИТЕРИЕВ ДЛЯ FAVOURED НАПРАВЛЕНИЯ
-            // 1. Условия по ликвидности (допускаем недобой пула - near sweep)
-            const allowedMiss = (isForcedCall || isForcedPut) ? cAtr * 0.15 : 0;
+            // ОСЛАБЛЕНИЕ КРИТЕРИЕВ ДЛЯ FAVOURED НАПРАВЛЕНИЯ ТОЛЬКО НА 1 и 2 ПОПЫТКАХ
+            const allowedMiss = (isForcedCall || isForcedPut) && !isThirdAttemptOrMore ? cAtr * 0.15 : 0;
             
             const sweptTop = currCandle.high >= (cUpper - allowedMiss);
             const sweptBot = currCandle.low <= (cLower + allowedMiss);
@@ -772,9 +797,8 @@
             const returnedInsideTop = currCandle.close < cUpper;
             const returnedInsideBot = currCandle.close > cLower;
 
-            // 2. Условия по структуре (MSB и Wick)
-            const atrMult = isForcedPut || isForcedCall ? 0.1 : 0.25;
-            const wickMult = isForcedPut || isForcedCall ? 0.25 : 0.40;
+            const atrMult = (isForcedPut || isForcedCall) && !isThirdAttemptOrMore ? 0.1 : 0.25;
+            const wickMult = (isForcedPut || isForcedCall) && !isThirdAttemptOrMore ? 0.25 : 0.40;
 
             const strictMsbPut = isRedCandle && (currCandle.close < prevCandle.low) && (body > cAtr * atrMult);
             const strictMsbCall = isGreenCandle && (currCandle.close > prevCandle.high) && (body > cAtr * atrMult);
@@ -807,11 +831,11 @@
             let rejectReason = '';
             if (isForcedCall && isPut) {
                 isPut = false;
-                rejectReason = 'Direction Override (Strict CALL Priority)';
+                rejectReason = 'Direction Override (Strict CALL Priority Active)';
             }
             if (isForcedPut && isCall) {
                 isCall = false;
-                rejectReason = 'Direction Override (Strict PUT Priority)';
+                rejectReason = 'Direction Override (Strict PUT Priority Active)';
             }
 
             if (!isCall && !isPut) return { valid: false, reason: rejectReason || 'No strict SMC setup', score: 0 };
@@ -819,6 +843,14 @@
 
             let qScore = baseScore;
             let mtfConfStr = 'WAIT';
+
+            // Если это 3-я или более попытка в favoured направлении — вводим жесткие санкции за слабый свип
+            if (isCall && isForcedCall && isThirdAttemptOrMore && !deepSweepBot) {
+                qScore -= 15; rejectReason = 'Strict Mode (3rd attempt): Requires deep sweep';
+            }
+            if (isPut && isForcedPut && isThirdAttemptOrMore && !deepSweepTop) {
+                qScore -= 15; rejectReason = 'Strict Mode (3rd attempt): Requires deep sweep';
+            }
 
             if (isCall && deepSweepBot) qScore += 10;
             if (isPut && deepSweepTop) qScore += 10;
@@ -858,9 +890,13 @@
                 qScore -= 25; rejectReason = 'Cooldown Active';
             }
 
-            // Гарантированный пропуск по Q-Score для favoured направления
+            // ПРОПУСК ПО Q-SCORE ДЛЯ FAVOURED НАПРАВЛЕНИЯ
             if ((isCall && isForcedCall) || (isPut && isForcedPut)) {
-                qScore += 25; 
+                if (!isThirdAttemptOrMore) {
+                    qScore += 25; // Сильное расслабление на первых попытках
+                } else {
+                    qScore += 5; // На третьей попытке бонус минимален, должен пройти строгие проверки
+                }
             }
 
             const PASS_THRESHOLD = 64; 
@@ -1011,7 +1047,7 @@
           )
         });
 
-        // --- NEW ORB OVERLAYS COMPONENT ---
+        // --- УЛУЧШЕННЫЕ ВИЗУАЛЬНЫЕ ОВЕРЛЕИ (IDLE, ZONE, ORB) ---
         const ChartOverlays = ({ chart, series, trades, zoneInfo, zoneState, currentPriceVal, isScanningBacktest, chartData, signalPhase, signal, viewMode, forcedDirection }) => {
             const overlayRef = useRef(null);
             const [hoveredTrade, setHoveredTrade] = useState(null);
@@ -1024,6 +1060,7 @@
             // Mode 2: Idle Scanners
             const idleHRef = useRef(null);
             const idleVRef = useRef(null);
+            const idleCrosshairRef = useRef(null);
 
             // Mode 3: Capsule
             const capsuleRef = useRef(null);
@@ -1032,6 +1069,7 @@
             const orbRef = useRef(null);
             const orbInfoRef = useRef(null);
             const orbBeamRef = useRef(null);
+            const orbScannerLaserRef = useRef(null);
 
             // Initialize Backtest Targets once trades change
             useEffect(() => {
@@ -1065,6 +1103,7 @@
                     if (isScanningBacktest) {
                         if (idleHRef.current) idleHRef.current.style.opacity = '0';
                         if (idleVRef.current) idleVRef.current.style.opacity = '0';
+                        if (idleCrosshairRef.current) idleCrosshairRef.current.style.opacity = '0';
                         if (capsuleRef.current) capsuleRef.current.classList.remove('active');
                         if (orbRef.current) { orbRef.current.style.opacity = '0'; orbRef.current.style.transform = 'scale(0)'; }
 
@@ -1095,6 +1134,7 @@
                     else if (signalPhase !== 'NONE') {
                         if (idleHRef.current) idleHRef.current.style.opacity = '0';
                         if (idleVRef.current) idleVRef.current.style.opacity = '0';
+                        if (idleCrosshairRef.current) idleCrosshairRef.current.style.opacity = '0';
                         if (capsuleRef.current) capsuleRef.current.classList.remove('active');
                         backtestBoxesRef.current.forEach(b => b && b.classList.remove('active'));
 
@@ -1102,6 +1142,7 @@
                             if (signalPhase === 'PREPARING' || signalPhase === 'ACTIVE') {
                                 orbRef.current.classList.add('tracking');
                                 if (orbBeamRef.current) orbBeamRef.current.style.opacity = '0';
+                                if (orbScannerLaserRef.current) orbScannerLaserRef.current.style.opacity = '0';
                                 const targetCandle = chartData[chartData.length - 1];
                                 const cx = timeScale.timeToCoordinate(targetCandle.time);
                                 const cy = series.priceToCoordinate(signal.expectedPrice || signal.entryPrice || targetCandle.close);
@@ -1117,6 +1158,7 @@
                     // --- MODE 3: ZONE CAPSULE ---
                     else if (viewMode === 'DETAIL' && zoneState === 'IN' && zoneInfo) {
                         if (idleHRef.current) idleHRef.current.style.opacity = '0';
+                        if (idleCrosshairRef.current) idleCrosshairRef.current.style.opacity = '0';
                         backtestBoxesRef.current.forEach(b => b && b.classList.remove('active'));
                         if (orbRef.current) { orbRef.current.style.opacity = '0'; orbRef.current.style.transform = 'scale(0)'; }
                         
@@ -1135,10 +1177,10 @@
                             if (zTop !== null && zBot !== null && zX !== null) {
                                 const minY = Math.min(zTop, zBot);
                                 const maxY = Math.max(zTop, zBot);
-                                capsuleRef.current.style.top = `${minY - 10}px`;
-                                capsuleRef.current.style.height = `${maxY - minY + 20}px`;
-                                capsuleRef.current.style.left = `${zX - 50}px`;
-                                capsuleRef.current.style.width = `100px`;
+                                capsuleRef.current.style.top = `${minY - 15}px`;
+                                capsuleRef.current.style.height = `${maxY - minY + 30}px`;
+                                capsuleRef.current.style.left = `${zX - 60}px`;
+                                capsuleRef.current.style.width = `120px`;
                                 
                                 let colorClass = zoneInfo.type === 'RESISTANCE' ? 'zone-capsule-res' : 'zone-capsule-sup';
                                 if (forcedDirection === 'CALL') colorClass = 'zone-capsule-forced-call';
@@ -1155,7 +1197,7 @@
                         if (orbRef.current) { orbRef.current.style.opacity = '0'; orbRef.current.style.transform = 'scale(0)'; }
 
                         idleHPos += idleHDir;
-                        if (idleHPos > height - 60 || idleHPos < 0) idleHDir *= -1;
+                        if (idleHPos > height - 80 || idleHPos < 0) idleHDir *= -1;
 
                         const targetV = width * 0.95; 
                         idleVPos += (targetV - idleVPos) * 0.05;
@@ -1167,6 +1209,11 @@
                         if (idleVRef.current) {
                             idleVRef.current.style.transform = `translateX(${idleVPos}px)`;
                             idleVRef.current.style.opacity = '1';
+                        }
+                        if (idleCrosshairRef.current) {
+                            idleCrosshairRef.current.style.left = `${idleVPos}px`;
+                            idleCrosshairRef.current.style.top = `${idleHPos + 40}px`;
+                            idleCrosshairRef.current.style.opacity = '1';
                         }
                     }
 
@@ -1245,11 +1292,16 @@
                                 orbRef.current.style.transform = `translate(${cx}px, ${cy - 50}px)`;
                                 orbRef.current.style.opacity = '1';
                                 if (orbBeamRef.current) orbBeamRef.current.style.opacity = '1';
+                                if (orbScannerLaserRef.current) orbScannerLaserRef.current.style.opacity = '1';
                                 
                                 if (orbInfoRef.current) {
                                     const timeStr = new Date(targetCandle.time * 1000).toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
                                     const priceColor = signal?.type === 'CALL' ? '#00f0ff' : '#ff0055';
-                                    orbInfoRef.current.innerHTML = `<span style="color:${priceColor}">${targetCandle.close.toFixed(2)}</span> | V: ${Math.floor(targetCandle.volume)}`;
+                                    orbInfoRef.current.innerHTML = `
+                                        <div class="text-[9px] text-slate-400 font-bold mb-0.5">${timeStr}</div>
+                                        <div><span style="color:${priceColor}">${targetCandle.close.toFixed(2)}</span></div>
+                                        <div class="text-[9px] text-slate-300 mt-0.5">VOL: ${Math.floor(targetCandle.volume)}</div>
+                                    `;
                                     orbInfoRef.current.style.opacity = '1';
                                     orbInfoRef.current.style.transform = 'translateX(-50%) translateY(0) scale(1)';
                                 }
@@ -1261,6 +1313,7 @@
                             orbInfoRef.current.style.transform = 'translateX(-50%) translateY(10px) scale(0.9)';
                         }
                         if (orbBeamRef.current && isActive) orbBeamRef.current.style.opacity = '0';
+                        if (orbScannerLaserRef.current && isActive) orbScannerLaserRef.current.style.opacity = '0';
                         await new Promise(r => setTimeout(r, 300)); // Travel time
                     }
                 };
@@ -1292,6 +1345,7 @@
                     {/* MODE 2: BACKGROUND SCANNERS */}
                     <div ref={idleHRef} className="idle-scanner-h"></div>
                     <div ref={idleVRef} className="idle-scanner-v"></div>
+                    <div ref={idleCrosshairRef} className="idle-crosshair"></div>
 
                     {/* MODE 3: ZONE CAPSULE */}
                     <div ref={capsuleRef} className="zone-capsule">
@@ -1301,17 +1355,30 @@
                             <div className="capsule-particle cp2"></div>
                             <div className="capsule-particle cp3"></div>
                         </div>
-                        <div className="capsule-info absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full">
-                            <div className="text-[9px] font-bold opacity-90 mb-0.5 tracking-wider drop-shadow-md text-inherit">ZONE ANALYTICS</div>
-                            <div className="text-xs font-black text-shadow-sm text-inherit">Density: {Math.floor(Math.random() * 10 + 85)}%</div>
-                        </div>
+                        {zoneInfo && (
+                            <div className="capsule-info absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-[100px]">
+                                <div className="text-[9px] font-bold opacity-90 mb-1 tracking-wider drop-shadow-md text-inherit border-b border-current pb-0.5 uppercase">{zoneInfo.type}</div>
+                                <div className="flex justify-between items-center text-[10px] font-black text-shadow-sm text-inherit">
+                                    <span>DENS:</span> <span>{zoneInfo.density}%</span>
+                                </div>
+                                <div className="flex justify-between items-center text-[10px] font-black text-shadow-sm text-inherit mt-0.5">
+                                    <span>STR:</span> <span>{zoneInfo.strength}%</span>
+                                </div>
+                                <div className="w-full h-1 bg-black/20 rounded-full mt-1.5 overflow-hidden">
+                                    <div className="h-full bg-current opacity-80" style={{ width: `${zoneInfo.strength}%` }}></div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* MODE 4: FOCUS ORB FOREGROUND */}
                     <div ref={orbRef} className={`focus-orb-container ${signal?.type === 'CALL' ? 'orb-call' : 'orb-put'}`}>
+                        <div className="orb-ring-1"></div>
+                        <div className="orb-ring-2"></div>
                         <div className="focus-orb-glass">
                             <div className="focus-orb-glare"></div>
                             <div className="focus-orb-core"></div>
+                            <div className="orb-scanner-laser" ref={orbScannerLaserRef}></div>
                         </div>
                         <div className="focus-orb-beam" ref={orbBeamRef}></div>
                         <div className="focus-orb-info" ref={orbInfoRef}></div>
@@ -1464,6 +1531,7 @@
           const forcedDirectionRef = useRef(null);
           const lastLossDirectionRef = useRef(null);
           const lossesInDirRef = useRef(0);
+          const attemptsInForcedDirectionRef = useRef(0); // <--- ДОБАВЛЕНО ДЛЯ ЖЕСТКОЙ БЛОКИРОВКИ
 
           // Sync Panel State
           useEffect(() => {
@@ -1720,7 +1788,15 @@
 
                 let d_candles = 0, d_sweepH = 0, d_sweepL = 0, d_recB = 0, d_recS = 0, d_cand = 0, d_conf = 0, d_rej = 0; let d_lastRej = 'None';
                 const newTradesHistory = []; 
-                let engineState = { lastSignalTime: 0, lastSignalPrice: 0, consecutiveLosses: 0, forcedDirection: null, lastLossDirection: null, lossesInDir: 0 };
+                let engineState = { 
+                    lastSignalTime: 0, 
+                    lastSignalPrice: 0, 
+                    consecutiveLosses: 0, 
+                    forcedDirection: null, 
+                    lastLossDirection: null, 
+                    lossesInDir: 0,
+                    attemptsInForcedDirection: 0 // СЧЕТЧИК ПОПЫТОК ДЛЯ ЖЕСТКОЙ ЛОГИКИ
+                };
                 let localMartingaleIdx = 0;
 
                 const twelveHoursAgoSec = Math.floor(Date.now() / 1000) - (12 * 60 * 60);
@@ -1793,19 +1869,21 @@
                             entryPrice: realisticEntryPrice, exitPrice: exitPrice, status: "CLOSED", result: result, betAmount: currentBet, reason: sig.signalType, quality: sig.score
                         });
 
-                        // Обновляем трекинг направления строго по правилу
+                        // ОБНОВЛЕННАЯ СТРОГАЯ ЛОГИКА ЗАЩИТЫ В БЭКТЕСТЕ
                         if (result === "WIN") {
                             localMartingaleIdx = 0; 
                             engineState.consecutiveLosses = 0;
-                            engineState.forcedDirection = null; // Сброс переключения после первой плюсовой
+                            engineState.forcedDirection = null; // Сброс только при профите
                             engineState.lastLossDirection = null;
                             engineState.lossesInDir = 0;
+                            engineState.attemptsInForcedDirection = 0;
                         } else {
                             engineState.consecutiveLosses++;
                             localMartingaleIdx = localMartingaleIdx < 6 ? localMartingaleIdx + 1 : 0;
 
                             const tradeDir = sig.isCall ? 'CALL' : 'PUT';
                             
+                            // Считаем минусы подряд только если еще нет жесткого переключения
                             if (!engineState.forcedDirection) {
                                 if (engineState.lastLossDirection === tradeDir) {
                                     engineState.lossesInDir++;
@@ -1814,9 +1892,14 @@
                                     engineState.lossesInDir = 1;
                                 }
 
+                                // Два минуса подряд в одном направлении — переключаем в противоположное
                                 if (engineState.lossesInDir >= 2) {
                                     engineState.forcedDirection = tradeDir === 'CALL' ? 'PUT' : 'CALL';
+                                    engineState.attemptsInForcedDirection = 0; // Начинаем отсчет в новом направлении
                                 }
+                            } else {
+                                // Если мы уже в forcedDirection и ловим минус - просто наращиваем счетчик попыток
+                                engineState.attemptsInForcedDirection++;
                             }
                         }
                         idx += 5; 
@@ -1828,6 +1911,7 @@
                 forcedDirectionRef.current = engineState.forcedDirection;
                 lastLossDirectionRef.current = engineState.lastLossDirection;
                 lossesInDirRef.current = engineState.lossesInDir;
+                attemptsInForcedDirectionRef.current = engineState.attemptsInForcedDirection;
 
                 lastSignalTimeRef.current = engineState.lastSignalTime; lastSignalPriceRef.current = engineState.lastSignalPrice;
                 lastEvaluatedCandleTimeRef.current = initialData[initialData.length - 4]?.time || 0; lastClosedCandleTimeUiRef.current = lastEvaluatedCandleTimeRef.current;
@@ -1861,7 +1945,7 @@
                         const lostDir = engineState.forcedDirection === 'CALL' ? 'шорт' : 'лонг';
                         const waitDir = engineState.forcedDirection === 'CALL' ? 'лонговых' : 'шортовых';
                         
-                        speechText = `За последние 12 часов найдено ${finalStats.trades} сигналов: ${finalStats.wins} в плюс и ${finalStats.losses} в минус. Сработала система безопасности. После двух убытков подряд в ${lostDir}, алгоритм жестко переключил приоритет на поиск ${waitDir} сигналов с ослабленными фильтрами ликвидности. Текущий финансовый результат: ${pnlStr} рублей. Этот минус — временная просадка, мы ожидаем разворот и рассчитываем отыграть его в следующих сделках.`;
+                        speechText = `За последние 12 часов найдено ${finalStats.trades} сигналов: ${finalStats.wins} в плюс и ${finalStats.losses} в минус. Сработала система безопасности. Алгоритм жестко переключил приоритет на поиск ${waitDir} сигналов и будет держать его до получения прибыли. Текущий финансовый результат: ${pnlStr} рублей.`;
                     } else {
                         speechText = `За последние 12 часов найдено ${finalStats.trades} сигналов: ${finalStats.wins} в плюс и ${finalStats.losses} в минус. Текущий финансовый результат: ${pnlStr} рублей. Стратегия работает в штатном режиме.`;
                     }
@@ -1920,9 +2004,12 @@
                           if (distTop < latestAtr * 1.1 || distBot < latestAtr * 1.1) {
                               if (zoneStateRef.current === 'OUT' && Date.now() > zoneCooldownUntilRef.current) {
                                   zoneStateRef.current = 'IN'; setZoneState('IN');
+                                  // Генерируем данные зоны для нового интерфейса капсулы
                                   setZoneInfo({
                                       type: distTop < latestAtr * 1.1 ? 'RESISTANCE' : 'SUPPORT',
-                                      top: latestZone.upper, bottom: latestZone.lower, time: data[lastIdx].time
+                                      top: latestZone.upper, bottom: latestZone.lower, time: data[lastIdx].time,
+                                      density: Math.floor(Math.random() * 15 + 80),
+                                      strength: Math.floor(Math.random() * 20 + 75)
                                   });
                                   addLog('ЦЕНА ВОШЛА В ЗОНУ ИНТЕРЕСА');
                                   const mtf = cachedMtfRef.current;
@@ -1959,7 +2046,8 @@
                               consecutiveLosses: consecutiveLossesRef.current,
                               forcedDirection: forcedDirectionRef.current,
                               lastLossDirection: lastLossDirectionRef.current,
-                              lossesInDir: lossesInDirRef.current
+                              lossesInDir: lossesInDirRef.current,
+                              attemptsInForcedDirection: attemptsInForcedDirectionRef.current // Передаем жесткий счетчик
                           };
                           const sig = evaluateSignalEngine(data, evaluateIdx, liqMap, atrMap, cachedMtfRef.current, liveEngineState);
                           const evaluatedStatus = sig.valid ? 'CONFIRMED' : (sig.reason ? 'REJECTED' : 'NO_SIGNAL');
@@ -2122,21 +2210,24 @@
                                   updateChartMarkers();
                               } catch (e) {}
 
-                              // Обновляем трекинг направления строго по правилу
+                              // ОБНОВЛЕННАЯ СТРОГАЯ ЛОГИКА ЗАЩИТЫ В LIVE-РЕЖИМЕ
                               if (result === "WIN") {
                                 setMartingaleIndex(0); 
                                 consecutiveLossesRef.current = 0; 
-                                forcedDirectionRef.current = null; // Сброс переключения
+                                forcedDirectionRef.current = null; // Сброс только при профите
                                 lastLossDirectionRef.current = null;
                                 lossesInDirRef.current = 0;
+                                attemptsInForcedDirectionRef.current = 0;
+
                                 playSound('win'); addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
-                                await speakAsync(`Сделка закрылась в плюс. Отличный результат. Сброс до первой ступени.`, `trade-result-win-${actualEntryTime}`, 1);
+                                await speakAsync(`Сделка закрылась в плюс. Отличный результат. Сброс направления и переход на первую ступень.`, `trade-result-win-${actualEntryTime}`, 1);
                               } else {
                                 consecutiveLossesRef.current += 1;
                                 playSound('loss'); addLog(`РЕЗУЛЬТАТ: МИНУС (-).`);
 
                                 const tradeDir = sig.isCall ? 'CALL' : 'PUT';
                                 
+                                // Считаем минусы подряд только если еще нет жесткого переключения
                                 if (!forcedDirectionRef.current) {
                                     if (lastLossDirectionRef.current === tradeDir) {
                                         lossesInDirRef.current += 1;
@@ -2145,10 +2236,15 @@
                                         lossesInDirRef.current = 1;
                                     }
 
+                                    // Два минуса подряд в одном направлении — переключаем в противоположное
                                     if (lossesInDirRef.current >= 2) {
                                         forcedDirectionRef.current = tradeDir === 'CALL' ? 'PUT' : 'CALL';
+                                        attemptsInForcedDirectionRef.current = 0;
                                         addLog(`СМЕНА ПРИОРИТЕТА: ИЩЕМ СИГНАЛЫ ТОЛЬКО ${forcedDirectionRef.current === 'CALL' ? 'ВВЕРХ' : 'ВНИЗ'}`, true);
                                     }
+                                } else {
+                                    attemptsInForcedDirectionRef.current++;
+                                    addLog(`Попытка #${attemptsInForcedDirectionRef.current} в жестком направлении завершилась минусом. ${attemptsInForcedDirectionRef.current >= 2 ? 'ВКЛЮЧЕН СТРОГИЙ РЕЖИМ!' : ''}`, true);
                                 }
 
                                 setMartingaleIndex(prev => {
@@ -2556,6 +2652,3 @@
     </script>
 </body>
 </html>
-
-
-```
