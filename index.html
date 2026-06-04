@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Крипто Терминал Гордеева - PRO MAX (SMC 5M)</title>
+    <title>Крипто Терминал Гордеева - PRO MAX (SMC 1M)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -587,7 +587,7 @@
                 <div className={`compact-mtf-dash w-full flex flex-col xl:flex-row items-center justify-between px-4 py-2 relative z-30 mb-2 rounded-t-2xl md:rounded-t-3xl ${modeClass}`}>
                     <div className="flex flex-wrap items-center justify-center xl:justify-start gap-2 md:gap-4 w-full xl:w-auto mb-2 xl:mb-0">
                         <div className="bg-cyan-900/40 border border-cyan-500/30 px-3 py-1 rounded-md text-[9px] text-cyan-200 font-black tracking-widest shadow-inner">
-                            5M SCALPING
+                            1M SCALPING
                         </div>
                         <div className="flex gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5">
                             <CompactBiasCard label="4H" bias={mtfContext.h4} />
@@ -637,7 +637,7 @@
             return { trades: total, wins, losses, winrate, pnl: Math.round(pnl), balance: Math.round(balance), payout: moneyConfig.payout };
         }
 
-        const LEDGER_KEY = 'crypto_pro_max_scan_ledger_5m';
+        const LEDGER_KEY = 'crypto_pro_max_scan_ledger_1m';
         const _inMemoryLedger = {};
         const ScanLedger = {
             get: (time) => {
@@ -700,7 +700,7 @@
         };
 
         const ScannerAPI = {
-          async getCandles(symbol, count = 250, interval = '5m') { 
+          async getCandles(symbol, count = 1000, interval = '1m') { 
             const urls = [
                 `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
                 `https://api1.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`,
@@ -827,7 +827,7 @@
                 atrMultCall = 0.05;
                 wickMultCall = 0.15;
             } else {
-                // Нормальный режим: строже, но шорты всё равно чуть мягче лонгов (как просили)
+                // Нормальный режим: строже, но шорты всё равно чуть мягче лонгов
                 allowedMissTop = cAtr * 0.30;
                 allowedMissBot = cAtr * 0.20;
                 atrMultPut = 0.10;
@@ -918,10 +918,10 @@
             }
 
             if (mtfConfStr === 'WAIT' || h4 === 'LOCAL' || mtfContext.status.includes('LOCAL')) {
-                mtfConfStr = 'LOCAL 5M'; qScore += 5; 
+                mtfConfStr = 'LOCAL 1M'; qScore += 5; 
             }
 
-            const candlesSinceLast = (currTime - engineState.lastSignalTime) / 300; 
+            const candlesSinceLast = (currTime - engineState.lastSignalTime) / 60; 
             if (candlesSinceLast < 5) { 
                 qScore -= 25; return { valid: false, reason: 'Cooldown Active', score: qScore };
             }
@@ -1296,15 +1296,15 @@
                             const p1 = timeScale.logicalToCoordinate(1);
                             const p2 = timeScale.logicalToCoordinate(2);
                             const candlePx = (p2 !== null && p1 !== null) ? Math.abs(p2 - p1) : 10;
-                            xExit = xEntry + (5 * candlePx);
+                            xExit = xEntry + (25 * candlePx); // UPDATED FOR 1M: 25 candles
                         }
 
                         if (xEntry === null && trade.signalTime) {
                             const sigCoord = timeScale.timeToCoordinate(trade.signalTime);
                             if (sigCoord !== null) {
                                 const sigLog = timeScale.coordinateToLogical(sigCoord);
-                                xEntry = timeScale.logicalToCoordinate(sigLog + ((trade.entryTime - trade.signalTime)/300));
-                                xExit = timeScale.logicalToCoordinate(sigLog + ((trade.exitTime - trade.signalTime)/300));
+                                xEntry = timeScale.logicalToCoordinate(sigLog + ((trade.entryTime - trade.signalTime)/60)); // UPDATED FOR 1M
+                                xExit = timeScale.logicalToCoordinate(sigLog + ((trade.exitTime - trade.signalTime)/60));   // UPDATED FOR 1M
                             }
                         }
                         
@@ -1514,7 +1514,7 @@
                                 </span>
                             </div>
                             <div className="mt-3 pt-2 border-t border-slate-700 text-center text-[9px] text-slate-500 font-bold uppercase tracking-widest">
-                                PURE 5M MODE • Q-SCORE: {hoveredTrade.trade.quality || 'N/A'}
+                                PURE 1M MODE • Q-SCORE: {hoveredTrade.trade.quality || 'N/A'}
                             </div>
                         </div>
                     )}
@@ -1537,7 +1537,7 @@
           
           const [countdown, setCountdown] = useState(null); 
           const [logs, setLogs] = useState([]);
-          const [currentTF, setCurrentTF] = useState('5M');
+          const [currentTF, setCurrentTF] = useState('1M');
           const [zoneState, setZoneState] = useState('OUT');
           const [zoneInfo, setZoneInfo] = useState(null); 
           const [isScanningBacktest, setIsScanningBacktest] = useState(false);
@@ -1706,7 +1706,7 @@
 
           useEffect(() => {
             const loadSparklines = async () => {
-                const data = await ScannerAPI.getCandles('BTCUSDT', 50, '5m'); 
+                const data = await ScannerAPI.getCandles('BTCUSDT', 50, '1m'); 
                 if (data && data.length > 0) { setSparklines({'BTCUSDT': data}); currentPrice.current = data[data.length - 1].close; }
             };
             loadSparklines();
@@ -1815,8 +1815,8 @@
                   const m15 = data15m.length > 0 ? getHTFBias(data15m, currentPriceVal) : 'LOCAL';
                   cachedMtfRef.current = { h4, h1, m15, status: 'LOADED' }; setMtfContext(prev => ({ ...prev, h4, h1, m15, status: 'LOADED' }));
               } catch (e) {
-                  cachedMtfRef.current = { h4: 'LOCAL', h1: 'LOCAL', m15: 'LOCAL', status: 'LOCAL 5M MODE' };
-                  setMtfContext(prev => ({ ...prev, h4: 'LOCAL', h1: 'LOCAL', m15: 'LOCAL', status: 'LOCAL 5M MODE' }));
+                  cachedMtfRef.current = { h4: 'LOCAL', h1: 'LOCAL', m15: 'LOCAL', status: 'LOCAL 1M MODE' };
+                  setMtfContext(prev => ({ ...prev, h4: 'LOCAL', h1: 'LOCAL', m15: 'LOCAL', status: 'LOCAL 1M MODE' }));
               }
           };
 
@@ -1840,7 +1840,7 @@
             addLog(`Запуск системы. Анализ рынка за последние 12 часов.`, true);
 
             const curAsset = ASSETS[0]; 
-            const initialData = await ScannerAPI.getCandles(curAsset.symbol, 200, '5m'); 
+            const initialData = await ScannerAPI.getCandles(curAsset.symbol, 1000, '1m'); 
             
             if (initialData && initialData.length > 100) {
                 lastDataTimeRef.current = Date.now(); setSparklines(prev => ({...prev, [curAsset.symbol]: initialData})); currentPrice.current = initialData[initialData.length - 1].close;
@@ -1864,10 +1864,10 @@
 
                 const twelveHoursAgoSec = Math.floor(Date.now() / 1000) - (12 * 60 * 60);
                 let startIdx = initialData.findIndex(d => d.time >= twelveHoursAgoSec);
-                if (startIdx === -1) startIdx = Math.max(0, initialData.length - 144); 
+                if (startIdx === -1) startIdx = Math.max(0, initialData.length - 720); 
                 const endIdx = initialData.length - 4; 
 
-                const mockMtf = { h4: 'LOCAL', h1: 'LOCAL', m15: 'LOCAL', status: 'LOCAL 5M MODE' };
+                const mockMtf = { h4: 'LOCAL', h1: 'LOCAL', m15: 'LOCAL', status: 'LOCAL 1M MODE' };
 
                 for (let idx = startIdx; idx <= endIdx; idx++) {
                     const currTime = initialData[idx].time; const currCandle = initialData[idx]; const prevCandle = initialData[idx - 1]; d_candles++;
@@ -1903,7 +1903,7 @@
                     } else {
                         d_conf++; engineState.lastSignalTime = sig.signalTime; engineState.lastSignalPrice = sig.signalPrice;
                         
-                        const entryIdx = idx + 1; const exitIdx = Math.min(entryIdx + 5, initialData.length - 1); 
+                        const entryIdx = idx + 1; const exitIdx = Math.min(entryIdx + 25, initialData.length - 1); // UPDATED FOR 1M (25 candles)
                         const entryCandle = initialData[entryIdx]; const exitCandle = initialData[exitIdx];
                         
                         const candleRange = entryCandle.high - entryCandle.low;
@@ -1944,7 +1944,7 @@
                             // Всегда разворачиваем направление после убытка
                             engineState.forcedDirection = tradeDir === 'CALL' ? 'PUT' : 'CALL';
                         }
-                        idx += 5; 
+                        idx += 25; // UPDATED FOR 1M: advance 25 candles
                     }
                 }
 
@@ -2009,7 +2009,7 @@
                   if (currentAge > 90) {
                       updateStatus('ДАННЫЕ ОБНОВЛЯЮТСЯ. СИГНАЛЫ ПРИОСТАНОВЛЕНЫ.', 'text-rose-500 font-bold animate-pulse');
                       await new Promise(r => setTimeout(r, 2000));
-                      const data = await ScannerAPI.getCandles(curAsset.symbol, 200, '5m'); 
+                      const data = await ScannerAPI.getCandles(curAsset.symbol, 1000, '1m'); 
                       if (data && data.length > 100) lastDataTimeRef.current = Date.now(); continue;
                   }
 
@@ -2017,11 +2017,11 @@
                   if (zoneStateRef.current === 'OUT' && signalPhaseRef.current === 'NONE') updateStatus('СКАНИРОВАНИЕ ЛИКВИДНОСТИ...', 'text-slate-400');
                   else if (zoneStateRef.current === 'IN' && signalPhaseRef.current === 'NONE') updateStatus('ЗОНА ИНТЕРЕСА: ВОЗМОЖЕН СИГНАЛ', 'text-amber-500 font-bold animate-pulse text-shadow-[0_0_15px_rgba(245,158,11,0.6)]');
                   
-                  setCurrentTF('5M');
+                  setCurrentTF('1M');
 
                   for(let cur of ASSETS) {
                     if (!engineActive.current) break;
-                    const data = await ScannerAPI.getCandles(cur.symbol, 200, '5m'); 
+                    const data = await ScannerAPI.getCandles(cur.symbol, 1000, '1m'); 
                     
                     if (data && data.length > 100) {
                       lastDataTimeRef.current = Date.now(); setSparklines(prev => ({...prev, [cur.symbol]: data}));
@@ -2053,7 +2053,7 @@
                                   });
                                   addLog('ЦЕНА ВОШЛА В ЗОНУ ИНТЕРЕСА');
                                   const mtf = cachedMtfRef.current;
-                                  let warnTxt = 'Цена подошла к зоне интереса. Ожидайте подтверждения на 5M.';
+                                  let warnTxt = 'Цена подошла к зоне интереса. Ожидайте подтверждения на 1M.';
                                   if (mtf.h4 !== 'NEUTRAL' || mtf.h1 !== 'NEUTRAL') warnTxt = 'Цена подходит к старшей зоне ликвидности. Ожидайте подтверждения.';
                                   enqueueSpeech(warnTxt, `zone-approach-${latestZone.time}`, 3);
                                   syncModeView(); 
@@ -2122,7 +2122,7 @@
                                   await new Promise(r => setTimeout(r, 1000));
                                   
                                   try {
-                                      const liveData = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
+                                      const liveData = await ScannerAPI.getCandles(cur.symbol, 2, '1m'); // TICK UPDATES 1m
                                       if (liveData && liveData.length > 0) {
                                           lastDataTimeRef.current = Date.now();
                                           const liveTick = liveData[liveData.length - 1];
@@ -2210,7 +2210,7 @@
                                 
                                 if (expirySeconds % 2 === 0) {
                                     try {
-                                        const liveData = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
+                                        const liveData = await ScannerAPI.getCandles(cur.symbol, 2, '1m'); // TICK UPDATES 1m
                                         if (liveData && liveData.length > 0) {
                                             lastDataTimeRef.current = Date.now(); const tick = liveData[liveData.length - 1];
                                             currentPrice.current = tick.close;
@@ -2227,7 +2227,7 @@
                               activeAnalysisLinesRef.current.forEach(l => { try { candleSeries.current.removePriceLine(l); } catch(e){} });
                               activeAnalysisLinesRef.current = [];
 
-                              const resultData = await ScannerAPI.getCandles(cur.symbol, 2, '5m');
+                              const resultData = await ScannerAPI.getCandles(cur.symbol, 2, '1m');
                               let finalPrice = actualEntryPrice;
                               if (resultData && resultData.length > 0) { lastDataTimeRef.current = Date.now(); finalPrice = resultData[resultData.length - 1].close; }
                               
@@ -2432,7 +2432,7 @@
                               </div>
                               <div className="flex flex-col items-end hidden sm:flex">
                                   <div className="flex items-center gap-2 text-slate-100 bg-slate-900/90 px-4 py-2 rounded-xl shadow-[0_15px_30px_rgba(0,0,0,0.7)] border border-cyan-500/40">
-                                      <span className="text-xs md:text-sm font-bold tracking-widest uppercase">Premium 5M Diagnostics</span>
+                                      <span className="text-xs md:text-sm font-bold tracking-widest uppercase">Premium 1M Diagnostics</span>
                                       <Radar size={18} className="animate-spin text-cyan-400 drop-shadow-[0_0_5px_rgba(0,240,255,0.8)]" />
                                   </div>
                               </div>
