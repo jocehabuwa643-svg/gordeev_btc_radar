@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -775,7 +776,7 @@
             return 'NEUTRAL';
         }
 
-        // --- ОБНОВЛЕННЫЙ ДВИЖОК СИГНАЛОВ: РАЗДЕЛЬНАЯ ЛОГИКА ДЛЯ FAVOURED SHORT/LONG И НОРМАЛЬНОГО РЕЖИМА ---
+        // === ОБНОВЛЕННЫЙ ДВИЖОК СИГНАЛОВ: УЛУЧШЕННЫЙ БАЛАНС СТРОГОСТИ И ЧАСТОТЫ ===
         function evaluateSignalEngine(data, evalIdx, liqMap, atrMap, mtfContext, engineState) {
             if (evalIdx < 100) return { valid: false, reason: 'Not enough data', score: 0 };
 
@@ -808,32 +809,32 @@
             const isForcedCall = engineState.forcedDirection === 'CALL';
             const isForcedPut = engineState.forcedDirection === 'PUT';
 
-            // ГИБКАЯ НАСТРОЙКА КРИТЕРИЕВ С СУЩЕСТВЕННЫМ ОСЛАБЛЕНИЕМ ШОРТОВ В FAVOURED РЕЖИМЕ
+            // --- БАЛАНСИРОВКА "ЗОЛОТОЙ СЕРЕДИНЫ" ---
             let allowedMissTop = 0; 
             let allowedMissBot = 0;
-            let atrMultPut = 0.35;
-            let wickMultPut = 0.50;
-            let atrMultCall = 0.35;
-            let wickMultCall = 0.50;
+            let atrMultPut = 0.0;
+            let wickMultPut = 0.0;
+            let atrMultCall = 0.0;
+            let wickMultCall = 0.0;
 
             if (isForcedPut) {
-                // ОЧЕНЬ МЯГКИЕ УСЛОВИЯ ДЛЯ FAVOURED SHORT (чтобы ловить откаты и микро-касания)
-                allowedMissTop = cAtr * 0.80; // Прощает огромный недобой зоны
-                atrMultPut = 0.02; // Почти любое красное тело
-                wickMultPut = 0.10; // Почти любая тень
+                // Favoured Short: мягче нормы, но не пропускаем совсем слабые сетапы
+                allowedMissTop = cAtr * 0.35; // Было 0.80. Теперь нужно быть довольно близко к зоне
+                atrMultPut = 0.15;            // Было 0.02. Требуем хотя бы минимальное медвежье тело
+                wickMultPut = 0.25;           // Было 0.10. Требуем заметную тень
             } else if (isForcedCall) {
-                // Мягкие условия для лонга
-                allowedMissBot = cAtr * 0.50;
-                atrMultCall = 0.05;
-                wickMultCall = 0.15;
+                // Favoured Long
+                allowedMissBot = cAtr * 0.35; // Было 0.50.
+                atrMultCall = 0.15;           // Было 0.05.
+                wickMultCall = 0.25;          // Было 0.15.
             } else {
-                // Нормальный режим: строже, но шорты всё равно чуть мягче лонгов
-                allowedMissTop = cAtr * 0.30;
-                allowedMissBot = cAtr * 0.20;
-                atrMultPut = 0.10;
-                wickMultPut = 0.20;
-                atrMultCall = 0.15;
-                wickMultCall = 0.25;
+                // Нормальный режим: строгий фильтр шума
+                allowedMissTop = cAtr * 0.15; // Почти точное касание зоны (1 небольшая погрешность)
+                allowedMissBot = cAtr * 0.15;
+                atrMultPut = 0.25;            // Явное импульсное пробойное тело
+                wickMultPut = 0.35;           // Явная, длинная отвергающая тень
+                atrMultCall = 0.25;
+                wickMultCall = 0.35;
             }
             
             const sweptTop = currCandle.high >= (cUpper - allowedMissTop);
@@ -885,10 +886,10 @@
             let qScore = baseScore;
             let mtfConfStr = 'WAIT';
 
-            // Штрафуем отсутствие глубокого свипа только в нормальном режиме
+            // Штрафуем отсутствие глубокого свипа (теперь строже)
             if (!isForcedCall && !isForcedPut) {
-                if (isCall && !deepSweepBot) qScore -= 5;
-                if (isPut && !deepSweepTop) qScore -= 5;
+                if (isCall && !deepSweepBot) qScore -= 10; // Штраф увеличен с -5 до -10
+                if (isPut && !deepSweepTop) qScore -= 10;
             }
 
             if (isCall && strongBearImpulse && !isForcedCall) { qScore -= 10; return { valid: false, reason: 'Bear Impulse Risk', score: qScore }; }
@@ -926,15 +927,15 @@
                 qScore -= 25; return { valid: false, reason: 'Cooldown Active', score: qScore };
             }
 
-            // БОНУСЫ И ПОРОГИ
-            let PASS_THRESHOLD = 58; // Нормальный режим
+            // БОНУСЫ И ПОРОГИ (Скорректированные для баланса)
+            let PASS_THRESHOLD = 64; // Повышен базовый порог качества с 58 до 64
             
             if (isForcedPut && isPut) {
-                qScore += 35; // Мега-бонус для Favoured Short
-                PASS_THRESHOLD = 45; // Очень низкий порог
+                qScore += 20; // Бонус снижен с 35
+                PASS_THRESHOLD = 55; // Порог повышен с 45
             } else if (isForcedCall && isCall) {
-                qScore += 25; // Бонус для Favoured Long
-                PASS_THRESHOLD = 50;
+                qScore += 20; // Бонус снижен с 25
+                PASS_THRESHOLD = 55; // Порог повышен с 50
             }
 
             if (qScore < PASS_THRESHOLD) {
@@ -2670,3 +2671,6 @@
     </script>
 </body>
 </html>
+
+
+```
