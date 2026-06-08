@@ -1085,12 +1085,31 @@
           )
         });
 
-        const ChartOverlays = ({ chart, series, trades, zoneInfo, zoneState, currentPriceVal, isScanningBacktest, chartData, signalPhase, signal, viewMode, forcedDirection, securityPauses }) => {
+        // --- NEW COMPONENT: NEWS WIDGET ---
+        const NewsWidget = React.memo(({ currentNews, isFading, isScanningBacktest }) => {
+            if (isScanningBacktest) return null; 
+            return (
+                <div className="hidden xl:flex flex-1 max-w-[40%] 2xl:max-w-[50%] mx-6 relative overflow-hidden bg-slate-900/60 border border-cyan-500/20 rounded-xl shadow-[inset_0_0_15px_rgba(0,0,0,0.5)] h-[46px]">
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-cyan-500 shadow-[0_0_10px_rgba(0,240,255,0.8)]"></div>
+                    <div className="absolute right-0 top-0 bottom-0 w-[100px] bg-gradient-to-l from-slate-900/90 to-transparent pointer-events-none z-10"></div>
+                    <div className="flex items-center gap-3 w-full h-full pl-3 pr-2 relative z-0">
+                        <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-cyan-500/10 border border-cyan-500/30">
+                            <Globe size={14} className="text-cyan-400 animate-pulse drop-shadow-[0_0_5px_rgba(0,240,255,0.8)]" />
+                        </div>
+                        <div className="flex flex-col justify-center h-full w-full mt-0.5">
+                            <span className="text-[8px] text-cyan-400 font-bold tracking-[0.2em] oswald-font mb-0.5 leading-none uppercase drop-shadow-sm">ГЛОБАЛЬНАЯ СВОДКА</span>
+                            <span className={`text-[11px] font-semibold text-slate-200 transition-opacity duration-700 leading-tight whitespace-nowrap overflow-hidden text-ellipsis ${isFading ? 'opacity-100' : 'opacity-0'}`}>
+                                {currentNews || 'Синхронизация с новостными потоками...'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            );
+        });
+
+        const ChartOverlays = ({ chart, series, trades, zoneInfo, zoneState, currentPriceVal, isScanningBacktest, chartData, signalPhase, signal, viewMode, forcedDirection, securityPauses, replayTrade }) => {
             const overlayRef = useRef(null);
             const [hoveredTrade, setHoveredTrade] = useState(null);
-            
-            const backtestBoxesRef = useRef([]);
-            const [backtestTargets, setBacktestTargets] = useState([]);
             
             const idleHRef = useRef(null);
             const idleVRef = useRef(null);
@@ -1106,14 +1125,7 @@
 
             const pauseBoxesRef = useRef([]);
             const tradeHighlightRef = useRef([]);
-
-            useEffect(() => {
-                if (isScanningBacktest && trades.length > 0) {
-                    setBacktestTargets(trades);
-                } else {
-                    setBacktestTargets([]);
-                }
-            }, [trades, isScanningBacktest]);
+            const replayBoxRef = useRef(null);
 
             useEffect(() => {
                 if (!chart || !series || !overlayRef.current) return;
@@ -1131,7 +1143,6 @@
                     if (!isActive || !overlayRef.current) return;
                     const height = overlayRef.current.clientHeight;
                     const width = overlayRef.current.clientWidth;
-                    const now = Date.now();
 
                     // Отрисовка зон Security Pause (работает всегда)
                     if (securityPauses && securityPauses.length > 0) {
@@ -1168,35 +1179,28 @@
                         });
                     }
 
-                    if (isScanningBacktest) {
+                    // --- REPLAY TRADE HIGHLIGHT LOGIC ---
+                    if (replayTrade && replayBoxRef.current) {
+                        const cx = timeScale.timeToCoordinate(replayTrade.entryTime);
+                        const cy = series.priceToCoordinate(replayTrade.entryPrice);
+                        if (cx !== null && cy !== null) {
+                            replayBoxRef.current.style.display = 'flex';
+                            replayBoxRef.current.style.left = `${cx}px`;
+                            replayBoxRef.current.style.top = `${cy}px`;
+                        } else {
+                            replayBoxRef.current.style.display = 'none';
+                        }
+                    } else if (replayBoxRef.current) {
+                        replayBoxRef.current.style.display = 'none';
+                    }
+
+                    if (isScanningBacktest || replayTrade) {
                         if (idleHRef.current) idleHRef.current.style.opacity = '0';
                         if (idleVRef.current) idleVRef.current.style.opacity = '0';
                         if (idleCrosshairRef.current) idleCrosshairRef.current.style.opacity = '0';
                         if (capsuleRef.current) capsuleRef.current.classList.remove('active');
                         if (triggerLineRef.current) triggerLineRef.current.classList.remove('active');
                         if (orbRef.current) { orbRef.current.style.opacity = '0'; orbRef.current.style.transform = 'scale(0)'; }
-
-                        if (backtestTargets.length > 0) {
-                            const index = Math.floor((now / 1500) % backtestTargets.length);
-                            const t = backtestTargets[index];
-                            
-                            backtestBoxesRef.current.forEach((box, i) => {
-                                if (!box) return;
-                                if (i === index) {
-                                    const cx = timeScale.timeToCoordinate(t.entryTime);
-                                    const cy = series.priceToCoordinate(t.entryPrice);
-                                    if (cx !== null && cy !== null) {
-                                        box.style.left = `${cx - 40}px`;
-                                        box.style.top = `${cy - 40}px`;
-                                        box.style.width = '80px';
-                                        box.style.height = '80px';
-                                        box.classList.add('active');
-                                    }
-                                } else {
-                                    box.classList.remove('active');
-                                }
-                            });
-                        }
                     } 
                     else if (signalPhase !== 'NONE' && signalPhase !== 'SECURITY_PAUSE') {
                         if (idleHRef.current) idleHRef.current.style.opacity = '0';
@@ -1204,7 +1208,6 @@
                         if (idleCrosshairRef.current) idleCrosshairRef.current.style.opacity = '0';
                         if (capsuleRef.current) capsuleRef.current.classList.remove('active');
                         if (triggerLineRef.current) triggerLineRef.current.classList.remove('active');
-                        backtestBoxesRef.current.forEach(b => b && b.classList.remove('active'));
 
                         if (orbRef.current && chartData && chartData.length > 0 && signal) {
                             if (signalPhase === 'PREPARING' || signalPhase === 'ACTIVE') {
@@ -1226,7 +1229,6 @@
                     else if (viewMode === 'DETAIL' && zoneState === 'IN' && zoneInfo && signalPhase !== 'SECURITY_PAUSE') {
                         if (idleHRef.current) idleHRef.current.style.opacity = '0';
                         if (idleCrosshairRef.current) idleCrosshairRef.current.style.opacity = '0';
-                        backtestBoxesRef.current.forEach(b => b && b.classList.remove('active'));
                         if (orbRef.current) { orbRef.current.style.opacity = '0'; orbRef.current.style.transform = 'scale(0)'; }
                         
                         const zX = timeScale.timeToCoordinate(zoneInfo.time);
@@ -1285,10 +1287,8 @@
                     else {
                         if (capsuleRef.current) capsuleRef.current.classList.remove('active');
                         if (triggerLineRef.current) triggerLineRef.current.classList.remove('active');
-                        backtestBoxesRef.current.forEach(b => b && b.classList.remove('active'));
                         if (orbRef.current) { orbRef.current.style.opacity = '0'; orbRef.current.style.transform = 'scale(0)'; }
 
-                        // During security pause we hide the idle scanners too
                         if (signalPhase === 'SECURITY_PAUSE') {
                             if (idleHRef.current) idleHRef.current.style.opacity = '0';
                             if (idleVRef.current) idleVRef.current.style.opacity = '0';
@@ -1365,7 +1365,7 @@
 
                 rafId = requestAnimationFrame(loop);
                 return () => { isActive = false; cancelAnimationFrame(rafId); };
-            }, [chart, series, zoneInfo, zoneState, isScanningBacktest, signalPhase, viewMode, backtestTargets, trades, chartData, signal, forcedDirection, securityPauses]);
+            }, [chart, series, zoneInfo, zoneState, isScanningBacktest, signalPhase, viewMode, trades, chartData, signal, forcedDirection, securityPauses, replayTrade]);
 
             useEffect(() => {
                 if (signalPhase !== 'EXPLAINING' || !chartData || chartData.length < 5 || !orbRef.current || !chart || !series) return;
@@ -1436,13 +1436,6 @@
                             <div ref={el => pauseBoxesRef.current[i] = el} className="absolute pointer-events-none bg-rose-500/10 border-x border-rose-500/30" style={{ display: 'none' }} />
                             <div ref={el => tradeHighlightRef.current[i] = el} className="absolute pointer-events-none border-2 border-rose-500 shadow-[0_0_15px_rgba(225,29,72,0.8)] rounded bg-rose-500/5" style={{ display: 'none' }} />
                         </React.Fragment>
-                    ))}
-
-                    {/* MODE 1: BACKTEST BOXES */}
-                    {backtestTargets.map((t, i) => (
-                        <div key={`bt-${i}`} ref={el => backtestBoxesRef.current[i] = el} className="backtest-box">
-                            <div className="backtest-info">HISTORICAL {t.type} | {t.result}</div>
-                        </div>
                     ))}
 
                     {/* MODE 2: BACKGROUND SCANNERS */}
@@ -1523,6 +1516,20 @@
                         </div>
                     )})}
 
+                    {/* REPLAY OVERLAY */}
+                    <div 
+                        ref={replayBoxRef}
+                        className={`absolute z-[60] rounded-xl flex flex-col items-center justify-center transition-all duration-100 pointer-events-none ${replayTrade?.result === 'WIN' ? 'border-4 border-emerald-500 bg-emerald-500/20 shadow-[0_0_40px_rgba(16,185,129,0.8)]' : 'border-4 border-rose-500 bg-rose-500/20 shadow-[0_0_40px_rgba(225,29,72,0.8)]'}`}
+                        style={{ width: '100px', height: '120px', transform: 'translate(-50%, -50%)', display: 'none' }}
+                    >
+                        {replayTrade && (
+                            <>
+                                <span className="text-xl font-black text-white drop-shadow-md bg-black/60 px-3 py-1 rounded mb-1">{replayTrade.result}</span>
+                                <span className="text-[10px] font-bold text-white drop-shadow-md">{replayTrade.type}</span>
+                            </>
+                        )}
+                    </div>
+
                     {hoveredTrade && (
                         <div 
                             className="fixed z-50 premium-glass-card rounded-2xl p-4 pointer-events-none transform -translate-x-1/2 -translate-y-full min-w-[220px] bg-slate-900 border-cyan-500/30 text-slate-100 shadow-[0_15px_30px_rgba(0,0,0,0.8)]"
@@ -1586,6 +1593,7 @@
           
           const [tradesHistory, setTradesHistory] = useState([]);
           const [activeLiveTrade, setActiveLiveTrade] = useState(null);
+          const [replayTrade, setReplayTrade] = useState(null); // NEW: Track trade during replay
 
           const [martingaleIndex, setMartingaleIndex] = useState(0);
           
@@ -1619,7 +1627,7 @@
           const strictActivationTimeRef = useRef(0); 
           const currentDirRef = useRef(null);
           const consecutiveLossesInDirRef = useRef(0);
-          const securityPauseUntilRef = useRef(0); // NEW: track the 30m security pause
+          const securityPauseUntilRef = useRef(0); 
           
           const [securityPauses, setSecurityPauses] = useState([]);
           const [securityPauseRemaining, setSecurityPauseRemaining] = useState(null);
@@ -1628,19 +1636,24 @@
 
           const lastSignalTimeRef = useRef(0);
           const lastSignalPriceRef = useRef(0);
+          const lastMtfFetchRef = useRef(0);
 
           const lastEvaluatedCandleTimeRef = useRef(0);
           const lastClosedCandleTimeUiRef = useRef(0);
-
-          let cachedMtfRef = useRef({ h4: 'NEUTRAL', h1: 'NEUTRAL', m15: 'NEUTRAL', score: '--', status: 'LOADING' });
-          let lastMtfFetchRef = useRef(0);
 
           const speechQueueRef = useRef([]);
           const isSpeakingRef = useRef(false);
           const lastSpokenKeysRef = useRef({});
 
+          let cachedMtfRef = useRef({ h4: 'NEUTRAL', h1: 'NEUTRAL', m15: 'NEUTRAL', score: '--', status: 'LOADING' });
+
+          // NEW STATES FOR NEWS
+          const newsListRef = useRef([]);
+          const [currentNews, setCurrentNews] = useState(null);
+          const [newsFade, setNewsFade] = useState(true);
+
           useEffect(() => {
-              if (signalPhase === 'SECURITY_PAUSE') setPanelState('IDLE'); // specific state handled in render
+              if (signalPhase === 'SECURITY_PAUSE') setPanelState('IDLE'); 
               else if (signalPhase !== 'NONE') setPanelState('SIGNAL');
               else if (zoneState === 'IN') setPanelState('ZONE');
               else setPanelState('IDLE');
@@ -1709,6 +1722,50 @@
                   } else { if (cryptoQuotesRef.current.length === 0) setCryptoQuotes([]); }
               } catch (e) { if (cryptoQuotesRef.current.length === 0) setCryptoQuotes([]); }
           };
+
+          // NEWS FETCHING AND ROTATION LOGIC
+          useEffect(() => {
+              const fetchNews = async () => {
+                  try {
+                      const res = await fetchWithTimeout('https://api.rss2json.com/v1/api.json?rss_url=https://lenta.ru/rss/news', { timeout: 6000 });
+                      if (res.ok) {
+                          const data = await res.json();
+                          if (data && data.items && data.items.length > 0) {
+                              newsListRef.current = data.items.map(i => i.title);
+                              if (!currentNews) setCurrentNews(newsListRef.current[0]);
+                          }
+                      }
+                  } catch (e) {
+                      console.warn('News fetch failed');
+                  }
+              };
+              
+              fetchNews();
+              const intId = setInterval(fetchNews, 60 * 60 * 1000); 
+              return () => clearInterval(intId);
+          }, []);
+
+          useEffect(() => {
+              if (!isStarted || isScanningBacktest || newsListRef.current.length === 0) return;
+
+              const idxRef = { current: 0 };
+              const rotInt = setInterval(() => {
+                  setNewsFade(false);
+                  setTimeout(() => {
+                      idxRef.current = (idxRef.current + 1) % newsListRef.current.length;
+                      const text = newsListRef.current[idxRef.current];
+                      setCurrentNews(text);
+                      setNewsFade(true);
+                      
+                      // Speak news only if terminal is idle (no active signals/pauses)
+                      if (signalPhaseRef.current === 'NONE') {
+                          enqueueSpeech(`Важная новость: ${text}`, `news-${Date.now()}`, 5);
+                      }
+                  }, 700);
+              }, 5 * 60 * 1000); 
+
+              return () => clearInterval(rotInt);
+          }, [isStarted, isScanningBacktest, enqueueSpeech]);
 
           useEffect(() => {
               if (!isStarted) return;
@@ -2051,9 +2108,46 @@
                     try { chartInstance.current.timeScale().fitContent(); } catch(e) {}
                 }
 
-                for (let i = 0; i < 9; i++) {
-                    playSound('scan');
-                    await new Promise(r => setTimeout(r, 1000));
+                // === VISUAL REPLAY LOGIC INSTEAD OF GENERIC SCAN ===
+                if (newTradesHistory.length > 0) {
+                    updateStatus('БЭКТЕСТ: ВОСПРОИЗВЕДЕНИЕ СДЕЛОК...', 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]');
+                    
+                    for (let i = 0; i < newTradesHistory.length; i++) {
+                        if (!engineActive.current) break;
+                        const trade = newTradesHistory[i];
+                        setReplayTrade(trade); // triggers the highlight overlay in ChartOverlays
+                        
+                        // Pan chart to focus on this trade
+                        if (chartInstance.current) {
+                            const tIdx = initialData.findIndex(d => d.time === trade.entryTime);
+                            if (tIdx !== -1) {
+                                chartInstance.current.timeScale().setVisibleLogicalRange({
+                                    from: Math.max(0, tIdx - 40),
+                                    to: Math.min(initialData.length - 1, tIdx + 40)
+                                });
+                            }
+                        }
+
+                        if (trade.result === 'WIN') playSound('win');
+                        else playSound('loss');
+
+                        updateStatus(`БЭКТЕСТ: СДЕЛКА ${i+1}/${newTradesHistory.length} - ${trade.result}`, trade.result === 'WIN' ? 'text-emerald-400 font-bold' : 'text-rose-500 font-bold');
+                        
+                        await new Promise(r => setTimeout(r, 1200)); // 1.2s delay between trades
+                    }
+                    
+                    setReplayTrade(null);
+                    
+                    // Smoothly transition back to live view
+                    if (chartInstance.current) {
+                        chartInstance.current.timeScale().scrollToRealTime();
+                    }
+                } else {
+                    // Fallback if no trades found
+                    for (let i = 0; i < 5; i++) {
+                        playSound('scan');
+                        await new Promise(r => setTimeout(r, 800));
+                    }
                 }
                 
                 setIsScanningBacktest(false);
@@ -2383,12 +2477,16 @@
                                 setMartingaleIndex(0); 
                                 consecutiveLossesRef.current = 0; 
                                 consecutiveLossesInDirRef.current = 0;
-                                forcedDirectionRef.current = null; 
-                                strictFavouredRef.current = false; 
-                                strictActivationTimeRef.current = 0;
-
-                                playSound('win'); addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
-                                await speakAsync(`Сделка закрылась в плюс. Отличный результат. Сброс направления и переход на первую ступень.`, `trade-result-win-${actualEntryTime}`, 1);
+                                
+                                if (strictFavouredRef.current) {
+                                    strictFavouredRef.current = false;
+                                    playSound('win'); addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
+                                    await speakAsync(`Сделка закрылась в плюс. Отличный результат. Система переходит в мягкий режим приоритета. Переход на первую ступень.`, `trade-result-win-strict-${actualEntryTime}`, 1);
+                                } else {
+                                    forcedDirectionRef.current = null;
+                                    playSound('win'); addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
+                                    await speakAsync(`Сделка закрылась в плюс. Сброс направления и переход на первую ступень.`, `trade-result-win-${actualEntryTime}`, 1);
+                                }
                               } else {
                                 consecutiveLossesRef.current += 1;
                                 playSound('loss'); addLog(`РЕЗУЛЬТАТ: МИНУС (-).`);
@@ -2407,7 +2505,7 @@
                                         const nowSec = Math.floor(Date.now() / 1000);
                                         securityPauseUntilRef.current = nowSec + 30 * 60;
                                         
-                                        setSecurityPauses(prev => [...prev, {
+                                        setSecurityPauses(prevPauses => [...prevPauses, {
                                             start: finalExitTime,
                                             end: finalExitTime + 30 * 60,
                                             tradeStart: actualEntryTime,
@@ -2423,8 +2521,7 @@
                                         consecutiveLossesInDirRef.current = 0; 
 
                                         addLog(`АВТО-РАЗВОРОТ (STRICT): ИЩЕМ СИГНАЛЫ ТОЛЬКО ${forcedDirectionRef.current === 'CALL' ? 'ВВЕРХ' : 'ВНИЗ'} С ЖЕСТКИМ ФИЛЬТРОМ`, true);
-                                        addLog('СИСТЕМА БЕЗОПАСНОСТИ: ПАУЗА 30 МИНУТ', true);
-                                        speakAsync(`Внимание! Два минуса подряд. Система безопасности активирована. Включаю паузу на 30 минут для защиты депозита. Переход на колено ${nextIdx + 1}.`, `trade-result-loss-strict-${actualEntryTime}`, 1);
+                                        speakAsync(`Два минуса подряд. Алгоритм выполнил автоматический разворот и включил паузу безопасности на 30 минут. Переходим на колено ${nextIdx + 1}.`, `trade-result-loss-strict-${actualEntryTime}`, 1);
                                     } else {
                                         addLog(`МИНУС 1 В НАПРАВЛЕНИИ ${tradeDir}. ЖДЕМ СЛЕДУЮЩИЙ СИГНАЛ.`, true);
                                         speakAsync(`Минус. Ожидаем следующий сигнал для подтверждения тенденции. Колено ${nextIdx + 1}.`, `trade-result-loss-${actualEntryTime}`, 1);
@@ -2537,7 +2634,7 @@
 
               {/* Main Header */}
               <header className="h-auto md:h-16 py-2 md:py-0 flex flex-col md:flex-row items-start md:items-center justify-between px-3 md:px-6 shrink-0 z-40 gap-2 md:gap-0 mt-2">
-                <div className="flex flex-col justify-center w-full md:w-auto">
+                <div className="flex flex-col justify-center w-full md:w-auto shrink-0">
                   <div className="flex justify-between items-center md:block">
                       <h1 className="text-2xl md:text-3xl text-slate-100 leading-none font-bold flex items-center gap-2 oswald-font tracking-wider">
                         <Zap size={28} className="text-cyan-400 drop-shadow-[0_0_12px_rgba(0,240,255,0.9)]" /> 
@@ -2551,6 +2648,8 @@
                     <div className="w-4 h-[1px] bg-cyan-500/50"></div> Алгоритм SMC • Анализ Ликвидности • Martingale v7
                   </div>
                 </div>
+
+                <NewsWidget currentNews={currentNews} isFading={newsFade} isScanningBacktest={isScanningBacktest} />
                 
                 <div className="w-full flex md:hidden mb-1 mt-1 sticky top-0 z-50 pb-2 pt-1 border-b border-slate-800 shadow-sm px-1 justify-between items-center gap-2 bg-[#010308]/90 backdrop-blur-md">
                     <div className="flex gap-2 items-center mx-auto">
@@ -2558,7 +2657,7 @@
                     </div>
                 </div>
 
-                <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-2 md:gap-1.5">
+                <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-2 md:gap-1.5 shrink-0">
                   <div className="flex items-center gap-3">
                       <div className={`premium-status-badge text-xs md:text-sm px-4 py-1.5 rounded-lg oswald-font tracking-widest hidden md:flex items-center font-black h-[52px] ${appPhase === 'СИСТЕМА БЕЗОПАСНОСТИ АКТИВИРОВАНА' ? 'bg-gradient-to-r from-rose-500 to-rose-700 text-white border-rose-400 shadow-[0_0_15px_rgba(225,29,72,0.8)]' : ''}`}>
                         {appPhase === 'СИСТЕМА БЕЗОПАСНОСТИ АКТИВИРОВАНА' ? 'РЕЖИМ БЕЗОПАСНОСТИ АКТИВЕН' : appPhase}
@@ -2649,6 +2748,7 @@
                           viewMode={viewMode}
                           forcedDirection={forcedDirectionRef.current}
                           securityPauses={securityPauses}
+                          replayTrade={replayTrade}
                         />
                     </div>
                     
