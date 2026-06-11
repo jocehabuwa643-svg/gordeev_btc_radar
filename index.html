@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -466,37 +465,37 @@
                 return false;
             };
             const _originalError = console.error;
-            console.error = function(...args) {
-                if (args[0] && typeof args[0] === 'string' && args[0].includes('ResizeObserver')) return;
-                _originalError.apply(console, args);
-            };
+        console.error = function(...args) {
+            if (args[0] && typeof args[0] === 'string' && args[0].includes('ResizeObserver')) return;
+            _originalError.apply(console, args);
         };
-        suppressResizeObserverErrors();
+    };
+    suppressResizeObserverErrors();
 
-        // Memoized Icons
-        const Shield = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 4.81 17 6 19 6a1 1 0 0 1 1 1z"/></svg>);
-        const Cpu = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>);
-        const Globe = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>);
-        const Clock = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>);
-        const Radar = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 5.49A10 10 0 0 0 5.3 19.38"/><path d="M20 8.74A10 10 0 0 1 17.38 20"/><path d="M16 8a6 6 0 0 0-8.5-1.5"/><path d="M7.5 16.5a6 6 0 0 0 9.2-.5"/><path d="M12 12v.01"/></svg>);
-        const Zap = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>);
-        const BugIcon = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M12 18v.01"></path><path d="M8 12v.01"></path><path d="M16 12v.01"></path><rect x="4" y="6" width="16" height="16" rx="2" ry="2"></rect></svg>);
-        const MousePointer = React.memo(({ size = 24, className = "" }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="rgba(255,255,255,0.9)" stroke="#0f172a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
-                <path d="M13 13l6 6"/>
-            </svg>
-        ));
+    // Memoized Icons
+    const Shield = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 4.81 17 6 19 6a1 1 0 0 1 1 1z"/></svg>);
+    const Cpu = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>);
+    const Globe = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>);
+    const Clock = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>);
+    const Radar = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 5.49A10 10 0 0 0 5.3 19.38"/><path d="M20 8.74A10 10 0 0 1 17.38 20"/><path d="M16 8a6 6 0 0 0-8.5-1.5"/><path d="M7.5 16.5a6 6 0 0 0 9.2-.5"/><path d="M12 12v.01"/></svg>);
+    const Zap = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>);
+    const BugIcon = React.memo(({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M12 18v.01"></path><path d="M8 12v.01"></path><path d="M16 12v.01"></path><rect x="4" y="6" width="16" height="16" rx="2" ry="2"></rect></svg>);
+    const MousePointer = React.memo(({ size = 24, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="rgba(255,255,255,0.9)" stroke="#0f172a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+            <path d="M13 13l6 6"/>
+        </svg>
+    ));
 
-        // --- MASSIVE BROKER BUTTON ---
-        const MassiveBrokerButton = React.memo(() => (
-            <a 
-                href="https://boosty.to/gord666/posts/0e3a7a59-c3a5-4a03-ba30-46296b5c7be6" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="massive-broker-btn group relative flex items-center justify-center overflow-hidden cursor-pointer no-underline px-6 md:px-10 py-4 z-50 w-[90%] md:w-auto mx-auto"
-            >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-[1000ms] ease-in-out skew-x-12"></div>
+    // --- MASSIVE BROKER BUTTON ---
+    const MassiveBrokerButton = React.memo(() => (
+        <a 
+            href="https://boosty.to/gord666/posts/0e3a7a59-c3a5-4a03-ba30-46296b5c7be6" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="massive-broker-btn group relative flex items-center justify-center overflow-hidden cursor-pointer no-underline px-6 md:px-10 py-4 z-50 w-[90%] md:w-auto mx-auto"
+        >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-[1000ms] ease-in-out skew-x-12"></div>
                 <span className="relative z-10 text-white font-black tracking-widest text-sm md:text-xl oswald-font uppercase drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] flex items-center gap-2 md:gap-3 whitespace-nowrap">
                     <Zap size={28} className="text-cyan-100 animate-pulse drop-shadow-[0_0_12px_rgba(255,255,255,0.9)] hidden sm:block" />
                     <span>ТОРГОВАТЬ ЗДЕСЬ, ЧТОБЫ ЗАРАБОТАТЬ</span>
@@ -1673,17 +1672,30 @@
               } catch (e) { completeSpeech(); }
           };
 
-          const awaitSpeechCompletion = () => new Promise(resolve => {
-              const check = setInterval(() => {
+          const awaitSpeechCompletion = (assetObj = null, tf = null) => new Promise(resolve => {
+              let lastFetch = 0;
+              const check = setInterval(async () => {
+                  if (assetObj && tf && Date.now() - lastFetch > 3000) {
+                      lastFetch = Date.now();
+                      try {
+                          const tfParam = tf === '1H' ? '1h' : tf === '15M' ? '15m' : '5m';
+                          const liveData = await ScannerAPI.getCandles(assetObj.symbol, 2, tfParam);
+                          if (liveData && liveData.length > 0) {
+                              const tick = liveData[liveData.length - 1];
+                              currentPrice.current = tick.close;
+                              if (candleSeries.current) { try { candleSeries.current.update(tick); } catch(e){} }
+                          }
+                      } catch(e) {}
+                  }
                   if (!isSpeakingRef.current && speechQueueRef.current.length === 0) { clearInterval(check); resolve(); }
               }, 400);
           });
 
           const fetchCryptoQuotes = async () => {
-              try {
-                  const res = await fetchWithTimeout('https://api.binance.com/api/v3/ticker/24hr', {timeout: 4000});
-                  if (res.ok) {
-                      const data = await res.json();
+          try {
+              const res = await fetchWithTimeout('https://api.binance.com/api/v3/ticker/24hr', {timeout: 4000});
+              if (res.ok) {
+                  const data = await res.json();
                       const filtered = data.filter(item => TOP_CRYPTO_MAP[item.symbol]);
                       const formatted = filtered.map(item => ({
                           symbol: item.symbol.replace('USDT', ''), name: TOP_CRYPTO_MAP[item.symbol],
@@ -1695,11 +1707,11 @@
           };
 
           useEffect(() => {
-              const fetchNews = async () => {
-                  try {
-                      const res = await fetchWithTimeout('https://api.rss2json.com/v1/api.json?rss_url=https://lenta.ru/rss/news', { timeout: 6000 });
-                      if (res.ok) {
-                          const data = await res.json();
+          const fetchNews = async () => {
+              try {
+                  const res = await fetchWithTimeout('https://api.rss2json.com/v1/api.json?rss_url=https://lenta.ru/rss/news', { timeout: 6000 });
+                  if (res.ok) {
+                      const data = await res.json();
                           if (data && data.items && data.items.length > 0) {
                               newsListRef.current = data.items.map(i => i.title);
                               if (!currentNews) setCurrentNews(newsListRef.current[0]);
@@ -1809,19 +1821,19 @@
             if (type === 'win') { playTone(523.25, 'triangle', 0.4, 0.04); playTone(659.25, 'triangle', 0.5, 0.04, 0.1); playTone(783.99, 'triangle', 0.8, 0.05, 0.2); }
             if (type === 'loss') { playTone(300, 'sawtooth', 0.4, 0.03); playTone(250, 'sawtooth', 0.6, 0.04, 0.2); }
             if (type === 'cancel') { playTone(400, 'square', 0.1, 0.04); playTone(300, 'square', 0.2, 0.04, 0.15); }
-          }, []);
+      }, []);
 
-          const initChart = async () => {
-            if (!chartContainerRef.current) { setTimeout(initChart, 1000); return; }
-            if (!window.LightweightCharts) {
-              await new Promise(resolve => {
-                const script = document.createElement('script'); script.src = 'https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js';
-                script.onload = resolve; document.head.appendChild(script);
-              });
-            }
-            if (chartInstance.current) return;
+      const initChart = async () => {
+        if (!chartContainerRef.current) { setTimeout(initChart, 1000); return; }
+        if (!window.LightweightCharts) {
+          await new Promise(resolve => {
+            const script = document.createElement('script'); script.src = 'https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js';
+            script.onload = resolve; document.head.appendChild(script);
+          });
+        }
+        if (chartInstance.current) return;
 
-            try {
+        try {
                 const mainChart = window.LightweightCharts.createChart(chartContainerRef.current, {
                   width: chartContainerRef.current.clientWidth,
                   height: chartContainerRef.current.clientHeight,
@@ -2330,6 +2342,15 @@
                       }
                       setMtfContext(currentMtfContext);
 
+                      // ---> ФИКС ЗАМЕРЗАНИЯ ПРИ ОЖИДАНИИ <---
+                      // Обновляем главный график, если нет активной сделки
+                      if (signalPhaseRef.current === 'NONE') {
+                          const activeCfgForChart = mtfConfig[activeScanningTF];
+                          if (candleSeries.current && activeCfgForChart && activeCfgForChart.data.length > 0) {
+                              try { candleSeries.current.update(activeCfgForChart.data[activeCfgForChart.data.length - 1]); } catch(e){}
+                          }
+                      }
+
                       // Если обнаружен подтвержденный сигнал на любом из ТФ
                       if (liveSignal && signalPhaseRef.current === 'NONE') {
                           // Динамическое переключение графиков на сработавший ТФ
@@ -2355,11 +2376,13 @@
                           
                           // Голосовое оповещение с указанием таймфрейма
                           await speakAsync(`Внимание! Сформирован сигнал на ${directionText} на ${tfSpeechLabel} таймфрейме по причине: ${liveSignal.signalType}. Индекс надежности сделки составляет ${liveSignal.score} пунктов.`, `signal-prep-${liveSignal.signalTime}`, 1);
-                          await awaitSpeechCompletion();
+                          await awaitSpeechCompletion(cur, liveBestTF);
 
                           signalPhaseRef.current = 'PREPARING'; setSignalPhase('PREPARING');
 
                           let tradeCancelled = false;
+                          const tfParam = liveBestTF === '1H' ? '1h' : liveBestTF === '15M' ? '15m' : '5m';
+                          
                           for(let w = 3; w > 0; w--) {
                               setCountdown(w); 
                               updateStatus(`ПОДГОТОВКА КО ВХОДУ: ${w}С`, 'text-cyan-400 font-bold drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]'); 
@@ -2367,7 +2390,7 @@
                               await new Promise(r => setTimeout(r, 1000));
                               
                               try {
-                                  const liveData = await ScannerAPI.getCandles(cur.symbol, 2, '5m'); 
+                                  const liveData = await ScannerAPI.getCandles(cur.symbol, 2, tfParam); 
                                   if (liveData && liveData.length > 0) {
                                       lastDataTimeRef.current = Date.now();
                                       const liveTick = liveData[liveData.length - 1];
@@ -2445,7 +2468,7 @@
                             
                             if (remaining % 2 === 0) {
                                 try {
-                                    const liveTickData = await ScannerAPI.getCandles(cur.symbol, 2, '5m'); 
+                                    const liveTickData = await ScannerAPI.getCandles(cur.symbol, 2, tfParam); 
                                     if (liveTickData && liveTickData.length > 0) {
                                         lastDataTimeRef.current = Date.now(); const tick = liveTickData[liveTickData.length - 1];
                                         currentPrice.current = tick.close;
@@ -2965,6 +2988,3 @@
     </script>
 </body>
 </html>
-
-
-```
