@@ -287,7 +287,7 @@
         .idle-crosshair::before { width: 6px; height: 2px; left: -3px; }
         .idle-crosshair::after { width: 2px; height: 6px; top: -3px; }
 
-        /* --- УЛУЧШЕHHАЯ КАПСУЛА ЗОНЫ И ТРИГГЕРНАЯ ЛИНИЯ --- */
+        /* --- УЛУЧШЕННАЯ КАПСУЛА ЗОНЫ И ТРИГГЕРНАЯ ЛИНИЯ --- */
         .zone-capsule {
             position: absolute; z-index: 48; pointer-events: none;
             border-radius: 12px;
@@ -721,7 +721,7 @@
         }
 
         const fetchWithTimeout = async (url, options = {}) => {
-            const { timeout = 4000 } = options;
+            const { timeout = 5000 } = options;
             const controller = new AbortController();
             const id = setTimeout(() => controller.abort(), timeout);
             try {
@@ -731,25 +731,32 @@
             } catch(e) { clearTimeout(id); throw e; }
         };
 
+        const BINANCE_ENDPOINTS = [
+            'https://data-api.binance.vision',
+            'https://api.binance.com',
+            'https://api1.binance.com',
+            'https://api2.binance.com',
+            'https://api3.binance.com'
+        ];
+
         const ScannerAPI = {
           async getCandles(symbol, count = 1000, interval = '5m') { 
-            const urls = [
-                `https://api.binance.com/api/v3/klines?symbol=\( {symbol}&interval= \){interval}&limit=${count}`,
-                `https://api1.binance.com/api/v3/klines?symbol=\( {symbol}&interval= \){interval}&limit=${count}`,
-                `https://api2.binance.com/api/v3/klines?symbol=\( {symbol}&interval= \){interval}&limit=${count}`,
-                `https://data-api.binance.vision/api/v3/klines?symbol=\( {symbol}&interval= \){interval}&limit=${count}`
-            ];
-            for (let url of urls) {
+            for (let base of BINANCE_ENDPOINTS) {
                 try {
-                    let response = await fetchWithTimeout(url, { timeout: 3500 });
+                    let response = await fetchWithTimeout(`\( {base}/api/v3/klines?symbol= \){symbol}&interval=\( {interval}&limit= \){count}`, { timeout: 4500 });
                     if (response.ok) {
                         const data = await response.json();
-                        return data.map(d => ({
-                            time: d[0] / 1000, open: parseFloat(d[1]), high: parseFloat(d[2]),
-                            low: parseFloat(d[3]), close: parseFloat(d[4]), volume: parseFloat(d[5])
-                        }));
+                        if (data && data.length > 0) {
+                            return data.map(d => ({
+                                time: d[0] / 1000, open: parseFloat(d[1]), high: parseFloat(d[2]),
+                                low: parseFloat(d[3]), close: parseFloat(d[4]), volume: parseFloat(d[5])
+                            }));
+                        }
                     }
-                } catch(e) { continue; }
+                } catch(e) { 
+                    console.warn(`Binance API Error (${base}):`, e);
+                    continue; 
+                }
             }
             return [];
           }
@@ -1592,7 +1599,7 @@
           const [statusColorClass, setStatusColorClass] = useState('text-slate-100');
           const [dataHealth, setDataHealth] = useState({ age: 0, status: 'LIVE' });
           const [panelState, setPanelState] = useState('IDLE');
-          const lastDataTimeRef = useRef(Date.now());
+          lastDataTimeRef = useRef(Date.now());
           
           const chartContainerRef = useRef(null);
           const chartInstance = useRef(null);
@@ -1713,18 +1720,27 @@
           });
 
           const fetchCryptoQuotes = async () => {
-          try {
-              const res = await fetchWithTimeout('https://api.binance.com/api/v3/ticker/24hr', {timeout: 4000});
-              if (res.ok) {
-                  const data = await res.json();
-                      const filtered = data.filter(item => TOP_CRYPTO_MAP[item.symbol]);
-                      const formatted = filtered.map(item => ({
-                          symbol: item.symbol.replace('USDT', ''), name: TOP_CRYPTO_MAP[item.symbol],
-                          price: parseFloat(item.lastPrice), change: parseFloat(item.priceChangePercent)
-                      })).sort((a, b) => b.price - a.price);
-                      if (formatted.length > 0) { cryptoQuotesRef.current = formatted; setCryptoQuotes(formatted); }
-                  } else { if (cryptoQuotesRef.current.length === 0) setCryptoQuotes([]); }
-              } catch (e) { if (cryptoQuotesRef.current.length === 0) setCryptoQuotes([]); }
+              for (let base of BINANCE_ENDPOINTS) {
+                  try {
+                      const res = await fetchWithTimeout(`${base}/api/v3/ticker/24hr`, { timeout: 4500 });
+                      if (res.ok) {
+                          const data = await res.json();
+                          const filtered = data.filter(item => TOP_CRYPTO_MAP[item.symbol]);
+                          const formatted = filtered.map(item => ({
+                              symbol: item.symbol.replace('USDT', ''), name: TOP_CRYPTO_MAP[item.symbol],
+                              price: parseFloat(item.lastPrice), change: parseFloat(item.priceChangePercent)
+                          })).sort((a, b) => b.price - a.price);
+                          if (formatted.length > 0) { 
+                              cryptoQuotesRef.current = formatted; 
+                              setCryptoQuotes(formatted); 
+                              return; 
+                          }
+                      }
+                  } catch (e) { 
+                      console.warn(`Quotes fetch failed on ${base}`, e);
+                  }
+              }
+              if (cryptoQuotesRef.current.length === 0) setCryptoQuotes([]);
           };
 
           useEffect(() => {
@@ -3008,4 +3024,4 @@
         root.render(<App />);
     </script>
 </body>
-</html>
+    </html>
