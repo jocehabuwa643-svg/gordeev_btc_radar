@@ -743,7 +743,7 @@
           async getCandles(symbol, count = 1000, interval = '5m') { 
             for (let base of BINANCE_ENDPOINTS) {
                 try {
-                    let response = await fetchWithTimeout(`\( {base}/api/v3/klines?symbol= \){symbol}&interval=\( {interval}&limit= \){count}`, { timeout: 4500 });
+                    let response = await fetchWithTimeout(`${base}/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${count}`, { timeout: 4500 });
                     if (response.ok) {
                         const data = await response.json();
                         if (data && data.length > 0) {
@@ -1007,7 +1007,7 @@
                   })}
                 </svg>
                 {chartData.length > 0 && scanIndex >= 0 && scanIndex < chartData.length && (
-                    <div className="absolute top-0 bottom-0 pointer-events-none transition-all duration-200 ease-out flex flex-col justify-center items-center mix-blend-screen" style={{ left: `\( {(scanIndex / chartData.length) * 100}%`, width: ` \){(1 / chartData.length) * 100}%` }}>
+                    <div className="absolute top-0 bottom-0 pointer-events-none transition-all duration-200 ease-out flex flex-col justify-center items-center mix-blend-screen" style={{ left: `${(scanIndex / chartData.length) * 100}%`, width: `${(1 / chartData.length) * 100}%` }}>
                         <div className="absolute w-[40px] h-[100%] bg-cyan-400/20 blur-md rounded-full -ml-[20px]"></div>
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 border border-cyan-400/50 rounded-full bg-cyan-400/10 backdrop-blur-[2px] shadow-[0_0_15px_rgba(0,240,255,0.4)] flex items-center justify-center"><div className="w-1.5 h-1.5 bg-cyan-300 rounded-full shadow-[0_0_8px_rgba(0,240,255,1)]"></div></div>
                     </div>
@@ -1392,7 +1392,7 @@
                                     const priceColor = signal?.type === 'CALL' ? '#00f0ff' : '#ff0055';
                                     orbInfoRef.current.innerHTML = `
                                         <div class="text-[9px] text-slate-400 font-bold mb-0.5">${timeStr}</div>
-                                        <div><span style="color:\( {priceColor}"> \){targetCandle.close.toFixed(2)}</span></div>
+                                        <div><span style="color:${priceColor}">${targetCandle.close.toFixed(2)}</span></div>
                                         <div class="text-[9px] text-slate-300 mt-0.5">VOL: ${Math.floor(targetCandle.volume)}</div>
                                     `;
                                     orbInfoRef.current.style.opacity = '1';
@@ -1777,7 +1777,7 @@
                       setNewsFade(true);
                       
                       if (signalPhaseRef.current === 'NONE') {
-                          enqueueSpeech(`Важная новость: \( {text}`, `news- \){Date.now()}`, 5);
+                          enqueueSpeech(`Важная новость: ${text}`, `news-${Date.now()}`, 5);
                       }
                   }, 700);
               }, 5 * 60 * 1000); 
@@ -2086,7 +2086,7 @@
 
                         newTradesHistory.push({
                             id: `hist_trade_${currTime}`, type: bestSignal.isCall ? 'CALL' : 'PUT', signalTime: currTime, entryTime: entryCandle.time, exitTime: exitCandle.time,
-                            entryPrice: realisticEntryPrice, exitPrice: exitPrice, status: "CLOSED", result: result, betAmount: currentBet, reason: `\( {bestSignal.signalType} [ \){bestTF}]`, quality: bestSignal.score, mtfStr: bestTF
+                            entryPrice: realisticEntryPrice, exitPrice: exitPrice, status: "CLOSED", result: result, betAmount: currentBet, reason: `${bestSignal.signalType} [${bestTF}]`, quality: bestSignal.score, mtfStr: bestTF
                         });
 
                         const tradeDir = bestSignal.isCall ? 'CALL' : 'PUT';
@@ -2187,7 +2187,7 @@
                         if (trade.result === 'WIN') playSound('win');
                         else playSound('loss');
 
-                        updateStatus(`БЭКТЕСТ: СДЕЛКА \( {i+1}/ \){newTradesHistory.length} - \( {trade.result} [ \){trade.mtfStr}]`, trade.result === 'WIN' ? 'text-emerald-400 font-bold' : 'text-rose-500 font-bold');
+                        updateStatus(`БЭКТЕСТ: СДЕЛКА ${i+1}/${newTradesHistory.length} - ${trade.result} [${trade.mtfStr}]`, trade.result === 'WIN' ? 'text-emerald-400 font-bold' : 'text-rose-500 font-bold');
                         
                         await new Promise(r => setTimeout(r, 1200)); 
                     }
@@ -2314,7 +2314,7 @@
                                       triggerPrice: distTop < latestAtr * 1.5 ? latestZone.upper : latestZone.lower
                                   });
                                   addLog(`ЦЕНА ВОШЛА В ЗОНУ ИНТЕРЕСА СМЕЖНОГО ТАЙМФРЕЙМА ${activeScanningTF}`);
-                                  enqueueSpeech(`Цена подошла к зоне интереса на таймфрейме \( {activeScanningTF === '5M' ? 'пять минут' : activeScanningTF === '15M' ? 'пятнадцать минут' : 'один час'}. Ожидайте подтверждения.`, `zone-approach- \){latestZone.time}`, 3);
+                                  enqueueSpeech(`Цена подошла к зоне интереса на таймфрейме ${activeScanningTF === '5M' ? 'пять минут' : activeScanningTF === '15M' ? 'пятнадцать минут' : 'один час'}. Ожидайте подтверждения.`, `zone-approach-${latestZone.time}`, 3);
                                   syncModeView(); 
                               }
                           } else if (distTop > latestAtr * 2.8 && distBot > latestAtr * 2.8) {
@@ -2322,7 +2322,7 @@
                                   zoneStateRef.current = 'OUT'; setZoneState('OUT'); setZoneInfo(null);
                                   zoneCooldownUntilRef.current = Date.now() + 30000; 
                                   addLog('ЦЕНА ПОКИНУЛА ЗОНУ ИНТЕРЕСА');
-                                  enqueueSpeech(`Цена отошла от пула ликвидности на \( {activeScanningTF}. Сигнал не сформирован.`, `zone-left- \){latestZone.time}`, 3);
+                                  enqueueSpeech(`Цена отошла от пула ликвидности на ${activeScanningTF}. Сигнал не сформирован.`, `zone-left-${latestZone.time}`, 3);
                                   syncModeView(); 
                               }
                           }
@@ -2402,17 +2402,17 @@
                           const directionText = liveSignal.isCall ? "ВВЕРХ" : "ВНИЗ";
                           const tfSpeechLabel = liveBestTF === '5M' ? 'пятиминутном' : liveBestTF === '15M' ? 'пятнадцатиминутном' : 'одночасовом';
                           
-                          setExplainText(`\( {liveSignal.signalType} [ \){liveBestTF}]`);
+                          setExplainText(`${liveSignal.signalType} [${liveBestTF}]`);
                           signalPhaseRef.current = 'EXPLAINING'; setSignalPhase('EXPLAINING'); setZoneInfo(null);
                           setSignal({ type: liveSignal.isCall ? 'CALL' : 'PUT', exp: 25, expectedPrice: liveSignal.signalPrice });
                           
                           syncModeView(); playSound('found');
-                          addLog(`Accepted [${liveBestTF}]: \( {liveSignal.signalType} | Q: \){liveSignal.score}`, true);
+                          addLog(`Accepted [${liveBestTF}]: ${liveSignal.signalType} | Q: ${liveSignal.score}`, true);
 
                           updateStatus(`ОБЪЯСНЕНИЕ СИГНАЛА...`, 'text-cyan-400 font-bold drop-shadow-[0_0_8px_rgba(0,240,255,0.8)] animate-pulse');
                           
                           // Голосовое оповещение с указанием таймфрейма
-                          await speakAsync(`Внимание! Сформирован сигнал на ${directionText} на ${tfSpeechLabel} таймфрейме по причине: ${liveSignal.signalType}. Индекс надежности сделки составляет \( {liveSignal.score} пунктов.`, `signal-prep- \){liveSignal.signalTime}`, 1);
+                          await speakAsync(`Внимание! Сформирован сигнал на ${directionText} на ${tfSpeechLabel} таймфрейме по причине: ${liveSignal.signalType}. Индекс надежности сделки составляет ${liveSignal.score} пунктов.`, `signal-prep-${liveSignal.signalTime}`, 1);
                           await awaitSpeechCompletion(cur, liveBestTF);
 
                           signalPhaseRef.current = 'PREPARING'; setSignalPhase('PREPARING');
@@ -2483,7 +2483,7 @@
 
                           setActiveLiveTrade({
                               id: `live_trade_${liveSignal.signalTime}`, type: liveSignal.isCall ? 'CALL' : 'PUT', signalTime: liveSignal.signalTime, entryTime: actualEntryTime, 
-                              exitTime: finalExitTime, entryPrice: actualEntryPrice, exitPrice: actualEntryPrice, isLive: true, betAmount: currentStakeAmount, reason: `\( {liveSignal.signalType} [ \){liveBestTF}]`, quality: liveSignal.score, mtfStr: liveBestTF
+                              exitTime: finalExitTime, entryPrice: actualEntryPrice, exitPrice: actualEntryPrice, isLive: true, betAmount: currentStakeAmount, reason: `${liveSignal.signalType} [${liveBestTF}]`, quality: liveSignal.score, mtfStr: liveBestTF
                           });
 
                           const entryTimestamp = Date.now();
@@ -2544,7 +2544,7 @@
                           setTradesHistory(prev => {
                               return [...prev, { 
                                   id: `live_trade_${liveSignal.signalTime}`, type: liveSignal.isCall ? 'CALL' : 'PUT', signalTime: liveSignal.signalTime, entryTime: actualEntryTime, 
-                                  exitTime: finalExitTime, entryPrice: actualEntryPrice, exitPrice: finalPrice, status: "CLOSED", result: result, betAmount: currentStakeAmount, reason: `\( {liveSignal.signalType} [ \){liveBestTF}]`, quality: liveSignal.score, mtfStr: liveBestTF
+                                  exitTime: finalExitTime, entryPrice: actualEntryPrice, exitPrice: finalPrice, status: "CLOSED", result: result, betAmount: currentStakeAmount, reason: `${liveSignal.signalType} [${liveBestTF}]`, quality: liveSignal.score, mtfStr: liveBestTF
                               }];
                           });
 
@@ -2563,7 +2563,7 @@
                             if (strictFavouredRef.current) {
                                 strictFavouredRef.current = false;
                                 playSound('win'); addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
-                                await speakAsync(`Сделка закрылась в плюс на \( {tfSpeechLabel} таймфрейме. Сброс цикла Мартингейла до первой ступени.`, `trade-result-win-strict- \){actualEntryTime}`, 1);
+                                await speakAsync(`Сделка закрылась в плюс на ${tfSpeechLabel} таймфрейме. Сброс цикла Мартингейла до первой ступени.`, `trade-result-win-strict-${actualEntryTime}`, 1);
                             } else {
                                 forcedDirectionRef.current = null;
                                 playSound('win'); addLog(`РЕЗУЛЬТАТ: ПЛЮС (+). ВЫХОД: ${formatPrice(finalPrice)}`);
@@ -2603,10 +2603,10 @@
                                     consecutiveLossesInDirRef.current = 0; 
 
                                     addLog(`АВТО-РАЗВОРОТ (STRICT): ИЩЕМ СИГНАЛЫ ТОЛЬКО ${forcedDirectionRef.current === 'CALL' ? 'ВВЕРХ' : 'ВНИЗ'} С ЖЕСТКИМ ФИЛЬТРОМ`, true);
-                                    speakAsync(`Зафиксировано два убытка подряд. Движок активировал режим повышенной безопасности на тридцать минут и подготовил мартингейл-ступень \( {nextIdx + 1} в противоположном направлении.`, `trade-result-loss-strict- \){actualEntryTime}`, 1);
+                                    speakAsync(`Зафиксировано два убытка подряд. Движок активировал режим повышенной безопасности на тридцать минут и подготовил мартингейл-ступень ${nextIdx + 1} в противоположном направлении.`, `trade-result-loss-strict-${actualEntryTime}`, 1);
                                 } else {
                                     addLog(`МИНУС 1 В НАПРАВЛЕНИИ ${tradeDir}. ЖДЕМ СЛЕДУЮЩИЙ СИГНАЛ.`, true);
-                                    speakAsync(`Сделка закрылась с отрицательным результатом. Движок ожидает подтверждения структуры на следующую ступень \( {nextIdx + 1}.`, `trade-result-loss- \){actualEntryTime}`, 1);
+                                    speakAsync(`Сделка закрылась с отрицательным результатом. Движок ожидает подтверждения структуры на следующую ступень ${nextIdx + 1}.`, `trade-result-loss-${actualEntryTime}`, 1);
                                 }
 
                                 return nextIdx;
@@ -2885,7 +2885,7 @@
                                 <span className="text-[8px] md:text-[9px] text-rose-400 font-black tracking-widest oswald-font mb-0.5 leading-tight drop-shadow-md">СИСТЕМА БЕЗОПАСНОСТИ</span>
                                 <span className="text-[7px] md:text-[8px] text-slate-300 font-bold mb-1 leading-tight">2 минуса подряд. Рыночный перегрев. Пауза.</span>
                                 <div className="text-xl md:text-2xl font-black text-rose-500 drop-shadow-[0_0_15px_rgba(225,29,72,1)] mono-font leading-none mt-1">
-                                    {securityPauseRemaining !== null ? `\( {Math.floor(securityPauseRemaining/60).toString().padStart(2,'0')}: \){(securityPauseRemaining%60).toString().padStart(2,'0')}` : '--:--'}
+                                    {securityPauseRemaining !== null ? `${Math.floor(securityPauseRemaining/60).toString().padStart(2,'0')}:${(securityPauseRemaining%60).toString().padStart(2,'0')}` : '--:--'}
                                 </div>
                             </div>
                         ) : signalPhase === 'EXPLAINING' ? (
@@ -2986,7 +2986,7 @@
                           </span>
                           <span className="text-2xl md:text-3xl text-cyan-400 mt-1 font-black mono-font tracking-wider leading-none drop-shadow-[0_0_15px_rgba(0,240,255,0.6)]">
                             {signalPhase === 'SECURITY_PAUSE' ? '--:--' : signalPhase === 'ACTIVE' && countdown !== null 
-                                ? `\( {Math.floor(countdown/60).toString().padStart(2,'0')}: \){(countdown%60).toString().padStart(2,'0')}` 
+                                ? `${Math.floor(countdown/60).toString().padStart(2,'0')}:${(countdown%60).toString().padStart(2,'0')}` 
                                 : (signalPhase === 'ACTIVE' && signal && signal.exp ? `${signal.exp}:00` : '--:--')}
                           </span>
                        </div>
@@ -3024,4 +3024,4 @@
         root.render(<App />);
     </script>
 </body>
-    </html>
+</html>
